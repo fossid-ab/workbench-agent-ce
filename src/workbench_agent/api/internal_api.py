@@ -21,8 +21,8 @@ class InternalAPI(BaseAPI):
         Retrieves the Workbench configuration including version information.
 
         Returns:
-            Dict[str, Any]: Configuration data including version,
-                          server settings, and feature flags
+            Dict[str, Any]: Configuration data including version, server settings, 
+                            and feature flags
 
         Raises:
             ApiError: If there are API issues

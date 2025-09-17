@@ -25,16 +25,22 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             ApiError: If there are API issues
             NetworkError: If there are network issues
         """
+
         logger.debug("Listing all scans...")
         payload = {"group": "scans", "action": "list_scans", "data": {}}
         response = self._send_request(payload)
+
         if response.get("status") == "1" and "data" in response:
-            data = response["data"]
+            
+            data = response["data"]  
             # API returns a dict {id: {details}}, convert to list of dicts including the code
             if isinstance(data, dict):
+                
                 scan_list = []
                 for scan_id, scan_details in data.items():
+                    
                     if isinstance(scan_details, dict):
+                        
                         try:  # Handle potential non-integer scan_id keys if API is weird
                             scan_details["id"] = int(scan_id)
                         except ValueError:
@@ -86,9 +92,11 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             ApiError: If there are API issues
             NetworkError: If there are network issues
         """
+
         logger.debug(f"Fetching information for scan '{scan_code}'...")
         payload = {"group": "scans", "action": "get_information", "data": {"scan_code": scan_code}}
         response = self._send_request(payload)
+        
         if response.get("status") == "1" and "data" in response:
             return response["data"]
         else:
@@ -114,6 +122,7 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             ApiError: If the API call fails for other reasons.
             NetworkError: If there are network issues.
         """
+        
         logger.debug(f"Fetching folder metrics for scan '{scan_code}'...")
         payload = {
             "group": "scans",
@@ -164,6 +173,7 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             ScanNotFoundError: If the scan doesn't exist
             NetworkError: If there are network issues
         """
+
         payload = {
             "group": "scans",
             "action": "get_scan_identified_components",
@@ -287,31 +297,39 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             ApiError: If there are API issues
             NetworkError: If there are network issues
         """
+
         logger.debug(f"Fetching files with Pending IDs for scan '{scan_code}'...")
         payload = {
             "group": "scans",
             "action": "get_pending_files",
             "data": {"scan_code": scan_code},
         }
+
         response = self._send_request(payload)
         if response.get("status") == "1" and "data" in response:
+
             data = response["data"]
             if isinstance(data, dict):
+
                 logger.debug(f"The scan {scan_code} has {len(data)} files pending ID'.")
                 return data
             elif isinstance(data, list) and not data:  # Handle API sometimes returning empty list?
+
                 logger.info(f"Pending files API returned empty list for scan '{scan_code}'.")
                 return {}  # Return empty dict
             else:
+
                 # Log unexpected format but return empty dict
                 logger.warning(f"Pending files API returned unexpected data type: {type(data)}")
                 return {}
         elif response.get("status") == "1":  # Status 1 but no data key
+
             logger.info(
                 f"Pending files API returned success but no 'data' key for scan '{scan_code}'."
             )
             return {}
         else:
+
             # On API error (status 0), log but return empty dict - let handler decide gate status
             error_msg = response.get("error", f"Unexpected response: {response}")
             logger.error(f"Failed to get pending files for scan '{scan_code}': {error_msg}")
@@ -332,15 +350,18 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             ScanNotFoundError: If the scan doesn't exist
             NetworkError: If there are network issues
         """
+        
         payload = {
             "group": "scans",
             "action": "get_policy_warnings_counter",
             "data": {"scan_code": scan_code},
         }
+        
         response = self._send_request(payload)
         if response.get("status") == "1" and "data" in response:
             return response["data"]
         else:
+            
             error_msg = response.get("error", "Unknown error")
             if "Scan not found" in error_msg or "row_not_found" in error_msg:
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
@@ -367,6 +388,7 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             NetworkError: If there's a network issue
             ScanExistsError: If a scan with this name already exists
         """
+        
         scan_name = data.get("scan_name", "unknown")
         logger.debug(f"Creating scan '{scan_name}' via API")
 
@@ -376,9 +398,11 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
         try:
             response = self._send_request(payload)
             if response.get("status") == "1":
+                
                 logger.debug(f"Successfully created scan '{scan_name}'")
                 return True
             else:
+                
                 error_msg = response.get("error", "Unknown error")
                 raise ApiError(
                     f"Failed to create scan '{scan_name}': {error_msg}", details=response
@@ -388,6 +412,7 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             if "Scan code already exists" in str(
                 e
             ) or "Legacy.controller.scans.code_already_exists" in str(e):
+                
                 logger.debug(f"Scan '{scan_name}' already exists.")
                 raise ScanExistsError(
                     f"Scan '{scan_name}' already exists",
@@ -433,8 +458,8 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             NetworkError: If there's a network issue
             ScanNotFoundError: If the scan doesn't exist
         """
+        
         logger.debug(f"Updating scan '{scan_code}'")
-
         payload_data = {"scan_code": scan_code}
 
         # Add only provided parameters to avoid overwriting with None values
@@ -463,14 +488,17 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
         git_ref_type = None
 
         if git_tag:
+
             git_ref_value = git_tag
             git_ref_type = "tag"
             logger.debug(f"  Updating Git tag: {git_tag}")
         elif git_branch:
+
             git_ref_value = git_branch
             git_ref_type = "branch"
             logger.debug(f"  Updating Git branch: {git_branch}")
         elif git_commit:
+
             git_ref_value = git_commit
             git_ref_type = "commit"
             logger.debug(f"  Updating Git commit: {git_commit}")
@@ -522,8 +550,8 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             ApiError: If the API call fails.
             NetworkError: If there's a network issue.
         """
+        
         logger.debug(f"Initiating Git clone for scan '{scan_code}'")
-
         payload = {
             "group": "scans",
             "action": "download_content_from_git",
@@ -622,15 +650,18 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
             ScanNotFoundError: If the scan doesn't exist
             NetworkError: If there are network issues
         """
+
         payload = {
             "group": "scans",
             "action": "check_status_download_content_from_git",
             "data": {"scan_code": scan_code},
         }
+
         response = self._send_request(payload)
         if response.get("status") == "1" and "data" in response:
             return response["data"]
         else:
+            
             error_msg = response.get("error", f"Unexpected response format: {response}")
             if "Scan not found" in error_msg or "row_not_found" in error_msg:
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
@@ -704,12 +735,7 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
                 details={"error": str(e)},
             )
 
-    def extract_archives(
-        self,
-        scan_code: str,
-        recursively_extract_archives: bool,
-        jar_file_extraction: bool,
-    ):
+    def extract_archives(self, scan_code: str, recursively_extract_archives: bool, jar_file_extraction: bool):
         """
         Triggers archive extraction for a scan.
 
@@ -726,9 +752,9 @@ class ScansAPI(ScanOperationsAPI, ReportHelper):
         logger.debug(f"Extracting Uploaded Archives for Scan '{scan_code}'...")
         # Build the data using the helper
         data = self.build_extract_archives_data(
-            scan_code=scan_code,
-            recursively_extract_archives=recursively_extract_archives,
-            jar_file_extraction=jar_file_extraction,
+            scan_code = scan_code,
+            recursively_extract_archives = recursively_extract_archives,
+            jar_file_extraction = jar_file_extraction,
         )
         # Construct the API payload
         payload = {
