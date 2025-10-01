@@ -40,6 +40,16 @@ jobs:
         --autoid-file-copyrights \
         --no-wait
 
+    - name: Show Results
+      run: |
+        workbench-agent show-results \
+        --api-url ${{ env.WORKBENCH_URL }} \
+        --api-user ${{ env.WORKBENCH_USER }} \
+        --api-token ${{ env.WORKBENCH_TOKEN }} \
+        --project-name $GITHUB_REPOSITORY \
+        --scan-name $GITHUB_REF_NAME \
+        --show-licenses --show-components --show-dependencies --show-scan-metrics --show-vulnerabilities
+
     - name: Evaluate Gates; Fail on Issues
       run: |
         workbench-agent evaluate-gates \
@@ -50,3 +60,13 @@ jobs:
         --scan-name $GITHUB_REF_NAME \
         --fail-on-pending \
         --fail-on-policy
+
+    - name: Download Reports
+      run: |
+        workbench-agent download-reports \
+        --api-url ${{ env.WORKBENCH_URL }} \
+        --api-user ${{ env.WORKBENCH_USER }} \
+        --api-token ${{ env.WORKBENCH_TOKEN }} \
+        --project-name $GITHUB_REPOSITORY \
+        --scan-name $GITHUB_REF_NAME \
+        --report-scope project --report-type xlsx,spdx

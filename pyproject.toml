@@ -43,7 +43,7 @@ test = [
 [tool.flake8]
 max-line-length = 100
 # Keep compatible with Black formatting
-extend-ignore = ["E203", "W503"]
+extend-ignore = ["E203", "W503", "E501"]
 # Tests are allowed a bit more leniency (common in many codebases)
 per-file-ignores = [
   "tests/**.py:E501,F401,F811",
