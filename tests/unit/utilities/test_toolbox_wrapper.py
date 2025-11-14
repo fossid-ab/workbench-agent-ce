@@ -17,9 +17,12 @@ class TestToolboxWrapperInitialization:
     def test_init_success(self):
         """Test successful ToolboxWrapper initialization."""
         toolbox_path = shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
-        toolbox_wrapper = ToolboxWrapper(
-            toolbox_path=toolbox_path, timeout="120"
-        )
+        try:
+            toolbox_wrapper = ToolboxWrapper(
+                toolbox_path=toolbox_path, timeout="120"
+            )
+        except FileSystemError:
+            pytest.skip("fossid-toolbox not available")
 
         assert toolbox_wrapper.toolbox_path == toolbox_path
         assert toolbox_wrapper.timeout == "120"
@@ -27,7 +30,10 @@ class TestToolboxWrapperInitialization:
     def test_init_with_default_timeout(self):
         """Test initialization with default timeout."""
         toolbox_path = shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
-        toolbox_wrapper = ToolboxWrapper(toolbox_path=toolbox_path)
+        try:
+            toolbox_wrapper = ToolboxWrapper(toolbox_path=toolbox_path)
+        except FileSystemError:
+            pytest.skip("fossid-toolbox not available")
 
         assert toolbox_wrapper.timeout == "120"
 
