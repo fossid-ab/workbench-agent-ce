@@ -22,6 +22,7 @@ dependencies = [
     "GitPython>=3.1.40",
     "spdx-tools>=0.8.0",
     "cyclonedx-python-lib[validation]>=7.0.0",
+    "packaging>=21.0",
 ]
 
 [project.optional-dependencies]

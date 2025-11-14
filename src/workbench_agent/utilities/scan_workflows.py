@@ -5,7 +5,7 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 if TYPE_CHECKING:
-    from workbench_agent.api import WorkbenchAPI
+    from workbench_agent.api.workbench_client import WorkbenchClient
 
 from workbench_agent.exceptions import (
     ApiError,
@@ -14,50 +14,6 @@ from workbench_agent.exceptions import (
 )
 
 logger = logging.getLogger("workbench-agent")
-
-# --- Workbench UI Link Generation ---
-
-
-def get_workbench_links(api_url: str, scan_id: int) -> Dict[str, Dict[str, str]]:
-    """
-    Get all Workbench UI links and messages for a scan.
-
-    Args:
-        api_url: The Workbench API URL (includes /api.php)
-        scan_id: The scan ID
-
-    Returns:
-        Dict with link types as keys, each containing 'url' and 'message'
-        Example: {
-            "main": {"url": "https://...", "message": "View scan results..."},
-            "pending": {"url": "https://...", "message": "Review Pending IDs..."},
-            "policy": {"url": "https://...", "message": "Review policy warnings..."}
-        }
-    """
-    # Link type configuration
-    link_config = {
-        "main": {"view_param": None, "message": "View scan results in Workbench"},
-        "pending": {"view_param": "pending_items", "message": "Review Pending IDs in Workbench"},
-        "policy": {
-            "view_param": "mark_as_identified",
-            "message": "Review policy warnings in Workbench",
-        },
-    }
-
-    # Build base URL once
-    base_url = api_url.replace("/api.php", "").rstrip("/")
-
-    # Build all links
-    links = {}
-    for link_type, config in link_config.items():
-        url = f"{base_url}/index.html?form=main_interface&action=scanview&sid={scan_id}"
-        if config["view_param"]:
-            url += f"&current_view={config['view_param']}"
-
-        links[link_type] = {"url": url, "message": config["message"]}
-
-    return links
-
 
 # --- Scan Configuration and Execution ---
 
@@ -89,7 +45,7 @@ def determine_scans_to_run(params: argparse.Namespace) -> Dict[str, bool]:
 
 
 def fetch_results(
-    workbench: "WorkbenchAPI", params: argparse.Namespace, scan_code: str
+    workbench: "WorkbenchClient", params: argparse.Namespace, scan_code: str
 ) -> Dict[str, Any]:
     """
     Fetches requested scan results based on --show-* flags.
@@ -120,7 +76,7 @@ def fetch_results(
 
     if should_fetch_licenses or should_fetch_dependencies:
         try:
-            da_results = workbench.get_dependency_analysis_results(scan_code)
+            da_results = workbench.scans.get_dependency_analysis_results(scan_code)
             if da_results:
                 collected_results["dependency_analysis"] = da_results
         except (ApiError, NetworkError) as e:
@@ -128,7 +84,7 @@ def fetch_results(
 
     if should_fetch_licenses:
         try:
-            kb_licenses = workbench.get_scan_identified_licenses(scan_code)
+            kb_licenses = workbench.scans.get_scan_identified_licenses(scan_code)
             if kb_licenses:
                 collected_results["kb_licenses"] = sorted(
                     kb_licenses, key=lambda x: x.get("identifier", "").lower()
@@ -138,7 +94,7 @@ def fetch_results(
 
     if should_fetch_components:
         try:
-            kb_components = workbench.get_scan_identified_components(scan_code)
+            kb_components = workbench.scans.get_scan_identified_components(scan_code)
             if kb_components:
                 collected_results["kb_components"] = sorted(
                     kb_components, key=lambda x: (x.get("name", "").lower(), x.get("version", ""))
@@ -148,19 +104,19 @@ def fetch_results(
 
     if should_fetch_metrics:
         try:
-            collected_results["scan_metrics"] = workbench.get_scan_folder_metrics(scan_code)
+            collected_results["scan_metrics"] = workbench.scans.get_scan_folder_metrics(scan_code)
         except (ApiError, NetworkError, ScanNotFoundError) as e:
             print(f"Warning: Could not fetch Scan File Metrics: {e}")
 
     if should_fetch_policy:
         try:
-            collected_results["policy_warnings"] = workbench.get_policy_warnings_counter(scan_code)
+            collected_results["policy_warnings"] = workbench.scans.get_policy_warnings_counter(scan_code)
         except (ApiError, NetworkError) as e:
             print(f"Warning: Could not fetch Scan Policy Warnings: {e}")
 
     if should_fetch_vulnerabilities:
         try:
-            vulnerabilities = workbench.list_vulnerabilities(scan_code)
+            vulnerabilities = workbench.vulnerabilities.list_vulnerabilities(scan_code)
             if vulnerabilities:
                 collected_results["vulnerabilities"] = vulnerabilities
         except (ApiError, NetworkError, ScanNotFoundError) as e:
@@ -407,7 +363,7 @@ def save_results_to_file(filepath: str, results: Dict, scan_code: str):
 
 
 def fetch_display_save_results(
-    workbench: "WorkbenchAPI", params: argparse.Namespace, scan_code: str
+    workbench: "WorkbenchClient", params: argparse.Namespace, scan_code: str
 ):
     """
     Orchestrates fetching, displaying, and saving scan results.
@@ -459,111 +415,3 @@ def format_duration(duration_seconds: Optional[Union[int, float]]) -> str:
         return "1 second"
     else:
         return f"{seconds} seconds"
-
-
-def print_operation_summary(
-    params: argparse.Namespace,
-    da_completed: bool,
-    project_code: str,
-    scan_code: str,
-    durations: Dict[str, float] = None,
-):
-    """
-    Prints a standardized summary of the scan operations performed and settings used.
-
-    Args:
-        params: Command line parameters
-        da_completed: Whether dependency analysis completed successfully
-        project_code: Project code associated with the scan
-        scan_code: Scan code of the operation
-        durations: Dictionary containing operation durations in seconds
-    """
-    durations = durations or {}  # Initialize to empty dict if None
-
-    print("\n--- Operation Summary ---")
-
-    print("Workbench Agent Operation Details:")
-    if params.command == "scan":
-        print("  - Method: Code Upload (using --path)")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-        print(
-            f"  - Recursive Archive Extraction: {getattr(params, 'recursively_extract_archives', 'N/A')}"
-        )
-        print(f"  - JAR File Extraction: {getattr(params, 'jar_file_extraction', 'N/A')}")
-    elif params.command == "scan-git":
-        print("  - Method: Git Scan")
-        print(f"  - Git Repository URL: {getattr(params, 'git_url', 'N/A')}")
-        if getattr(params, "git_tag", None):
-            print(f"  - Git Tag: {params.git_tag}")
-        elif getattr(params, "git_branch", None):
-            print(f"  - Git Branch: {params.git_branch}")
-        elif getattr(params, "git_commit", None):
-            print(f"  - Git Commit: {params.git_commit}")
-        else:
-            print("  - Git Branch/Tag/Commit: Not Specified")
-        if getattr(params, "git_depth", None) is not None:
-            print(f"  - Git Clone Depth: {params.git_depth}")
-    elif params.command == "blind-scan":
-        print("  - Method: Blind Scan (hash-based scanning)")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-        print(f"  - FossID CLI Path: {getattr(params, 'fossid_cli_path', '/usr/bin/fossid-cli')}")
-    elif params.command == "import-da":
-        print("  - Method: Dependency Analysis Import")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-    elif params.command == "import-sbom":
-        print("  - Method: SBOM Import")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-    else:
-        print(f"  - Method: Unknown ({params.command})")
-
-    if params.command in ["scan", "scan-git", "blind-scan"]:
-        print("\nScan Parameters:")
-        print(
-            f"  - Auto-ID File Licenses: {'Yes' if getattr(params, 'autoid_file_licenses', False) else 'No'}"
-        )
-        print(
-            f"  - Auto-ID File Copyrights: {'Yes' if getattr(params, 'autoid_file_copyrights', False) else 'No'}"
-        )
-        print(
-            f"  - Auto-ID Pending IDs: {'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
-        )
-        print(f"  - Delta Scan: {'Yes' if getattr(params, 'delta_scan', False) else 'No'}")
-        print(f"  - Identification Reuse: {'Yes' if getattr(params, 'id_reuse', False) else 'No'}")
-        if getattr(params, "id_reuse", False):
-            print(f"    - Reuse Type: {getattr(params, 'id_reuse_type', 'N/A')}")
-            if getattr(params, "id_reuse_type", "") in {"project", "scan"}:
-                print(f"    - Reuse Source Name: {getattr(params, 'id_reuse_source', 'N/A')}")
-
-    print("\nAnalysis Performed:")
-
-    # Determine what scans were actually performed using the same logic as the handlers
-    scan_operations = determine_scans_to_run(params)
-    kb_scan_performed = scan_operations.get("run_kb_scan", False)
-    da_requested = scan_operations.get("run_dependency_analysis", False)
-
-    # Add durations to output only for KB scan and Dependency Analysis
-    if kb_scan_performed:
-        kb_duration_str = (
-            format_duration(durations.get("kb_scan", 0)) if durations.get("kb_scan") else "N/A"
-        )
-        print(f"  - Signature Scan: Yes (Duration: {kb_duration_str})")
-    else:
-        print(f"  - Signature Scan: No")
-
-    if da_completed:
-        da_duration_str = (
-            format_duration(durations.get("dependency_analysis", 0))
-            if durations.get("dependency_analysis")
-            else "N/A"
-        )
-        print(f"  - Dependency Analysis: Yes (Duration: {da_duration_str})")
-    elif params.command == "import-da":
-        print(f"  - Dependency Analysis: Imported")
-    elif params.command == "import-sbom":
-        print(f"  - SBOM Imported: Yes")
-    elif da_requested and not da_completed:
-        print(f"  - Dependency Analysis: Requested but failed/incomplete")
-    else:
-        print(f"  - Dependency Analysis: No")
-
-    print("------------------------------------")

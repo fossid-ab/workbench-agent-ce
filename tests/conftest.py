@@ -5,7 +5,7 @@ import pytest
 import requests
 
 # Import dependencies needed for fixtures
-from workbench_agent.api import WorkbenchAPI
+from workbench_agent.api import WorkbenchClient
 
 # Add a fallback mocker fixture for environments where pytest-mock is not installed
 try:
@@ -71,23 +71,31 @@ def mock_session(mocker):
 
 
 @pytest.fixture
-def workbench_inst(mock_session):
+def workbench_inst(mock_session, mocker):
     """
-    Create a WorkbenchAPI instance with a mock session for testing.
+    Create a WorkbenchClient instance with a mock session for testing.
     """
-    # Create a new instance
-    wb = WorkbenchAPI(
-        api_url="http://dummy.com/api.php", api_user="testuser", api_token="testtoken"
-    )
-    # Replace the session with our mock
-    wb.session = mock_session
-    return wb
+    from unittest.mock import patch
+    # Mock the version check to avoid actual API calls during initialization
+    mock_get_config = mocker.MagicMock(return_value={"version": "24.3.0"})
+    
+    with patch.object(WorkbenchClient, '_check_version_compatibility'):
+        wb = WorkbenchClient(
+            api_url="http://dummy.com/api.php",
+            api_user="testuser",
+            api_token="testtoken"
+        )
+        # Replace the session with our mock
+        wb._base_api.session = mock_session
+        # Mock the internal client's get_config for any version checks
+        wb.internal.get_config = mock_get_config
+        return wb
 
 
 @pytest.fixture
 def mock_workbench(mocker):
     """
-    Create a completely mocked WorkbenchAPI instance for testing (no methods are real).
+    Create a completely mocked WorkbenchClient instance for testing (no methods are real).
     This mock does not use a spec to avoid issues with mocking methods that
     are dynamically added or don't exist on the real class.
     """
@@ -98,7 +106,7 @@ def mock_workbench(mocker):
     mock_wb.ensure_scan_compatibility = mocker.MagicMock()
 
     # Setup common returns
-    mock_wb._send_request.return_value = {"status": "1", "data": {}}
+    mock_wb._base_api._send_request.return_value = {"status": "1", "data": {}}
     return mock_wb
 
 

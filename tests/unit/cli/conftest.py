@@ -52,48 +52,54 @@ def mock_main_dependencies():
     """Mock all main() function dependencies."""
     mocks = {}
 
-    # Mock WorkbenchAPI
-    with patch("workbench_agent.main.WorkbenchAPI") as mock_wb:
-        mocks["workbench_api"] = mock_wb
+    # Mock WorkbenchClient (replaces WorkbenchAPI)
+    with patch("workbench_agent.main.WorkbenchClient") as mock_wb:
+        mocks["workbench_client"] = mock_wb
         mocks["workbench_instance"] = MagicMock()
         mock_wb.return_value = mocks["workbench_instance"]
+        
+        # Mock _check_version_compatibility to avoid actual API calls during init
+        mocks["workbench_instance"]._check_version_compatibility = MagicMock()
 
         # Set up common API methods that handlers might use
-        mocks["workbench_instance"].resolve_project.return_value = "TEST_PROJECT_CODE"
-        mocks["workbench_instance"].resolve_scan.return_value = ("TEST_SCAN_CODE", 123)
-        mocks["workbench_instance"].ensure_scan_is_idle.return_value = None
-
-        # Required attributes for ScanOperationsAPI constructor
-        mocks["workbench_instance"].api_url = "http://localhost/api.php"
-        mocks["workbench_instance"].api_user = "test_user"
-        mocks["workbench_instance"].api_token = "test_token"
-
-        # Set up API methods that return empty/simple data to avoid JSON serialization issues
-        mocks["workbench_instance"].get_scan_folder_metrics.return_value = {}
-        mocks["workbench_instance"].get_dependency_analysis_results.return_value = []
-        mocks["workbench_instance"].get_scan_identified_licenses.return_value = []
-        mocks["workbench_instance"].get_scan_identified_components.return_value = []
-        mocks["workbench_instance"].get_policy_warnings_counter.return_value = {}
-        mocks["workbench_instance"].list_vulnerabilities.return_value = []
+        # Note: These are now accessed via client composition (e.g., workbench.resolver, workbench.scans, etc.)
+        mocks["workbench_instance"].resolver = MagicMock()
+        mocks["workbench_instance"].resolver.resolve_project_and_scan.return_value = ("TEST_PROJECT_CODE", "TEST_SCAN_CODE", False)
+        mocks["workbench_instance"].resolver.find_project.return_value = "TEST_PROJECT_CODE"
+        mocks["workbench_instance"].resolver.find_scan.return_value = ("TEST_SCAN_CODE", 123)
+        
+        mocks["workbench_instance"].scans = MagicMock()
+        mocks["workbench_instance"].scans.get_scan_folder_metrics.return_value = {}
+        mocks["workbench_instance"].scans.get_dependency_analysis_results.return_value = []
+        mocks["workbench_instance"].scans.get_scan_identified_licenses.return_value = []
+        mocks["workbench_instance"].scans.get_scan_identified_components.return_value = []
+        mocks["workbench_instance"].scans.get_policy_warnings_counter.return_value = {}
+        
+        mocks["workbench_instance"].vulnerabilities = MagicMock()
+        mocks["workbench_instance"].vulnerabilities.list_vulnerabilities.return_value = []
 
         # Mock all handlers - need to patch them at the main module level where they're imported
         with (
             patch("workbench_agent.main.handle_scan") as mock_scan,
             patch("workbench_agent.main.handle_scan_git") as mock_scan_git,
+            patch("workbench_agent.main.handle_blind_scan") as mock_blind_scan,
             patch("workbench_agent.main.handle_import_da") as mock_import,
             patch("workbench_agent.main.handle_import_sbom") as mock_import_sbom,
             patch("workbench_agent.main.handle_show_results") as mock_show,
             patch("workbench_agent.main.handle_download_reports") as mock_download,
             patch("workbench_agent.main.handle_evaluate_gates") as mock_gates,
+            patch("workbench_agent.main.handle_quick_scan") as mock_quick_scan,
         ):
 
             mocks["handle_scan"] = mock_scan
             mocks["handle_scan_git"] = mock_scan_git
+            mocks["handle_blind_scan"] = mock_blind_scan
             mocks["handle_import_da"] = mock_import
             mocks["handle_import_sbom"] = mock_import_sbom
             mocks["handle_show_results"] = mock_show
             mocks["handle_download_reports"] = mock_download
             mocks["handle_evaluate_gates"] = mock_gates
+            mocks["handle_quick_scan"] = mock_quick_scan
 
             yield mocks
 
