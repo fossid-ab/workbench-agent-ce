@@ -2,12 +2,8 @@ import logging
 import sys
 
 # Package imports
-from workbench_agent.api import WorkbenchAPI
 from workbench_agent.cli import parse_cmdline_args
-from workbench_agent.utilities.config_display import (
-    print_configuration,
-    print_workbench_connection_info,
-)
+from workbench_agent.utilities.config_display import print_configuration
 from workbench_agent.exceptions import (
     ApiError,
     AuthenticationError,
@@ -22,7 +18,7 @@ from workbench_agent.exceptions import (
     ValidationError,
 )
 
-# Import all handlers from the handlers package
+# Import handlers from handlers package (new architecture)
 from workbench_agent.handlers import (
     handle_blind_scan,
     handle_download_reports,
@@ -34,6 +30,7 @@ from workbench_agent.handlers import (
     handle_show_results,
     handle_quick_scan,
 )
+from workbench_agent.api.workbench_client import WorkbenchClient
 
 
 def setup_logging(log_level: str) -> logging.Logger:
@@ -117,7 +114,7 @@ def main() -> int:
 
     Detects whether legacy or modern interface is being used:
     - Legacy: Delegates directly to original-wb-agent.py
-    - Modern: Uses new command-based handlers
+    - Modern: Uses new command-based handlers with WorkbenchClient architecture
 
     Returns:
         int: Exit code (0 for success, non-zero for failure)
@@ -136,23 +133,23 @@ def main() -> int:
         # Setup logging for modern commands
         logger = setup_logging(args.log)
 
-        # Print configuration for verification
-        print_configuration(args)
-
         logger.info("FossID Workbench Agent starting...")
         logger.debug(f"Command line arguments: {vars(args)}")
 
         # Initialize Workbench API client
-        logger.info("Initializing Workbench API client...")
-        workbench = WorkbenchAPI(
+        # (using new WorkbenchClient architecture)
+        logger.info("Initializing WorkbenchClient...")
+        workbench = WorkbenchClient(
             api_url=args.api_url,
             api_user=args.api_user,
             api_token=args.api_token,
         )
-        logger.info("Workbench API client initialized.")
+        logger.info("WorkbenchClient initialized.")
 
-        # Display Workbench connection information
-        print_workbench_connection_info(args, workbench)
+        # Print configuration for verification if requested
+        # (includes connection info if workbench client is provided)
+        if getattr(args, "show_config", False):
+            print_configuration(args, workbench)
 
         # Command dispatch for modern commands
         COMMAND_HANDLERS = {

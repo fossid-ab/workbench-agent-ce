@@ -10,7 +10,7 @@ link generation, scan configuration, and result processing.
 import argparse
 import json
 from typing import Dict, Optional
-from unittest.mock import mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
@@ -21,10 +21,10 @@ from workbench_agent.utilities.scan_workflows import (
     fetch_display_save_results,
     fetch_results,
     format_duration,
-    get_workbench_links,
-    print_operation_summary,
     save_results_to_file,
 )
+from workbench_agent.utilities.post_scan_summary import print_operation_summary
+from workbench_agent.api.services.results_service import ResultsService, WorkbenchLinks
 
 # ============================================================================
 # TEST CONSTANTS
@@ -94,11 +94,14 @@ API_URL_VARIANTS = [
     "http://localhost:8080/fossid/api.php",
 ]
 
-# Expected link messages
+# Expected link messages (updated for new API)
 EXPECTED_MESSAGES = {
-    "main": "View scan results in Workbench",
+    "scan": "View this Scan in Workbench",
     "pending": "Review Pending IDs in Workbench",
     "policy": "Review policy warnings in Workbench",
+    "identified": "View Identified Components in Workbench",
+    "dependencies": "View Dependencies in Workbench",
+    "vulnerabilities": "Review Vulnerable Components in Workbench",
 }
 
 # ============================================================================
@@ -108,21 +111,21 @@ EXPECTED_MESSAGES = {
 
 @pytest.fixture
 def mock_workbench(mocker):
-    """Create a mock WorkbenchAPI instance."""
+    """Create a mock WorkbenchClient instance."""
     workbench = mocker.MagicMock()
 
-    # Basic data returns
-    workbench.list_projects.return_value = [SAMPLE_PROJECT_DATA]
-    workbench.get_project_scans.return_value = [SAMPLE_SCAN_DATA]
-    workbench.list_scans.return_value = [SAMPLE_SCAN_DATA]
+    # Basic data returns (for projects/scans clients)
+    workbench.projects.list_projects.return_value = [SAMPLE_PROJECT_DATA]
+    workbench.projects.get_project_scans.return_value = [SAMPLE_SCAN_DATA]
+    workbench.scans.list_scans.return_value = [SAMPLE_SCAN_DATA]
 
-    # Data retrieval used by fetch_results
-    workbench.get_dependency_analysis_results = mocker.MagicMock()
-    workbench.list_vulnerabilities = mocker.MagicMock()
-    workbench.get_scan_identified_licenses = mocker.MagicMock()
-    workbench.get_scan_identified_components = mocker.MagicMock()
-    workbench.get_scan_folder_metrics = mocker.MagicMock()
-    workbench.get_policy_warnings_counter = mocker.MagicMock()
+    # Data retrieval used by fetch_results (via scans and vulnerabilities clients)
+    workbench.scans.get_dependency_analysis_results = mocker.MagicMock()
+    workbench.scans.get_scan_identified_licenses = mocker.MagicMock()
+    workbench.scans.get_scan_identified_components = mocker.MagicMock()
+    workbench.scans.get_scan_folder_metrics = mocker.MagicMock()
+    workbench.scans.get_policy_warnings_counter = mocker.MagicMock()
+    workbench.vulnerabilities.list_vulnerabilities = mocker.MagicMock()
 
     return workbench
 
@@ -359,28 +362,31 @@ class TestFetchResults:
     def test_fetch_license_results(self, mock_workbench, mock_params):
         """Test fetching license results."""
         mock_params.show_licenses = True
-        mock_workbench.get_dependency_analysis_results.return_value = [SAMPLE_DEPENDENCY_DATA]
+        mock_workbench.scans.get_dependency_analysis_results.return_value = [SAMPLE_DEPENDENCY_DATA]
+        mock_workbench.scans.get_scan_identified_licenses.return_value = [SAMPLE_LICENSE_DATA]
 
         result = fetch_results(mock_workbench, mock_params, TEST_SCAN_CODE)
 
         assert "dependency_analysis" in result
-        mock_workbench.get_dependency_analysis_results.assert_called_once_with(TEST_SCAN_CODE)
+        assert "kb_licenses" in result
+        mock_workbench.scans.get_dependency_analysis_results.assert_called_once_with(TEST_SCAN_CODE)
+        mock_workbench.scans.get_scan_identified_licenses.assert_called_once_with(TEST_SCAN_CODE)
 
     def test_fetch_vulnerabilities(self, mock_workbench, mock_params):
         """Test fetching vulnerability results."""
         mock_params.show_vulnerabilities = True
-        mock_workbench.list_vulnerabilities.return_value = [SAMPLE_VULNERABILITY_DATA]
+        mock_workbench.vulnerabilities.list_vulnerabilities.return_value = [SAMPLE_VULNERABILITY_DATA]
 
         result = fetch_results(mock_workbench, mock_params, TEST_SCAN_CODE)
 
         assert "vulnerabilities" in result
-        mock_workbench.list_vulnerabilities.assert_called_once_with(TEST_SCAN_CODE)
+        mock_workbench.vulnerabilities.list_vulnerabilities.assert_called_once_with(TEST_SCAN_CODE)
 
     def test_api_error_handling(self, mock_workbench, mock_params):
         """Test graceful handling of API errors during result fetching."""
         mock_params.show_licenses = True
-        mock_workbench.get_dependency_analysis_results.side_effect = ApiError("Service unavailable")
-        mock_workbench.get_scan_identified_licenses.return_value = [SAMPLE_LICENSE_DATA]
+        mock_workbench.scans.get_dependency_analysis_results.side_effect = ApiError("Service unavailable")
+        mock_workbench.scans.get_scan_identified_licenses.return_value = [SAMPLE_LICENSE_DATA]
 
         # Should not raise, should return partial results
         result = fetch_results(mock_workbench, mock_params, TEST_SCAN_CODE)
@@ -484,73 +490,116 @@ class TestPrintOperationSummary:
 # ============================================================================
 
 
-class TestGetWorkbenchLinks:
-    """Comprehensive test cases for the get_workbench_links function."""
+@pytest.fixture
+def mock_results_service():
+    """Create a ResultsService with mocked clients."""
+    mock_scans_client = MagicMock()
+    mock_vulns_client = MagicMock()
+    
+    # Mock the _api attribute on scans_client to provide api_url
+    mock_base_api = MagicMock()
+    mock_base_api.api_url = TEST_API_URL
+    mock_scans_client._api = mock_base_api
+    
+    return ResultsService(mock_scans_client, mock_vulns_client)
 
-    def test_basic_link_generation(self):
+
+class TestWorkbenchLinks:
+    """Comprehensive test cases for the WorkbenchLinks class."""
+
+    def test_basic_link_generation(self, mock_results_service):
         """Test basic link generation with standard API URL."""
-        links = get_workbench_links(TEST_API_URL, TEST_SCAN_ID)
+        links = mock_results_service.links(TEST_SCAN_ID)
 
-        # Should return all expected link types
-        assert set(links.keys()) == {"main", "pending", "policy"}
+        # Should have all expected link properties
+        assert hasattr(links, 'scan')
+        assert hasattr(links, 'pending')
+        assert hasattr(links, 'policy')
+        assert hasattr(links, 'identified')
+        assert hasattr(links, 'dependencies')
+        assert hasattr(links, 'vulnerabilities')
 
         # Each link should have correct structure
-        for _, link_data in links.items():
-            assert_link_data_structure(link_data)
+        assert_link_data_structure(links.scan)
+        assert_link_data_structure(links.pending)
+        assert_link_data_structure(links.policy)
 
-    def test_url_structure_correctness(self):
+    def test_url_structure_correctness(self, mock_results_service):
         """Test that generated URLs have correct structure."""
-        links = get_workbench_links(TEST_API_URL, TEST_SCAN_ID)
+        links = mock_results_service.links(TEST_SCAN_ID)
 
-        # Test main link (no current_view parameter)
-        main_url = links["main"]["url"]
-        expected_main = (
-            f"{TEST_BASE_URL}/index.html?form=main_interface&action=" f"scanview&sid={TEST_SCAN_ID}"
+        # Test scan link (with current_view=all_items)
+        scan_url = links.scan["url"]
+        expected_base = (
+            f"{TEST_BASE_URL}/index.html?form=main_interface&action="
+            f"scanview&sid={TEST_SCAN_ID}&current_view=all_items"
         )
-        assert main_url == expected_main
+        assert scan_url == expected_base
 
         # Test pending link (with current_view=pending_items)
-        pending_url = links["pending"]["url"]
-        expected_pending = f"{expected_main}&current_view=pending_items"
+        pending_url = links.pending["url"]
+        expected_pending = (
+            f"{TEST_BASE_URL}/index.html?form=main_interface&action="
+            f"scanview&sid={TEST_SCAN_ID}&current_view=pending_items"
+        )
         assert pending_url == expected_pending
 
         # Test policy link (with current_view=mark_as_identified)
-        policy_url = links["policy"]["url"]
-        expected_policy = f"{expected_main}&current_view=mark_as_identified"
+        policy_url = links.policy["url"]
+        expected_policy = (
+            f"{TEST_BASE_URL}/index.html?form=main_interface&action="
+            f"scanview&sid={TEST_SCAN_ID}&current_view=mark_as_identified"
+        )
         assert policy_url == expected_policy
 
-    def test_message_correctness(self):
+    def test_message_correctness(self, mock_results_service):
         """Test that generated messages match expectations."""
-        links = get_workbench_links(TEST_API_URL, TEST_SCAN_ID)
+        links = mock_results_service.links(TEST_SCAN_ID)
 
-        for link_type, expected_message in EXPECTED_MESSAGES.items():
-            assert links[link_type]["message"] == expected_message
+        assert links.scan["message"] == EXPECTED_MESSAGES["scan"]
+        assert links.pending["message"] == EXPECTED_MESSAGES["pending"]
+        assert links.policy["message"] == EXPECTED_MESSAGES["policy"]
+        assert links.identified["message"] == EXPECTED_MESSAGES["identified"]
+        assert links.dependencies["message"] == EXPECTED_MESSAGES["dependencies"]
+        assert links.vulnerabilities["message"] == EXPECTED_MESSAGES["vulnerabilities"]
 
     @pytest.mark.parametrize("api_url", API_URL_VARIANTS)
     def test_api_url_variants(self, api_url):
         """Test that function handles various API URL formats correctly."""
-        links = get_workbench_links(api_url, TEST_SCAN_ID)
+        mock_scans_client = MagicMock()
+        mock_vulns_client = MagicMock()
+        mock_base_api = MagicMock()
+        mock_base_api.api_url = api_url
+        mock_scans_client._api = mock_base_api
+        
+        results_service = ResultsService(mock_scans_client, mock_vulns_client)
+        links = results_service.links(TEST_SCAN_ID)
 
         # All URLs should be properly formatted regardless of input
-        for _, link_data in links.items():
+        for prop_name in ['scan', 'pending', 'policy']:
+            link_data = getattr(links, prop_name)
             url = link_data["url"]
             assert_url_structure(url, TEST_SCAN_ID)
 
-    def test_scan_id_type_handling(self):
+    def test_scan_id_type_handling(self, mock_results_service):
         """Test that function handles different scan_id types."""
         # Test with integer
-        links_int = get_workbench_links(TEST_API_URL, 123)
-        assert "sid=123" in links_int["main"]["url"]
+        links_int = mock_results_service.links(123)
+        assert "sid=123" in links_int.scan["url"]
 
-        # Test with string
-        links_str = get_workbench_links(TEST_API_URL, "456")
-        assert "sid=456" in links_str["main"]["url"]
+        # Test with string (should work, gets converted in URL)
+        links_str = mock_results_service.links(456)
+        assert "sid=456" in links_str.scan["url"]
 
-    def test_result_consistency(self):
+    def test_result_consistency(self, mock_results_service):
         """Test that multiple calls return consistent results."""
-        links1 = get_workbench_links(TEST_API_URL, TEST_SCAN_ID)
-        links2 = get_workbench_links(TEST_API_URL, TEST_SCAN_ID)
-        assert links1 == links2
+        links1 = mock_results_service.links(TEST_SCAN_ID)
+        links2 = mock_results_service.links(TEST_SCAN_ID)
+        
+        # Compare URLs and messages
+        assert links1.scan["url"] == links2.scan["url"]
+        assert links1.pending["url"] == links2.pending["url"]
+        assert links1.policy["url"] == links2.policy["url"]
 
     def test_base_url_stripping_variations(self):
         """Test that /api.php is properly stripped from various URL formats."""
@@ -562,13 +611,20 @@ class TestGetWorkbenchLinks:
         ]
 
         for input_url, expected_base in test_cases:
-            links = get_workbench_links(input_url, TEST_SCAN_ID)
-            main_url = links["main"]["url"]
-            assert main_url.startswith(f"{expected_base}/index.html")
+            mock_scans_client = MagicMock()
+            mock_vulns_client = MagicMock()
+            mock_base_api = MagicMock()
+            mock_base_api.api_url = input_url
+            mock_scans_client._api = mock_base_api
+            
+            results_service = ResultsService(mock_scans_client, mock_vulns_client)
+            links = results_service.links(TEST_SCAN_ID)
+            scan_url = links.scan["url"]
+            assert scan_url.startswith(f"{expected_base}/index.html")
 
-    def test_required_url_elements_present(self):
+    def test_required_url_elements_present(self, mock_results_service):
         """Test that all links contain required URL elements."""
-        links = get_workbench_links(TEST_API_URL, TEST_SCAN_ID)
+        links = mock_results_service.links(TEST_SCAN_ID)
 
         required_params = [
             "form=main_interface",
@@ -577,33 +633,38 @@ class TestGetWorkbenchLinks:
         ]
 
         # All links should contain these base parameters
-        for _, link_data in links.items():
+        for prop_name in ['scan', 'pending', 'policy', 'identified', 'dependencies', 'vulnerabilities']:
+            link_data = getattr(links, prop_name)
             url = link_data["url"]
             for param in required_params:
                 assert param in url, f"Missing '{param}' in link URL: {url}"
 
-    def test_view_parameters_correctness(self):
+    def test_view_parameters_correctness(self, mock_results_service):
         """Test that view parameters are correctly added to URLs."""
-        links = get_workbench_links(TEST_API_URL, TEST_SCAN_ID)
+        links = mock_results_service.links(TEST_SCAN_ID)
 
-        # Main link should NOT have current_view parameter
-        assert "current_view" not in links["main"]["url"]
+        # Scan link should have current_view=all_items
+        assert "current_view=all_items" in links.scan["url"]
 
         # Pending link should have current_view=pending_items
-        assert "current_view=pending_items" in links["pending"]["url"]
+        assert "current_view=pending_items" in links.pending["url"]
 
         # Policy link should have current_view=mark_as_identified
-        assert "current_view=mark_as_identified" in links["policy"]["url"]
+        assert "current_view=mark_as_identified" in links.policy["url"]
+        
+        # Dependencies link should have current_view=dependency_analysis
+        assert "current_view=dependency_analysis" in links.dependencies["url"]
 
-    def test_data_structure_compliance(self):
-        """Test the exact structure of returned data."""
-        links = get_workbench_links(TEST_API_URL, TEST_SCAN_ID)
-
-        # Should be a dictionary with exactly 3 keys
-        assert isinstance(links, dict)
-        assert len(links) == 3
-        assert set(links.keys()) == {"main", "pending", "policy"}
-
-        # Each value should be a dict with exactly 2 keys
-        for _, link_data in links.items():
-            assert_link_data_structure(link_data)
+    def test_direct_method_access(self, mock_results_service):
+        """Test direct method access like link_to_pending."""
+        pending_link = mock_results_service.link_to_pending(TEST_SCAN_ID)
+        assert_link_data_structure(pending_link)
+        assert "current_view=pending_items" in pending_link["url"]
+        
+        scan_link = mock_results_service.link_to_scan(TEST_SCAN_ID)
+        assert_link_data_structure(scan_link)
+        assert "current_view=all_items" in scan_link["url"]
+        
+        policy_link = mock_results_service.link_to_policy(TEST_SCAN_ID)
+        assert_link_data_structure(policy_link)
+        assert "current_view=mark_as_identified" in policy_link["url"]

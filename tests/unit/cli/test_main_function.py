@@ -38,7 +38,7 @@ class TestMainFunctionSuccess:
 
         assert result == 0
         mock_main_dependencies["handle_scan"].assert_called_once()
-        mock_main_dependencies["workbench_api"].assert_called_once_with(
+        mock_main_dependencies["workbench_client"].assert_called_once_with(
             api_url=mock_args.api_url, api_user=mock_args.api_user, api_token=mock_args.api_token
         )
 
@@ -117,9 +117,9 @@ class TestMainFunctionExceptionHandling:
 
         with (
             patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args),
-            patch("workbench_agent.main.WorkbenchAPI") as mock_api,
+            patch("workbench_agent.main.WorkbenchClient") as mock_client,
         ):
-            mock_api.side_effect = ConfigurationError("Test config error")
+            mock_client.side_effect = ConfigurationError("Test config error")
 
             result = main()
 
@@ -131,9 +131,9 @@ class TestMainFunctionExceptionHandling:
 
         with (
             patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args),
-            patch("workbench_agent.main.WorkbenchAPI") as mock_api,
+            patch("workbench_agent.main.WorkbenchClient") as mock_client,
         ):
-            mock_api.side_effect = AuthenticationError("Auth error")
+            mock_client.side_effect = AuthenticationError("Auth error")
 
             result = main()
 
@@ -484,7 +484,7 @@ class TestLegacyRouting:
             patch("sys.argv", modern_args),
             patch("workbench_agent.main.uses_legacy_interface", return_value=False),
             patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args),
-            patch("workbench_agent.main.WorkbenchAPI") as mock_api,
+            patch("workbench_agent.main.WorkbenchClient") as mock_client,
             patch("workbench_agent.main.handle_scan", return_value=True) as mock_handler,
         ):
 

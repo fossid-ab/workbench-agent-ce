@@ -9,7 +9,7 @@ from workbench_agent.main import main
 class TestDownloadReportsIntegration:
     """Integration tests for the download-reports command"""
 
-    def test_download_reports_success_spdx(self, mocker, tmp_path, capsys):
+    def test_download_reports_success_spdx(self, mock_workbench_api, tmp_path, capsys):
         """
         Test download-reports command for SPDX report generation.
         """
@@ -17,69 +17,54 @@ class TestDownloadReportsIntegration:
         report_dir = tmp_path / "reports"
         report_dir.mkdir()
 
-        # Mock the resolver methods
-        mocker.patch(
-            "workbench_agent.api.helpers.project_scan_resolvers.ResolveWorkbenchProjectScan.resolve_project",
-            return_value="PRJ001",
-        )
-        mocker.patch(
-            "workbench_agent.api.helpers.project_scan_resolvers.ResolveWorkbenchProjectScan.resolve_scan",
-            return_value=("TSC", 123),
-        )
-
-        # Mock the report generation to return process id
-        mocker.patch(
-            "workbench_agent.api.scans_api.ScansAPI.generate_scan_report",
-            return_value=12345,
-        )
-
-        # Mock unified waiter for report generation
-        mocker.patch(
-            "workbench_agent.api.workbench_api.WorkbenchAPI.check_and_wait_for_process",
-            return_value=None,
-        )
-
-        # Mock the report download
-        mocker.patch(
-            "workbench_agent.api.scans_api.ScansAPI.download_scan_report",
-            return_value=b"Mock SPDX report content",
+        # Mock report service methods
+        from workbench_agent.api.utils.process_waiter import WaitResult
+        
+        mock_workbench_api.reports.SCAN_REPORT_TYPES = {"html", "spdx", "spdx_lite", "cyclone_dx", "xlsx", "dynamic_top_matched_components", "string_match"}
+        mock_workbench_api.reports.generate_scan_report.return_value = 12345
+        mock_workbench_api.reports.download_scan_report.return_value = b"Mock SPDX report content"
+        mock_workbench_api.reports.save_report.return_value = str(report_dir / "report.rdf")
+        mock_workbench_api.waiting.wait_for_scan_report_completion.return_value = WaitResult(
+            status_data={"status": "FINISHED"},
+            duration=5.0,
+            success=True
         )
 
         # Mock file operations
-        mocker.patch("os.makedirs", return_value=None)
-        mocker.patch("builtins.open", new_callable=mock_open)
+        with patch("os.makedirs", return_value=None), \
+             patch("builtins.open", new_callable=mock_open):
 
-        args = [
-            "workbench-agent",
-            "download-reports",
-            "--api-url",
-            "http://dummy.com",
-            "--api-user",
-            "test",
-            "--api-token",
-            "token",
-            "--project-name",
-            "TestProj",
-            "--scan-name",
-            "TestScan",
-            "--report-scope",
-            "scan",
-            "--report-type",
-            "spdx",
-            "--report-save-path",
-            str(report_dir),
-        ]
+            args = [
+                "workbench-agent",
+                "download-reports",
+                "--api-url",
+                "http://dummy.com",
+                "--api-user",
+                "test",
+                "--api-token",
+                "token",
+                "--project-name",
+                "TestProj",
+                "--scan-name",
+                "TestScan",
+                "--report-scope",
+                "scan",
+                "--report-type",
+                "spdx",
+                "--report-save-path",
+                str(report_dir),
+            ]
 
-        with patch.object(sys, "argv", args):
-            return_code = main()
+            with patch.object(sys, "argv", args):
+                return_code = main()
 
-        assert return_code == 0, "download-reports should succeed"
+            assert return_code == 0, "download-reports should succeed"
 
-        captured = capsys.readouterr()
-        combined_output = captured.out + captured.err
-        assert "Command: download-reports" in combined_output
+            captured = capsys.readouterr()
+            combined_output = captured.out + captured.err
+            assert "DOWNLOAD-REPORTS" in combined_output
 
-    def test_download_reports_success_multiple_types(self, mocker, tmp_path, capsys):
+    def test_download_reports_success_multiple_types(self, mock_workbench_api, tmp_path, capsys):
         """
         Test download-reports command for multiple report types.
         """
@@ -87,73 +72,58 @@ class TestDownloadReportsIntegration:
         report_dir = tmp_path / "reports"
         report_dir.mkdir()
 
-        # Mock the resolver methods
-        mocker.patch(
-            "workbench_agent.api.helpers.project_scan_resolvers.ResolveWorkbenchProjectScan.resolve_project",
-            return_value="PRJ001",
-        )
-        mocker.patch(
-            "workbench_agent.api.helpers.project_scan_resolvers.ResolveWorkbenchProjectScan.resolve_scan",
-            return_value=("TSC", 123),
-        )
-
-        # Mock multiple report generations
-        mocker.patch(
-            "workbench_agent.api.scans_api.ScansAPI.generate_scan_report",
-            side_effect=[12345, 12346, 12347],
-        )
-
-        # Mock unified waiter for report generation
-        mocker.patch(
-            "workbench_agent.api.workbench_api.WorkbenchAPI.check_and_wait_for_process",
-            return_value=None,
-        )
-
-        # Mock the report downloads
-        mocker.patch(
-            "workbench_agent.api.scans_api.ScansAPI.download_scan_report",
-            side_effect=[
-                b"Mock SPDX report content",
-                b"Mock CycloneDX report content",
-                b"Mock XLSX report content",
-            ],
+        # Mock report service methods
+        from workbench_agent.api.utils.process_waiter import WaitResult
+        
+        mock_workbench_api.reports.SCAN_REPORT_TYPES = {"html", "spdx", "spdx_lite", "cyclone_dx", "xlsx", "dynamic_top_matched_components", "string_match"}
+        mock_workbench_api.reports.generate_scan_report.side_effect = [12345, 12346, 12347]
+        mock_workbench_api.reports.download_scan_report.side_effect = [
+            b"Mock SPDX report content",
+            b"Mock CycloneDX report content",
+            b"Mock XLSX report content",
+        ]
+        mock_workbench_api.reports.save_report.return_value = str(report_dir / "report.rdf")
+        mock_workbench_api.waiting.wait_for_scan_report_completion.return_value = WaitResult(
+            status_data={"status": "FINISHED"},
+            duration=5.0,
+            success=True
         )
 
         # Mock file operations
-        mocker.patch("os.makedirs", return_value=None)
-        mocker.patch("builtins.open", new_callable=mock_open)
+        with patch("os.makedirs", return_value=None), \
+             patch("builtins.open", new_callable=mock_open):
 
-        args = [
-            "workbench-agent",
-            "download-reports",
-            "--api-url",
-            "http://dummy.com",
-            "--api-user",
-            "test",
-            "--api-token",
-            "token",
-            "--project-name",
-            "TestProj",
-            "--scan-name",
-            "TestScan",
-            "--report-scope",
-            "scan",
-            "--report-type",
-            "spdx,cyclone_dx,xlsx",
-            "--report-save-path",
-            str(report_dir),
-        ]
+            args = [
+                "workbench-agent",
+                "download-reports",
+                "--api-url",
+                "http://dummy.com",
+                "--api-user",
+                "test",
+                "--api-token",
+                "token",
+                "--project-name",
+                "TestProj",
+                "--scan-name",
+                "TestScan",
+                "--report-scope",
+                "scan",
+                "--report-type",
+                "spdx,cyclone_dx,xlsx",
+                "--report-save-path",
+                str(report_dir),
+            ]
 
-        with patch.object(sys, "argv", args):
-            return_code = main()
+            with patch.object(sys, "argv", args):
+                return_code = main()
 
-        assert return_code == 0, "download-reports with multiple types should succeed"
+            assert return_code == 0, "download-reports with multiple types should succeed"
 
-        captured = capsys.readouterr()
-        combined_output = captured.out + captured.err
-        assert "Command: download-reports" in combined_output
+            captured = capsys.readouterr()
+            combined_output = captured.out + captured.err
+            assert "DOWNLOAD-REPORTS" in combined_output
 
-    def test_download_reports_project_scope(self, mocker, tmp_path, capsys):
+    def test_download_reports_project_scope(self, mock_workbench_api, tmp_path, capsys):
         """
         Test download-reports command with project scope.
         """
@@ -161,63 +131,52 @@ class TestDownloadReportsIntegration:
         report_dir = tmp_path / "reports"
         report_dir.mkdir()
 
-        # Mock the resolver methods
-        mocker.patch(
-            "workbench_agent.api.helpers.project_scan_resolvers.ResolveWorkbenchProjectScan.resolve_project",
-            return_value="PRJ001",
-        )
-
-        # Mock project report generation
-        mocker.patch(
-            "workbench_agent.api.projects_api.ProjectsAPI.generate_project_report",
-            return_value=12345,
-        )
-
-        # Mock unified waiter for project report generation
-        mocker.patch(
-            "workbench_agent.api.workbench_api.WorkbenchAPI.check_and_wait_for_process",
-            return_value=None,
-        )
-
-        # Mock the report download
-        mocker.patch(
-            "workbench_agent.api.projects_api.ProjectsAPI.download_project_report",
-            return_value=b"Mock project SPDX report content",
+        # Mock report service methods
+        from workbench_agent.api.utils.process_waiter import WaitResult
+        
+        mock_workbench_api.reports.PROJECT_REPORT_TYPES = {"xlsx", "spdx", "spdx_lite", "cyclone_dx"}
+        mock_workbench_api.reports.generate_project_report.return_value = 12345
+        mock_workbench_api.reports.download_project_report.return_value = b"Mock project SPDX report content"
+        mock_workbench_api.reports.save_report.return_value = str(report_dir / "report.rdf")
+        mock_workbench_api.waiting.wait_for_project_report_completion.return_value = WaitResult(
+            status_data={"status": "FINISHED"},
+            duration=5.0,
+            success=True
         )
 
         # Mock file operations
-        mocker.patch("os.makedirs", return_value=None)
-        mocker.patch("builtins.open", new_callable=mock_open)
+        with patch("os.makedirs", return_value=None), \
+             patch("builtins.open", new_callable=mock_open):
 
-        args = [
-            "workbench-agent",
-            "download-reports",
-            "--api-url",
-            "http://dummy.com",
-            "--api-user",
-            "test",
-            "--api-token",
-            "token",
-            "--project-name",
-            "TestProj",
-            "--report-scope",
-            "project",
-            "--report-type",
-            "spdx",
-            "--report-save-path",
-            str(report_dir),
-        ]
+            args = [
+                "workbench-agent",
+                "download-reports",
+                "--api-url",
+                "http://dummy.com",
+                "--api-user",
+                "test",
+                "--api-token",
+                "token",
+                "--project-name",
+                "TestProj",
+                "--report-scope",
+                "project",
+                "--report-type",
+                "spdx",
+                "--report-save-path",
+                str(report_dir),
+            ]
 
-        with patch.object(sys, "argv", args):
-            return_code = main()
+            with patch.object(sys, "argv", args):
+                return_code = main()
 
-        assert return_code == 0, "download-reports with project scope should succeed"
+            assert return_code == 0, "download-reports with project scope should succeed"
 
-        captured = capsys.readouterr()
-        combined_output = captured.out + captured.err
-        assert "Command: download-reports" in combined_output
+            captured = capsys.readouterr()
+            combined_output = captured.out + captured.err
+            assert "DOWNLOAD-REPORTS" in combined_output
 
-    def test_download_reports_project_not_found(self, mocker, tmp_path, capsys):
+    def test_download_reports_project_not_found(self, mock_workbench_api, tmp_path, capsys):
         """
         Test download-reports command when project is not found (should fail).
         """
@@ -227,10 +186,7 @@ class TestDownloadReportsIntegration:
         # Mock resolver to raise ProjectNotFoundError
         from workbench_agent.exceptions import ProjectNotFoundError
 
-        mocker.patch(
-            "workbench_agent.api.helpers.project_scan_resolvers.ResolveWorkbenchProjectScan.resolve_project",
-            side_effect=ProjectNotFoundError("Project 'NonExistentProj' not found"),
-        )
+        mock_workbench_api.resolver.find_project.side_effect = ProjectNotFoundError("Project 'NonExistentProj' not found")
 
         args = [
             "workbench-agent",
@@ -262,26 +218,17 @@ class TestDownloadReportsIntegration:
         combined_output = captured.out + captured.err
         assert any(term in combined_output.lower() for term in ["not found", "error", "project"])
 
-    def test_download_reports_scan_not_found(self, mocker, tmp_path, capsys):
+    def test_download_reports_scan_not_found(self, mock_workbench_api, tmp_path, capsys):
         """
         Test download-reports command when scan is not found (should fail).
         """
         report_dir = tmp_path / "reports"
         report_dir.mkdir()
 
-        # Mock project resolution to succeed
-        mocker.patch(
-            "workbench_agent.api.helpers.project_scan_resolvers.ResolveWorkbenchProjectScan.resolve_project",
-            return_value="PRJ001",
-        )
-
         # Mock scan resolver to raise ScanNotFoundError
         from workbench_agent.exceptions import ScanNotFoundError
 
-        mocker.patch(
-            "workbench_agent.api.helpers.project_scan_resolvers.ResolveWorkbenchProjectScan.resolve_scan",
-            side_effect=ScanNotFoundError("Scan 'NonExistentScan' not found in project 'TestProj'"),
-        )
+        mock_workbench_api.resolver.find_scan.side_effect = ScanNotFoundError("Scan 'NonExistentScan' not found in project 'TestProj'")
 
         args = [
             "workbench-agent",
@@ -313,54 +260,43 @@ class TestDownloadReportsIntegration:
         combined_output = captured.out + captured.err
         assert any(term in combined_output.lower() for term in ["not found", "error", "scan"])
 
-    def test_download_reports_invalid_directory(self, mocker, tmp_path, capsys):
+    def test_download_reports_invalid_directory(self, mock_workbench_api, tmp_path, capsys):
         """
         Test download-reports command with invalid save directory.
         """
         # Use a path that doesn't exist and can't be created
         invalid_path = "/root/nonexistent/path"
 
-        # Mock the resolver methods to succeed
-        mocker.patch(
-            "workbench_agent.api.helpers.project_scan_resolvers.ResolveWorkbenchProjectScan.resolve_project",
-            return_value="PRJ001",
-        )
-        mocker.patch(
-            "workbench_agent.api.helpers.project_scan_resolvers.ResolveWorkbenchProjectScan.resolve_scan",
-            return_value=("TSC", 123),
-        )
-
         # Mock os.makedirs to raise a PermissionError
-        mocker.patch("os.makedirs", side_effect=PermissionError("Permission denied"))
+        with patch("os.makedirs", side_effect=PermissionError("Permission denied")):
+            args = [
+                "workbench-agent",
+                "download-reports",
+                "--api-url",
+                "http://dummy.com",
+                "--api-user",
+                "test",
+                "--api-token",
+                "token",
+                "--project-name",
+                "TestProj",
+                "--scan-name",
+                "TestScan",
+                "--report-scope",
+                "scan",
+                "--report-type",
+                "spdx",
+                "--report-save-path",
+                invalid_path,
+            ]
 
-        args = [
-            "workbench-agent",
-            "download-reports",
-            "--api-url",
-            "http://dummy.com",
-            "--api-user",
-            "test",
-            "--api-token",
-            "token",
-            "--project-name",
-            "TestProj",
-            "--scan-name",
-            "TestScan",
-            "--report-scope",
-            "scan",
-            "--report-type",
-            "spdx",
-            "--report-save-path",
-            invalid_path,
-        ]
+            with patch.object(sys, "argv", args):
+                return_code = main()
 
-        with patch.object(sys, "argv", args):
-            return_code = main()
-
-        # Should fail due to directory creation error
-        assert return_code != 0, "download-reports should fail when directory cannot be created"
-        captured = capsys.readouterr()
-        combined_output = captured.out + captured.err
-        assert any(
-            term in combined_output.lower() for term in ["permission", "error", "directory", "path"]
-        )
+            # Should fail due to directory creation error
+            assert return_code != 0, "download-reports should fail when directory cannot be created"
+            captured = capsys.readouterr()
+            combined_output = captured.out + captured.err
+            assert any(
+                term in combined_output.lower() for term in ["permission", "error", "directory", "path"]
+            )

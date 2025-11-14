@@ -8,137 +8,6 @@ from typing import TYPE_CHECKING
 from workbench_agent import __version__
 
 
-class UserProvidedAction(argparse.Action):
-    """
-    Custom argparse Action that tracks which arguments were explicitly provided by the user.
-    """
-
-    def __init__(self, option_strings, dest, **kwargs):
-        super().__init__(option_strings, dest, **kwargs)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        # Initialize the set if it doesn't exist
-        if not hasattr(namespace, "_user_provided"):
-            namespace._user_provided = set()
-
-        # Add this argument to the user-provided set
-        namespace._user_provided.add(self.dest)
-
-        # Perform the normal action behavior
-        setattr(namespace, self.dest, values)
-
-
-class UserProvidedStoreTrueAction(argparse._StoreTrueAction):
-    """Custom action for store_true that tracks user-provided arguments."""
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        if not hasattr(namespace, "_user_provided"):
-            namespace._user_provided = set()
-        namespace._user_provided.add(self.dest)
-        super().__call__(parser, namespace, values, option_string)
-
-
-class UserProvidedStoreFalseAction(argparse._StoreFalseAction):
-    """Custom action for store_false that tracks user-provided arguments."""
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        if not hasattr(namespace, "_user_provided"):
-            namespace._user_provided = set()
-        namespace._user_provided.add(self.dest)
-        super().__call__(parser, namespace, values, option_string)
-
-
-class UserProvidedBooleanOptionalAction(argparse.BooleanOptionalAction):
-    """Custom action for BooleanOptionalAction that tracks user-provided arguments."""
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        if not hasattr(namespace, "_user_provided"):
-            namespace._user_provided = set()
-        namespace._user_provided.add(self.dest)
-        super().__call__(parser, namespace, values, option_string)
-
-
-class TrackingArgumentParser(argparse.ArgumentParser):
-    """
-    Custom ArgumentParser that automatically tracks user-provided arguments.
-    """
-
-    def add_argument(self, *args, **kwargs):
-        # Automatically apply tracking actions
-        if kwargs.get("action") == "store_true":
-            kwargs["action"] = UserProvidedStoreTrueAction
-        elif kwargs.get("action") == "store_false":
-            kwargs["action"] = UserProvidedStoreFalseAction
-        elif kwargs.get("action") == argparse.BooleanOptionalAction:
-            kwargs["action"] = UserProvidedBooleanOptionalAction
-        elif "action" not in kwargs or kwargs.get("action") == "store":
-            # Default store action
-            kwargs["action"] = UserProvidedAction
-
-        return super().add_argument(*args, **kwargs)
-
-
-class TrackingArgumentGroup(argparse._ArgumentGroup):
-    """
-    Custom ArgumentGroup that automatically tracks user-provided arguments.
-    """
-
-    def add_argument(self, *args, **kwargs):
-        # Automatically apply tracking actions
-        if kwargs.get("action") == "store_true":
-            kwargs["action"] = UserProvidedStoreTrueAction
-        elif kwargs.get("action") == "store_false":
-            kwargs["action"] = UserProvidedStoreFalseAction
-        elif kwargs.get("action") == argparse.BooleanOptionalAction:
-            kwargs["action"] = UserProvidedBooleanOptionalAction
-        elif "action" not in kwargs or kwargs.get("action") == "store":
-            # Default store action
-            kwargs["action"] = UserProvidedAction
-
-        return super().add_argument(*args, **kwargs)
-
-
-# Monkey patch ArgumentParser to use our tracking group
-def _tracking_add_argument_group(self, *args, **kwargs):
-    group = TrackingArgumentGroup(self, *args, **kwargs)
-    self._action_groups.append(group)
-    return group
-
-
-argparse.ArgumentParser.add_argument_group = _tracking_add_argument_group
-
-
-def show_argument_usage(args):
-    """
-    Utility function to show which arguments were provided by the user vs. using defaults.
-    Useful for debugging and user feedback.
-    """
-    if not hasattr(args, "_user_provided"):
-        print("No user-provided argument tracking available.")
-        return
-
-    user_provided = args._user_provided
-    all_args = set(vars(args).keys()) - {"_user_provided", "command"}
-
-    print("📋 Argument Usage Summary:")
-    print("=" * 50)
-
-    if user_provided:
-        print("✅ User-Provided Arguments:")
-        for arg in sorted(user_provided):
-            value = getattr(args, arg)
-            print(f"   --{arg.replace('_', '-')}: {value}")
-
-    defaults_used = all_args - user_provided
-    if defaults_used:
-        print("\n🔧 Arguments Using Defaults:")
-        for arg in sorted(defaults_used):
-            value = getattr(args, arg)
-            print(f"   --{arg.replace('_', '-')}: {value}")
-
-    print("=" * 50)
-
-
 if TYPE_CHECKING:
     # Import for type checking only to avoid circular imports
     pass
@@ -163,8 +32,8 @@ def parse_cmdline_args():
     # Create parent parsers for common argument groups
     parent_parsers = create_common_parent_parsers()
 
-    parser = TrackingArgumentParser(
-        description="FossID Workbench Agent - Modern API client for automated scanning",
+    parser = argparse.ArgumentParser(
+        description="Workbench Agent - API-powered Scans, Gates, and Reports",
         formatter_class=RawTextHelpFormatter,
         epilog="""
 Environment Variables for Credentials:
@@ -176,7 +45,7 @@ Example Usage:
   # Full scan uploading a directory, show results
   workbench-agent scan --project-name "My Project" --scan-name "v1.0.0" --path ./src --run-dependency-analysis --show-components
 
-  # Blind scan using fossid-cli
+  # Blind scan using fossid-toolbox
   workbench-agent blind-scan --project-name "My Project" --scan-name "v1.0.0-blind" --path ./src
 
   # Import dependency analysis results
@@ -234,8 +103,8 @@ Example Usage:
     # --- 'blind-scan' Subcommand ---
     blind_scan_parser = subparsers.add_parser(
         "blind-scan",
-        help="Run a blind scan using fossid-cli to generate hashes.",
-        description="Run a blind scan by generating file hashes using fossid-cli and uploading hash file.",
+        help="Run a blind scan using fossid-toolbox to generate hashes.",
+        description="Run a blind scan by generating file hashes using fossid-toolbox and uploading hash file.",
         formatter_class=RawTextHelpFormatter,
         parents=[
             parent_parsers["cli_behaviors"],
@@ -256,13 +125,18 @@ Example Usage:
         metavar="PATH",
     )
 
-    # CLI-specific options for blind scan (dash-separated)
-    cli_group = blind_scan_parser.add_argument_group("FossID CLI Options")
+    # Toolbox-specific options for blind scan (dash-separated)
+    cli_group = blind_scan_parser.add_argument_group(
+        "FossID Toolbox Options"
+    )
     cli_group.add_argument(
-        "--fossid-cli-path",
-        help="Path to fossid-cli executable (Default: /usr/bin/fossid-cli)",
+        "--fossid-toolbox-path",
+        help=(
+            "Path to fossid-toolbox executable "
+            "(Default: /usr/bin/fossid-toolbox)"
+        ),
         type=str,
-        default="/usr/bin/fossid-cli",
+        default="/usr/bin/fossid-toolbox",
     )
 
     # --- 'import-da' Subcommand ---
@@ -334,12 +208,6 @@ Example Usage:
             parent_parsers["project_scan_target"],
             parent_parsers["monitoring"],
         ],
-    )
-    evaluate_gates_parser.add_argument(
-        "--show-pending-files",
-        help="Display the File Names with Pending IDs.",
-        action="store_true",
-        default=False,
     )
     evaluate_gates_parser.add_argument(
         "--fail-on-vuln-severity",

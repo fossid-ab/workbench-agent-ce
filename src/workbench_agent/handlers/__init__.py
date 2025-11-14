@@ -1,3 +1,10 @@
+"""
+Handlers Package - Handler implementations.
+
+This package contains the handlers that use the
+WorkbenchClient API architecture.
+
+"""
 import logging
 from .blind_scan import handle_blind_scan
 from .download_reports import handle_download_reports
@@ -23,3 +30,4 @@ __all__ = [
     "handle_download_reports",
     "handle_quick_scan",
 ]
+

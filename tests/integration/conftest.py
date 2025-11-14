@@ -306,53 +306,126 @@ def mock_api_post(mocker):
         print(f"[DEBUG] API Calls: {len(state['call_log'])}")
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def mock_workbench_api(mocker):
-    """Provides a fully mocked WorkbenchAPI instance."""
+    """Provides a fully mocked WorkbenchClient instance with compositional structure."""
 
-    # Create a mock instance of the API
-    mock_api = MagicMock()
+    # Import dataclasses for return values
+    from workbench_agent.api.utils.process_waiter import StatusResult, WaitResult
 
-    # Mock the resolver methods to return predictable values
-    mock_api.resolve_project.return_value = "PRJ-MOCK"
-    mock_api.resolve_scan.return_value = ("SCN-MOCK", 12345)
+    # Create a mock instance of WorkbenchClient
+    mock_client = MagicMock()
 
-    # --- Mock Core Scan Operations ---
-    mock_api.download_content_from_git.return_value = None
-    mock_api.upload_scan_target.return_value = None
-    mock_api.extract_archives.return_value = None
-    mock_api.run_scan.return_value = None
-    mock_api.start_dependency_analysis.return_value = None
-    mock_api.remove_uploaded_content.return_value = None
+    # Mock version compatibility check to avoid API calls during init
+    mock_client._check_version_compatibility = MagicMock()
 
-    # --- Mock Waiting Operations ---
-    # Return a tuple: (final_status_dict, time_taken)
-    mock_api.wait_for_git_clone.return_value = ({"status": "FINISHED", "is_finished": "1"}, 2.0)
-    mock_api.wait_for_archive_extraction.return_value = (
-        {"status": "FINISHED", "is_finished": "1"},
-        3.0,
+    # --- Mock Resolver Service ---
+    mock_client.resolver = MagicMock()
+    mock_client.resolver.resolve_project_and_scan.return_value = ("PRJ-MOCK", "SCN-MOCK", False)
+    mock_client.resolver.find_project.return_value = "PRJ-MOCK"
+    mock_client.resolver.find_scan.return_value = ("SCN-MOCK", 12345)
+    mock_client.resolver.resolve_id_reuse.return_value = (None, None)
+    mock_client.resolver.ensure_scan_compatible = MagicMock()
+
+    # --- Mock Scans Client ---
+    mock_client.scans = MagicMock()
+    mock_client.scans.download_content_from_git.return_value = True
+    mock_client.scans.remove_uploaded_content.return_value = True
+    mock_client.scans.get_scan_information.return_value = {"status": "NEW", "usage": "git"}
+    mock_client.scans.get_dependency_analysis_results.return_value = {}
+    mock_client.scans.get_scan_identified_licenses.return_value = []
+    mock_client.scans.get_project_scans.return_value = []  # Empty list for scan lookup
+    mock_client.scans.create_scan.return_value = {"scan_id": 12345}
+
+    # --- Mock Projects Client ---
+    mock_client.projects = MagicMock()
+    mock_client.projects.list.return_value = []  # Empty list for project lookup
+    mock_client.projects.create.return_value = {"project_code": "PRJ-MOCK"}
+
+    # --- Mock Uploads Client ---
+    mock_client.uploads = MagicMock()
+    mock_client.uploads.upload_scan_target.return_value = None
+
+    # --- Mock Vulnerabilities Client ---
+    mock_client.vulnerabilities = MagicMock()
+    mock_client.vulnerabilities.list_vulnerabilities.return_value = []
+
+    # --- Mock Status Check Service ---
+    mock_client.status_check = MagicMock()
+    mock_client.status_check.check_git_clone_status.return_value = StatusResult(
+        status="FINISHED",
+        is_finished=True,
+        raw_data={"status": "FINISHED", "is_finished": "1"}
     )
-    mock_api.wait_for_scan_to_finish.return_value = (
-        {"status": "FINISHED", "is_finished": "1"},
-        10.0,
+    mock_client.status_check.check_scan_status.return_value = StatusResult(
+        status="FINISHED",
+        is_finished=True,
+        raw_data={"status": "FINISHED", "is_finished": "1"}
+    )
+    mock_client.status_check.check_dependency_analysis_status.return_value = StatusResult(
+        status="FINISHED",
+        is_finished=True,
+        raw_data={"status": "FINISHED", "is_finished": "1"}
     )
 
-    # --- Mock Status Checkers ---
-    mock_api.ensure_scan_is_idle = MagicMock(return_value=None)
-    mock_api.get_scan_information.return_value = {"status": "NEW", "usage": "git"}
-    mock_api.get_scan_status.return_value = {"status": "FINISHED", "is_finished": "1"}
-    mock_api._standard_scan_status_accessor.return_value = "FINISHED"
+    # --- Mock Waiting Service ---
+    mock_client.waiting = MagicMock()
+    mock_client.waiting.wait_for_git_clone.return_value = WaitResult(
+        status_data={"status": "FINISHED", "is_finished": "1"},
+        duration=2.0,
+        success=True
+    )
+    mock_client.waiting.wait_for_scan_to_finish.return_value = WaitResult(
+        status_data={"status": "FINISHED", "is_finished": "1"},
+        duration=10.0,
+        success=True
+    )
+    mock_client.waiting.wait_for_da_to_finish.return_value = WaitResult(
+        status_data={"status": "FINISHED", "is_finished": "1"},
+        duration=5.0,
+        success=True
+    )
 
-    # --- Mock Compatibility Checks ---
-    mocker.patch("workbench_agent.handlers.scan_git.ensure_scan_compatibility", return_value=None)
+    # --- Mock Scan Operations Service ---
+    mock_client.scan_operations = MagicMock()
+    mock_client.scan_operations.run_scan = MagicMock()
+    mock_client.scan_operations.run_da_only = MagicMock()
 
-    # --- Mock Report/Gate Operations ---
-    mock_api.get_policy_violations.return_value = []
-    mock_api.get_pending_files.return_value = {}
-    mock_api.get_all_vulnerabilities.return_value = []
-    mock_api.get_scan_report.return_value = {"_raw_response": b"dummy-report-content"}
+    # --- Mock Results Service ---
+    mock_client.results = MagicMock()
+    mock_client.results.fetch_results.return_value = {
+        "dependency_analysis": {},
+        "kb_licenses": [],
+        "vulnerabilities": []
+    }
+    mock_client.results.links = MagicMock()
 
-    # Patch the WorkbenchAPI where it's instantiated in the 'main' module
-    mocker.patch("workbench_agent.main.WorkbenchAPI", return_value=mock_api)
+    # --- Mock Reports Service ---
+    mock_client.reports = MagicMock()
 
-    return mock_api
+    # --- Mock Internal Client (for version check) ---
+    mock_client.internal = MagicMock()
+    mock_client.internal.get_config.return_value = {"version": "24.3.0"}
+
+    # Patch WorkbenchClient to return our mock when instantiated
+    # Use patch.object with context manager for proper cleanup
+    import workbench_agent.api.workbench_client
+    
+    # Store the original __new__ before patching
+    original_new = workbench_agent.api.workbench_client.WorkbenchClient.__new__
+    
+    def mock_new(cls, *args, **kwargs):
+        """Return the mock client instead of creating a real instance."""
+        if cls == workbench_agent.api.workbench_client.WorkbenchClient:
+            return mock_client
+        # For other classes, use the original __new__
+        return original_new(cls, *args, **kwargs)
+    
+    # Patch both where it's imported and where it's defined
+    # Use context managers to ensure proper cleanup
+    with patch.object(
+        workbench_agent.api.workbench_client.WorkbenchClient,
+        '__new__',
+        side_effect=mock_new
+    ), patch("workbench_agent.main.WorkbenchClient", return_value=mock_client):
+        yield mock_client
