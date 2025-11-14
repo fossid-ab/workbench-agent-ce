@@ -1,18 +1,18 @@
 # About the Workbench Agent
-The **Workbench-Agent** is a Python script to help you interact with **FossID Workbench** from a terminal or from a CI/CD pipeline. 
+The **Workbench-Agent** is a CLI that interacts with **FossID Workbench**. 
 
-This is an experimental version of the Workbench Agent. The official Workbench Agent maintained by FossID Engineering and subject to FossID's SLAs lives in the [Workbench Agent GitHub Repo](https://github.com/fossid-ab/workbench-agent). 
+This is the Community Edition (CE) of the Workbench Agent. The official Workbench Agent lives in the [Workbench Agent Repo](https://github.com/fossid-ab/workbench-agent). 
 
 ## Contributions and Support SLAs
-This Experimental version of the Workbench Agent is maintained by FossID's Customer Success Team and not subject to FossID's SLAs. We will do our best to stay on top of any GitHub Issues opened and review any Pull Requests with fixes and improvements (thank you in advance!) but please use the official Workbench Agent if this presents a concern. Reach out if you have any questions!
+This version of the Workbench Agent is maintained by FossID's Customer Success Team. We will do our best to stay on top of any GitHub Issues opened and review any Pull Requests with fixes and improvements (thank you in advance!) but please use the official Workbench Agent if this presents a concern. Reach out if you have any questions!
 
-## Running with Python
-If you prefer, you can run with Python. You'll need at least Python 3.9 installed.
+## Running the Workbench Agent
+The minimum supported Python version is Python 3.9.
 
 1.  **Clone the Repository:**
     ```bash
-    git clone github.com/fossid-ab/workbench-agent-experimental
-    cd workbench-agent-experimental
+    git clone github.com/fossid-ab/workbench-agent-ce
+    cd workbench-agent-ce
     ```
 
 2.  **Install Dependencies::**
@@ -27,6 +27,15 @@ If you prefer, you can run with Python. You'll need at least Python 3.9 installe
     ```
 
 ## General Usage
+
+```bash
+# General Usage is as follows:
+workbench-agent <COMMAND> [OPTIONS...]
+
+# To view the help for a command
+workbench-agent <COMMAND> --help
+```
+
 The following commands are available:
 * scan: Upload local code files or directories for scanning. 
 * scan-git: Clone a Git branch, tag, or commit to scan it.
@@ -36,14 +45,6 @@ The following commands are available:
 * show-results: Fetch and display various results for an existing scan.
 * evaluate-gates: Check pending IDs, policy violations, and vulnerabilities.
 * download-reports: download reports for a scan or project.
-
-```bash
-# General Usage is as follows:
-workbench-agent <COMMAND> [OPTIONS...]
-
-# To view the help for a command
-workbench-agent <COMMAND> --help
-```
 
 ### Legacy Invocation (Backwards Compatible with 0.7.x)
 For backwards compatibility, Workbench Agent supports the command syntax from the official Workbench Agent, which uses the following syntax:
@@ -75,11 +76,17 @@ Each scan command handles a different scanning method. Here's what's available:
 * blind-scan -> hashes the scan target and uploads only signatures to Workbench for scanning
 * scan-git -> clones a git repo to Workbench referencing a branch, tag, or commit
 
+Note: the blind-scan command executes FossID Toolbox for hash generation. It needs to be present for Blind Scanning. 
+
 ### Supported Scan Types
 All scan commands support three modes of operation:
 * KB Scan Only (default)
-* Dependency Analysis Only (using `--dependency-analysis-only`)
 * KB Scan + Dependency Analysis (using `--run-dependency-analysis`)
+* Dependency Analysis Only (using `--dependency-analysis-only`)
+
+Additionally, you can add File-Level Extraction:
+* License Extraction (using --autoid-file-licenses)
+* Copyright Extraction (using --autoid-file-copyrights)
 
 ### Examples of Scan Command
 Scan takes a path to scan. If the path provided is to a directory, it will be compressed into a ZIP archive prior to upload. 
@@ -138,15 +145,12 @@ ID Assist settings can be controlled by adding the following arguments:
 * --no-advanced-match-scoring -> disabled advanced match scoring
 * --noise-filtering-threshold -> controls the noise filtering 
 
-#### Reusing Identifications
+#### Reuse and Automatic Identifications
 To Reuse Identifications from other Projects or Scans, use the following arguments:
 * --reuse-any-identification -> tells Workbench to reuse any identification
 * --reuse-my-identifications -> tells Workbench to reuse identifications made by the invoking user
 * --reuse-scan-ids[scanName] -> reuse identifications from the specified scan
 * --reuse-project-ids [projectName] -> reuse identifications from the specified project
-
-#### Automatic Identifications
-These control which identifications are automatically added to scan results.
 * --autoid-file-licenses - adds file licenses found by the license extractor
 * --autoid-file-copyrights - adds copyrights found by the license extractor
 * --autoid-pending-ids - resolves pending IDs with the top scored match
