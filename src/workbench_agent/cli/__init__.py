@@ -12,12 +12,11 @@ from .common import (
     uses_legacy_interface,
     uses_modern_interface,
 )
-from .parser import parse_cmdline_args, show_argument_usage
+from .parser import parse_cmdline_args
 from .validators import validate_parsed_args
 
 __all__ = [
     "parse_cmdline_args",
-    "show_argument_usage",
     "validate_parsed_args",
     "uses_modern_interface",
     "uses_legacy_interface",

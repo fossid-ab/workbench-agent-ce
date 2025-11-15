@@ -1,39 +1,39 @@
 import logging
 import sys
 
+from workbench_agent.api.workbench_client import WorkbenchClient
+
 # Package imports
-from workbench_agent.api import WorkbenchAPI
 from workbench_agent.cli import parse_cmdline_args
-from workbench_agent.utilities.config_display import (
-    print_configuration,
-    print_workbench_connection_info,
-)
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
-    CompatibilityError,
-    ConfigurationError,
-    FileSystemError,
     NetworkError,
     ProcessError,
     ProcessTimeoutError,
     ProjectNotFoundError,
     ScanNotFoundError,
+    CompatibilityError,
+)
+from workbench_agent.exceptions import (
+    ConfigurationError,
+    FileSystemError,
     ValidationError,
 )
 
-# Import all handlers from the handlers package
+# Import handlers from handlers package (new architecture)
 from workbench_agent.handlers import (
     handle_blind_scan,
     handle_download_reports,
     handle_evaluate_gates,
     handle_import_da,
     handle_import_sbom,
+    handle_quick_scan,
     handle_scan,
     handle_scan_git,
     handle_show_results,
-    handle_quick_scan,
 )
+from workbench_agent.utilities.config_display import print_configuration
 
 
 def setup_logging(log_level: str) -> logging.Logger:
@@ -58,12 +58,9 @@ def setup_logging(log_level: str) -> logging.Logger:
         root_logger.removeHandler(handler)
 
     # Configure file handler with detailed format
-    file_handler = logging.FileHandler(
-        "workbench-agent-log.txt", mode="w", encoding="utf-8"
-    )
+    file_handler = logging.FileHandler("workbench-agent-log.txt", mode="w", encoding="utf-8")
     file_formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - "
-        "%(message)s",
+        "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - " "%(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     file_handler.setFormatter(file_formatter)
@@ -117,7 +114,7 @@ def main() -> int:
 
     Detects whether legacy or modern interface is being used:
     - Legacy: Delegates directly to original-wb-agent.py
-    - Modern: Uses new command-based handlers
+    - Modern: Uses new command-based handlers with WorkbenchClient architecture
 
     Returns:
         int: Exit code (0 for success, non-zero for failure)
@@ -136,23 +133,23 @@ def main() -> int:
         # Setup logging for modern commands
         logger = setup_logging(args.log)
 
-        # Print configuration for verification
-        print_configuration(args)
-
         logger.info("FossID Workbench Agent starting...")
         logger.debug(f"Command line arguments: {vars(args)}")
 
         # Initialize Workbench API client
-        logger.info("Initializing Workbench API client...")
-        workbench = WorkbenchAPI(
+        # (using new WorkbenchClient architecture)
+        logger.info("Initializing WorkbenchClient...")
+        workbench = WorkbenchClient(
             api_url=args.api_url,
             api_user=args.api_user,
             api_token=args.api_token,
         )
-        logger.info("Workbench API client initialized.")
+        logger.info("WorkbenchClient initialized.")
 
-        # Display Workbench connection information
-        print_workbench_connection_info(args, workbench)
+        # Print configuration for verification if requested
+        # (includes connection info if workbench client is provided)
+        if getattr(args, "show_config", False):
+            print_configuration(args, workbench)
 
         # Command dispatch for modern commands
         COMMAND_HANDLERS = {
@@ -181,10 +178,7 @@ def main() -> int:
                 # evaluate-gates returns True for PASS, False for FAIL
                 exit_code = 0 if result else 1
                 if exit_code == 0:
-                    print(
-                        "\nWorkbench Agent finished successfully "
-                        "(Gates Passed)."
-                    )
+                    print("\nWorkbench Agent finished successfully " "(Gates Passed).")
                 else:
                     # Don't print 'Error' here, just the status
                     print("\nWorkbench Agent finished (Gates FAILED).")
@@ -203,10 +197,7 @@ def main() -> int:
             # This case should ideally be caught by argparse,
             # but handle defensively
             print(f"Error: Unknown command '{command_key}'.")
-            logger.error(
-                f"Unknown command '{command_key}' encountered in main "
-                f"dispatch."
-            )
+            logger.error(f"Unknown command '{command_key}' encountered in main " f"dispatch.")
             raise ValidationError(f"Unknown command/scan type: {command_key}")
 
     except (ValidationError, ConfigurationError, AuthenticationError) as e:

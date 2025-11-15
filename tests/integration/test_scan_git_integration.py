@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
-from workbench_agent.exceptions import ProcessError
+from workbench_agent.api.exceptions import ProcessError
 from workbench_agent.main import main
 
 
@@ -72,7 +72,7 @@ class TestScanGitIntegration:
 
         captured = capsys.readouterr()
         combined_output = captured.out + captured.err
-        assert "Command: scan-git" in combined_output
+        assert "SCAN-GIT" in combined_output
 
     def test_scan_git_with_dependency_analysis(self, mock_workbench_api, capsys):
         """
@@ -104,7 +104,7 @@ class TestScanGitIntegration:
 
         captured = capsys.readouterr()
         combined_output = captured.out + captured.err
-        assert "Command: scan-git" in combined_output
+        assert "SCAN-GIT" in combined_output
 
     def test_scan_git_dependency_analysis_only(self, mock_workbench_api, capsys):
         """
@@ -136,16 +136,13 @@ class TestScanGitIntegration:
 
         captured = capsys.readouterr()
         combined_output = captured.out + captured.err
-        assert "Command: scan-git" in combined_output
+        assert "SCAN-GIT" in combined_output
 
     def test_scan_git_with_id_reuse(self, mock_workbench_api, mocker, capsys):
         """
         Test scan-git command with ID reuse enabled.
         """
-        mocker.patch(
-            "workbench_agent.utilities.scan_target_validators.validate_reuse_source",
-            return_value=None,
-        )
+        # Note: ID reuse validation is now handled by ResolverService internally
 
         args = [
             "workbench-agent",
@@ -177,7 +174,7 @@ class TestScanGitIntegration:
         Test scan-git command with invalid git URL (should fail).
         """
         # Unified interface now: download_content_from_git raises the error
-        mock_workbench_api.download_content_from_git.side_effect = ProcessError(
+        mock_workbench_api.scans.download_content_from_git.side_effect = ProcessError(
             "Git clone failed: Repository not found"
         )
 

@@ -1,11 +1,15 @@
 import json
 import logging
+import os
 
 import requests
 
-from workbench_agent.exceptions import ApiError, AuthenticationError, NetworkError
+from workbench_agent.api.exceptions import ApiError, AuthenticationError, NetworkError
 
 logger = logging.getLogger("workbench-agent")
+
+# Check if header logging is enabled via environment variable
+LOG_HEADERS = os.getenv("WORKBENCH_AGENT_LOG_HEADERS", "").lower() in ("1", "true", "yes")
 
 
 class BaseAPI:
@@ -62,7 +66,8 @@ class BaseAPI:
 
         req_body = json.dumps(payload)
         logger.debug("API URL: %s", self.api_url)
-        logger.debug("Request Headers: %s", headers)
+        if LOG_HEADERS:
+            logger.debug("Request Headers: %s", headers)
         logger.debug("Request Body: %s", req_body)
 
         try:
@@ -70,7 +75,8 @@ class BaseAPI:
                 self.api_url, headers=headers, data=req_body, timeout=timeout
             )
             logger.debug("Response Status Code: %s", response.status_code)
-            logger.debug("Response Headers: %s", response.headers)
+            if LOG_HEADERS:
+                logger.debug("Response Headers: %s", response.headers)
             # Log first part of text regardless of JSON success/failure
             logger.debug(
                 f"Response Text (first 500 chars): "

@@ -23,7 +23,9 @@ workbench-agent-log.txt
 .venv/
 venv/
 .env
+.env-*
 src/workbench_agent.egg-info/
+build
 
 # Tests
 

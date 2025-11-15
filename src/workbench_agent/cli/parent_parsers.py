@@ -10,12 +10,10 @@ used across different CLI commands.
 import argparse
 import os
 
-from .parser import TrackingArgumentParser
-
 
 def create_workbench_connection_parser():
     """Create parent parser for Workbench connection arguments."""
-    workbench_connection_parent = TrackingArgumentParser(add_help=False)
+    workbench_connection_parent = argparse.ArgumentParser(add_help=False)
     workbench_connection_args = workbench_connection_parent.add_argument_group(
         "Workbench Connection"
     )
@@ -45,7 +43,7 @@ def create_workbench_connection_parser():
 
 def create_cli_behaviors_parser():
     """Create parent parser for Workbench Agent behavior arguments."""
-    cli_behaviors_parent = TrackingArgumentParser(add_help=False)
+    cli_behaviors_parent = argparse.ArgumentParser(add_help=False)
     cli_behaviors_args = cli_behaviors_parent.add_argument_group("CLI Behavior")
     cli_behaviors_args.add_argument(
         "--log",
@@ -53,12 +51,18 @@ def create_cli_behaviors_parser():
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="WARNING",
     )
+    cli_behaviors_args.add_argument(
+        "--show-config",
+        help="Display configuration parameters at startup (Default: False)",
+        action="store_true",
+        default=False,
+    )
     return cli_behaviors_parent
 
 
 def create_id_assist_control_parser():
     """Create parent parser for ID Assist control arguments."""
-    id_assist_control_parent = TrackingArgumentParser(add_help=False)
+    id_assist_control_parent = argparse.ArgumentParser(add_help=False)
     id_assist_control_args = id_assist_control_parent.add_argument_group("ID Assist Controls")
     id_assist_control_args.add_argument(
         "--no-advanced-match-scoring",
@@ -79,7 +83,7 @@ def create_id_assist_control_parser():
 
 def create_identification_control_parser():
     """Create parent parser for identification control arguments."""
-    identification_control_parent = TrackingArgumentParser(add_help=False)
+    identification_control_parent = argparse.ArgumentParser(add_help=False)
     identification_control_args = identification_control_parent.add_argument_group(
         "Identification Controls"
     )
@@ -138,7 +142,7 @@ def create_identification_control_parser():
 
 def create_scan_control_parser():
     """Create parent parser for scan control arguments."""
-    scan_control_parent = TrackingArgumentParser(add_help=False)
+    scan_control_parent = argparse.ArgumentParser(add_help=False)
     scan_control_args = scan_control_parent.add_argument_group("Scan Configuration")
     scan_control_args.add_argument(
         "--limit", help="Limits KB scan results (Default: 10)", type=int, default=10
@@ -155,7 +159,7 @@ def create_scan_control_parser():
 
 def create_scan_operations_parser():
     """Create parent parser for scan operation control arguments."""
-    scan_operations_parent = TrackingArgumentParser(add_help=False)
+    scan_operations_parent = argparse.ArgumentParser(add_help=False)
     scan_ops_args = scan_operations_parent.add_argument_group("Scan Operations")
     scan_ops_args.add_argument(
         "--run-dependency-analysis",
@@ -210,7 +214,7 @@ def create_scan_operations_parser():
 
 def create_monitoring_parser():
     """Create parent parser for monitoring options."""
-    monitoring_parent = TrackingArgumentParser(add_help=False)
+    monitoring_parent = argparse.ArgumentParser(add_help=False)
     monitor_args = monitoring_parent.add_argument_group("Scan Monitoring Options")
     monitor_args.add_argument(
         "--scan-number-of-tries",
@@ -226,7 +230,7 @@ def create_monitoring_parser():
 
 def create_result_options_parser():
     """Create parent parser for result display and save options."""
-    result_options_parent = TrackingArgumentParser(add_help=False)
+    result_options_parent = argparse.ArgumentParser(add_help=False)
     results_display_args = result_options_parent.add_argument_group("Result Display & Save Options")
     results_display_args.add_argument(
         "--show-licenses",
@@ -274,7 +278,7 @@ def create_result_options_parser():
 
 def create_project_scan_target_parser():
     """Create parent parser for project and scan target options."""
-    project_scan_target_parent = TrackingArgumentParser(add_help=False)
+    project_scan_target_parent = argparse.ArgumentParser(add_help=False)
     target_args = project_scan_target_parent.add_argument_group("Project & Scan Target")
     target_args.add_argument(
         "--project-name",
@@ -293,7 +297,7 @@ def create_project_scan_target_parser():
 
 def create_git_options_parser():
     """Create parent parser for Git scanning options."""
-    git_options_parent = TrackingArgumentParser(add_help=False)
+    git_options_parent = argparse.ArgumentParser(add_help=False)
     git_args = git_options_parent.add_argument_group("Git Scanning Options")
     git_args.add_argument(
         "--git-url", help="URL of the Git repository to scan.", type=str, required=True
@@ -307,9 +311,7 @@ def create_git_options_parser():
     ref_group.add_argument(
         "--git-branch", help="The git branch to scan.", type=str, metavar="BRANCH"
     )
-    ref_group.add_argument(
-        "--git-tag", help="The git tag to scan.", type=str, metavar="TAG"
-    )
+    ref_group.add_argument("--git-tag", help="The git tag to scan.", type=str, metavar="TAG")
     ref_group.add_argument(
         "--git-commit", help="The git commit to scan.", type=str, metavar="COMMIT"
     )

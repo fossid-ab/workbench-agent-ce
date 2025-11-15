@@ -3,7 +3,7 @@
 import sys
 from unittest.mock import patch
 
-from workbench_agent.exceptions import ProjectNotFoundError
+from workbench_agent.api.exceptions import ProjectNotFoundError
 from workbench_agent.main import main
 
 
@@ -36,13 +36,13 @@ class TestEvaluateGatesIntegration:
 
         captured = capsys.readouterr()
         combined_output = captured.out + captured.err
-        assert "Command: evaluate-gates" in combined_output
+        assert "EVALUATE-GATES" in combined_output
 
     def test_evaluate_gates_fail_on_pending(self, mock_workbench_api, capsys):
         """
         Test evaluate-gates command when pending files are found and --fail-on-pending is set.
         """
-        mock_workbench_api.get_pending_files.return_value = {
+        mock_workbench_api.scans.get_pending_files.return_value = {
             "file1.cpp": {"status": "pending"},
             "file2.h": {"status": "pending"},
         }
@@ -71,13 +71,15 @@ class TestEvaluateGatesIntegration:
         ), "evaluate-gates should fail when pending files found and --fail-on-pending is set"
         captured = capsys.readouterr()
         combined_output = captured.out + captured.err
-        assert "Command: evaluate-gates" in combined_output
+        assert "FAILED" in combined_output
 
     def test_evaluate_gates_fail_on_policy_warnings(self, mock_workbench_api, capsys):
         """
         Test evaluate-gates command when policy warnings are found and --fail-on-policy is set.
         """
-        mock_workbench_api.get_policy_warnings_counter.return_value = {"policy_warnings_total": 2}
+        mock_workbench_api.scans.get_policy_warnings_counter.return_value = {
+            "policy_warnings_total": 2
+        }
 
         args = [
             "workbench-agent",
@@ -103,13 +105,13 @@ class TestEvaluateGatesIntegration:
         ), "evaluate-gates should fail when policy warnings found and --fail-on-policy is set"
         captured = capsys.readouterr()
         combined_output = captured.out + captured.err
-        assert "Command: evaluate-gates" in combined_output
+        assert "FAILED" in combined_output
 
     def test_evaluate_gates_fail_on_vulnerabilities(self, mock_workbench_api, capsys):
         """
         Test evaluate-gates command when vulnerabilities are found and --fail-on-vuln-severity is set.
         """
-        mock_workbench_api.list_vulnerabilities.return_value = [
+        mock_workbench_api.vulnerabilities.list_vulnerabilities.return_value = [
             {
                 "id": "CVE-2021-1234",
                 "severity": "critical",
@@ -147,13 +149,13 @@ class TestEvaluateGatesIntegration:
         ), "evaluate-gates should fail when vulnerabilities found and --fail-on-vuln-severity is set"
         captured = capsys.readouterr()
         combined_output = captured.out + captured.err
-        assert "Command: evaluate-gates" in combined_output
+        assert "FAILED" in combined_output
 
-    def test_evaluate_gates_show_pending_files(self, mock_workbench_api, capsys):
+    def test_evaluate_gates_with_pending_files(self, mock_workbench_api, capsys):
         """
-        Test evaluate-gates command with --show-pending-files flag.
+        Test evaluate-gates command when pending files exist but --fail-on-pending is not set.
         """
-        mock_workbench_api.get_pending_files.return_value = {
+        mock_workbench_api.scans.get_pending_files.return_value = {
             "file1.cpp": {"status": "pending", "path": "/src/file1.cpp"}
         }
 
@@ -170,7 +172,6 @@ class TestEvaluateGatesIntegration:
             "TestProj",
             "--scan-name",
             "TestScan",
-            "--show-pending-files",
         ]
 
         with patch.object(sys, "argv", args):
@@ -181,14 +182,16 @@ class TestEvaluateGatesIntegration:
         ), "evaluate-gates should pass when --fail-on-pending is not set, even with pending files"
         captured = capsys.readouterr()
         combined_output = captured.out + captured.err
-        assert "Command: evaluate-gates" in combined_output
+        assert "EVALUATE-GATES" in combined_output
 
     def test_evaluate_gates_project_not_found(self, mock_workbench_api, capsys):
         """
         Test evaluate-gates command when project is not found (should fail).
         """
-        mock_workbench_api.resolve_project.side_effect = ProjectNotFoundError(
-            "Project 'NonExistentProj' not found"
+        from workbench_agent.api.exceptions import ScanNotFoundError
+
+        mock_workbench_api.resolver.find_scan.side_effect = ScanNotFoundError(
+            "Scan 'TestScan' not found in project 'NonExistentProj'"
         )
 
         args = [

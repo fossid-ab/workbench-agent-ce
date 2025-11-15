@@ -8,20 +8,7 @@ import pytest
 import requests
 
 from workbench_agent.api.helpers.base_api import BaseAPI
-from workbench_agent.exceptions import (
-    ApiError,
-    AuthenticationError,
-    CompatibilityError,
-    ConfigurationError,
-    FileSystemError,
-    NetworkError,
-    ProcessError,
-    ProcessTimeoutError,
-    ProjectNotFoundError,
-    ScanNotFoundError,
-    ValidationError,
-    WorkbenchAgentError,
-)
+from workbench_agent.api.exceptions import ApiError, AuthenticationError, NetworkError
 
 
 # --- Fixtures ---

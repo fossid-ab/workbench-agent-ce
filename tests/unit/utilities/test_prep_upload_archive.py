@@ -426,3 +426,104 @@ def test_get_file_type_description_unknown(mock_islink, mock_isdir, mock_isfile)
 
     result = UploadArchivePrep._get_file_type_description("/path/to/special")
     assert result == "special file"
+
+
+# --- Integration test for create_zip_archive ---
+def test_create_zip_archive_integration():
+    """Integration test: Create a ZIP archive from a real directory structure and verify contents."""
+    import shutil
+
+    temp_dir = None
+    zip_path = None
+
+    try:
+        # Use context manager for temporary directory to ensure cleanup
+        with tempfile.TemporaryDirectory() as temp_str:
+            temp_dir = Path(temp_str)
+
+            # Create directory structure
+            (temp_dir / "src").mkdir()
+            (temp_dir / "docs").mkdir()
+            (temp_dir / ".git").mkdir()  # Should be excluded
+            (temp_dir / "__pycache__").mkdir()  # Should be excluded
+
+            # Create some files
+            (temp_dir / "src" / "main.py").write_text("print('Hello, world!')")
+            (temp_dir / "docs" / "readme.md").write_text("# Test Project")
+            (temp_dir / ".git" / "config").write_text("# Git config")
+            (temp_dir / ".gitignore").write_text("*.log\nbuild/\n")
+
+            # Create a file that should be excluded by gitignore
+            (temp_dir / "debug.log").write_text("DEBUG LOG")
+            (temp_dir / "build").mkdir()
+            (temp_dir / "build" / "output.txt").write_text("Build output")
+
+            # Call the method to create a zip archive
+            zip_path = UploadArchivePrep.create_zip_archive(str(temp_dir))
+
+            # Verify the zip file was created
+            assert os.path.exists(zip_path), f"ZIP file was not created at {zip_path}"
+
+            # Extract the contents to a new temp directory for verification
+            with tempfile.TemporaryDirectory() as extract_str:
+                extract_dir = Path(extract_str)
+
+                with zipfile.ZipFile(zip_path, "r") as zip_ref:
+                    zip_ref.extractall(extract_dir)
+
+                # Get list of all extracted files - normalize paths for cross-platform compatibility
+                extracted_files = []
+                for root, _, files in os.walk(extract_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        rel_path = os.path.relpath(file_path, extract_dir)
+                        # Normalize path for cross-platform comparison
+                        norm_path = rel_path.replace(os.sep, "/")
+                        extracted_files.append(norm_path)
+
+                # Check included files - archives contain relative paths from source directory
+                included_files = [
+                    "src/main.py",
+                    "docs/readme.md",
+                    ".gitignore",  # .gitignore should be included
+                ]
+                for file_path in included_files:
+                    norm_path = file_path.replace("/", os.sep)
+                    assert (
+                        norm_path in extracted_files or file_path in extracted_files
+                    ), f"Expected file {file_path} not found in ZIP contents: {extracted_files}"
+
+                # Check excluded files/directories (by .gitignore)
+                excluded_gitignore = [
+                    "debug.log",  # *.log pattern
+                    "build/output.txt",  # build/ pattern
+                ]
+                for file_path in excluded_gitignore:
+                    norm_path = file_path.replace("/", os.sep)
+                    assert (
+                        norm_path not in extracted_files and file_path not in extracted_files
+                    ), f"Gitignore-excluded file {file_path} found in ZIP contents: {extracted_files}"
+
+                # Check excluded directories (always excluded)
+                excluded_dirs = [".git", "__pycache__"]
+                for dir_name in excluded_dirs:
+                    prefix = f"{dir_name}/"
+                    has_excluded = any(
+                        f.startswith(prefix) or f.startswith(prefix.replace("/", os.sep))
+                        for f in extracted_files
+                    )
+                    assert (
+                        not has_excluded
+                    ), f"Always-excluded directory content from {dir_name} found in ZIP: {extracted_files}"
+
+    finally:
+        # Ensure cleanup happens even if assertions fail
+        # Note: Using context managers above should handle most cleanup,
+        # but this is a backup for the zip file which may be in a separate location
+        if zip_path and os.path.exists(zip_path):
+            try:
+                parent_dir = os.path.dirname(zip_path)
+                if os.path.exists(parent_dir):
+                    shutil.rmtree(parent_dir, ignore_errors=True)
+            except Exception:
+                pass  # Ignore cleanup errors
