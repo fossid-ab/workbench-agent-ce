@@ -13,7 +13,7 @@ This is the largest client with methods for:
 import logging
 from typing import Any, Dict, List, Optional
 
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
     ScanExistsError,
     ScanNotFoundError,

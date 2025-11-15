@@ -10,12 +10,9 @@ import functools
 import logging
 from typing import Callable
 
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
-    CompatibilityError,
-    ConfigurationError,
-    FileSystemError,
     NetworkError,
     ProcessError,
     ProcessTimeoutError,
@@ -23,6 +20,11 @@ from workbench_agent.exceptions import (
     ProjectNotFoundError,
     ScanExistsError,
     ScanNotFoundError,
+)
+from workbench_agent.exceptions import (
+    CompatibilityError,
+    ConfigurationError,
+    FileSystemError,
     ValidationError,
     WorkbenchAgentError,
 )

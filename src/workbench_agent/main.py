@@ -5,17 +5,19 @@ from workbench_agent.api.workbench_client import WorkbenchClient
 
 # Package imports
 from workbench_agent.cli import parse_cmdline_args
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
-    CompatibilityError,
-    ConfigurationError,
-    FileSystemError,
     NetworkError,
     ProcessError,
     ProcessTimeoutError,
     ProjectNotFoundError,
     ScanNotFoundError,
+)
+from workbench_agent.exceptions import (
+    CompatibilityError,
+    ConfigurationError,
+    FileSystemError,
     ValidationError,
 )
 

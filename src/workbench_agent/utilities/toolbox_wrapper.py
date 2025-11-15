@@ -11,7 +11,8 @@ import random
 import subprocess
 import traceback
 
-from workbench_agent.exceptions import FileSystemError, ProcessError
+from workbench_agent.api.exceptions import ProcessError
+from workbench_agent.exceptions import FileSystemError
 
 logger = logging.getLogger("workbench-agent")
 

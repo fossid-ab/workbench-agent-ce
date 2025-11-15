@@ -75,9 +75,8 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     # Initialize timing dictionary
     durations = {"kb_scan": 0.0, "dependency_analysis": 0.0, "extraction_duration": 0.0}
 
-    # Validate scan parameters
-    if not os.path.exists(params.path):
-        raise FileSystemError(f"The provided path does not exist: {params.path}")
+    # Note: Path existence is validated at CLI layer (cli/validators.py)
+    # We trust that params.path exists and is accessible
 
     # Resolve project and scan (find or create)
     print("\n--- Project and Scan Checks ---")

@@ -38,7 +38,7 @@ def fetch_results(
         - policy_warnings: Warnings dictionary (if requested)
         - vulnerabilities: List of vulnerabilities (if requested)
     """
-    from workbench_agent.exceptions import ApiError, NetworkError
+    from workbench_agent.api.exceptions import ApiError, NetworkError
 
     should_fetch_licenses = getattr(params, "show_licenses", False)
     should_fetch_components = getattr(params, "show_components", False)

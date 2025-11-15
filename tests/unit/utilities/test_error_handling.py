@@ -1,16 +1,11 @@
 import argparse
-import functools
-from io import StringIO
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
-    CompatibilityError,
-    ConfigurationError,
-    FileSystemError,
     NetworkError,
     ProcessError,
     ProcessTimeoutError,
@@ -18,6 +13,11 @@ from workbench_agent.exceptions import (
     ProjectNotFoundError,
     ScanExistsError,
     ScanNotFoundError,
+)
+from workbench_agent.exceptions import (
+    CompatibilityError,
+    ConfigurationError,
+    FileSystemError,
     ValidationError,
     WorkbenchAgentError,
 )

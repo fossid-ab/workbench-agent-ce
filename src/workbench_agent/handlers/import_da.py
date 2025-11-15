@@ -5,10 +5,9 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
+from workbench_agent.api.exceptions import ProcessError, ProcessTimeoutError
 from workbench_agent.exceptions import (
     FileSystemError,
-    ProcessError,
-    ProcessTimeoutError,
     ValidationError,
     WorkbenchAgentError,
 )
@@ -62,10 +61,8 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
     # Initialize timing dictionary
     durations = {"dependency_analysis": 0.0}
 
-    # Validate scan parameters
-    # Note: argparse already validates that path is provided (required=True)
-    if not os.path.exists(params.path):
-        raise FileSystemError(f"The provided path does not exist: {params.path}")
+    # Note: Path existence is validated at CLI layer (cli/validators.py)
+    # Business logic validation: import-da specifically requires files, not directories
     if not os.path.isfile(params.path):
         raise ValidationError(f"The provided path must be a file: {params.path}")
 

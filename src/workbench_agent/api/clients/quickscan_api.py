@@ -6,7 +6,7 @@ import json
 import logging
 from typing import Any, Dict, List
 
-from workbench_agent.exceptions import ApiError
+from workbench_agent.api.exceptions import ApiError
 
 logger = logging.getLogger("workbench-agent")
 

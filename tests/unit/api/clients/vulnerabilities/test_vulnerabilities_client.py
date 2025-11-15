@@ -9,22 +9,7 @@ import requests
 # Import from the new client structure
 from workbench_agent.api.clients.vulnerabilities_api import VulnerabilitiesClient
 from workbench_agent.api.helpers.base_api import BaseAPI
-from workbench_agent.exceptions import (
-    ApiError,
-    AuthenticationError,
-    CompatibilityError,
-    ConfigurationError,
-    FileSystemError,
-    NetworkError,
-    ProcessError,
-    ProcessTimeoutError,
-    ProjectExistsError,
-    ProjectNotFoundError,
-    ScanExistsError,
-    ScanNotFoundError,
-    ValidationError,
-    WorkbenchAgentError,
-)
+from workbench_agent.api.exceptions import ApiError
 
 
 # --- Fixtures ---

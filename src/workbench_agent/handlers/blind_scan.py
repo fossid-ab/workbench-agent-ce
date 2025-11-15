@@ -96,8 +96,9 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
     }
 
     # ===== STEP 1: Validate scan parameters =====
-    if not os.path.exists(params.path):
-        raise FileSystemError(f"The provided path does not exist: {params.path}")
+    # Note: Path existence is validated at CLI layer (cli/validators.py)
+    
+    # Business logic validation: blind-scan specifically requires directories
     if not os.path.isdir(params.path):
         raise ValidationError(
             f"The provided path must be a directory for blind-scan "

@@ -4,14 +4,14 @@ import argparse
 import logging
 from typing import TYPE_CHECKING
 
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
     NetworkError,
     ProcessError,
     ProcessTimeoutError,
     UnsupportedStatusCheck,
-    ValidationError,
 )
+from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.scan_workflows import fetch_display_save_results
 
@@ -54,17 +54,8 @@ def handle_show_results(client: "WorkbenchClient", params: argparse.Namespace) -
     """
     print(f"\n--- Running {params.command.upper()} Command ---")
 
-    # Validate that at least one show flag is provided
-    show_flags = [
-        params.show_licenses,
-        params.show_components,
-        params.show_dependencies,
-        params.show_scan_metrics,
-        params.show_policy_warnings,
-        params.show_vulnerabilities,
-    ]
-    if not any(show_flags):
-        raise ValidationError("At least one '--show-*' flag must be provided to display results")
+    # Note: --show-* flag validation is done at CLI layer (cli/validators.py)
+    # We trust that at least one flag is provided
 
     # Resolve project and scan (find only - don't create)
     print("\nResolving scan for results display...")

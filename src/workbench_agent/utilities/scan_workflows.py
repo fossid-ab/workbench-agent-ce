@@ -7,11 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 if TYPE_CHECKING:
     from workbench_agent.api.workbench_client import WorkbenchClient
 
-from workbench_agent.exceptions import (
-    ApiError,
-    NetworkError,
-    ScanNotFoundError,
-)
+from workbench_agent.api.exceptions import ApiError, NetworkError, ScanNotFoundError
 
 logger = logging.getLogger("workbench-agent")
 

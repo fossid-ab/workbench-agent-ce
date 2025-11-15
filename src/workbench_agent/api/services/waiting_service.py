@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, Optional
 
 from workbench_agent.api.utils.process_waiter import StatusResult, WaitResult
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ProcessError,
     ProcessTimeoutError,
     UnsupportedStatusCheck,

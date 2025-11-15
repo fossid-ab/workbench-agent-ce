@@ -7,7 +7,7 @@ This client provides access to internal configuration and system information.
 import logging
 from typing import Any, Dict
 
-from workbench_agent.exceptions import ApiError
+from workbench_agent.api.exceptions import ApiError
 
 logger = logging.getLogger("workbench-agent")
 

@@ -262,7 +262,7 @@ class WorkbenchClient:
             raise
         except Exception as e:
             # Wrap other errors (API errors, network errors, etc.)
-            from workbench_agent.exceptions import ApiError, NetworkError
+            from workbench_agent.api.exceptions import ApiError, NetworkError
 
             if isinstance(e, (ApiError, NetworkError)):
                 raise

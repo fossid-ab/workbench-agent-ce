@@ -16,11 +16,8 @@ from typing import Any, Dict, Optional, Union
 
 import requests
 
-from workbench_agent.exceptions import (
-    ApiError,
-    FileSystemError,
-    ValidationError,
-)
+from workbench_agent.api.exceptions import ApiError
+from workbench_agent.exceptions import FileSystemError, ValidationError
 
 logger = logging.getLogger("workbench-agent")
 

@@ -8,7 +8,7 @@ composition instead of inheritance.
 import logging
 from typing import Any, Dict, List, Optional
 
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
     ProjectExistsError,
     ProjectNotFoundError,

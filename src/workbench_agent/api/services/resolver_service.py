@@ -14,13 +14,13 @@ import argparse
 import logging
 from typing import Optional, Tuple
 
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
-    CompatibilityError,
     NetworkError,
     ProjectNotFoundError,
     ScanNotFoundError,
 )
+from workbench_agent.exceptions import CompatibilityError
 
 logger = logging.getLogger("workbench-agent")
 

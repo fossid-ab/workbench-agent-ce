@@ -5,11 +5,8 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, Dict, Tuple
 
-from workbench_agent.exceptions import (
-    ProcessError,
-    ProcessTimeoutError,
-    WorkbenchAgentError,
-)
+from workbench_agent.api.exceptions import ProcessError, ProcessTimeoutError
+from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
     fetch_display_save_results,

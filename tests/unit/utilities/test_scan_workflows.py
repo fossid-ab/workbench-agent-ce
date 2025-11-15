@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 
 from workbench_agent.api.services.results_service import ResultsService, WorkbenchLinks
-from workbench_agent.exceptions import ApiError
+from workbench_agent.api.exceptions import ApiError
 from workbench_agent.utilities.post_scan_summary import print_operation_summary
 from workbench_agent.utilities.scan_workflows import (
     determine_scans_to_run,

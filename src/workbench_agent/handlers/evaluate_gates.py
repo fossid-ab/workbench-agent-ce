@@ -5,11 +5,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from workbench_agent.exceptions import (
-    ApiError,
-    NetworkError,
-    ProcessTimeoutError,
-)
+from workbench_agent.api.exceptions import ApiError, NetworkError, ProcessTimeoutError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 
 logger = logging.getLogger("workbench-agent")

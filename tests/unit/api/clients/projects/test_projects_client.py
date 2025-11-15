@@ -9,21 +9,11 @@ import requests
 # Import from the new client structure
 from workbench_agent.api.clients.projects_api import ProjectsClient
 from workbench_agent.api.helpers.base_api import BaseAPI
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
-    AuthenticationError,
-    CompatibilityError,
-    ConfigurationError,
-    FileSystemError,
-    NetworkError,
-    ProcessError,
-    ProcessTimeoutError,
     ProjectExistsError,
     ProjectNotFoundError,
-    ScanExistsError,
     ScanNotFoundError,
-    ValidationError,
-    WorkbenchAgentError,
 )
 
 

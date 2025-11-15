@@ -6,7 +6,7 @@ import pytest
 
 from workbench_agent.api.services.status_check_service import StatusCheckService
 from workbench_agent.api.utils.process_waiter import StatusResult
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
     NetworkError,
     UnsupportedStatusCheck,

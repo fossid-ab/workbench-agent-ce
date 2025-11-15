@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
-from workbench_agent.exceptions import ProcessError
+from workbench_agent.api.exceptions import ProcessError
 from workbench_agent.main import main
 
 

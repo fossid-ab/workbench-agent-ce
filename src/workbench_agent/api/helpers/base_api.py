@@ -4,7 +4,7 @@ import os
 
 import requests
 
-from workbench_agent.exceptions import ApiError, AuthenticationError, NetworkError
+from workbench_agent.api.exceptions import ApiError, AuthenticationError, NetworkError
 
 logger = logging.getLogger("workbench-agent")
 

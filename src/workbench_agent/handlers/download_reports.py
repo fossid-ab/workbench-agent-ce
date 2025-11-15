@@ -5,13 +5,8 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-from workbench_agent.exceptions import (
-    ApiError,
-    FileSystemError,
-    NetworkError,
-    ProcessTimeoutError,
-    ValidationError,
-)
+from workbench_agent.api.exceptions import ApiError, NetworkError, ProcessTimeoutError
+from workbench_agent.exceptions import FileSystemError, ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 
 if TYPE_CHECKING:
@@ -56,10 +51,10 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
         else:  # project
             report_types = client.reports.PROJECT_REPORT_TYPES
     else:
-        # Split comma-separated list
+        # Split comma-separated list and validate against API capabilities
         for rt in params.report_type.split(","):
             rt = rt.strip().lower()
-            # Validate report type
+            # Validate report type (requires API client - can't be done at CLI layer)
             if params.report_scope == "scan" and rt not in client.reports.SCAN_REPORT_TYPES:
                 raise ValidationError(
                     f"Report type '{rt}' is not supported for scan scope "
@@ -82,6 +77,7 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
         print(f"Creating output directory: {output_dir}")
         os.makedirs(output_dir, exist_ok=True)
 
+    # Note: Project/scan name requirements are validated at CLI layer (cli/validators.py)
     # Resolve project, scan
     scope_name = params.scan_name if params.report_scope == "scan" else params.project_name
     print(
@@ -111,11 +107,7 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
                     scan_name=params.scan_name,
                     project_name=None,
                 )
-        else:
-            raise ValidationError("Scan name is required for scan scope reports")
-    elif not project_code:
-        # If project scope but no project_code, that's an error
-        raise ValidationError("Project name is required for project scope reports")
+    # Note: project_code validation for project scope is done at CLI layer
 
     # Check scan completion status for scan-scope reports
     if params.report_scope == "scan" and scan_code:

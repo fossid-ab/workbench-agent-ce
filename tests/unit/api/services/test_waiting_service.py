@@ -7,7 +7,7 @@ import pytest
 
 from workbench_agent.api.services.waiting_service import WaitingService
 from workbench_agent.api.utils.process_waiter import StatusResult, WaitResult
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ProcessError,
     ProcessTimeoutError,
     UnsupportedStatusCheck,

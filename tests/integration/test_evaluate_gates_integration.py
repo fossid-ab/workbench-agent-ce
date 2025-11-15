@@ -3,7 +3,7 @@
 import sys
 from unittest.mock import patch
 
-from workbench_agent.exceptions import ProjectNotFoundError
+from workbench_agent.api.exceptions import ProjectNotFoundError
 from workbench_agent.main import main
 
 
@@ -188,7 +188,7 @@ class TestEvaluateGatesIntegration:
         """
         Test evaluate-gates command when project is not found (should fail).
         """
-        from workbench_agent.exceptions import ScanNotFoundError
+        from workbench_agent.api.exceptions import ScanNotFoundError
 
         mock_workbench_api.resolver.find_scan.side_effect = ScanNotFoundError(
             "Scan 'TestScan' not found in project 'NonExistentProj'"

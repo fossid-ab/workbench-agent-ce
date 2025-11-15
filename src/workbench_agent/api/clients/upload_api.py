@@ -19,7 +19,8 @@ from typing import Generator
 
 import requests
 
-from workbench_agent.exceptions import ApiError, FileSystemError, NetworkError, WorkbenchAgentError
+from workbench_agent.api.exceptions import ApiError, NetworkError
+from workbench_agent.exceptions import FileSystemError, WorkbenchAgentError
 from workbench_agent.utilities.prep_upload_archive import UploadArchivePrep
 
 logger = logging.getLogger("workbench-agent")

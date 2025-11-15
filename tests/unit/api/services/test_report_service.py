@@ -503,7 +503,7 @@ class TestDownloadReports:
 
     def test_download_project_report_api_error(self, report_service, mock_projects_client):
         """Test download when API returns error."""
-        from workbench_agent.exceptions import ApiError
+        from workbench_agent.api.exceptions import ApiError
 
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
@@ -514,7 +514,7 @@ class TestDownloadReports:
 
     def test_download_scan_report_api_error(self, report_service, mock_projects_client):
         """Test download when API returns error."""
-        from workbench_agent.exceptions import ApiError
+        from workbench_agent.api.exceptions import ApiError
 
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
@@ -525,7 +525,7 @@ class TestDownloadReports:
 
     def test_download_project_report_network_error(self, report_service, mock_projects_client):
         """Test download when network request fails."""
-        from workbench_agent.exceptions import NetworkError
+        from workbench_agent.api.exceptions import NetworkError
 
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
@@ -536,7 +536,7 @@ class TestDownloadReports:
 
     def test_download_scan_report_network_error(self, report_service, mock_projects_client):
         """Test download when network request fails."""
-        from workbench_agent.exceptions import NetworkError
+        from workbench_agent.api.exceptions import NetworkError
 
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api

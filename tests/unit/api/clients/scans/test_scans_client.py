@@ -8,7 +8,7 @@ import requests
 # Import from the new client structure
 from workbench_agent.api.clients.scans_api import ScansClient
 from workbench_agent.api.helpers.base_api import BaseAPI
-from workbench_agent.exceptions import ApiError, ScanExistsError, ScanNotFoundError
+from workbench_agent.api.exceptions import ApiError, ScanExistsError, ScanNotFoundError
 
 
 # --- Fixtures ---

@@ -11,13 +11,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from workbench_agent.api.services.resolver_service import ResolverService
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
-    CompatibilityError,
     NetworkError,
     ProjectNotFoundError,
     ScanNotFoundError,
 )
+from workbench_agent.exceptions import CompatibilityError
 
 
 # --- Fixtures ---

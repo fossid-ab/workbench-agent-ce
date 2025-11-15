@@ -9,17 +9,19 @@ import pytest
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
-from workbench_agent.exceptions import (
+from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
-    CompatibilityError,
-    ConfigurationError,
-    FileSystemError,
     NetworkError,
     ProcessError,
     ProcessTimeoutError,
     ProjectNotFoundError,
     ScanNotFoundError,
+)
+from workbench_agent.exceptions import (
+    CompatibilityError,
+    ConfigurationError,
+    FileSystemError,
     ValidationError,
 )
 from workbench_agent.main import main
