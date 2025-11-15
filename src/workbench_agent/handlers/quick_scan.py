@@ -1,7 +1,7 @@
 import argparse
 import base64
-import logging
 import json
+import logging
 from typing import TYPE_CHECKING
 
 from workbench_agent.utilities.error_handling import handler_error_wrapper
@@ -19,16 +19,12 @@ def _format_scan_result(result: dict) -> str:
         artifact = component.get("artifact")
         author = component.get("author")
         if match_type == "file":
-            msg = (
-                f"This entire file matched to {artifact} by {author}."
-            )
+            msg = f"This entire file matched to {artifact} by {author}."
 
             return msg
         if match_type == "partial":
             remote_size = result.get("snippet", {}).get("remote_size")
-            msg = (
-                f"This file has {remote_size} hits to {artifact} by {author}."
-            )
+            msg = f"This file has {remote_size} hits to {artifact} by {author}."
 
             return msg
         return "Unknown match type."
@@ -74,8 +70,7 @@ def handle_quick_scan(
     # Perform quick scan using explicit API
     print("\nPerforming quick scan...")
     logger.info(
-        f"Quick scanning file with limit={params.limit}, "
-        f"sensitivity={params.sensitivity}"
+        f"Quick scanning file with limit={params.limit}, " f"sensitivity={params.sensitivity}"
     )
     results = client.quick_scan.quick_scan_file(
         file_content_b64=file_content_b64,

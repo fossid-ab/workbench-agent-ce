@@ -63,9 +63,7 @@ def test_run_scan_basic(scan_operations_service, mock_scans_client):
     assert call_args["advanced_match_scoring"] == "1"
 
 
-def test_run_scan_with_optional_params(
-    scan_operations_service, mock_scans_client
-):
+def test_run_scan_with_optional_params(scan_operations_service, mock_scans_client):
     """Test running a scan with optional parameters."""
     mock_scans_client.run_scan_raw.return_value = None
 
@@ -98,9 +96,7 @@ def test_run_scan_with_optional_params(
     assert call_args["match_filtering_threshold"] == "100"
 
 
-def test_run_scan_with_specific_id_reuse(
-    scan_operations_service, mock_scans_client
-):
+def test_run_scan_with_specific_id_reuse(scan_operations_service, mock_scans_client):
     """Test running a scan with specific ID reuse."""
     mock_scans_client.run_scan_raw.return_value = None
 
@@ -128,9 +124,7 @@ def test_extract_archives_basic(scan_operations_service, mock_scans_client):
     mock_scans_client.extract_archives_raw.return_value = True
 
     result = scan_operations_service.extract_archives(
-        scan_code="test_scan",
-        recursively_extract_archives=True,
-        jar_file_extraction=False
+        scan_code="test_scan", recursively_extract_archives=True, jar_file_extraction=False
     )
 
     assert result is True
@@ -142,9 +136,7 @@ def test_extract_archives_basic(scan_operations_service, mock_scans_client):
     assert call_args["extract_to_directory"] == "0"
 
 
-def test_extract_archives_with_options(
-    scan_operations_service, mock_scans_client
-):
+def test_extract_archives_with_options(scan_operations_service, mock_scans_client):
     """Test extracting archives with different options."""
     mock_scans_client.extract_archives_raw.return_value = True
 
@@ -153,7 +145,7 @@ def test_extract_archives_with_options(
         recursively_extract_archives=False,
         jar_file_extraction=True,
         extract_to_directory=True,
-        filename="archive.zip"
+        filename="archive.zip",
     )
 
     assert result is True
@@ -166,15 +158,11 @@ def test_extract_archives_with_options(
 
 
 # --- Test start_dependency_analysis ---
-def test_start_dependency_analysis_basic(
-    scan_operations_service, mock_scans_client
-):
+def test_start_dependency_analysis_basic(scan_operations_service, mock_scans_client):
     """Test starting dependency analysis with basic parameters."""
     mock_scans_client.start_dependency_analysis_raw.return_value = None
 
-    scan_operations_service.start_dependency_analysis(
-        scan_code="test_scan", import_only=False
-    )
+    scan_operations_service.start_dependency_analysis(scan_code="test_scan", import_only=False)
 
     mock_scans_client.start_dependency_analysis_raw.assert_called_once()
     call_args = mock_scans_client.start_dependency_analysis_raw.call_args[0][0]
@@ -182,15 +170,11 @@ def test_start_dependency_analysis_basic(
     assert call_args["import_only"] == "0"
 
 
-def test_start_dependency_analysis_import_only(
-    scan_operations_service, mock_scans_client
-):
+def test_start_dependency_analysis_import_only(scan_operations_service, mock_scans_client):
     """Test starting dependency analysis in import-only mode."""
     mock_scans_client.start_dependency_analysis_raw.return_value = None
 
-    scan_operations_service.start_dependency_analysis(
-        scan_code="import_scan", import_only=True
-    )
+    scan_operations_service.start_dependency_analysis(scan_code="import_scan", import_only=True)
 
     call_args = mock_scans_client.start_dependency_analysis_raw.call_args[0][0]
     assert call_args["scan_code"] == "import_scan"
@@ -227,4 +211,3 @@ def test_import_sbom(scan_operations_service, mock_scans_client):
     scan_operations_service.import_sbom("test_scan")
 
     mock_scans_client.import_report.assert_called_once_with("test_scan")
-

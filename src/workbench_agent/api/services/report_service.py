@@ -7,6 +7,7 @@ This service provides:
 - Automatic async/sync determination
 - Report download and save functionality
 """
+
 import json
 import logging
 import os
@@ -176,8 +177,7 @@ class ReportService:
         self.validate_project_report_type(report_type)
 
         logger.debug(
-            f"Building project report payload: "
-            f"project={project_code}, type={report_type}"
+            f"Building project report payload: " f"project={project_code}, type={report_type}"
         )
 
         # Build base payload
@@ -242,10 +242,7 @@ class ReportService:
         # Validate report type
         self.validate_scan_report_type(report_type)
 
-        logger.debug(
-            f"Building scan report payload: "
-            f"scan={scan_code}, type={report_type}"
-        )
+        logger.debug(f"Building scan report payload: " f"scan={scan_code}, type={report_type}")
 
         # Determine async mode
         if async_mode is None:
@@ -317,14 +314,9 @@ class ReportService:
             ApiError: If report generation fails
         """
         # Build payload with validation
-        payload_data = self.build_project_report_payload(
-            project_code, report_type, **options
-        )
+        payload_data = self.build_project_report_payload(project_code, report_type, **options)
 
-        logger.info(
-            f"Generating project report: project={project_code}, "
-            f"type={report_type}"
-        )
+        logger.info(f"Generating project report: project={project_code}, " f"type={report_type}")
 
         # Delegate to the client's raw method
         return self._projects.generate_project_report_raw(payload_data)
@@ -357,14 +349,9 @@ class ReportService:
             ApiError: If report generation fails
         """
         # Build payload with validation
-        payload_data = self.build_scan_report_payload(
-            scan_code, report_type, **options
-        )
+        payload_data = self.build_scan_report_payload(scan_code, report_type, **options)
 
-        logger.info(
-            f"Generating scan report: scan={scan_code}, "
-            f"type={report_type}"
-        )
+        logger.info(f"Generating scan report: scan={scan_code}, " f"type={report_type}")
 
         # Delegate to the client's raw method
         return self._scans.generate_scan_report_raw(payload_data)
@@ -384,10 +371,8 @@ class ReportService:
         Raises:
             ApiError: If download fails
         """
-        logger.debug(
-            f"Downloading project report for process ID {process_id}..."
-        )
-        
+        logger.debug(f"Downloading project report for process ID {process_id}...")
+
         # Use the base API's download functionality with proper endpoint
         base_api = self._projects._api
 
@@ -416,10 +401,8 @@ class ReportService:
         Raises:
             ApiError: If download fails
         """
-        logger.debug(
-            f"Downloading scan report for process ID {process_id}..."
-        )
-        
+        logger.debug(f"Downloading scan report for process ID {process_id}...")
+
         # Use the base API's download functionality with proper endpoint
         base_api = self._projects._api
 
@@ -437,9 +420,7 @@ class ReportService:
 
     def save_report(
         self,
-        response_or_content: Union[
-            requests.Response, str, bytes, dict, list
-        ],
+        response_or_content: Union[requests.Response, str, bytes, dict, list],
         output_dir: str,
         name_component: str,
         report_type: str,
@@ -463,28 +444,20 @@ class ReportService:
             FileSystemError: If file operations fail
         """
         if not output_dir:
-            raise ValidationError(
-                "Output directory is not specified for saving report."
-            )
+            raise ValidationError("Output directory is not specified for saving report.")
         if not name_component:
             raise ValidationError(
-                "Name component (scan/project name) is not specified "
-                "for saving report."
+                "Name component (scan/project name) is not specified " "for saving report."
             )
         if not report_type:
-            raise ValidationError(
-                "Report type is not specified for saving report."
-            )
+            raise ValidationError("Report type is not specified for saving report.")
 
         filename = ""
         content_to_write: Union[str, bytes] = b""
         write_mode = "wb"
 
         # Handle wrapped Response objects from base_api
-        if (
-            isinstance(response_or_content, dict)
-            and "_raw_response" in response_or_content
-        ):
+        if isinstance(response_or_content, dict) and "_raw_response" in response_or_content:
             response_or_content = response_or_content["_raw_response"]
 
         if isinstance(response_or_content, requests.Response):
@@ -494,9 +467,7 @@ class ReportService:
             safe_name = re.sub(r"[^\w\-]+", "_", name_component)
             safe_scope = scope
             safe_type = re.sub(r"[^\w\-]+", "_", report_type)
-            ext = self.EXTENSION_MAP.get(
-                report_type.lower(), "txt"
-            )
+            ext = self.EXTENSION_MAP.get(report_type.lower(), "txt")
             filename = f"{safe_scope}-{safe_name}-{safe_type}.{ext}"
 
             logger.debug(f"Generated filename: {filename}")
@@ -504,16 +475,10 @@ class ReportService:
             try:
                 content_to_write = response.content
             except Exception as e:
-                raise FileSystemError(
-                    f"Failed to read content from response object: {e}"
-                )
+                raise FileSystemError(f"Failed to read content from response object: {e}")
 
             content_type = response.headers.get("content-type", "").lower()
-            if (
-                "text" in content_type
-                or "json" in content_type
-                or "html" in content_type
-            ):
+            if "text" in content_type or "json" in content_type or "html" in content_type:
                 write_mode = "w"
                 try:
                     content_to_write = content_to_write.decode(
@@ -539,8 +504,7 @@ class ReportService:
                 write_mode = "w"
             except TypeError as e:
                 raise ValidationError(
-                    f"Failed to serialize provided dictionary/list to "
-                    f"JSON: {e}"
+                    f"Failed to serialize provided dictionary/list to " f"JSON: {e}"
                 )
 
         elif isinstance(response_or_content, str):
@@ -563,8 +527,7 @@ class ReportService:
 
         else:
             raise ValidationError(
-                f"Unsupported content type for saving: "
-                f"{type(response_or_content)}"
+                f"Unsupported content type for saving: " f"{type(response_or_content)}"
             )
 
         filepath = os.path.join(output_dir, filename)
@@ -576,9 +539,7 @@ class ReportService:
                 f"Failed to create output directory '{output_dir}': {e}",
                 exc_info=True,
             )
-            raise FileSystemError(
-                f"Could not create output directory '{output_dir}': {e}"
-            ) from e
+            raise FileSystemError(f"Could not create output directory '{output_dir}': {e}") from e
 
         try:
             if write_mode == "w":
@@ -597,15 +558,10 @@ class ReportService:
                 f"Failed to write report to {filepath}: {e}",
                 exc_info=True,
             )
-            raise FileSystemError(
-                f"Failed to write report to '{filepath}': {e}"
-            ) from e
+            raise FileSystemError(f"Failed to write report to '{filepath}': {e}") from e
         except Exception as e:
             logger.error(
                 f"Unexpected error writing report to {filepath}: {e}",
                 exc_info=True,
             )
-            raise FileSystemError(
-                f"Unexpected error writing report to '{filepath}': {e}"
-            ) from e
-
+            raise FileSystemError(f"Unexpected error writing report to '{filepath}': {e}") from e

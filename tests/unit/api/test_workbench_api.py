@@ -3,7 +3,6 @@
 # Import from the package structure
 from workbench_agent.api.services.report_service import ReportService
 
-
 # --- Test Cases ---
 # Note: WorkbenchClient initialization and composition tests have been removed
 # as they conflict with integration test patches. These scenarios are better

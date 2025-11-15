@@ -5,6 +5,7 @@ This service provides methods for retrieving various types of scan results
 including licenses, components, dependencies, vulnerabilities, metrics, and
 policy warnings. It also provides methods for generating Workbench UI links.
 """
+
 import argparse
 import logging
 from typing import Any, Dict, List
@@ -56,49 +57,41 @@ class WorkbenchLinks:
     @property
     def scan(self) -> Dict[str, str]:
         """Link to the main scan view."""
-        return self._build_link(
-            view_param="all_items",
-            message="View this Scan in Workbench"
-        )
+        return self._build_link(view_param="all_items", message="View this Scan in Workbench")
 
     @property
     def pending(self) -> Dict[str, str]:
         """Link to pending items view."""
         return self._build_link(
-            view_param="pending_items",
-            message="Review Pending IDs in Workbench"
+            view_param="pending_items", message="Review Pending IDs in Workbench"
         )
 
     @property
     def identified(self) -> Dict[str, str]:
         """Link to identified components view."""
         return self._build_link(
-            view_param="mark_as_identified",
-            message="View Identified Components in Workbench"
+            view_param="mark_as_identified", message="View Identified Components in Workbench"
         )
 
     @property
     def dependencies(self) -> Dict[str, str]:
         """Link to dependencies view."""
         return self._build_link(
-            view_param="dependency_analysis",
-            message="View Dependencies in Workbench"
+            view_param="dependency_analysis", message="View Dependencies in Workbench"
         )
 
     @property
     def policy(self) -> Dict[str, str]:
         """Link to policy warnings view."""
         return self._build_link(
-            view_param="mark_as_identified",
-            message="Review policy warnings in Workbench"
+            view_param="mark_as_identified", message="Review policy warnings in Workbench"
         )
 
     @property
     def vulnerabilities(self) -> Dict[str, str]:
         """Link to vulnerable components view."""
         return self._build_link(
-            view_param="mark_as_identified",
-            message="Review Vulnerable Components in Workbench"
+            view_param="mark_as_identified", message="Review Vulnerable Components in Workbench"
         )
 
 
@@ -229,9 +222,7 @@ class ResultsService:
 
     # ===== PUBLIC API - INDIVIDUAL RESULT FETCHERS =====
 
-    def get_identified_licenses(
-        self, scan_code: str, unique: bool = True
-    ) -> List[Dict[str, Any]]:
+    def get_identified_licenses(self, scan_code: str, unique: bool = True) -> List[Dict[str, Any]]:
         """
         Get identified licenses from KB scanning.
 
@@ -254,19 +245,14 @@ class ResultsService:
             >>> for lic in licenses:
             ...     print(f"{lic['identifier']}: {lic['name']}")
         """
-        logger.debug(
-            f"Fetching identified licenses for scan '{scan_code}' "
-            f"(unique={unique})"
-        )
-        licenses: List[Dict[str, Any]] = (
-            self._scans.get_scan_identified_licenses(scan_code, unique=unique)
+        logger.debug(f"Fetching identified licenses for scan '{scan_code}' " f"(unique={unique})")
+        licenses: List[Dict[str, Any]] = self._scans.get_scan_identified_licenses(
+            scan_code, unique=unique
         )
         logger.debug(f"Retrieved {len(licenses)} licenses")
         return licenses
 
-    def get_identified_components(
-        self, scan_code: str
-    ) -> List[Dict[str, Any]]:
+    def get_identified_components(self, scan_code: str) -> List[Dict[str, Any]]:
         """
         Get identified components from KB scanning.
 
@@ -288,12 +274,8 @@ class ResultsService:
             >>> for comp in components:
             ...     print(f"{comp['name']} {comp['version']}")
         """
-        logger.debug(
-            f"Fetching identified components for scan '{scan_code}'"
-        )
-        components: List[Dict[str, Any]] = (
-            self._scans.get_scan_identified_components(scan_code)
-        )
+        logger.debug(f"Fetching identified components for scan '{scan_code}'")
+        components: List[Dict[str, Any]] = self._scans.get_scan_identified_components(scan_code)
         logger.debug(f"Retrieved {len(components)} components")
         return components
 
@@ -320,12 +302,8 @@ class ResultsService:
             ...         f"({dep['license_identifier']})"
             ...     )
         """
-        logger.debug(
-            f"Fetching dependency analysis results for scan '{scan_code}'"
-        )
-        dependencies: List[Dict[str, Any]] = (
-            self._scans.get_dependency_analysis_results(scan_code)
-        )
+        logger.debug(f"Fetching dependency analysis results for scan '{scan_code}'")
+        dependencies: List[Dict[str, Any]] = self._scans.get_dependency_analysis_results(scan_code)
         logger.debug(f"Retrieved {len(dependencies)} dependencies")
         return dependencies
 
@@ -354,8 +332,8 @@ class ResultsService:
             ...     )
         """
         logger.debug(f"Fetching vulnerabilities for scan '{scan_code}'")
-        vulnerabilities: List[Dict[str, Any]] = (
-            self._vulnerabilities.list_vulnerabilities(scan_code)
+        vulnerabilities: List[Dict[str, Any]] = self._vulnerabilities.list_vulnerabilities(
+            scan_code
         )
         logger.debug(f"Retrieved {len(vulnerabilities)} vulnerabilities")
         return vulnerabilities
@@ -385,9 +363,7 @@ class ResultsService:
             >>> print(f"Pending: {metrics['pending_identification']}")
         """
         logger.debug(f"Fetching scan metrics for scan '{scan_code}'")
-        metrics: Dict[str, Any] = self._scans.get_scan_folder_metrics(
-            scan_code
-        )
+        metrics: Dict[str, Any] = self._scans.get_scan_folder_metrics(scan_code)
         logger.debug("Retrieved scan metrics")
         return metrics
 
@@ -416,20 +392,14 @@ class ResultsService:
             ...     f"{warnings['policy_warnings_total']}"
             ... )
         """
-        logger.debug(
-            f"Fetching policy warnings counter for scan '{scan_code}'"
-        )
-        warnings: Dict[str, Any] = self._scans.get_policy_warnings_counter(
-            scan_code
-        )
+        logger.debug(f"Fetching policy warnings counter for scan '{scan_code}'")
+        warnings: Dict[str, Any] = self._scans.get_policy_warnings_counter(scan_code)
         logger.debug("Retrieved policy warnings counter")
         return warnings
 
     # ===== HIGH-LEVEL ORCHESTRATOR =====
 
-    def fetch_results(
-        self, scan_code: str, params: argparse.Namespace
-    ) -> Dict[str, Any]:
+    def fetch_results(self, scan_code: str, params: argparse.Namespace) -> Dict[str, Any]:
         """
         Fetch all requested results based on command-line parameters.
 
@@ -471,21 +441,16 @@ class ResultsService:
             >>> print(f"Found {len(results['vulnerabilities'])} vulns")
         """
         logger.debug(
-            f"Fetching requested results for scan '{scan_code}' "
-            f"based on --show-* flags"
+            f"Fetching requested results for scan '{scan_code}' " f"based on --show-* flags"
         )
 
         # Determine what to fetch based on flags
         should_fetch_licenses = getattr(params, "show_licenses", False)
         should_fetch_components = getattr(params, "show_components", False)
-        should_fetch_dependencies = getattr(
-            params, "show_dependencies", False
-        )
+        should_fetch_dependencies = getattr(params, "show_dependencies", False)
         should_fetch_metrics = getattr(params, "show_scan_metrics", False)
         should_fetch_policy = getattr(params, "show_policy_warnings", False)
-        should_fetch_vulnerabilities = getattr(
-            params, "show_vulnerabilities", False
-        )
+        should_fetch_vulnerabilities = getattr(params, "show_vulnerabilities", False)
 
         # Early exit if nothing requested
         if not any(
@@ -510,18 +475,10 @@ class ResultsService:
                 da_results = self.get_dependencies(scan_code)
                 if da_results:
                     collected_results["dependency_analysis"] = da_results
-                    logger.info(
-                        f"Fetched {len(da_results)} dependency analysis "
-                        f"results"
-                    )
+                    logger.info(f"Fetched {len(da_results)} dependency analysis " f"results")
             except (ApiError, NetworkError) as e:
-                logger.warning(
-                    f"Could not fetch Dependency Analysis results: {e}"
-                )
-                print(
-                    f"Warning: Could not fetch Dependency Analysis "
-                    f"results: {e}"
-                )
+                logger.warning(f"Could not fetch Dependency Analysis results: {e}")
+                print(f"Warning: Could not fetch Dependency Analysis " f"results: {e}")
 
         # Fetch KB licenses
         if should_fetch_licenses:
@@ -551,17 +508,10 @@ class ResultsService:
                             x.get("version", ""),
                         ),
                     )
-                    logger.info(
-                        f"Fetched {len(kb_components)} KB components"
-                    )
+                    logger.info(f"Fetched {len(kb_components)} KB components")
             except (ApiError, NetworkError) as e:
-                logger.warning(
-                    f"Could not fetch KB Identified Scan Components: {e}"
-                )
-                print(
-                    f"Warning: Could not fetch KB Identified Scan "
-                    f"Components: {e}"
-                )
+                logger.warning(f"Could not fetch KB Identified Scan Components: {e}")
+                print(f"Warning: Could not fetch KB Identified Scan " f"Components: {e}")
 
         # Fetch scan metrics
         if should_fetch_metrics:
@@ -591,15 +541,12 @@ class ResultsService:
                 vulnerabilities = self.get_vulnerabilities(scan_code)
                 if vulnerabilities:
                     collected_results["vulnerabilities"] = vulnerabilities
-                    logger.info(
-                        f"Fetched {len(vulnerabilities)} vulnerabilities"
-                    )
+                    logger.info(f"Fetched {len(vulnerabilities)} vulnerabilities")
             except (ApiError, NetworkError, ScanNotFoundError) as e:
                 logger.warning(f"Could not fetch Vulnerabilities: {e}")
                 print(f"Warning: Could not fetch Vulnerabilities: {e}")
 
         logger.debug(
-            f"Completed fetching results. "
-            f"Retrieved {len(collected_results)} result types."
+            f"Completed fetching results. " f"Retrieved {len(collected_results)} result types."
         )
         return collected_results

@@ -18,9 +18,7 @@ class TestToolboxWrapperInitialization:
         """Test successful ToolboxWrapper initialization."""
         toolbox_path = shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
         try:
-            toolbox_wrapper = ToolboxWrapper(
-                toolbox_path=toolbox_path, timeout="120"
-            )
+            toolbox_wrapper = ToolboxWrapper(toolbox_path=toolbox_path, timeout="120")
         except FileSystemError:
             pytest.skip("fossid-toolbox not available")
 
@@ -75,15 +73,15 @@ class TestToolboxWrapperGenerateHashes:
         # Use the test file itself as input
         test_file = Path(__file__)
         assert test_file.exists(), "Test file should exist"
-        
+
         # Generate hashes - this will actually run the toolbox
         result_file = toolbox_wrapper.generate_hashes(str(test_file))
-        
+
         # Verify result file was created and has content
         assert os.path.exists(result_file), f"Result file should exist: {result_file}"
         assert result_file.endswith(".fossid"), "Result file should have .fossid extension"
         assert os.path.getsize(result_file) > 0, "Result file should not be empty"
-        
+
         # Clean up
         toolbox_wrapper.cleanup_temp_file(result_file)
 
@@ -92,15 +90,15 @@ class TestToolboxWrapperGenerateHashes:
         # Use the test file itself as input
         test_file = Path(__file__)
         assert test_file.exists(), "Test file should exist"
-        
+
         # Generate hashes with dependency analysis enabled
         result_file = toolbox_wrapper.generate_hashes(str(test_file), run_dependency_analysis=True)
-        
+
         # Verify result file was created and has content
         assert os.path.exists(result_file), f"Result file should exist: {result_file}"
         assert result_file.endswith(".fossid"), "Result file should have .fossid extension"
         assert os.path.getsize(result_file) > 0, "Result file should not be empty"
-        
+
         # Clean up
         toolbox_wrapper.cleanup_temp_file(result_file)
 
@@ -112,18 +110,18 @@ class TestToolboxWrapperGenerateHashes:
     def test_generate_hashes_empty_output(self, toolbox_wrapper):
         """Test hash generation with empty output file (warning case)."""
         # Create a temporary empty file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.py') as tmp_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".py") as tmp_file:
             tmp_file.write("# Empty test file\n")
             tmp_path = tmp_file.name
-        
+
         try:
             # Generate hashes - toolbox should handle empty files gracefully
             result_file = toolbox_wrapper.generate_hashes(tmp_path)
-            
+
             # Result file should still be created (even if empty)
             assert os.path.exists(result_file), f"Result file should exist: {result_file}"
             assert result_file.endswith(".fossid"), "Result file should have .fossid extension"
-            
+
             # Clean up
             toolbox_wrapper.cleanup_temp_file(result_file)
         finally:
@@ -178,14 +176,14 @@ class TestToolboxWrapperCleanupTempFile:
     def test_cleanup_success(self, toolbox_wrapper):
         """Test successful file cleanup."""
         # Create a temporary file to clean up
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.fossid') as tmp_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".fossid") as tmp_file:
             tmp_path = tmp_file.name
             tmp_file.write("test content")
-        
+
         assert os.path.exists(tmp_path), "Temp file should exist before cleanup"
-        
+
         result = toolbox_wrapper.cleanup_temp_file(tmp_path)
-        
+
         assert result is True
         assert not os.path.exists(tmp_path), "Temp file should be deleted after cleanup"
 

@@ -134,9 +134,7 @@ def _validate_download_reports_command(args: Namespace) -> None:
     scan_name = getattr(args, "scan_name", None)
 
     if report_scope == "project" and not project_name:
-        raise ValidationError(
-            "Project name is required for project scope report"
-        )
+        raise ValidationError("Project name is required for project scope report")
     if report_scope == "scan" and not scan_name:
         raise ValidationError("Scan name is required for scan scope report")
 

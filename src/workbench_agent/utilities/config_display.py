@@ -183,10 +183,7 @@ def _print_connection_info(params: Any, workbench_api: Any) -> None:
         else:
             print("  Server Name                : Unknown")
             print("  Workbench Version          : Unknown")
-            print(
-                "  Status                     : ⚠ Could not detect "
-                "server info"
-            )
+            print("  Status                     : ⚠ Could not detect " "server info")
     except Exception:
         print("  Server Name                : Unknown")
         print("  Workbench Version          : Unknown")

@@ -1,6 +1,7 @@
 """
 VulnerabilitiesClient - Handles vulnerability-related Workbench API operations.
 """
+
 import logging
 from typing import Any, Dict, List
 
@@ -12,55 +13,55 @@ logger = logging.getLogger("workbench-agent")
 class VulnerabilitiesClient:
     """
     Vulnerabilities API client using composition pattern.
-    
+
     Handles vulnerability-related operations including:
     - Listing vulnerabilities for a scan (with automatic pagination)
-    
+
     Example:
         >>> vulns = VulnerabilitiesClient(base_api)
         >>> vulnerabilities = vulns.list_vulnerabilities(scan_code)
     """
-    
+
     def __init__(self, base_api):
         """
         Initialize VulnerabilitiesClient.
-        
+
         Args:
             base_api: BaseAPI instance for making HTTP requests
         """
         self._api = base_api
         logger.debug("VulnerabilitiesClient initialized")
-    
+
     def list(self, scan_code: str) -> List[Dict[str, Any]]:
         """
         Retrieves vulnerabilities for a scan.
-        
+
         Alias for list_vulnerabilities() to provide cleaner new-style API.
-        
+
         Args:
             scan_code: Code of the scan to get vulnerabilities for
-            
+
         Returns:
             List of vulnerability dictionaries
         """
         return self.list_vulnerabilities(scan_code)
-    
+
     def list_vulnerabilities(self, scan_code: str) -> List[Dict[str, Any]]:
         """
         Retrieves the list of vulnerabilities associated with a scan.
         Handles pagination automatically to fetch all vulnerabilities.
-        
+
         Args:
             scan_code: Code of the scan to get vulnerabilities for.
-            
+
         Returns:
             List[Dict[str, Any]]: List of vulnerability details.
-            
+
         Raises:
             ApiError: If there are API issues.
         """
         logger.debug(f"Fetching vulnerabilities for scan '{scan_code}'...")
-        
+
         # Step 1: Get the total count of vulnerabilities
         count_payload = {
             "group": "vulnerabilities",
@@ -68,7 +69,7 @@ class VulnerabilitiesClient:
             "data": {"scan_code": scan_code, "count_results": 1},
         }
         count_response = self._api._send_request(count_payload)
-        
+
         if count_response.get("status") != "1":
             error_msg = count_response.get(
                 "error", f"Unexpected response format or status: {count_response}"
@@ -77,7 +78,7 @@ class VulnerabilitiesClient:
                 f"Failed to get vulnerability count for scan '{scan_code}': {error_msg}",
                 details=count_response,
             )
-        
+
         # Get the total count from the response
         total_count = 0
         if (
@@ -85,32 +86,32 @@ class VulnerabilitiesClient:
             and "count_results" in count_response["data"]
         ):
             total_count = int(count_response["data"]["count_results"])
-        
+
         logger.debug(f"Found {total_count} total vulnerabilities for scan '{scan_code}'")
-        
+
         # If no vulnerabilities, return an empty list
         if total_count == 0:
             return []
-        
+
         # Step 2: Calculate number of pages needed (default records_per_page is 100)
         records_per_page = 100
         total_pages = (total_count + records_per_page - 1) // records_per_page  # Ceiling division
-        
+
         # Step 3: Fetch all pages and combine results
         all_vulnerabilities = []
-        
+
         for page in range(1, total_pages + 1):
             logger.debug(
                 f"Fetching vulnerabilities page {page}/{total_pages} for scan '{scan_code}'"
             )
-            
+
             page_payload = {
                 "group": "vulnerabilities",
                 "action": "list_vulnerabilities",
                 "data": {"scan_code": scan_code, "page": page},
             }
             page_response = self._api._send_request(page_payload)
-            
+
             if page_response.get("status") != "1":
                 error_msg = page_response.get(
                     "error", f"Unexpected response format or status: {page_response}"
@@ -119,7 +120,7 @@ class VulnerabilitiesClient:
                     f"Failed to fetch vulnerabilities page {page} for scan '{scan_code}': {error_msg}",
                     details=page_response,
                 )
-            
+
             data = page_response.get("data")
             # Process the page results
             if isinstance(data, dict) and "list" in data:
@@ -136,9 +137,8 @@ class VulnerabilitiesClient:
                 logger.warning(f"Empty data received for vulnerabilities page {page}")
             else:
                 logger.warning(f"Unexpected data format for vulnerabilities page {page}: {data}")
-        
+
         logger.debug(
             f"Successfully fetched all {len(all_vulnerabilities)} vulnerabilities for scan '{scan_code}'"
         )
         return all_vulnerabilities
-

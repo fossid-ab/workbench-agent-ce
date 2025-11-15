@@ -21,9 +21,7 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_download_reports(
-    client: "WorkbenchClient", params: argparse.Namespace
-):
+def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespace):
     """
     Handler for the 'download-reports' command.
 
@@ -62,19 +60,13 @@ def handle_download_reports(
         for rt in params.report_type.split(","):
             rt = rt.strip().lower()
             # Validate report type
-            if (
-                params.report_scope == "scan"
-                and rt not in client.reports.SCAN_REPORT_TYPES
-            ):
+            if params.report_scope == "scan" and rt not in client.reports.SCAN_REPORT_TYPES:
                 raise ValidationError(
                     f"Report type '{rt}' is not supported for scan scope "
                     f"reports. Supported types: "
                     f"{', '.join(sorted(list(client.reports.SCAN_REPORT_TYPES)))}"
                 )
-            elif (
-                params.report_scope == "project"
-                and rt not in client.reports.PROJECT_REPORT_TYPES
-            ):
+            elif params.report_scope == "project" and rt not in client.reports.PROJECT_REPORT_TYPES:
                 raise ValidationError(
                     f"Report type '{rt}' is not supported for project scope "
                     f"reports. Supported types: "
@@ -91,11 +83,7 @@ def handle_download_reports(
         os.makedirs(output_dir, exist_ok=True)
 
     # Resolve project, scan
-    scope_name = (
-        params.scan_name
-        if params.report_scope == "scan"
-        else params.project_name
-    )
+    scope_name = params.scan_name if params.report_scope == "scan" else params.project_name
     print(
         f"\nResolving "
         f"{'scan' if params.report_scope == 'scan' else 'project'} "
@@ -124,14 +112,10 @@ def handle_download_reports(
                     project_name=None,
                 )
         else:
-            raise ValidationError(
-                "Scan name is required for scan scope reports"
-            )
+            raise ValidationError("Scan name is required for scan scope reports")
     elif not project_code:
         # If project scope but no project_code, that's an error
-        raise ValidationError(
-            "Project name is required for project scope reports"
-        )
+        raise ValidationError("Project name is required for project scope reports")
 
     # Check scan completion status for scan-scope reports
     if params.report_scope == "scan" and scan_code:
@@ -180,26 +164,18 @@ def handle_download_reports(
                     "Some reports may have incomplete information."
                 )
                 logger.warning(
-                    f"Generating reports for scan '{scan_code}' "
-                    f"without completed DA."
+                    f"Generating reports for scan '{scan_code}' " f"without completed DA."
                 )
         except (ProcessTimeoutError, ApiError, NetworkError) as e:
             print(f"\nWarning: Could not verify scan completion status: {e}")
-            print(
-                "Proceeding to generate reports anyway, but they may be "
-                "incomplete."
-            )
+            print("Proceeding to generate reports anyway, but they may be " "incomplete.")
             logger.warning(
-                f"Could not verify scan completion for '{scan_code}': {e}. "
-                f"Proceeding anyway."
+                f"Could not verify scan completion for '{scan_code}': {e}. " f"Proceeding anyway."
             )
 
     # Generate and download reports based on scope
     scope_label = "project" if params.report_scope == "project" else "scan"
-    print(
-        f"\nGenerating and downloading {len(report_types)} "
-        f"{scope_label} report(s)..."
-    )
+    print(f"\nGenerating and downloading {len(report_types)} " f"{scope_label} report(s)...")
 
     # Print the actual report types being downloaded
     for rt in sorted(report_types):
@@ -256,16 +232,11 @@ def handle_download_reports(
                         project_code, **common_params
                     )
                 else:
-                    process_id = client.reports.generate_scan_report(
-                        scan_code, **common_params
-                    )
+                    process_id = client.reports.generate_scan_report(scan_code, **common_params)
 
                 # Wait for report generation to complete
                 try:
-                    print(
-                        f"Waiting for {report_type} report generation to "
-                        f"complete..."
-                    )
+                    print(f"Waiting for {report_type} report generation to " f"complete...")
 
                     max_tries = getattr(params, "scan_number_of_tries", 60)
                     if params.report_scope == "project":
@@ -313,9 +284,7 @@ def handle_download_reports(
                 # Download the generated report
                 print(f"Downloading {report_type} report...")
                 if params.report_scope == "project":
-                    response = client.reports.download_project_report(
-                        process_id
-                    )
+                    response = client.reports.download_project_report(process_id)
                 else:
                     response = client.reports.download_scan_report(process_id)
 
@@ -324,13 +293,9 @@ def handle_download_reports(
                 print(f"Downloading {report_type} report...")
                 if params.report_scope == "project":
                     # Note: Project reports are typically async
-                    response = client.reports.generate_project_report(
-                        project_code, **common_params
-                    )
+                    response = client.reports.generate_project_report(project_code, **common_params)
                 else:
-                    response = client.reports.generate_scan_report(
-                        scan_code, **common_params
-                    )
+                    response = client.reports.generate_scan_report(scan_code, **common_params)
 
             # Save the report content
             client.reports.save_report(
@@ -348,10 +313,7 @@ def handle_download_reports(
             FileSystemError,
             ValidationError,
         ) as e:
-            print(
-                f"Error processing {report_type} report: "
-                f"{getattr(e, 'message', str(e))}"
-            )
+            print(f"Error processing {report_type} report: " f"{getattr(e, 'message', str(e))}")
             logger.error(
                 f"Failed to generate/download {report_type} report: {e}",
                 exc_info=True,

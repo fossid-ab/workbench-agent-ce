@@ -50,9 +50,7 @@ class TestSaveReport:
                     response, "output_dir", "test_scan", "basic", "scan"
                 )
                 mock_file.assert_called_once_with(
-                    "output_dir/scan-test_scan-basic.txt",
-                    "w",
-                    encoding="utf-8"
+                    "output_dir/scan-test_scan-basic.txt", "w", encoding="utf-8"
                 )
                 mock_file().write.assert_called_once_with("Test content")
                 assert result == "output_dir/scan-test_scan-basic.txt"
@@ -68,9 +66,7 @@ class TestSaveReport:
                 result = report_service.save_report(
                     response, "output_dir", "test_scan", "xlsx", "scan"
                 )
-                mock_file.assert_called_once_with(
-                    "output_dir/scan-test_scan-xlsx.xlsx", "wb"
-                )
+                mock_file.assert_called_once_with("output_dir/scan-test_scan-xlsx.xlsx", "wb")
                 mock_file().write.assert_called_once_with(b"\x00\x01\x02\x03")
                 assert result == "output_dir/scan-test_scan-xlsx.xlsx"
 
@@ -84,9 +80,7 @@ class TestSaveReport:
                     content, "output_dir", "test_scan", "json", "scan"
                 )
                 mock_file.assert_called_once_with(
-                    "output_dir/scan-test_scan-json.json",
-                    "w",
-                    encoding="utf-8"
+                    "output_dir/scan-test_scan-json.json", "w", encoding="utf-8"
                 )
                 assert result == "output_dir/scan-test_scan-json.json"
 
@@ -98,13 +92,8 @@ class TestSaveReport:
         response.encoding = "utf-8"
 
         with patch("os.makedirs", side_effect=OSError("Cannot create directory")):
-            with pytest.raises(
-                FileSystemError,
-                match="Could not create output directory"
-            ):
-                report_service.save_report(
-                    response, "output_dir", "test_scan", "basic", "scan"
-                )
+            with pytest.raises(FileSystemError, match="Could not create output directory"):
+                report_service.save_report(response, "output_dir", "test_scan", "basic", "scan")
 
     def test_file_write_error(self, report_service):
         """Test handling of file write errors."""
@@ -116,12 +105,8 @@ class TestSaveReport:
         with patch("builtins.open", mock_open()) as mock_file:
             with patch("os.makedirs"):
                 mock_file().write.side_effect = IOError("File write error")
-                with pytest.raises(
-                    FileSystemError, match="Failed to write report to"
-                ):
-                    report_service.save_report(
-                        response, "output_dir", "test_scan", "basic", "scan"
-                    )
+                with pytest.raises(FileSystemError, match="Failed to write report to"):
+                    report_service.save_report(response, "output_dir", "test_scan", "basic", "scan")
 
     def test_save_json_response_success(self, report_service):
         """Test saving a JSON response successfully."""
@@ -136,9 +121,7 @@ class TestSaveReport:
                     response, "output_dir", "test_project", "cyclone_dx", "project"
                 )
                 mock_file.assert_called_once_with(
-                    "output_dir/project-test_project-cyclone_dx.json",
-                    "w",
-                    encoding="utf-8"
+                    "output_dir/project-test_project-cyclone_dx.json", "w", encoding="utf-8"
                 )
                 mock_file().write.assert_called_once_with('{"key": "value"}')
                 assert result == "output_dir/project-test_project-cyclone_dx.json"
@@ -153,9 +136,7 @@ class TestSaveReport:
                     content, "output_dir", "test_project", "results", "project"
                 )
                 mock_file.assert_called_once_with(
-                    "output_dir/project-test_project-results.json",
-                    "w",
-                    encoding="utf-8"
+                    "output_dir/project-test_project-results.json", "w", encoding="utf-8"
                 )
                 assert result == "output_dir/project-test_project-results.json"
 
@@ -201,13 +182,8 @@ class TestSaveReport:
 
         type(response).content = property(lambda self: _content_prop())
 
-        with pytest.raises(
-            FileSystemError,
-            match="Failed to read content from response object"
-        ):
-            report_service.save_report(
-                response, "output_dir", "test_scan", "basic", "scan"
-            )
+        with pytest.raises(FileSystemError, match="Failed to read content from response object"):
+            report_service.save_report(response, "output_dir", "test_scan", "basic", "scan")
 
     def test_json_serialization_error(self, report_service):
         """Test handling of JSON serialization errors."""
@@ -215,12 +191,9 @@ class TestSaveReport:
         content = {"function": lambda x: x}  # Functions are not JSON serializable
 
         with pytest.raises(
-            ValidationError,
-            match="Failed to serialize provided dictionary/list to JSON"
+            ValidationError, match="Failed to serialize provided dictionary/list to JSON"
         ):
-            report_service.save_report(
-                content, "output_dir", "test_scan", "json", "scan"
-            )
+            report_service.save_report(content, "output_dir", "test_scan", "json", "scan")
 
     def test_filename_sanitization(self, report_service):
         """Test filename sanitization with special characters."""
@@ -236,9 +209,7 @@ class TestSaveReport:
                 )
                 # Check that filename was sanitized
                 mock_file.assert_called_once_with(
-                    "output_dir/scan-test_scan_name_-basic.txt",
-                    "w",
-                    encoding="utf-8"
+                    "output_dir/scan-test_scan_name_-basic.txt", "w", encoding="utf-8"
                 )
                 assert result == "output_dir/scan-test_scan_name_-basic.txt"
 
@@ -267,9 +238,7 @@ class TestSaveReport:
                 result = report_service.save_report(
                     response, "output_dir", "test_scan", report_type, "scan"
                 )
-                expected_filename = (
-                    f"output_dir/scan-test_scan-{report_type}.{expected_ext}"
-                )
+                expected_filename = f"output_dir/scan-test_scan-{report_type}.{expected_ext}"
                 mock_file.assert_called_once_with(expected_filename, "wb")
                 assert result == expected_filename
 
@@ -277,42 +246,28 @@ class TestSaveReport:
         """Test validation error when output directory is not specified."""
         response = MagicMock(spec=requests.Response)
 
-        with pytest.raises(
-            ValidationError, match="Output directory is not specified"
-        ):
-            report_service.save_report(
-                response, "", "test_scan", "basic", "scan"
-            )
+        with pytest.raises(ValidationError, match="Output directory is not specified"):
+            report_service.save_report(response, "", "test_scan", "basic", "scan")
 
     def test_validation_error_no_name_component(self, report_service):
         """Test validation error when name component is not specified."""
         response = MagicMock(spec=requests.Response)
 
-        with pytest.raises(
-            ValidationError, match="Name component.*is not specified"
-        ):
-            report_service.save_report(
-                response, "output_dir", "", "basic", "scan"
-            )
+        with pytest.raises(ValidationError, match="Name component.*is not specified"):
+            report_service.save_report(response, "output_dir", "", "basic", "scan")
 
     def test_validation_error_no_report_type(self, report_service):
         """Test validation error when report type is not specified."""
         response = MagicMock(spec=requests.Response)
 
-        with pytest.raises(
-            ValidationError, match="Report type is not specified"
-        ):
-            report_service.save_report(
-                response, "output_dir", "test_scan", "", "scan"
-            )
+        with pytest.raises(ValidationError, match="Report type is not specified"):
+            report_service.save_report(response, "output_dir", "test_scan", "", "scan")
 
     def test_unsupported_content_type(self, report_service):
         """Test validation error for unsupported content types."""
         unsupported_content = 12345  # Integer is not supported
 
-        with pytest.raises(
-            ValidationError, match="Unsupported content type for saving"
-        ):
+        with pytest.raises(ValidationError, match="Unsupported content type for saving"):
             report_service.save_report(
                 unsupported_content, "output_dir", "test_scan", "basic", "scan"
             )
@@ -333,9 +288,7 @@ class TestSaveReport:
                 )
                 # Due to errors='replace', it should still be text mode
                 mock_file.assert_called_once_with(
-                    "output_dir/scan-test_scan-basic.txt",
-                    "w",
-                    encoding="utf-8"
+                    "output_dir/scan-test_scan-basic.txt", "w", encoding="utf-8"
                 )
                 assert result == "output_dir/scan-test_scan-basic.txt"
 
@@ -347,10 +300,7 @@ class TestBuildProjectReportPayload:
     def test_build_project_report_payload_success(self, report_service):
         """Test building project report payload successfully."""
         result = report_service.build_project_report_payload(
-            project_code="TEST_PROJECT",
-            report_type="xlsx",
-            selection_type="all",
-            include_vex=False
+            project_code="TEST_PROJECT", report_type="xlsx", selection_type="all", include_vex=False
         )
 
         expected = {
@@ -365,8 +315,7 @@ class TestBuildProjectReportPayload:
     def test_build_project_report_payload_invalid_type(self, report_service):
         """Test validation error for invalid project report type."""
         with pytest.raises(
-            ValidationError,
-            match="Report type 'html' is not supported for project reports"
+            ValidationError, match="Report type 'html' is not supported for project reports"
         ):
             report_service.build_project_report_payload(
                 project_code="TEST_PROJECT", report_type="html"
@@ -448,9 +397,7 @@ class TestBuildScanReportPayload:
             ("string_match", "0"),
         ],
     )
-    def test_scan_report_async_types(
-        self, report_service, report_type, expected_async
-    ):
+    def test_scan_report_async_types(self, report_service, report_type, expected_async):
         """Test async/sync behavior for different scan report types."""
         result = report_service.build_scan_report_payload(
             scan_code="TEST_SCAN", report_type=report_type
@@ -502,7 +449,7 @@ class TestDownloadReports:
         """Test successful project report download."""
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
-        
+
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
         mock_response.headers = {
@@ -522,7 +469,7 @@ class TestDownloadReports:
         assert payload["data"]["report_entity"] == "projects"
         assert payload["data"]["process_id"] == "12345"
         assert call_args[1]["timeout"] == 1800
-        
+
         # The method returns the result from _send_request
         assert result == {"_raw_response": mock_response}
 
@@ -530,7 +477,7 @@ class TestDownloadReports:
         """Test successful scan report download."""
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
-        
+
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
         mock_response.headers = {
@@ -550,14 +497,14 @@ class TestDownloadReports:
         assert payload["data"]["report_entity"] == "scans"
         assert payload["data"]["process_id"] == "54321"
         assert call_args[1]["timeout"] == 1800
-        
+
         # The method returns the result from _send_request
         assert result == {"_raw_response": mock_response}
 
     def test_download_project_report_api_error(self, report_service, mock_projects_client):
         """Test download when API returns error."""
         from workbench_agent.exceptions import ApiError
-        
+
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
         mock_base_api._send_request.side_effect = ApiError("Report not found")
@@ -568,7 +515,7 @@ class TestDownloadReports:
     def test_download_scan_report_api_error(self, report_service, mock_projects_client):
         """Test download when API returns error."""
         from workbench_agent.exceptions import ApiError
-        
+
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
         mock_base_api._send_request.side_effect = ApiError("Report not found")
@@ -579,7 +526,7 @@ class TestDownloadReports:
     def test_download_project_report_network_error(self, report_service, mock_projects_client):
         """Test download when network request fails."""
         from workbench_agent.exceptions import NetworkError
-        
+
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
         mock_base_api._send_request.side_effect = NetworkError("Connection failed")
@@ -590,7 +537,7 @@ class TestDownloadReports:
     def test_download_scan_report_network_error(self, report_service, mock_projects_client):
         """Test download when network request fails."""
         from workbench_agent.exceptions import NetworkError
-        
+
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
         mock_base_api._send_request.side_effect = NetworkError("Connection failed")
@@ -604,7 +551,7 @@ class TestDownloadReports:
         """Test download with proper content-disposition header."""
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
-        
+
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
         mock_response.headers = {
@@ -624,7 +571,7 @@ class TestDownloadReports:
         """Test download with binary content type but no content-disposition."""
         mock_base_api = MagicMock()
         mock_projects_client._api = mock_base_api
-        
+
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
         mock_response.headers = {"content-type": "application/octet-stream"}
@@ -634,4 +581,3 @@ class TestDownloadReports:
 
         assert result == {"_raw_response": mock_response}
         mock_base_api._send_request.assert_called_once()
-

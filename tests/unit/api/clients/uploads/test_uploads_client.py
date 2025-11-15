@@ -153,4 +153,3 @@ def test_upload_sbom_file_success(uploads_client):
     # This test is skipped because it requires complex mocking of file I/O operations
     # and needs access to the internal implementation of the upload_sbom_file method
     pass
-

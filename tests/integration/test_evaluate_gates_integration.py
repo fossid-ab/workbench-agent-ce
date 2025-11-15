@@ -77,7 +77,9 @@ class TestEvaluateGatesIntegration:
         """
         Test evaluate-gates command when policy warnings are found and --fail-on-policy is set.
         """
-        mock_workbench_api.scans.get_policy_warnings_counter.return_value = {"policy_warnings_total": 2}
+        mock_workbench_api.scans.get_policy_warnings_counter.return_value = {
+            "policy_warnings_total": 2
+        }
 
         args = [
             "workbench-agent",
@@ -187,6 +189,7 @@ class TestEvaluateGatesIntegration:
         Test evaluate-gates command when project is not found (should fail).
         """
         from workbench_agent.exceptions import ScanNotFoundError
+
         mock_workbench_api.resolver.find_scan.side_effect = ScanNotFoundError(
             "Scan 'TestScan' not found in project 'NonExistentProj'"
         )

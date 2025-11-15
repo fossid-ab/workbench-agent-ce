@@ -418,7 +418,9 @@ def test_start_dependency_analysis_import_only(mock_send, scans_client):
 def test_start_dependency_analysis_scan_not_found(mock_send, scans_client):
     mock_send.return_value = {"status": "0", "error": "Scan not found"}
     payload_data = {"scan_code": "scan1", "import_only": "0"}
-    with pytest.raises(ApiError, match="Failed to start dependency analysis for 'scan1': Scan not found"):
+    with pytest.raises(
+        ApiError, match="Failed to start dependency analysis for 'scan1': Scan not found"
+    ):
         scans_client.start_dependency_analysis_raw(payload_data)
 
 
@@ -645,7 +647,9 @@ def test_import_report_api_error(mock_send, scans_client):
     """Test import_report with API error."""
     mock_send.return_value = {"status": "0", "error": "Import failed"}
 
-    with pytest.raises(ApiError, match="Failed to start SBOM report import for 'scan1': Import failed"):
+    with pytest.raises(
+        ApiError, match="Failed to start SBOM report import for 'scan1': Import failed"
+    ):
         scans_client.import_report("scan1")
 
 
@@ -684,7 +688,7 @@ def test_check_status_unsupported_maps_to_exception(mock_send, scans_client):
     # The new implementation doesn't convert ApiError to UnsupportedStatusCheck
     # It just raises ApiError directly
     mock_send.side_effect = ApiError("Field_not_valid_option: type")
-    
+
     with pytest.raises(ApiError, match="Field_not_valid_option: type"):
         scans_client.check_status("scan1", "SOME_UNKNOWN_TYPE")
 
@@ -782,4 +786,3 @@ def test_generate_scan_report_error(mock_send, scans_client):
     payload_data = {"scan_code": "scan1", "report_type": "spdx", "async": "1"}
     with pytest.raises(ApiError):
         scans_client.generate_scan_report_raw(payload_data)
-

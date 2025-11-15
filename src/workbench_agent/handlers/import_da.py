@@ -25,9 +25,7 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_import_da(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> bool:
+def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     """
     Handler for the 'import-da' command.
 
@@ -67,23 +65,17 @@ def handle_import_da(
     # Validate scan parameters
     # Note: argparse already validates that path is provided (required=True)
     if not os.path.exists(params.path):
-        raise FileSystemError(
-            f"The provided path does not exist: {params.path}"
-        )
+        raise FileSystemError(f"The provided path does not exist: {params.path}")
     if not os.path.isfile(params.path):
-        raise ValidationError(
-            f"The provided path must be a file: {params.path}"
-        )
+        raise ValidationError(f"The provided path must be a file: {params.path}")
 
     # Resolve project and scan (find or create)
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    project_code, scan_code, scan_is_new = (
-        client.resolver.resolve_project_and_scan(
-            project_name=params.project_name,
-            scan_name=params.scan_name,
-            params=params,
-        )
+    project_code, scan_code, scan_is_new = client.resolver.resolve_project_and_scan(
+        project_name=params.project_name,
+        scan_name=params.scan_name,
+        params=params,
     )
 
     # Ensure scan is idle before starting dependency analysis import
@@ -99,21 +91,16 @@ def handle_import_da(
         except Exception as e:
             logger.debug(f"Dependency analysis check skipped: {e}")
     else:
-        logger.debug(
-            "Skipping idle checks - new scan is guaranteed to be idle"
-        )
+        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
 
     # Upload dependency analysis file
     print("\n--- Uploading Dependency Analysis File ---")
     try:
-        client.uploads.upload_dependency_analysis_results(
-            scan_code=scan_code, path=params.path
-        )
+        client.uploads.upload_dependency_analysis_results(scan_code=scan_code, path=params.path)
         print("Dependency analysis results uploaded successfully!")
     except Exception as e:
         logger.error(
-            f"Failed to upload dependency analysis file for "
-            f"'{scan_code}': {e}",
+            f"Failed to upload dependency analysis file for " f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(
@@ -129,8 +116,7 @@ def handle_import_da(
         print("Dependency analysis import initiated successfully.")
     except Exception as e:
         logger.error(
-            f"Failed to start dependency analysis import for "
-            f"'{scan_code}': {e}",
+            f"Failed to start dependency analysis import for " f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(
@@ -144,9 +130,7 @@ def handle_import_da(
         print("\nExiting without waiting for completion (--no-wait mode).")
 
         # Print operation summary for no-wait mode
-        print_operation_summary(
-            params, True, project_code, scan_code, durations
-        )
+        print_operation_summary(params, True, project_code, scan_code, durations)
         return True
 
     # Wait for dependency analysis to complete
@@ -154,40 +138,33 @@ def handle_import_da(
     try:
         print("\nWaiting for Dependency Analysis import to complete...")
         # Use optimized 3-second wait interval for import-only mode
-        dependency_analysis_status = (
-            client.waiting.wait_for_da_to_finish(
-                scan_code,
-                max_tries=params.scan_number_of_tries,
-                wait_interval=3,  # Faster for import-only mode
-            )
+        dependency_analysis_status = client.waiting.wait_for_da_to_finish(
+            scan_code,
+            max_tries=params.scan_number_of_tries,
+            wait_interval=3,  # Faster for import-only mode
         )
 
         # Store the DA import duration
-        durations["dependency_analysis"] = (
-            dependency_analysis_status.duration or 0.0
-        )
+        durations["dependency_analysis"] = dependency_analysis_status.duration or 0.0
         da_completed = True
 
         print("Dependency Analysis import completed successfully.")
 
     except ProcessTimeoutError:
         logger.error(
-            f"Error during dependency analysis import for "
-            f"'{scan_code}': timeout",
+            f"Error during dependency analysis import for " f"'{scan_code}': timeout",
             exc_info=True,
         )
         raise
     except ProcessError:
         logger.error(
-            f"Error during dependency analysis import for "
-            f"'{scan_code}': process error",
+            f"Error during dependency analysis import for " f"'{scan_code}': process error",
             exc_info=True,
         )
         raise
     except Exception as e:
         logger.error(
-            f"Unexpected error during dependency analysis import for "
-            f"'{scan_code}': {e}",
+            f"Unexpected error during dependency analysis import for " f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(
@@ -196,9 +173,7 @@ def handle_import_da(
         ) from e
 
     # Print operation summary
-    print_operation_summary(
-        params, da_completed, project_code, scan_code, durations
-    )
+    print_operation_summary(params, da_completed, project_code, scan_code, durations)
 
     # Fetch and display results if requested
     if da_completed:

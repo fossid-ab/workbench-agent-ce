@@ -11,11 +11,11 @@ from workbench_agent.exceptions import (
     WorkbenchAgentError,
 )
 from workbench_agent.utilities.error_handling import handler_error_wrapper
-from workbench_agent.utilities.sbom_validator import SBOMValidator
 from workbench_agent.utilities.post_scan_summary import (
     fetch_display_save_results,
     print_operation_summary,
 )
+from workbench_agent.utilities.sbom_validator import SBOMValidator
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -45,9 +45,7 @@ def _validate_sbom_file(file_path: str) -> Tuple[str, str, Dict, Any]:
             metadata,
             parsed_document,
         ) = SBOMValidator.validate_sbom_file(file_path)
-        logger.debug(
-            f"SBOM validation successful: {sbom_format} v{version}"
-        )
+        logger.debug(f"SBOM validation successful: {sbom_format} v{version}")
         return sbom_format, version, metadata, parsed_document
     except Exception as e:
         logger.error(f"SBOM validation failed for '{file_path}': {e}")
@@ -106,9 +104,7 @@ def _print_validation_summary(sbom_format: str, version: str, metadata: Dict):
 
 
 @handler_error_wrapper
-def handle_import_sbom(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> bool:
+def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     """
     Handler for the 'import-sbom' command.
 
@@ -167,23 +163,18 @@ def handle_import_sbom(
         )
 
         if temp_file_created:
-            print(
-                f"  Converted for upload: "
-                f"{os.path.basename(upload_path)}"
-            )
+            print(f"  Converted for upload: " f"{os.path.basename(upload_path)}")
         else:
             print("  Using original file format")
 
         # Resolve project and scan (find or create)
         print("\n--- Project and Scan Checks ---")
         print("Checking target Project and Scan...")
-        project_code, scan_code, scan_is_new = (
-            client.resolver.resolve_project_and_scan(
-                project_name=params.project_name,
-                scan_name=params.scan_name,
-                params=params,
-                import_from_report=True,
-            )
+        project_code, scan_code, scan_is_new = client.resolver.resolve_project_and_scan(
+            project_name=params.project_name,
+            scan_name=params.scan_name,
+            params=params,
+            import_from_report=True,
         )
 
         # Ensure scan is idle before starting SBOM import
@@ -199,16 +190,12 @@ def handle_import_sbom(
             except Exception as e:
                 logger.debug(f"Report import check skipped: {e}")
         else:
-            logger.debug(
-                "Skipping idle checks - new scan is guaranteed to be idle"
-            )
+            logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
 
         # Upload SBOM file using the prepared upload path
         print("\n--- Uploading SBOM File ---")
         try:
-            client.uploads.upload_sbom_file(
-                scan_code=scan_code, path=upload_path
-            )
+            client.uploads.upload_sbom_file(scan_code=scan_code, path=upload_path)
             print(f"SBOM uploaded successfully from: {upload_path}")
         except Exception as e:
             logger.error(
@@ -241,12 +228,10 @@ def handle_import_sbom(
         try:
             print("\nWaiting for SBOM import to complete...")
             # Use optimized 3-second wait interval for import mode
-            report_import_status = (
-                client.waiting.wait_for_report_import(
-                    scan_code,
-                    max_tries=params.scan_number_of_tries,
-                    wait_interval=3,  # Faster for import mode
-                )
+            report_import_status = client.waiting.wait_for_report_import(
+                scan_code,
+                max_tries=params.scan_number_of_tries,
+                wait_interval=3,  # Faster for import mode
             )
 
             # Store the SBOM import duration
@@ -269,8 +254,7 @@ def handle_import_sbom(
             raise
         except Exception as e:
             logger.error(
-                f"Unexpected error during SBOM import for "
-                f"'{scan_code}': {e}",
+                f"Unexpected error during SBOM import for " f"'{scan_code}': {e}",
                 exc_info=True,
             )
             raise WorkbenchAgentError(
@@ -279,9 +263,7 @@ def handle_import_sbom(
             ) from e
 
         # Print operation summary
-        print_operation_summary(
-            params, sbom_completed, project_code, scan_code, durations
-        )
+        print_operation_summary(params, sbom_completed, project_code, scan_code, durations)
 
         # Fetch and display results if requested
         if sbom_completed:
@@ -313,10 +295,7 @@ def handle_import_sbom(
                 if scan_id:
                     link = client.results.link_to_scan(int(scan_id))
                     if link.get("url"):
-                        print(
-                            f"\n🔗 {link['message']}: "
-                            f"{link['url']}"
-                        )
+                        print(f"\n🔗 {link['message']}: " f"{link['url']}")
             except Exception as e:
                 logger.debug(f"Could not generate Workbench link: {e}")
                 # Don't fail the whole operation if link generation fails

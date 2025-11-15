@@ -22,9 +22,7 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_show_results(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> bool:
+def handle_show_results(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     """
     Handler for the 'show-results' command.
 
@@ -66,24 +64,17 @@ def handle_show_results(
         params.show_vulnerabilities,
     ]
     if not any(show_flags):
-        raise ValidationError(
-            "At least one '--show-*' flag must be provided to display results"
-        )
+        raise ValidationError("At least one '--show-*' flag must be provided to display results")
 
     # Resolve project and scan (find only - don't create)
     print("\nResolving scan for results display...")
-    logger.info(
-        f"Looking for scan '{params.scan_name}' in project "
-        f"'{params.project_name}'"
-    )
+    logger.info(f"Looking for scan '{params.scan_name}' in project " f"'{params.project_name}'")
 
     # Use explicit resolver API (read-only)
     project_code = client.resolver.find_project(params.project_name)
     logger.debug(f"Found project: {project_code}")
 
-    scan_code, scan_id = client.resolver.find_scan(
-        params.scan_name, params.project_name
-    )
+    scan_code, scan_id = client.resolver.find_scan(params.scan_name, params.project_name)
     logger.debug(f"Found scan: {scan_code} (ID: {scan_id})")
 
     # Ensure scan processes are idle before fetching results
@@ -115,13 +106,9 @@ def handle_show_results(
 
     except (ProcessTimeoutError, ProcessError, ApiError, NetworkError) as e:
         logger.warning(
-            f"Could not verify scan completion for '{scan_code}': {e}. "
-            f"Proceeding anyway."
+            f"Could not verify scan completion for '{scan_code}': {e}. " f"Proceeding anyway."
         )
-        print(
-            "\nWarning: Could not verify scan completion status. "
-            "Results may be incomplete."
-        )
+        print("\nWarning: Could not verify scan completion status. " "Results may be incomplete.")
 
     # Fetch and display results
     print(f"\nFetching results for scan '{scan_code}'...")

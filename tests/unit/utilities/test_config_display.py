@@ -19,7 +19,6 @@ from workbench_agent.utilities.config_display import (
     print_configuration,
 )
 
-
 # ===== Fixtures =====
 
 
@@ -390,7 +389,9 @@ def test_print_connection_info_success(mock_print, mock_params, mock_workbench_c
 
 
 @patch("builtins.print")
-def test_print_connection_info_debug_mode_shows_token(mock_print, mock_params, mock_workbench_client):
+def test_print_connection_info_debug_mode_shows_token(
+    mock_print, mock_params, mock_workbench_client
+):
     """Test that token is shown in debug mode."""
     mock_params.log = "DEBUG"
     mock_workbench_client.internal.get_config.return_value = {
@@ -408,7 +409,9 @@ def test_print_connection_info_debug_mode_shows_token(mock_print, mock_params, m
 
 
 @patch("builtins.print")
-def test_print_connection_info_non_debug_mode_masks_token(mock_print, mock_params, mock_workbench_client):
+def test_print_connection_info_non_debug_mode_masks_token(
+    mock_print, mock_params, mock_workbench_client
+):
     """Test that token is masked in non-debug mode."""
     mock_params.log = "INFO"
     mock_workbench_client.internal.get_config.return_value = {
@@ -524,7 +527,9 @@ def test_print_cli_parameters_empty_params(mock_print_section, mocker):
 @patch("workbench_agent.utilities.config_display._print_cli_parameters")
 @patch("workbench_agent.utilities.config_display._print_connection_info")
 @patch("builtins.print")
-def test_print_configuration_full(mock_print, mock_print_conn, mock_print_cli, mock_params, mock_workbench_client):
+def test_print_configuration_full(
+    mock_print, mock_print_conn, mock_print_cli, mock_params, mock_workbench_client
+):
     """Test print_configuration calls all sub-functions."""
     print_configuration(mock_params, mock_workbench_client)
 
@@ -545,7 +550,9 @@ def test_print_configuration_full(mock_print, mock_print_conn, mock_print_cli, m
 @patch("workbench_agent.utilities.config_display._print_cli_parameters")
 @patch("workbench_agent.utilities.config_display._print_connection_info")
 @patch("builtins.print")
-def test_print_configuration_different_command(mock_print, mock_print_conn, mock_print_cli, mock_params, mock_workbench_client):
+def test_print_configuration_different_command(
+    mock_print, mock_print_conn, mock_print_cli, mock_params, mock_workbench_client
+):
     """Test print_configuration with different command."""
     mock_params.command = "show-results"
 
@@ -577,4 +584,3 @@ def test_print_configuration_integration(mock_print, mock_params, mock_workbench
     # Verify sections were printed
     assert any("⚙️  Agent Configuration:" in line for line in printed_lines)
     assert any("🎯 Scan Target:" in line for line in printed_lines)
-

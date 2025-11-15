@@ -5,6 +5,7 @@ This module defines standard data structures used throughout the waiting
 infrastructure. These classes provide consistent interfaces for status
 checking and wait result reporting.
 """
+
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 

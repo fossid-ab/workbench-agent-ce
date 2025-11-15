@@ -1,7 +1,7 @@
 # tests/integration/test_blind_scan_integration.py
 
-import sys
 import shutil
+import sys
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
@@ -51,9 +51,11 @@ class TestBlindScanIntegration:
         # The handler will use the real toolbox to generate hashes
 
         # Mock file system operations
-        with patch("os.path.exists", return_value=True), \
-             patch("os.path.isdir", return_value=True), \
-             patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True),
+        ):
             args = [
                 "workbench-agent",
                 "blind-scan",
@@ -96,10 +98,12 @@ class TestBlindScanIntegration:
         mock_toolbox.get_version.return_value = "FossID Toolbox version 2023.2.1"
         mock_toolbox.generate_hashes.return_value = "/tmp/blind_scan_result_TESTRAND.fossid"
 
-        with patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox), \
-             patch("os.path.exists", return_value=True), \
-             patch("os.path.isdir", return_value=True), \
-             patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True):
+        with (
+            patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox),
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True),
+        ):
             args = [
                 "workbench-agent",
                 "blind-scan",
@@ -139,10 +143,12 @@ class TestBlindScanIntegration:
         mock_toolbox.get_version.return_value = "FossID Toolbox version 2023.2.1"
         mock_toolbox.generate_hashes.return_value = "/tmp/blind_scan_result_TESTRAND.fossid"
 
-        with patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox), \
-             patch("os.path.exists", return_value=True), \
-             patch("os.path.isdir", return_value=True), \
-             patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True):
+        with (
+            patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox),
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True),
+        ):
             args = [
                 "workbench-agent",
                 "blind-scan",
@@ -212,8 +218,7 @@ class TestBlindScanIntegration:
         dummy_file = tmp_path / "test_file.py"
         dummy_file.write_text("print('test')")
 
-        with patch("os.path.exists", return_value=True), \
-             patch("os.path.isdir", return_value=False):
+        with patch("os.path.exists", return_value=True), patch("os.path.isdir", return_value=False):
             args = [
                 "workbench-agent",
                 "blind-scan",
@@ -252,10 +257,12 @@ class TestBlindScanIntegration:
         mock_toolbox.get_version.side_effect = Exception("Version check failed")
         mock_toolbox.generate_hashes.return_value = "/tmp/blind_scan_result_TESTRAND.fossid"
 
-        with patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox), \
-             patch("os.path.exists", return_value=True), \
-             patch("os.path.isdir", return_value=True), \
-             patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True):
+        with (
+            patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox),
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True),
+        ):
             args = [
                 "workbench-agent",
                 "blind-scan",
@@ -294,10 +301,12 @@ class TestBlindScanIntegration:
         mock_toolbox.get_version.return_value = "FossID Toolbox version 2023.2.1"
         mock_toolbox.generate_hashes.return_value = "/tmp/blind_scan_result_TESTRAND.fossid"
 
-        with patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox), \
-             patch("os.path.exists", return_value=True), \
-             patch("os.path.isdir", return_value=True), \
-             patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True):
+        with (
+            patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox),
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True),
+        ):
             args = [
                 "workbench-agent",
                 "blind-scan",

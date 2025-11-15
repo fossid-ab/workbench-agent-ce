@@ -14,7 +14,9 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
+from workbench_agent.api.services.results_service import ResultsService, WorkbenchLinks
 from workbench_agent.exceptions import ApiError
+from workbench_agent.utilities.post_scan_summary import print_operation_summary
 from workbench_agent.utilities.scan_workflows import (
     determine_scans_to_run,
     display_results,
@@ -23,8 +25,6 @@ from workbench_agent.utilities.scan_workflows import (
     format_duration,
     save_results_to_file,
 )
-from workbench_agent.utilities.post_scan_summary import print_operation_summary
-from workbench_agent.api.services.results_service import ResultsService, WorkbenchLinks
 
 # ============================================================================
 # TEST CONSTANTS
@@ -375,7 +375,9 @@ class TestFetchResults:
     def test_fetch_vulnerabilities(self, mock_workbench, mock_params):
         """Test fetching vulnerability results."""
         mock_params.show_vulnerabilities = True
-        mock_workbench.vulnerabilities.list_vulnerabilities.return_value = [SAMPLE_VULNERABILITY_DATA]
+        mock_workbench.vulnerabilities.list_vulnerabilities.return_value = [
+            SAMPLE_VULNERABILITY_DATA
+        ]
 
         result = fetch_results(mock_workbench, mock_params, TEST_SCAN_CODE)
 
@@ -385,7 +387,9 @@ class TestFetchResults:
     def test_api_error_handling(self, mock_workbench, mock_params):
         """Test graceful handling of API errors during result fetching."""
         mock_params.show_licenses = True
-        mock_workbench.scans.get_dependency_analysis_results.side_effect = ApiError("Service unavailable")
+        mock_workbench.scans.get_dependency_analysis_results.side_effect = ApiError(
+            "Service unavailable"
+        )
         mock_workbench.scans.get_scan_identified_licenses.return_value = [SAMPLE_LICENSE_DATA]
 
         # Should not raise, should return partial results
@@ -495,12 +499,12 @@ def mock_results_service():
     """Create a ResultsService with mocked clients."""
     mock_scans_client = MagicMock()
     mock_vulns_client = MagicMock()
-    
+
     # Mock the _api attribute on scans_client to provide api_url
     mock_base_api = MagicMock()
     mock_base_api.api_url = TEST_API_URL
     mock_scans_client._api = mock_base_api
-    
+
     return ResultsService(mock_scans_client, mock_vulns_client)
 
 
@@ -512,12 +516,12 @@ class TestWorkbenchLinks:
         links = mock_results_service.links(TEST_SCAN_ID)
 
         # Should have all expected link properties
-        assert hasattr(links, 'scan')
-        assert hasattr(links, 'pending')
-        assert hasattr(links, 'policy')
-        assert hasattr(links, 'identified')
-        assert hasattr(links, 'dependencies')
-        assert hasattr(links, 'vulnerabilities')
+        assert hasattr(links, "scan")
+        assert hasattr(links, "pending")
+        assert hasattr(links, "policy")
+        assert hasattr(links, "identified")
+        assert hasattr(links, "dependencies")
+        assert hasattr(links, "vulnerabilities")
 
         # Each link should have correct structure
         assert_link_data_structure(links.scan)
@@ -571,12 +575,12 @@ class TestWorkbenchLinks:
         mock_base_api = MagicMock()
         mock_base_api.api_url = api_url
         mock_scans_client._api = mock_base_api
-        
+
         results_service = ResultsService(mock_scans_client, mock_vulns_client)
         links = results_service.links(TEST_SCAN_ID)
 
         # All URLs should be properly formatted regardless of input
-        for prop_name in ['scan', 'pending', 'policy']:
+        for prop_name in ["scan", "pending", "policy"]:
             link_data = getattr(links, prop_name)
             url = link_data["url"]
             assert_url_structure(url, TEST_SCAN_ID)
@@ -595,7 +599,7 @@ class TestWorkbenchLinks:
         """Test that multiple calls return consistent results."""
         links1 = mock_results_service.links(TEST_SCAN_ID)
         links2 = mock_results_service.links(TEST_SCAN_ID)
-        
+
         # Compare URLs and messages
         assert links1.scan["url"] == links2.scan["url"]
         assert links1.pending["url"] == links2.pending["url"]
@@ -616,7 +620,7 @@ class TestWorkbenchLinks:
             mock_base_api = MagicMock()
             mock_base_api.api_url = input_url
             mock_scans_client._api = mock_base_api
-            
+
             results_service = ResultsService(mock_scans_client, mock_vulns_client)
             links = results_service.links(TEST_SCAN_ID)
             scan_url = links.scan["url"]
@@ -633,7 +637,14 @@ class TestWorkbenchLinks:
         ]
 
         # All links should contain these base parameters
-        for prop_name in ['scan', 'pending', 'policy', 'identified', 'dependencies', 'vulnerabilities']:
+        for prop_name in [
+            "scan",
+            "pending",
+            "policy",
+            "identified",
+            "dependencies",
+            "vulnerabilities",
+        ]:
             link_data = getattr(links, prop_name)
             url = link_data["url"]
             for param in required_params:
@@ -651,7 +662,7 @@ class TestWorkbenchLinks:
 
         # Policy link should have current_view=mark_as_identified
         assert "current_view=mark_as_identified" in links.policy["url"]
-        
+
         # Dependencies link should have current_view=dependency_analysis
         assert "current_view=dependency_analysis" in links.dependencies["url"]
 
@@ -660,11 +671,11 @@ class TestWorkbenchLinks:
         pending_link = mock_results_service.link_to_pending(TEST_SCAN_ID)
         assert_link_data_structure(pending_link)
         assert "current_view=pending_items" in pending_link["url"]
-        
+
         scan_link = mock_results_service.link_to_scan(TEST_SCAN_ID)
         assert_link_data_structure(scan_link)
         assert "current_view=all_items" in scan_link["url"]
-        
+
         policy_link = mock_results_service.link_to_policy(TEST_SCAN_ID)
         assert_link_data_structure(policy_link)
         assert "current_view=mark_as_identified" in policy_link["url"]

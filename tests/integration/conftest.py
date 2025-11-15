@@ -353,37 +353,25 @@ def mock_workbench_api(mocker):
     # --- Mock Status Check Service ---
     mock_client.status_check = MagicMock()
     mock_client.status_check.check_git_clone_status.return_value = StatusResult(
-        status="FINISHED",
-        is_finished=True,
-        raw_data={"status": "FINISHED", "is_finished": "1"}
+        status="FINISHED", is_finished=True, raw_data={"status": "FINISHED", "is_finished": "1"}
     )
     mock_client.status_check.check_scan_status.return_value = StatusResult(
-        status="FINISHED",
-        is_finished=True,
-        raw_data={"status": "FINISHED", "is_finished": "1"}
+        status="FINISHED", is_finished=True, raw_data={"status": "FINISHED", "is_finished": "1"}
     )
     mock_client.status_check.check_dependency_analysis_status.return_value = StatusResult(
-        status="FINISHED",
-        is_finished=True,
-        raw_data={"status": "FINISHED", "is_finished": "1"}
+        status="FINISHED", is_finished=True, raw_data={"status": "FINISHED", "is_finished": "1"}
     )
 
     # --- Mock Waiting Service ---
     mock_client.waiting = MagicMock()
     mock_client.waiting.wait_for_git_clone.return_value = WaitResult(
-        status_data={"status": "FINISHED", "is_finished": "1"},
-        duration=2.0,
-        success=True
+        status_data={"status": "FINISHED", "is_finished": "1"}, duration=2.0, success=True
     )
     mock_client.waiting.wait_for_scan_to_finish.return_value = WaitResult(
-        status_data={"status": "FINISHED", "is_finished": "1"},
-        duration=10.0,
-        success=True
+        status_data={"status": "FINISHED", "is_finished": "1"}, duration=10.0, success=True
     )
     mock_client.waiting.wait_for_da_to_finish.return_value = WaitResult(
-        status_data={"status": "FINISHED", "is_finished": "1"},
-        duration=5.0,
-        success=True
+        status_data={"status": "FINISHED", "is_finished": "1"}, duration=5.0, success=True
     )
 
     # --- Mock Scan Operations Service ---
@@ -396,7 +384,7 @@ def mock_workbench_api(mocker):
     mock_client.results.fetch_results.return_value = {
         "dependency_analysis": {},
         "kb_licenses": [],
-        "vulnerabilities": []
+        "vulnerabilities": [],
     }
     mock_client.results.links = MagicMock()
 
@@ -410,22 +398,23 @@ def mock_workbench_api(mocker):
     # Patch WorkbenchClient to return our mock when instantiated
     # Use patch.object with context manager for proper cleanup
     import workbench_agent.api.workbench_client
-    
+
     # Store the original __new__ before patching
     original_new = workbench_agent.api.workbench_client.WorkbenchClient.__new__
-    
+
     def mock_new(cls, *args, **kwargs):
         """Return the mock client instead of creating a real instance."""
         if cls == workbench_agent.api.workbench_client.WorkbenchClient:
             return mock_client
         # For other classes, use the original __new__
         return original_new(cls, *args, **kwargs)
-    
+
     # Patch both where it's imported and where it's defined
     # Use context managers to ensure proper cleanup
-    with patch.object(
-        workbench_agent.api.workbench_client.WorkbenchClient,
-        '__new__',
-        side_effect=mock_new
-    ), patch("workbench_agent.main.WorkbenchClient", return_value=mock_client):
+    with (
+        patch.object(
+            workbench_agent.api.workbench_client.WorkbenchClient, "__new__", side_effect=mock_new
+        ),
+        patch("workbench_agent.main.WorkbenchClient", return_value=mock_client),
+    ):
         yield mock_client

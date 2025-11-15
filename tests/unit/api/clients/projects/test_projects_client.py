@@ -39,9 +39,7 @@ def mock_session(mocker):
 @pytest.fixture
 def base_api(mock_session):
     """Create a BaseAPI instance with a properly mocked session."""
-    api = BaseAPI(
-        api_url="http://dummy.com/api.php", api_user="testuser", api_token="testtoken"
-    )
+    api = BaseAPI(api_url="http://dummy.com/api.php", api_user="testuser", api_token="testtoken")
     api.session = mock_session
     return api
 
@@ -195,4 +193,3 @@ def test_check_project_report_status_success(mock_send, projects_client):
 # The old test tested ProjectsAPI.download_report() which no longer exists
 # Report downloads are now handled by ReportService.download_project_report()
 # This functionality is tested in test_report_service.py
-

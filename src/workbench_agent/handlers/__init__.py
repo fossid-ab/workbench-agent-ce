@@ -5,7 +5,9 @@ This package contains the handlers that use the
 WorkbenchClient API architecture.
 
 """
+
 import logging
+
 from .blind_scan import handle_blind_scan
 from .download_reports import handle_download_reports
 from .evaluate_gates import handle_evaluate_gates
@@ -30,4 +32,3 @@ __all__ = [
     "handle_download_reports",
     "handle_quick_scan",
 ]
-

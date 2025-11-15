@@ -57,24 +57,28 @@ def mock_main_dependencies():
         mocks["workbench_client"] = mock_wb
         mocks["workbench_instance"] = MagicMock()
         mock_wb.return_value = mocks["workbench_instance"]
-        
+
         # Mock _check_version_compatibility to avoid actual API calls during init
         mocks["workbench_instance"]._check_version_compatibility = MagicMock()
 
         # Set up common API methods that handlers might use
         # Note: These are now accessed via client composition (e.g., workbench.resolver, workbench.scans, etc.)
         mocks["workbench_instance"].resolver = MagicMock()
-        mocks["workbench_instance"].resolver.resolve_project_and_scan.return_value = ("TEST_PROJECT_CODE", "TEST_SCAN_CODE", False)
+        mocks["workbench_instance"].resolver.resolve_project_and_scan.return_value = (
+            "TEST_PROJECT_CODE",
+            "TEST_SCAN_CODE",
+            False,
+        )
         mocks["workbench_instance"].resolver.find_project.return_value = "TEST_PROJECT_CODE"
         mocks["workbench_instance"].resolver.find_scan.return_value = ("TEST_SCAN_CODE", 123)
-        
+
         mocks["workbench_instance"].scans = MagicMock()
         mocks["workbench_instance"].scans.get_scan_folder_metrics.return_value = {}
         mocks["workbench_instance"].scans.get_dependency_analysis_results.return_value = []
         mocks["workbench_instance"].scans.get_scan_identified_licenses.return_value = []
         mocks["workbench_instance"].scans.get_scan_identified_components.return_value = []
         mocks["workbench_instance"].scans.get_policy_warnings_counter.return_value = {}
-        
+
         mocks["workbench_instance"].vulnerabilities = MagicMock()
         mocks["workbench_instance"].vulnerabilities.list_vulnerabilities.return_value = []
 

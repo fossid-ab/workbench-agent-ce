@@ -28,10 +28,12 @@ class TestScanIntegration:
         dummy_path = create_dummy_path(tmp_path, is_dir=False)
 
         # File system operations
-        with patch("os.path.exists", return_value=True), \
-             patch("os.path.isdir", return_value=False), \
-             patch("os.path.getsize", return_value=100), \
-             patch("builtins.open", new_callable=mock_open, read_data=b"dummy data"):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=False),
+            patch("os.path.getsize", return_value=100),
+            patch("builtins.open", new_callable=mock_open, read_data=b"dummy data"),
+        ):
             args = [
                 "workbench-agent",
                 "scan",
@@ -65,10 +67,12 @@ class TestScanIntegration:
         dummy_path = create_dummy_path(tmp_path, is_dir=False)
 
         # File system operations
-        with patch("os.path.exists", return_value=True), \
-             patch("os.path.isdir", return_value=False), \
-             patch("os.path.getsize", return_value=100), \
-             patch("builtins.open", new_callable=mock_open, read_data=b"dummy data"):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=False),
+            patch("os.path.getsize", return_value=100),
+            patch("builtins.open", new_callable=mock_open, read_data=b"dummy data"),
+        ):
             args = [
                 "workbench-agent",
                 "scan",
@@ -104,10 +108,12 @@ class TestScanIntegration:
         dummy_path = create_dummy_path(tmp_path, is_dir=False)
 
         # File system operations
-        with patch("os.path.exists", return_value=True), \
-             patch("os.path.isdir", return_value=False), \
-             patch("os.path.getsize", return_value=100), \
-             patch("builtins.open", new_callable=mock_open, read_data=b"dummy data"):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=False),
+            patch("os.path.getsize", return_value=100),
+            patch("builtins.open", new_callable=mock_open, read_data=b"dummy data"),
+        ):
             args = [
                 "workbench-agent",
                 "scan",

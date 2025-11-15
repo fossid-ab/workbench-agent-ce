@@ -311,9 +311,7 @@ def create_git_options_parser():
     ref_group.add_argument(
         "--git-branch", help="The git branch to scan.", type=str, metavar="BRANCH"
     )
-    ref_group.add_argument(
-        "--git-tag", help="The git tag to scan.", type=str, metavar="TAG"
-    )
+    ref_group.add_argument("--git-tag", help="The git tag to scan.", type=str, metavar="TAG")
     ref_group.add_argument(
         "--git-commit", help="The git commit to scan.", type=str, metavar="COMMIT"
     )

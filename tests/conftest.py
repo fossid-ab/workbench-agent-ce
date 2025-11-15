@@ -76,14 +76,13 @@ def workbench_inst(mock_session, mocker):
     Create a WorkbenchClient instance with a mock session for testing.
     """
     from unittest.mock import patch
+
     # Mock the version check to avoid actual API calls during initialization
     mock_get_config = mocker.MagicMock(return_value={"version": "24.3.0"})
-    
-    with patch.object(WorkbenchClient, '_check_version_compatibility'):
+
+    with patch.object(WorkbenchClient, "_check_version_compatibility"):
         wb = WorkbenchClient(
-            api_url="http://dummy.com/api.php",
-            api_user="testuser",
-            api_token="testtoken"
+            api_url="http://dummy.com/api.php", api_user="testuser", api_token="testtoken"
         )
         # Replace the session with our mock
         wb._base_api.session = mock_session

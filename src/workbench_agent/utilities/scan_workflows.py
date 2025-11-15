@@ -110,7 +110,9 @@ def fetch_results(
 
     if should_fetch_policy:
         try:
-            collected_results["policy_warnings"] = workbench.scans.get_policy_warnings_counter(scan_code)
+            collected_results["policy_warnings"] = workbench.scans.get_policy_warnings_counter(
+                scan_code
+            )
         except (ApiError, NetworkError) as e:
             print(f"Warning: Could not fetch Scan Policy Warnings: {e}")
 

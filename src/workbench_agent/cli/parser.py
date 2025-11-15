@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 from workbench_agent import __version__
 
-
 if TYPE_CHECKING:
     # Import for type checking only to avoid circular imports
     pass
@@ -138,15 +137,10 @@ Examples:
     )
 
     # Toolbox-specific options for blind scan (dash-separated)
-    cli_group = blind_scan_parser.add_argument_group(
-        "FossID Toolbox Options"
-    )
+    cli_group = blind_scan_parser.add_argument_group("FossID Toolbox Options")
     cli_group.add_argument(
         "--fossid-toolbox-path",
-        help=(
-            "Path to fossid-toolbox executable "
-            "(Default: /usr/bin/fossid-toolbox)"
-        ),
+        help=("Path to fossid-toolbox executable " "(Default: /usr/bin/fossid-toolbox)"),
         type=str,
         default="/usr/bin/fossid-toolbox",
     )

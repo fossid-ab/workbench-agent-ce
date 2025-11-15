@@ -32,10 +32,7 @@ def waiting_service(mock_status_check_service):
 def test_wait_result_creation():
     """Test WaitResult object creation."""
     result = WaitResult(
-        status_data={"test": "data"},
-        duration=10.5,
-        success=True,
-        error_message=None
+        status_data={"test": "data"}, duration=10.5, success=True, error_message=None
     )
     assert result.status_data == {"test": "data"}
     assert result.duration == 10.5
@@ -69,9 +66,7 @@ def test_wait_for_completion_success(waiting_service, mock_status_check_service)
 def test_wait_for_completion_timeout(waiting_service, mock_status_check_service):
     """Test timeout during completion waiting."""
     mock_check_func = MagicMock()
-    mock_check_func.return_value = StatusResult(
-        status="RUNNING", raw_data={"state": "RUNNING"}
-    )
+    mock_check_func.return_value = StatusResult(status="RUNNING", raw_data={"state": "RUNNING"})
 
     with patch("time.sleep", return_value=None):
         with pytest.raises(ProcessTimeoutError, match="Test Timeout"):
@@ -88,8 +83,7 @@ def test_wait_for_completion_failure(waiting_service, mock_status_check_service)
     """Test failure during completion waiting."""
     mock_check_func = MagicMock()
     mock_check_func.return_value = StatusResult(
-        status="FAILED",
-        raw_data={"status": "FAILED", "error": "Disk full"}
+        status="FAILED", raw_data={"status": "FAILED", "error": "Disk full"}
     )
 
     with patch("time.sleep", return_value=None):
@@ -156,12 +150,10 @@ def test_wait_for_extract_archives(waiting_service, mock_status_check_service):
         mock_wait.assert_called_once()
 
 
-def test_wait_for_extract_archives_unsupported(
-    waiting_service, mock_status_check_service
-):
+def test_wait_for_extract_archives_unsupported(waiting_service, mock_status_check_service):
     """Test wait_for_extract_archives with unsupported status check."""
-    mock_status_check_service.check_extract_archives_status.side_effect = (
-        UnsupportedStatusCheck("Not supported")
+    mock_status_check_service.check_extract_archives_status.side_effect = UnsupportedStatusCheck(
+        "Not supported"
     )
 
     with patch("time.sleep", return_value=None):
@@ -172,18 +164,14 @@ def test_wait_for_extract_archives_unsupported(
     assert result.duration is None
 
 
-def test_wait_for_scan_report_completion(
-    waiting_service, mock_status_check_service
-):
+def test_wait_for_scan_report_completion(waiting_service, mock_status_check_service):
     """Test wait_for_scan_report_completion method."""
     with patch.object(waiting_service, "_wait_for_completion") as mock_wait:
         mock_wait.return_value = WaitResult(
             status_data={"status": "FINISHED"}, duration=25.0, success=True
         )
 
-        result = waiting_service.wait_for_scan_report_completion(
-            "scan123", 456, 12, 4
-        )
+        result = waiting_service.wait_for_scan_report_completion("scan123", 456, 12, 4)
 
         assert isinstance(result, WaitResult)
         assert result.success is True
@@ -191,18 +179,14 @@ def test_wait_for_scan_report_completion(
         mock_wait.assert_called_once()
 
 
-def test_wait_for_project_report_completion(
-    waiting_service, mock_status_check_service
-):
+def test_wait_for_project_report_completion(waiting_service, mock_status_check_service):
     """Test wait_for_project_report_completion method."""
     with patch.object(waiting_service, "_wait_for_completion") as mock_wait:
         mock_wait.return_value = WaitResult(
             status_data={"status": "FINISHED"}, duration=30.0, success=True
         )
 
-        result = waiting_service.wait_for_project_report_completion(
-            "PROJ123", 789, 15, 5
-        )
+        result = waiting_service.wait_for_project_report_completion("PROJ123", 789, 15, 5)
 
         assert isinstance(result, WaitResult)
         assert result.success is True
@@ -228,10 +212,7 @@ def test_wait_for_git_clone(waiting_service, mock_status_check_service):
 # --- Test helper methods ---
 def test_extract_server_duration_valid(waiting_service):
     """Test server duration extraction when started/finished present."""
-    raw = {
-        "started": "2025-08-08 00:00:00",
-        "finished": "2025-08-08 00:00:10"
-    }
+    raw = {"started": "2025-08-08 00:00:00", "finished": "2025-08-08 00:00:10"}
     duration = waiting_service._extract_server_duration(raw)
     assert duration == 10.0
 
@@ -289,6 +270,7 @@ def test_wait_for_completion_unsupported_operation_returns_success(
     waiting_service, mock_status_check_service
 ):
     """Test that UnsupportedStatusCheck is re-raised."""
+
     def raise_unsupported():
         raise UnsupportedStatusCheck("unsupported")
 
@@ -307,9 +289,7 @@ def test_wait_for_completion_retry_on_exception_then_success(
 ):
     """Test that generic exceptions are retried and then succeed."""
     running = StatusResult(status="RUNNING", raw_data={"status": "RUNNING"})
-    finished = StatusResult(
-        status="FINISHED", raw_data={"status": "FINISHED"}
-    )
+    finished = StatusResult(status="FINISHED", raw_data={"status": "FINISHED"})
 
     call_states = [Exception("transient"), running, finished]
 
@@ -329,4 +309,3 @@ def test_wait_for_completion_retry_on_exception_then_success(
 
     assert isinstance(result, WaitResult)
     assert result.success is True
-

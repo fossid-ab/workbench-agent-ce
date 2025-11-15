@@ -38,11 +38,11 @@ Usage:
     ...     project_code, "xlsx"
     ... )
 """
+
 import logging
+
 from packaging import version as packaging_version
 
-from workbench_agent.api.helpers.base_api import BaseAPI
-from workbench_agent.exceptions import CompatibilityError
 from workbench_agent.api.clients import (
     InternalClient,
     ProjectsClient,
@@ -51,6 +51,7 @@ from workbench_agent.api.clients import (
     UploadsClient,
     VulnerabilitiesClient,
 )
+from workbench_agent.api.helpers.base_api import BaseAPI
 from workbench_agent.api.services import (
     ReportService,
     ResolverService,
@@ -59,6 +60,7 @@ from workbench_agent.api.services import (
     StatusCheckService,
     WaitingService,
 )
+from workbench_agent.exceptions import CompatibilityError
 
 logger = logging.getLogger("workbench-agent")
 
@@ -136,15 +138,11 @@ class WorkbenchClient:
             ...     api_token="my_api_token"
             ... )
         """
-        logger.info(
-            "Initializing WorkbenchClient (composition-based)"
-        )
+        logger.info("Initializing WorkbenchClient (composition-based)")
 
         # Core infrastructure - BaseAPI handles all HTTP communication
         self._base_api = BaseAPI(api_url, api_user, api_token)
-        logger.debug(
-            f"BaseAPI initialized with URL: {self._base_api.api_url}"
-        )
+        logger.debug(f"BaseAPI initialized with URL: {self._base_api.api_url}")
 
         # Initialize InternalClient first (needed for version check)
         self.internal = InternalClient(self._base_api)
@@ -168,34 +166,23 @@ class WorkbenchClient:
         # Services coordinate multiple clients for complex workflows
         logger.debug("Initializing orchestration services...")
 
-        self.resolver = ResolverService(
-            projects_client=self.projects,
-            scans_client=self.scans
-        )
+        self.resolver = ResolverService(projects_client=self.projects, scans_client=self.scans)
 
         self.status_check = StatusCheckService(
-            scans_client=self.scans,
-            projects_client=self.projects
+            scans_client=self.scans, projects_client=self.projects
         )
 
-        self.reports = ReportService(
-            projects_client=self.projects,
-            scans_client=self.scans
-        )
+        self.reports = ReportService(projects_client=self.projects, scans_client=self.scans)
 
         self.results = ResultsService(
-            scans_client=self.scans,
-            vulnerabilities_client=self.vulnerabilities
+            scans_client=self.scans, vulnerabilities_client=self.vulnerabilities
         )
 
         self.scan_operations = ScanOperationsService(
-            scans_client=self.scans,
-            resolver_service=self.resolver
+            scans_client=self.scans, resolver_service=self.resolver
         )
 
-        self.waiting = WaitingService(
-            status_check_service=self.status_check
-        )
+        self.waiting = WaitingService(status_check_service=self.status_check)
 
         logger.debug("Orchestration services initialized successfully")
         logger.info("WorkbenchClient initialization complete")
@@ -227,12 +214,10 @@ class WorkbenchClient:
                     "Could not determine Workbench version. "
                     "Please ensure you are connected to a valid "
                     "Workbench instance.",
-                    details={"config_data": config_data}
+                    details={"config_data": config_data},
                 )
 
-            logger.debug(
-                f"Detected Workbench version: {workbench_version}"
-            )
+            logger.debug(f"Detected Workbench version: {workbench_version}")
 
             # Parse and compare versions
             try:
@@ -240,7 +225,7 @@ class WorkbenchClient:
                 # (e.g., "24.3.0-beta")
                 # Extract just the version number part
                 version_str = workbench_version.split()[0]
-                version_str = version_str.split('-')[0]
+                version_str = version_str.split("-")[0]
 
                 parsed_version = packaging_version.parse(version_str)
                 min_version = packaging_version.parse(MINIMUM_VERSION)
@@ -254,7 +239,7 @@ class WorkbenchClient:
                             "detected_version": workbench_version,
                             "minimum_version": MINIMUM_VERSION,
                             "parsed_version": str(parsed_version),
-                        }
+                        },
                     )
 
                 logger.info(
@@ -284,7 +269,7 @@ class WorkbenchClient:
             else:
                 raise ApiError(
                     f"Failed to check Workbench version compatibility: {e}",
-                    details={"error": str(e)}
+                    details={"error": str(e)},
                 ) from e
 
     # ===== PUBLIC PROPERTIES =====

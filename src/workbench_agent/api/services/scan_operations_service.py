@@ -10,6 +10,7 @@ The service handles business logic and payload construction:
 - Service layer: Payload building, orchestration
 - Client layer: Raw HTTP API calls
 """
+
 import logging
 from typing import Optional
 
@@ -135,24 +136,14 @@ class ScanOperationsService:
             "scan_code": scan_code,
             "limit": str(limit),
             "sensitivity": str(sensitivity),
-            "auto_identification_detect_declaration": (
-                "1" if autoid_file_licenses else "0"
-            ),
-            "auto_identification_detect_copyright": (
-                "1" if autoid_file_copyrights else "0"
-            ),
-            "auto_identification_resolve_pending_ids": (
-                "1" if autoid_pending_ids else "0"
-            ),
+            "auto_identification_detect_declaration": ("1" if autoid_file_licenses else "0"),
+            "auto_identification_detect_copyright": ("1" if autoid_file_copyrights else "0"),
+            "auto_identification_resolve_pending_ids": ("1" if autoid_pending_ids else "0"),
             "delta_only": "1" if delta_scan else "0",
-            "replace_existing_identifications": (
-                "1" if replace_existing_identifications else "0"
-            ),
+            "replace_existing_identifications": ("1" if replace_existing_identifications else "0"),
             "scan_failed_only": "1" if scan_failed_only else "0",
             "full_file_only": "1" if full_file_only else "0",
-            "advanced_match_scoring": (
-                "1" if advanced_match_scoring else "0"
-            ),
+            "advanced_match_scoring": ("1" if advanced_match_scoring else "0"),
         }
 
         # Add ID reuse parameters (already resolved)
@@ -164,23 +155,18 @@ class ScanOperationsService:
 
         # Add dependency analysis parameter if specified
         if run_dependency_analysis is not None:
-            payload_data["run_dependency_analysis"] = (
-                "1" if run_dependency_analysis else "0"
-            )
+            payload_data["run_dependency_analysis"] = "1" if run_dependency_analysis else "0"
 
         # Add match filtering threshold if specified
         if match_filtering_threshold is not None:
-            payload_data["match_filtering_threshold"] = str(
-                match_filtering_threshold
-            )
+            payload_data["match_filtering_threshold"] = str(match_filtering_threshold)
 
         # Add scan_host parameter if provided
         if scan_host is not None:
             payload_data["scan_host"] = scan_host
 
         logger.debug(
-            f"Built run scan payload with {len(payload_data)} parameters "
-            f"for scan '{scan_code}'"
+            f"Built run scan payload with {len(payload_data)} parameters " f"for scan '{scan_code}'"
         )
 
         # Delegate to client for raw API call
@@ -221,9 +207,7 @@ class ScanOperationsService:
         # Build payload
         payload_data = {
             "scan_code": scan_code,
-            "recursively_extract_archives": (
-                str(recursively_extract_archives).lower()
-            ),
+            "recursively_extract_archives": (str(recursively_extract_archives).lower()),
             "jar_file_extraction": str(jar_file_extraction).lower(),
             "extract_to_directory": "1" if extract_to_directory else "0",
         }
@@ -240,9 +224,7 @@ class ScanOperationsService:
         # Delegate to client
         return self._scans.extract_archives_raw(payload_data)
 
-    def start_dependency_analysis(
-        self, scan_code: str, import_only: bool = False
-    ):
+    def start_dependency_analysis(self, scan_code: str, import_only: bool = False):
         """
         Start or import dependency analysis for a scan.
 
@@ -259,8 +241,7 @@ class ScanOperationsService:
             NetworkError: If there are network issues
         """
         logger.info(
-            f"Starting dependency analysis for '{scan_code}' "
-            f"(import_only={import_only})..."
+            f"Starting dependency analysis for '{scan_code}' " f"(import_only={import_only})..."
         )
 
         # Build payload

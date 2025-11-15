@@ -205,4 +205,3 @@ def test_list_vulnerabilities_empty_page_data(mock_send, vulnerabilities_client)
     vulnerabilities = vulnerabilities_client.list_vulnerabilities("scan1")
 
     assert vulnerabilities == []
-

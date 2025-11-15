@@ -99,18 +99,14 @@ def fetch_results(
     # Fetch scan metrics
     if should_fetch_metrics:
         try:
-            collected_results["scan_metrics"] = workbench.results.get_scan_metrics(
-                scan_code
-            )
+            collected_results["scan_metrics"] = workbench.results.get_scan_metrics(scan_code)
         except (ApiError, NetworkError) as e:
             print(f"Warning: Could not fetch Scan File Metrics: {e}")
 
     # Fetch policy warnings
     if should_fetch_policy:
         try:
-            collected_results["policy_warnings"] = (
-                workbench.results.get_policy_warnings(scan_code)
-            )
+            collected_results["policy_warnings"] = workbench.results.get_policy_warnings(scan_code)
         except (ApiError, NetworkError) as e:
             print(f"Warning: Could not fetch Scan Policy Warnings: {e}")
 
@@ -368,7 +364,7 @@ def fetch_display_save_results(
 ):
     """
     Orchestrates fetching, displaying, and saving scan results.
-    
+
     Args:
         workbench: WorkbenchClient instance from apiv2
         params: Command line parameters
@@ -489,28 +485,27 @@ def print_operation_summary(
             f"  - Auto-ID Pending IDs: {'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
         )
         print(f"  - Delta Scan: {'Yes' if getattr(params, 'delta_scan', False) else 'No'}")
-        
+
         # Check if any ID reuse option is enabled
-        id_reuse_enabled = any([
-            getattr(params, 'reuse_any_identification', False),
-            getattr(params, 'reuse_my_identifications', False),
-            getattr(params, 'reuse_project_ids', None) is not None,
-            getattr(params, 'reuse_scan_ids', None) is not None,
-        ])
+        id_reuse_enabled = any(
+            [
+                getattr(params, "reuse_any_identification", False),
+                getattr(params, "reuse_my_identifications", False),
+                getattr(params, "reuse_project_ids", None) is not None,
+                getattr(params, "reuse_scan_ids", None) is not None,
+            ]
+        )
         print(f"  - Identification Reuse: {'Yes' if id_reuse_enabled else 'No'}")
-        
+
         # Show ID reuse details if enabled
         if id_reuse_enabled:
-            if getattr(params, 'reuse_any_identification', False):
+            if getattr(params, "reuse_any_identification", False):
                 print("    - Reuse Type: Any identification")
-            elif getattr(params, 'reuse_my_identifications', False):
+            elif getattr(params, "reuse_my_identifications", False):
                 print("    - Reuse Type: My identifications only")
-            elif getattr(params, 'reuse_project_ids', None):
-                print(
-                    f"    - Reuse Type: Project "
-                    f"'{params.reuse_project_ids}'"
-                )
-            elif getattr(params, 'reuse_scan_ids', None):
+            elif getattr(params, "reuse_project_ids", None):
+                print(f"    - Reuse Type: Project " f"'{params.reuse_project_ids}'")
+            elif getattr(params, "reuse_scan_ids", None):
                 print(f"    - Reuse Type: Scan '{params.reuse_scan_ids}'")
 
     # Skip "Analysis Performed" section for import operations
@@ -525,9 +520,7 @@ def print_operation_summary(
         # Add durations to output only for KB scan and Dependency Analysis
         if kb_scan_performed:
             kb_duration_str = (
-                format_duration(durations.get("kb_scan", 0))
-                if durations.get("kb_scan")
-                else "N/A"
+                format_duration(durations.get("kb_scan", 0)) if durations.get("kb_scan") else "N/A"
             )
             print(f"  - Signature Scan: Yes (Duration: {kb_duration_str})")
         else:
