@@ -20,9 +20,9 @@ from workbench_agent.api.exceptions import (
     ProjectNotFoundError,
     ScanExistsError,
     ScanNotFoundError,
+    CompatibilityError,
 )
 from workbench_agent.exceptions import (
-    CompatibilityError,
     ConfigurationError,
     FileSystemError,
     ValidationError,

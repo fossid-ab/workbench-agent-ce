@@ -2,10 +2,8 @@
 
 import argparse
 import logging
-import os
 from typing import TYPE_CHECKING
 
-from workbench_agent.exceptions import FileSystemError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
     fetch_display_save_results,

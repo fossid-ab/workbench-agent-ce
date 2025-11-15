@@ -3,8 +3,7 @@ WorkbenchClient - Main API client using composition pattern.
 
 This is the primary API client for interacting with FossID Workbench.
 It uses composition to organize functionality into domain-specific clients
-and orchestration services, replacing the previous multiple
-inheritance approach.
+and orchestration services.
 
 Usage:
     >>> from workbench_agent.api.workbench_client import (
@@ -60,7 +59,7 @@ from workbench_agent.api.services import (
     StatusCheckService,
     WaitingService,
 )
-from workbench_agent.exceptions import CompatibilityError
+from workbench_agent.api.exceptions import CompatibilityError
 
 logger = logging.getLogger("workbench-agent")
 
@@ -125,13 +124,21 @@ class WorkbenchClient:
         """
         Initialize WorkbenchClient with composition-based architecture.
 
+        The client automatically checks Workbench server version compatibility
+        on initialization. The SDK version should correspond to the Workbench
+        API version it supports.
+
         Args:
             api_url: URL to the Workbench API endpoint
                 (e.g., https://server/api.php)
             api_user: API username
             api_token: API authentication token
 
+        Raises:
+            CompatibilityError: If Workbench version doesn't match SDK expectations
+
         Example:
+            >>> # SDK checks server compatibility automatically
             >>> workbench = WorkbenchClient(
             ...     api_url="https://workbench.fossid.com/api.php",
             ...     api_user="my_username",
@@ -147,7 +154,7 @@ class WorkbenchClient:
         # Initialize InternalClient first (needed for version check)
         self.internal = InternalClient(self._base_api)
 
-        # Check Workbench version compatibility before proceeding
+        # Check Workbench server version compatibility
         self._check_version_compatibility()
 
         # Initialize domain-specific clients
@@ -191,21 +198,26 @@ class WorkbenchClient:
 
     def _check_version_compatibility(self) -> None:
         """
-        Check that the Workbench version meets minimum requirements.
+        Check that the Workbench server version is compatible with this SDK.
 
-        This method is called during initialization to ensure compatibility.
-        Raises CompatibilityError if the Workbench version is too old.
+        This SDK version corresponds to Workbench API version and validates
+        that the connected server is compatible.
 
         Raises:
-            CompatibilityError: If Workbench version < 24.3.0
+            CompatibilityError: If Workbench version is incompatible
             ApiError: If version detection fails
             NetworkError: If connection fails
-            Exception: If an unexpected error occurs during version check
+
+        Note:
+            SDK versioning should match Workbench versioning. For example:
+            - workbench-sdk 24.3.x → Workbench 24.3.x
+            - workbench-sdk 25.1.x → Workbench 25.1.x
         """
+        # This SDK version's minimum compatible Workbench version
         MINIMUM_VERSION = "24.3.0"
 
         try:
-            logger.info("Checking Workbench version compatibility...")
+            logger.info("Checking Workbench server version compatibility...")
             config_data = self.internal.get_config()
             workbench_version = config_data.get("version", "Unknown")
 
@@ -217,51 +229,50 @@ class WorkbenchClient:
                     details={"config_data": config_data},
                 )
 
-            logger.debug(f"Detected Workbench version: {workbench_version}")
+            logger.debug(f"Detected Workbench server version: {workbench_version}")
 
             # Parse and compare versions
             try:
                 # Handle version strings that might have extra info
-                # (e.g., "24.3.0-beta")
+                # (e.g., "24.3.0-beta", "2025.2.0#19347124129")
                 # Extract just the version number part
-                version_str = workbench_version.split()[0]
-                version_str = version_str.split("-")[0]
+                version_str = workbench_version.split()[0]  # Remove anything after space
+                version_str = version_str.split("-")[0]     # Remove anything after dash
+                version_str = version_str.split("#")[0]     # Remove build metadata after hash
 
                 parsed_version = packaging_version.parse(version_str)
                 min_version = packaging_version.parse(MINIMUM_VERSION)
 
                 if parsed_version < min_version:
                     raise CompatibilityError(
-                        f"Workbench version {workbench_version} is not "
-                        f"supported. This Workbench Agent requires "
-                        f"Workbench version {MINIMUM_VERSION} or later.",
+                        f"Workbench server version {workbench_version} is not "
+                        f"compatible with this SDK. "
+                        f"SDK requires Workbench {MINIMUM_VERSION} or later.",
                         details={
                             "detected_version": workbench_version,
-                            "minimum_version": MINIMUM_VERSION,
+                            "sdk_minimum_version": MINIMUM_VERSION,
                             "parsed_version": str(parsed_version),
                         },
                     )
 
                 logger.info(
                     f"Version compatibility check passed: "
-                    f"{workbench_version} >= {MINIMUM_VERSION}"
+                    f"Server {workbench_version} >= SDK minimum {MINIMUM_VERSION}"
                 )
 
             except packaging_version.InvalidVersion as e:
-                # If version string can't be parsed, log warning
-                # but don't block
+                # If version string can't be parsed, log warning but allow connection
                 logger.warning(
                     f"Could not parse Workbench version "
                     f"'{workbench_version}': {e}. "
                     f"Proceeding with caution. Expected format: X.Y.Z"
                 )
-                # Don't raise - allow connection but warn user
 
-        except CompatibilityError:
-            # Re-raise compatibility errors as-is
-            raise
         except Exception as e:
-            # Wrap other errors (API errors, network errors, etc.)
+            # Let CompatibilityError bubble up
+            if e.__class__.__name__ == 'CompatibilityError':
+                raise
+            # Wrap other errors
             from workbench_agent.api.exceptions import ApiError, NetworkError
 
             if isinstance(e, (ApiError, NetworkError)):
@@ -293,6 +304,26 @@ class WorkbenchClient:
             The API username
         """
         return self._base_api.api_user
+
+    # ===== PUBLIC METHODS =====
+
+    def get_workbench_version(self) -> str:
+        """
+        Get the Workbench server version.
+
+        Returns:
+            Version string (e.g., "2025.2.0#19347124129", "24.3.0")
+
+        Raises:
+            ApiError: If unable to fetch version from server
+
+        Example:
+            >>> client = WorkbenchClient(url, user, token, check_version=False)
+            >>> version = client.get_workbench_version()
+            >>> print(f"Connected to Workbench {version}")
+        """
+        config_data = self.internal.get_config()
+        return config_data.get("version", "Unknown")
 
     @property
     def api_token(self) -> str:

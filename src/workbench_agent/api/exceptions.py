@@ -196,3 +196,28 @@ class ProcessTimeoutError(ProcessError):
 
     pass
 
+
+class CompatibilityError(WorkbenchApiError):
+    """Raised when there's a compatibility issue with the Workbench API.
+
+    This includes:
+    - SDK version incompatibility with Workbench server version
+    - Scan configuration incompatibility (e.g., reusing a Git scan for code upload)
+    - Operation incompatibility with current state
+
+    Examples:
+        >>> # SDK version compatibility
+        >>> raise CompatibilityError(
+        ...     "Workbench server version 24.2.0 is not compatible with this SDK. "
+        ...     "SDK requires Workbench 24.3.0 or later."
+        ... )
+        >>>
+        >>> # Scan reusability compatibility
+        >>> raise CompatibilityError(
+        ...     "Existing scan 'scan123' is configured for Git and cannot be "
+        ...     "reused for code upload operations."
+        ... )
+    """
+
+    pass
+

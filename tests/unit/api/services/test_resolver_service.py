@@ -16,8 +16,8 @@ from workbench_agent.api.exceptions import (
     NetworkError,
     ProjectNotFoundError,
     ScanNotFoundError,
+    CompatibilityError,
 )
-from workbench_agent.exceptions import CompatibilityError
 
 
 # --- Fixtures ---

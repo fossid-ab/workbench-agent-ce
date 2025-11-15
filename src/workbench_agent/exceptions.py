@@ -75,19 +75,3 @@ class FileSystemError(WorkbenchAgentError):
     """
 
     pass
-
-
-class CompatibilityError(WorkbenchAgentError):
-    """Raised when an existing scan is incompatible with the requested operation.
-
-    This includes trying to run operations that aren't supported by the
-    scan's current state or configuration.
-
-    Example:
-        try:
-            api.run_dependency_analysis(scan_id)
-        except CompatibilityError as e:
-            logger.error(f"Operation not compatible: {e.message}")
-    """
-
-    pass

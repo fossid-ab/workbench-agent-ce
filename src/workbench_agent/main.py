@@ -13,9 +13,9 @@ from workbench_agent.api.exceptions import (
     ProcessTimeoutError,
     ProjectNotFoundError,
     ScanNotFoundError,
+    CompatibilityError,
 )
 from workbench_agent.exceptions import (
-    CompatibilityError,
     ConfigurationError,
     FileSystemError,
     ValidationError,

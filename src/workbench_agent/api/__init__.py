@@ -19,6 +19,7 @@ from workbench_agent.api.exceptions import (
     ProcessError,
     ProcessTimeoutError,
     UnsupportedStatusCheck,
+    CompatibilityError,
 )
 
 __all__ = [
@@ -37,4 +38,5 @@ __all__ = [
     "ProcessError",
     "ProcessTimeoutError",
     "UnsupportedStatusCheck",
+    "CompatibilityError",
 ]

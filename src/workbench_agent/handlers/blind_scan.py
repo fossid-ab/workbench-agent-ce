@@ -4,7 +4,7 @@ import os
 import time
 from typing import TYPE_CHECKING
 
-from workbench_agent.exceptions import FileSystemError, ValidationError
+from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
     fetch_display_save_results,
