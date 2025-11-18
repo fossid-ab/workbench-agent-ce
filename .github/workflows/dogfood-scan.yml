@@ -1,7 +1,7 @@
 # This workflow can be triggered to scan a branch and evaluate gates.
 # The workflow will fail if Pending IDs or Policy Violations are found.
 
-name: Scan Branch and Evaluate Gates
+name: Test Scan and Evaluate Gates
 on: 
   push:
     branches: [ main ]

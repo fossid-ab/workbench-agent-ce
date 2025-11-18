@@ -1,13 +1,9 @@
 # This workflow can be triggered to scan a branch and evaluate gates.
 # The workflow will fail if Pending IDs or Policy Violations are found.
 
-name: Scan Branch and Evaluate Gates
+name: Test Scan-Git and Evaluate Gates
 on: 
   push:
-    branches: [ main ]
-    paths-ignore:
-      - '.github/workflows/**'
-  pull_request:
     branches: [ main ]
     paths-ignore:
       - '.github/workflows/**'
