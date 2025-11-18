@@ -1,0 +1,71 @@
+# This workflow can be triggered to scan a branch and evaluate gates.
+# The workflow will fail if Pending IDs or Policy Violations are found.
+
+name: Test Scan and Evaluate Gates
+on: 
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/**'
+
+jobs:
+  workbench-scan-gate:
+    runs-on: ubuntu-latest
+    env:
+      WORKBENCH_URL: ${{ secrets.WORKBENCH_URL }}
+      WORKBENCH_USER: ${{ secrets.WORKBENCH_USER }}
+      WORKBENCH_TOKEN: ${{ secrets.WORKBENCH_TOKEN }}
+    steps: #running with Python until we fix the GHCR Image 
+    - name: Checkout Workbench Agent
+      uses: actions/checkout@v4
+
+# Zipping the code uploads a single file for Workbench to extract.
+    - name: ZIP up the code
+      run: |
+        zip -r $GITHUB_WORKSPACE/code.zip . -x \
+        '*.tmp' '*.temp' '*.bak' \
+        '*.cache' '*.db' '*.idx' \
+        '*.log' '*.txt' '*.event' \
+        '*.sample' '*.demo' '*.example' \
+        '*.sql' '*.hprof' '*.dmp' \
+        '.gitignore' '.dockerignore' \
+        '.git/*' '.github/*'
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Workbench Agent Dependencies
+      run: pip install .
+
+    - name: Upload Archive and Scan
+      run: |
+        workbench-agent scan \
+        --api-url ${{ env.WORKBENCH_URL }} \
+        --api-user ${{ env.WORKBENCH_USER }} \
+        --api-token ${{ env.WORKBENCH_TOKEN }} \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ScanZip-$GITHUB_REF_NAME \
+        --path $GITHUB_WORKSPACE/code.zip \
+        --reuse-project-ids DogFood-$GITHUB_REPOSITORY \
+        --run-dependency-analysis \
+        --autoid-file-licenses \
+        --autoid-file-copyrights \
+        --delta-scan \
+        --no-wait
+
+    - name: Evaluate Gates; Fail on Issues
+      run: |
+        workbench-agent evaluate-gates \
+        --api-url ${{ env.WORKBENCH_URL }} \
+        --api-user ${{ env.WORKBENCH_USER }} \
+        --api-token ${{ env.WORKBENCH_TOKEN }} \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ScanZip-$GITHUB_REF_NAME \
+        --fail-on-pending \
+        --fail-on-policy

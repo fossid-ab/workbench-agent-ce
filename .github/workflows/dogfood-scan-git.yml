@@ -1,8 +1,12 @@
 # This workflow can be triggered to scan a branch and evaluate gates.
 # The workflow will fail if Pending IDs or Policy Violations are found.
 
-name: Scan Branch and Evaluate Gates
-on: workflow_dispatch
+name: Test Scan-Git and Evaluate Gates
+on: 
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/**'
 
 jobs:
   workbench-scan-gate:
@@ -29,8 +33,8 @@ jobs:
         --api-url ${{ env.WORKBENCH_URL }} \
         --api-user ${{ env.WORKBENCH_USER }} \
         --api-token ${{ env.WORKBENCH_TOKEN }} \
-        --project-name $GITHUB_REPOSITORY \
-        --scan-name $GITHUB_REF_NAME \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ScanGit-$GITHUB_REF_NAME \
         --git-url $GITHUB_SERVER_URL/$GITHUB_REPOSITORY \
         --git-branch $GITHUB_REF_NAME \
         --git-depth 1 \
@@ -38,6 +42,7 @@ jobs:
         --run-dependency-analysis \
         --autoid-file-licenses \
         --autoid-file-copyrights \
+        --delta-scan \
         --no-wait
 
     - name: Evaluate Gates; Fail on Issues
@@ -46,7 +51,7 @@ jobs:
         --api-url ${{ env.WORKBENCH_URL }} \
         --api-user ${{ env.WORKBENCH_USER }} \
         --api-token ${{ env.WORKBENCH_TOKEN }} \
-        --project-name $GITHUB_REPOSITORY \
-        --scan-name $GITHUB_REF_NAME \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ScanGit-$GITHUB_REF_NAME \
         --fail-on-pending \
         --fail-on-policy
