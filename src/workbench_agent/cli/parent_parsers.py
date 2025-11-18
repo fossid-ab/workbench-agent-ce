@@ -157,6 +157,26 @@ def create_scan_control_parser():
     return scan_control_parent
 
 
+def create_archive_operations_parser():
+    """Create parent parser for archive operation control arguments."""
+    archive_operations_parent = argparse.ArgumentParser(add_help=False)
+    archive_operations_args = archive_operations_parent.add_argument_group("Archive Extraction Operations")
+    archive_operations_args.add_argument(
+        "--recursively-extract-archives",
+        help="Recursively extract nested archives (Default: True).",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    archive_operations_args.add_argument(
+        "--jar-file-extraction",
+        help="Control extraction of jar files (Default: False).",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+
+    return archive_operations_parent
+
+
 def create_scan_operations_parser():
     """Create parent parser for scan operation control arguments."""
     scan_operations_parent = argparse.ArgumentParser(add_help=False)
@@ -183,18 +203,6 @@ def create_scan_operations_parser():
         "--delta-scan",
         help="For recurring scans, only scan new/modified files.",
         action="store_true",
-        default=False,
-    )
-    scan_ops_args.add_argument(
-        "--recursively-extract-archives",
-        help="Recursively extract nested archives (Default: True).",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
-    scan_ops_args.add_argument(
-        "--jar-file-extraction",
-        help="Control extraction of jar files (Default: False).",
-        action=argparse.BooleanOptionalAction,
         default=False,
     )
     scan_ops_args.add_argument(
@@ -331,6 +339,7 @@ def create_common_parent_parsers():
         "id_assist_control": create_id_assist_control_parser(),
         "identification_control": create_identification_control_parser(),
         "scan_control": create_scan_control_parser(),
+        "archive_operations": create_archive_operations_parser(),
         "scan_operations": create_scan_operations_parser(),
         "monitoring": create_monitoring_parser(),
         "result_options": create_result_options_parser(),

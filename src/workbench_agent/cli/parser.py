@@ -70,6 +70,7 @@ For more information on a specific command, use:
         parents=[
             parent_parsers["cli_behaviors"],
             parent_parsers["workbench_connection"],
+            parent_parsers["archive_operations"],
             parent_parsers["scan_operations"],
             parent_parsers["scan_control"],
             parent_parsers["project_scan_target"],
