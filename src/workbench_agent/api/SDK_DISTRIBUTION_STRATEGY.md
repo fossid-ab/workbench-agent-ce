@@ -99,8 +99,8 @@ workbench-agent/
 │   version = "1.0.0"           # CLI version (independent!)
 │   dependencies = [
 │       "workbench-sdk>=24.3.0",  # ← Declares SDK requirement
-│       "python-dotenv",
-│       "GitPython",
+│       "spdx-tools>=0.8.0",
+│       "cyclonedx-python-lib[validation]>=7.0.0",
 │   ]
 ├── src/
 │   └── workbench_agent/

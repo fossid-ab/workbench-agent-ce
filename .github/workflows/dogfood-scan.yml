@@ -2,7 +2,15 @@
 # The workflow will fail if Pending IDs or Policy Violations are found.
 
 name: Scan Branch and Evaluate Gates
-on: workflow_dispatch
+on: 
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/**'
 
 jobs:
   workbench-scan-gate:
@@ -15,6 +23,18 @@ jobs:
     - name: Checkout Workbench Agent
       uses: actions/checkout@v4
 
+# Zipping the code uploads a single file for Workbench to extract.
+    - name: ZIP up the code
+      run: |
+        zip -r $GITHUB_WORKSPACE/code.zip . -x \
+        '*.tmp' '*.temp' '*.bak' \
+        '*.cache' '*.db' '*.idx' \
+        '*.log' '*.txt' '*.event' \
+        '*.sample' '*.demo' '*.example' \
+        '*.sql' '*.hprof' '*.dmp' \
+        '.gitignore' '.dockerignore' \
+        '.git/*' '.github/*'
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -23,18 +43,16 @@ jobs:
     - name: Install Workbench Agent Dependencies
       run: pip install .
 
-    - name: Clone from Git and Scan
+    - name: Upload Archive and Scan
       run: |
-        workbench-agent scan-git \
+        workbench-agent scan \
         --api-url ${{ env.WORKBENCH_URL }} \
         --api-user ${{ env.WORKBENCH_USER }} \
         --api-token ${{ env.WORKBENCH_TOKEN }} \
-        --project-name $GITHUB_REPOSITORY \
-        --scan-name $GITHUB_REF_NAME \
-        --git-url $GITHUB_SERVER_URL/$GITHUB_REPOSITORY \
-        --git-branch $GITHUB_REF_NAME \
-        --git-depth 1 \
-        --reuse-project-ids $GITHUB_REPOSITORY \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ScanZip-$GITHUB_REF_NAME \
+        --path $GITHUB_WORKSPACE/code.zip
+        --reuse-project-ids DogFood-$GITHUB_REPOSITORY \
         --run-dependency-analysis \
         --autoid-file-licenses \
         --autoid-file-copyrights \
@@ -46,7 +64,7 @@ jobs:
         --api-url ${{ env.WORKBENCH_URL }} \
         --api-user ${{ env.WORKBENCH_USER }} \
         --api-token ${{ env.WORKBENCH_TOKEN }} \
-        --project-name $GITHUB_REPOSITORY \
-        --scan-name $GITHUB_REF_NAME \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ScanZip-$GITHUB_REF_NAME \
         --fail-on-pending \
         --fail-on-policy

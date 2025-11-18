@@ -1,0 +1,60 @@
+# This workflow can be triggered to scan a branch and evaluate gates.
+# The workflow will fail if Pending IDs or Policy Violations are found.
+
+name: Scan Branch and Evaluate Gates
+on: 
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/**'
+
+jobs:
+  workbench-scan-gate:
+    runs-on: ubuntu-latest
+    env:
+      WORKBENCH_URL: ${{ secrets.WORKBENCH_URL }}
+      WORKBENCH_USER: ${{ secrets.WORKBENCH_USER }}
+      WORKBENCH_TOKEN: ${{ secrets.WORKBENCH_TOKEN }}
+    steps: #running with Python until we fix the GHCR Image 
+    - name: Checkout Workbench Agent
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Workbench Agent Dependencies
+      run: pip install .
+
+    - name: Clone from Git and Scan
+      run: |
+        workbench-agent scan-git \
+        --api-url ${{ env.WORKBENCH_URL }} \
+        --api-user ${{ env.WORKBENCH_USER }} \
+        --api-token ${{ env.WORKBENCH_TOKEN }} \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ScanGit-$GITHUB_REF_NAME \
+        --git-url $GITHUB_SERVER_URL/$GITHUB_REPOSITORY \
+        --git-branch $GITHUB_REF_NAME \
+        --git-depth 1 \
+        --reuse-project-ids $GITHUB_REPOSITORY \
+        --run-dependency-analysis \
+        --autoid-file-licenses \
+        --autoid-file-copyrights \
+        --no-wait
+
+    - name: Evaluate Gates; Fail on Issues
+      run: |
+        workbench-agent evaluate-gates \
+        --api-url ${{ env.WORKBENCH_URL }} \
+        --api-user ${{ env.WORKBENCH_USER }} \
+        --api-token ${{ env.WORKBENCH_TOKEN }} \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ScanGit-$GITHUB_REF_NAME \
+        --fail-on-pending \
+        --fail-on-policy
