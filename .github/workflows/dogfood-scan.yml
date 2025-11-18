@@ -51,11 +51,12 @@ jobs:
         --api-token ${{ env.WORKBENCH_TOKEN }} \
         --project-name DogFood-$GITHUB_REPOSITORY \
         --scan-name ScanZip-$GITHUB_REF_NAME \
-        --path $GITHUB_WORKSPACE/code.zip
+        --path $GITHUB_WORKSPACE/code.zip \
         --reuse-project-ids DogFood-$GITHUB_REPOSITORY \
         --run-dependency-analysis \
         --autoid-file-licenses \
         --autoid-file-copyrights \
+        --delta-scan \
         --no-wait
 
     - name: Evaluate Gates; Fail on Issues

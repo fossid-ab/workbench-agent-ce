@@ -46,6 +46,7 @@ jobs:
         --run-dependency-analysis \
         --autoid-file-licenses \
         --autoid-file-copyrights \
+        --delta-scan \
         --no-wait
 
     - name: Evaluate Gates; Fail on Issues
