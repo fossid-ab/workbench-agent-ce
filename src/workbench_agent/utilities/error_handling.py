@@ -30,20 +30,20 @@ from workbench_agent.exceptions import (
 logger = logging.getLogger("workbench-agent")
 
 
-def format_and_print_error(error: Exception, handler_name: str, params: argparse.Namespace):
+def format_and_print_error(error: Exception, context: str, params: argparse.Namespace):
     """
     Formats and prints a standardized error message for CLI users.
 
     This centralized function handles consistent error formatting across
-    all handlers, eliminating duplicated error handling code.
+    all error scenarios, providing rich, helpful output to users.
 
     Args:
         error: The exception that occurred
-        handler_name: Name of the handler where the error occurred
+        context: Context where error occurred ("cli", "init", or command name)
         params: Command line parameters
     """
+    logger.debug(f"Formatting error from context '{context}': {type(error).__name__}")
     command = getattr(params, "command", "unknown")
-    error_type = type(error).__name__
 
     # Get error details if available (for our custom errors)
     error_message = getattr(error, "message", str(error))
@@ -55,7 +55,15 @@ def format_and_print_error(error: Exception, handler_name: str, params: argparse
     is_read_only = command in read_only_commands
 
     # Add context-specific help based on error type
-    if isinstance(error, ProjectNotFoundError):
+    # Note: Check AuthenticationError before ApiError since AuthenticationError inherits from ApiError
+    if isinstance(error, AuthenticationError):
+        print(f"\n❌ Authentication failed")
+        print(f"   {error_message}")
+        print(f"\n💡 Please check:")
+        print(f"   • Your API credentials are correct")
+        print(f"   • You have the necessary permissions")
+
+    elif isinstance(error, ProjectNotFoundError):
         if is_read_only:
             print(f"\n❌ Cannot continue: The requested project does not exist")
             print(
@@ -176,13 +184,6 @@ def format_and_print_error(error: Exception, handler_name: str, params: argparse
         print(f"   {error_message}")
         print(f"\n💡 The requested operation is not compatible with the scan's current state")
 
-    elif isinstance(error, AuthenticationError):
-        print(f"\n❌ Authentication failed")
-        print(f"   {error_message}")
-        print(f"\n💡 Please check:")
-        print(f"   • Your API credentials are correct")
-        print(f"   • You have the necessary permissions")
-
     else:
         # Generic error formatting for unexpected errors
         print(f"\n❌ Error executing '{command}' command: {error_message}")
@@ -206,10 +207,25 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
     """
     A decorator that wraps handler functions with standardized error handling.
 
-    This wrapper ensures consistent error handling across all handlers, reducing
-    code duplication and ensuring all exceptions are properly logged and handled.
-    The wrapper catches exceptions, formats user-friendly error messages, and
-    re-raises the exceptions for proper exit code handling in the main CLI.
+    This wrapper ensures consistent error handling across all handlers by:
+    - Logging all exceptions with full context
+    - Wrapping unexpected exceptions in WorkbenchAgentError
+    - Re-raising exceptions for main.py to format and handle
+
+    Error Handling Flow:
+    --------------------
+    1. Handler raises an exception
+    2. Decorator catches and logs the exception
+    3. Decorator re-raises the exception (or wrapped version)
+    4. main.py catches, formats with format_and_print_error(), and determines exit code:
+       - Exit 2: ValidationError, ConfigurationError, AuthenticationError (user-fixable)
+       - Exit 1: All other errors (runtime issues)
+
+    This pattern ensures:
+    - All errors are formatted consistently in one place (main.py)
+    - Handlers don't need try/except blocks for error handling
+    - Clear separation: handlers handle logic, main.py handles presentation
+    - Exit codes are determined centrally
 
     Args:
         handler_func: The handler function to wrap
@@ -221,13 +237,14 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
         @handler_error_wrapper
         def handle_scan(workbench, params):
             # Implementation without try/except blocks
+            # Any exceptions will be caught, logged, and re-raised
             ...
     """
 
     @functools.wraps(handler_func)
     def wrapper(workbench, params):
         try:
-            # Get the handler name for better error messages
+            # Get the handler name for better logging
             handler_name = handler_func.__name__
             command_name = params.command if hasattr(params, "command") else "unknown"
             logger.debug(f"Starting {handler_name} for command '{command_name}'")
@@ -248,29 +265,20 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
             ConfigurationError,
             AuthenticationError,
         ) as e:
-            # These exceptions are expected and properly formatted already
-            # Format and display error message in standardized format
+            # Expected exceptions - log and re-raise for main.py to format
             logger.debug(
                 f"Expected error in {handler_func.__name__}: {type(e).__name__}: {getattr(e, 'message', str(e))}"
             )
-            format_and_print_error(e, handler_func.__name__, params)
-            # Re-raise the exception for proper exit code handling
             raise
 
         except Exception as e:
-            # Unexpected errors get wrapped in a WorkbenchAgentError
+            # Unexpected errors - log, wrap, and re-raise
             logger.error(f"Unexpected error in {handler_func.__name__}: {e}", exc_info=True)
 
-            # Create a WorkbenchAgentError with detailed info
-            agent_error = WorkbenchAgentError(
-                f"Failed to execute {params.command if hasattr(params, 'command') else 'command'}: {str(e)}",
+            # Wrap in WorkbenchAgentError with context
+            raise WorkbenchAgentError(
+                f"Unexpected error: {str(e)}",
                 details={"error": str(e), "handler": handler_func.__name__},
-            )
-
-            # Format and display the error message
-            format_and_print_error(agent_error, handler_func.__name__, params)
-
-            # Raise the wrapped error for proper exit code handling
-            raise agent_error
+            ) from e
 
     return wrapper

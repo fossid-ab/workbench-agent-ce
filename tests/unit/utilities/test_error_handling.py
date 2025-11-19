@@ -219,9 +219,10 @@ def test_format_and_print_error_authentication_error(mock_print, mock_params):
     format_and_print_error(error, "test_handler", mock_params)
 
     print_calls = [str(call) for call in mock_print.call_args_list]
-    # AuthenticationError inherits from ApiError, so it gets handled as an ApiError
-    assert any("Workbench API error" in call for call in print_calls)
+    # AuthenticationError now has its own specific handling (checked before ApiError)
+    assert any("Authentication failed" in call for call in print_calls)
     assert any("Auth failed" in call for call in print_calls)
+    assert any("API credentials are correct" in call for call in print_calls)
 
 
 @patch("builtins.print")
@@ -276,9 +277,8 @@ def test_handler_error_wrapper_preserves_function_metadata():
     assert dummy_handler.__doc__ == "Test handler function."
 
 
-@patch("workbench_agent.utilities.error_handling.format_and_print_error")
-def test_handler_error_wrapper_handles_exception(mock_format_error):
-    """Test that wrapper handles exceptions and re-raises them."""
+def test_handler_error_wrapper_handles_exception():
+    """Test that wrapper handles exceptions and re-raises them without formatting."""
 
     @handler_error_wrapper
     def failing_handler(workbench, params):
@@ -287,20 +287,15 @@ def test_handler_error_wrapper_handles_exception(mock_format_error):
     workbench = MagicMock()
     params = MagicMock()
 
+    # Exception should be re-raised unchanged
     with pytest.raises(ValidationError, match="Test error"):
         failing_handler(workbench, params)
-
-    # Verify that format_and_print_error was called
-    mock_format_error.assert_called_once()
-    args = mock_format_error.call_args[0]
-    assert isinstance(args[0], ValidationError)
-    assert args[1] == "failing_handler"
-    assert args[2] is params
+    
+    # No formatting happens in the decorator - that's done in main.py
 
 
-@patch("workbench_agent.utilities.error_handling.format_and_print_error")
-def test_handler_error_wrapper_handles_generic_exception(mock_format_error):
-    """Test that wrapper handles generic exceptions."""
+def test_handler_error_wrapper_handles_generic_exception():
+    """Test that wrapper wraps generic exceptions in WorkbenchAgentError."""
 
     @handler_error_wrapper
     def failing_handler(workbench, params):
@@ -310,15 +305,17 @@ def test_handler_error_wrapper_handles_generic_exception(mock_format_error):
     params = MagicMock()
 
     # Generic exceptions get wrapped in WorkbenchAgentError
-    with pytest.raises(WorkbenchAgentError):
+    with pytest.raises(WorkbenchAgentError) as exc_info:
         failing_handler(workbench, params)
+    
+    # Verify the error is wrapped correctly
+    assert "Unexpected error" in str(exc_info.value)
+    assert exc_info.value.__cause__.__class__.__name__ == "ValueError"
+    
+    # No formatting happens in the decorator - that's done in main.py
 
-    # Should have been called twice - once for the wrapped error
-    assert mock_format_error.call_count == 1
 
-
-@patch("workbench_agent.utilities.error_handling.format_and_print_error")
-def test_handler_error_wrapper_preserves_return_value(mock_format_error):
+def test_handler_error_wrapper_preserves_return_value():
     """Test that wrapper preserves return values."""
 
     @handler_error_wrapper
@@ -330,9 +327,6 @@ def test_handler_error_wrapper_preserves_return_value(mock_format_error):
 
     result = handler_with_return(workbench, params)
     assert result == {"result": "success", "count": 42}
-
-    # No error formatting should have been called
-    mock_format_error.assert_not_called()
 
 
 def test_handler_error_wrapper_preserves_none_return():
