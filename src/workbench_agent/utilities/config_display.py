@@ -28,7 +28,8 @@ def _categorize_parameters(
 
     Returns:
         Tuple of (agent_config, result_display, identification_settings,
-        scan_operation_settings, scan_target, report_generation, other_params) dictionaries
+        scan_operation_settings, scan_target, report_generation,
+        other_params) dictionaries
     """
     # Parameters that will be skipped (handled separately in connection info)
     connection_params = {"api_url", "api_user", "api_token"}
@@ -159,28 +160,26 @@ def _print_connection_info(params: Any, workbench_api: Any) -> None:
     """
     print("\n🔗 Workbench Connection Info:")
 
-    # Display connection parameters
-    print(f"  API URL                    : {params.api_url}")
-    print(f"  API User                   : {params.api_user}")
+    # Set defaults
+    server_name = "Unknown"
+    version = "Unknown"
+    status = "⚠ Could not retrieve server info"
 
-    # Get and display server information
+    # Try to get server information
     try:
         config_data = workbench_api.internal.get_config()
-
         if config_data:
             server_name = config_data.get("server_name", "Unknown")
-            print(f"  Server Name                : {server_name}")
             version = config_data.get("version", "Unknown")
-            print(f"  Workbench Version          : {version}")
-            print("  Status                     : ✓ Connected")
-        else:
-            print("  Server Name                : Unknown")
-            print("  Workbench Version          : Unknown")
-            print("  Status                     : ⚠ Could not detect " "server info")
+            status = "✓ Connected"
     except Exception:
-        print("  Server Name                : Unknown")
-        print("  Workbench Version          : Unknown")
-        print("  Status                     : ⚠ Could not fetch server info")
+        # Keep defaults if API call fails
+        pass
+
+    print(f"  Server Name                : {server_name}")
+    print(f"  Workbench Version          : {version}")
+    print(f"  API User                   : {params.api_user}")
+    print(f"  Status                     : {status}")
 
 
 def _print_cli_parameters(params: Any) -> None:

@@ -6,9 +6,7 @@ and the main configuration printing function.
 """
 
 import argparse
-from io import StringIO
-from unittest.mock import MagicMock, patch
-
+from unittest.mock import patch
 import pytest
 
 from workbench_agent.utilities.config_display import (
@@ -370,9 +368,11 @@ def test_print_connection_info_success(mock_print, mock_params, mock_workbench_c
     # Check connection info header
     assert any("🔗 Workbench Connection Info:" in line for line in printed_lines)
 
-    # Check connection parameters
-    assert any("API URL" in line for line in printed_lines)
-    assert any("https://api.example.com" in line for line in printed_lines)
+    # Check that URL is NOT displayed (security improvement)
+    assert not any("https://api.example.com" in line for line in printed_lines)
+    assert not any("API URL" in line for line in printed_lines)
+
+    # Check connection parameters (API User should still be shown)
     assert any("API User" in line for line in printed_lines)
     assert any("testuser" in line for line in printed_lines)
 
@@ -399,7 +399,7 @@ def test_print_connection_info_empty_server_info(mock_print, mock_params, mock_w
     # Should show Unknown for server info
     assert any("Server Name" in line and "Unknown" in line for line in printed_lines)
     assert any("Workbench Version" in line and "Unknown" in line for line in printed_lines)
-    assert any("⚠ Could not detect server info" in line for line in printed_lines)
+    assert any("⚠ Could not retrieve server info" in line for line in printed_lines)
 
 
 @patch("builtins.print")
@@ -414,7 +414,7 @@ def test_print_connection_info_exception_handling(mock_print, mock_params, mock_
     # Should show Unknown and error status
     assert any("Server Name" in line and "Unknown" in line for line in printed_lines)
     assert any("Workbench Version" in line and "Unknown" in line for line in printed_lines)
-    assert any("⚠ Could not fetch server info" in line for line in printed_lines)
+    assert any("⚠ Could not retrieve server info" in line for line in printed_lines)
 
 
 @patch("builtins.print")
