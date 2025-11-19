@@ -375,7 +375,6 @@ def test_print_connection_info_success(mock_print, mock_params, mock_workbench_c
     assert any("https://api.example.com" in line for line in printed_lines)
     assert any("API User" in line for line in printed_lines)
     assert any("testuser" in line for line in printed_lines)
-    assert any("API Token" in line for line in printed_lines)
 
     # Check server info
     assert any("Server Name" in line for line in printed_lines)
@@ -386,47 +385,6 @@ def test_print_connection_info_success(mock_print, mock_params, mock_workbench_c
 
     # Verify get_config was called
     mock_workbench_client.internal.get_config.assert_called_once()
-
-
-@patch("builtins.print")
-def test_print_connection_info_debug_mode_shows_token(
-    mock_print, mock_params, mock_workbench_client
-):
-    """Test that token is shown in debug mode."""
-    mock_params.log = "DEBUG"
-    mock_workbench_client.internal.get_config.return_value = {
-        "server_name": "Test Server",
-        "version": "24.3.0",
-    }
-
-    _print_connection_info(mock_params, mock_workbench_client)
-
-    printed_lines = [call[0][0] for call in mock_print.call_args_list]
-    token_line = [line for line in printed_lines if "API Token" in line][0]
-
-    # Token should be visible in debug mode
-    assert "secret_token" in token_line
-
-
-@patch("builtins.print")
-def test_print_connection_info_non_debug_mode_masks_token(
-    mock_print, mock_params, mock_workbench_client
-):
-    """Test that token is masked in non-debug mode."""
-    mock_params.log = "INFO"
-    mock_workbench_client.internal.get_config.return_value = {
-        "server_name": "Test Server",
-        "version": "24.3.0",
-    }
-
-    _print_connection_info(mock_params, mock_workbench_client)
-
-    printed_lines = [call[0][0] for call in mock_print.call_args_list]
-    token_line = [line for line in printed_lines if "API Token" in line][0]
-
-    # Token should be masked
-    assert "****" in token_line
-    assert "secret_token" not in token_line
 
 
 @patch("builtins.print")

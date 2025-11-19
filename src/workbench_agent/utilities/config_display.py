@@ -159,16 +159,9 @@ def _print_connection_info(params: Any, workbench_api: Any) -> None:
     """
     print("\n🔗 Workbench Connection Info:")
 
-    # Get debug mode for token masking
-    debug_mode = getattr(params, "log", "INFO").upper() == "DEBUG"
-
     # Display connection parameters
     print(f"  API URL                    : {params.api_url}")
     print(f"  API User                   : {params.api_user}")
-
-    # Mask token unless in debug mode
-    token_display = params.api_token if debug_mode else "****"
-    print(f"  API Token                  : {token_display}")
 
     # Get and display server information
     try:
