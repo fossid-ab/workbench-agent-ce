@@ -260,7 +260,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
             ) from e
 
         # Print operation summary
-        print_operation_summary(params, sbom_completed, project_code, scan_code, durations)
+        print_operation_summary(params, sbom_completed, durations)
 
         # Fetch and display results if requested
         if sbom_completed:

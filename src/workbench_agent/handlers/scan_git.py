@@ -173,7 +173,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
                 print("Dependency Analysis has been started.")
                 print("\nExiting without waiting for completion " "(--no-wait mode).")
                 print("You can check the status later using the " "'show-results' command.")
-                print_operation_summary(params, True, project_code, scan_code, durations)
+                print_operation_summary(params, True, durations)
                 return True
 
             # Wait for dependency analysis to complete
@@ -193,7 +193,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
                 scan_completed = True
 
                 # Print operation summary
-                print_operation_summary(params, da_completed, project_code, scan_code, durations)
+                print_operation_summary(params, da_completed, durations)
 
                 # Show results
                 fetch_display_save_results(client, params, scan_code)
@@ -250,7 +250,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
                     print("Dependency Analysis will automatically start " "after scan completion.")
 
                 print("\nExiting without waiting for completion " "(--no-wait mode).")
-                print_operation_summary(params, True, project_code, scan_code, durations)
+                print_operation_summary(params, True, durations)
                 return True
             else:
                 # Determine which processes to wait for
@@ -315,7 +315,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
     # Process completed operations
     if scan_completed:
         # Print operation summary
-        print_operation_summary(params, da_completed, project_code, scan_code, durations)
+        print_operation_summary(params, da_completed, durations)
 
         # Check for pending files (informational)
         try:

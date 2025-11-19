@@ -256,7 +256,7 @@ class TestSaveResultsToFile:
         filepath = "output/results.json"
         results = {"scan_id": TEST_SCAN_ID, "status": "completed"}
 
-        save_results_to_file(filepath, results, TEST_SCAN_CODE)
+        save_results_to_file(filepath, results)
 
         mock_makedirs.assert_called_once_with("output", exist_ok=True)
         mock_open_file.assert_any_call(filepath, "w", encoding="utf-8")
@@ -273,7 +273,7 @@ class TestSaveResultsToFile:
         results = {"test": "data"}
 
         # Should not raise exception
-        save_results_to_file(filepath, results, TEST_SCAN_CODE)
+        save_results_to_file(filepath, results)
         mock_makedirs.assert_called_once_with("restricted", exist_ok=True)
 
     @patch("builtins.open", new_callable=mock_open)
@@ -288,7 +288,7 @@ class TestSaveResultsToFile:
         handle.write.side_effect = IOError("Disk full")
 
         # Should not raise exception
-        save_results_to_file(filepath, results, TEST_SCAN_CODE)
+        save_results_to_file(filepath, results)
         mock_makedirs.assert_called_once_with("output", exist_ok=True)
 
 
@@ -435,7 +435,7 @@ class TestFetchDisplaySaveResults:
 
         mock_fetch.assert_called_once_with(mock_workbench, mock_params, TEST_SCAN_CODE)
         mock_display.assert_called_once_with({"test": "data"}, mock_params)
-        mock_save.assert_called_once_with("output.json", {"test": "data"}, TEST_SCAN_CODE)
+        mock_save.assert_called_once_with("output.json", {"test": "data"})
 
     @patch("workbench_agent.utilities.scan_workflows.fetch_results")
     @patch("workbench_agent.utilities.scan_workflows.display_results")
@@ -465,7 +465,7 @@ class TestPrintOperationSummary:
         mock_params.command = "scan"
 
         # Should complete without errors
-        print_operation_summary(mock_params, True, TEST_PROJECT_CODE, TEST_SCAN_CODE)
+        print_operation_summary(mock_params, True)
 
     def test_summary_with_durations(self, mock_params):
         """Test operation summary with timing information."""
@@ -476,8 +476,6 @@ class TestPrintOperationSummary:
         print_operation_summary(
             mock_params,
             True,
-            TEST_PROJECT_CODE,
-            TEST_SCAN_CODE,
             durations,
         )
 
@@ -486,7 +484,7 @@ class TestPrintOperationSummary:
         mock_params.command = "scan"
 
         # Should complete without errors
-        print_operation_summary(mock_params, False, TEST_PROJECT_CODE, TEST_SCAN_CODE)
+        print_operation_summary(mock_params, False)
 
 
 # ============================================================================

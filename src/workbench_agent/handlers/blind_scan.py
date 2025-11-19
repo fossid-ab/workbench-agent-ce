@@ -315,7 +315,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
                     da_completed = False
 
         # Print standardized operation summary
-        print_operation_summary(params, da_completed, project_code, scan_code, durations)
+        print_operation_summary(params, da_completed, durations)
 
         # ===== STEP 7: Show results if requested =====
         if any(

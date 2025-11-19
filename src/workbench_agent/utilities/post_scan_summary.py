@@ -237,7 +237,6 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
                         logger.debug(
                             f"Could not parse scopes for DA component {comp.get('name')}: {scope_err}"
                         )
-                        pass
                 print(
                     f"  - {comp.get('name', 'N/A')} : {comp.get('version', 'N/A')} "
                     f"(Scope: {scopes_display}, License: {comp.get('license_identifier', 'N/A')})"
@@ -330,7 +329,7 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
                 )
 
                 # Display top 5 vulnerabilities for each component
-                for i, vuln in enumerate(sorted_vulns_list[:5]):
+                for vuln in sorted_vulns_list[:5]:
                     severity = vuln.get("severity", "UNKNOWN").upper()
                     cve = vuln.get("cve", "NO_CVE_ID")
                     print(f"  - [{severity}] {cve}")
@@ -347,7 +346,7 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
     return displayed_something
 
 
-def save_results_to_file(filepath: str, results: Dict, scan_code: str):
+def save_results_to_file(filepath: str, results: Dict):
     """Helper to save collected results dictionary to a JSON file."""
     output_dir = os.path.dirname(filepath) or "."
     try:
@@ -355,7 +354,7 @@ def save_results_to_file(filepath: str, results: Dict, scan_code: str):
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
         print(f"Saved results to: {filepath}")
-    except (IOError, OSError) as e:
+    except OSError as e:
         print(f"\nWarning: Failed to save results to {filepath}: {e}")
 
 
@@ -391,7 +390,7 @@ def fetch_display_save_results(
     if save_path:
         if collected_results:
             print(f"\nSaving collected results to '{save_path}'...")
-            save_results_to_file(save_path, collected_results, scan_code)
+            save_results_to_file(save_path, collected_results)
         else:
             print("\nNo results were successfully collected, skipping save.")
 
@@ -422,9 +421,7 @@ def format_duration(duration_seconds: Optional[Union[int, float]]) -> str:
 def print_operation_summary(
     params: argparse.Namespace,
     da_completed: bool,
-    project_code: str,
-    scan_code: str,
-    durations: Dict[str, float] = None,
+    durations: Optional[Dict[str, float]] = None,
 ):
     """
     Prints a standardized summary of the scan operations performed and settings used.
@@ -432,8 +429,6 @@ def print_operation_summary(
     Args:
         params: Command line parameters
         da_completed: Whether dependency analysis completed successfully
-        project_code: Project code associated with the scan
-        scan_code: Scan code of the operation
         durations: Dictionary containing operation durations in seconds
     """
     durations = durations or {}  # Initialize to empty dict if None

@@ -127,7 +127,7 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         print("\nExiting without waiting for completion (--no-wait mode).")
 
         # Print operation summary for no-wait mode
-        print_operation_summary(params, True, project_code, scan_code, durations)
+        print_operation_summary(params, True, durations)
         return True
 
     # Wait for dependency analysis to complete
@@ -170,7 +170,7 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         ) from e
 
     # Print operation summary
-    print_operation_summary(params, da_completed, project_code, scan_code, durations)
+    print_operation_summary(params, da_completed, durations)
 
     # Fetch and display results if requested
     if da_completed:

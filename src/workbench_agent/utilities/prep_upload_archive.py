@@ -89,7 +89,7 @@ class UploadArchivePrep:
                 # Allow empty files, but not special files with zero size
                 if stat_info.st_size == 0 and not os.path.isfile(file_path):
                     return False
-            except (OSError, IOError):
+            except OSError:
                 return False
 
             return True
@@ -297,7 +297,7 @@ class UploadArchivePrep:
                 return "regular file"
             else:
                 return "special file"
-        except (OSError, IOError):
+        except OSError:
             return "unknown"
 
     @staticmethod

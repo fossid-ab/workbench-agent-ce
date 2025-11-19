@@ -202,7 +202,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
             da_completed = True
 
             # Show scan summary and operation details
-            print_operation_summary(params, da_completed, project_code, scan_code, durations)
+            print_operation_summary(params, da_completed, durations)
 
             # Show scan results if any were requested
             if any(
@@ -315,7 +315,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
                 da_completed = False
 
         # Show scan summary and operation details
-        print_operation_summary(params, da_completed, project_code, scan_code, durations)
+        print_operation_summary(params, da_completed, durations)
 
         # Show scan results if any were requested
         if any(
