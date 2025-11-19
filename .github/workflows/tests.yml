@@ -11,6 +11,12 @@ on:
     paths-ignore:
       - '.github/workflows/**'
 
+# For functional tests, set these repository secrets:
+# - WORKBENCH_URL: Your Workbench server URL (e.g., https://workbench.example.com/api.php)
+# - WORKBENCH_USER: Your Workbench username
+# - WORKBENCH_TOKEN: Your Workbench API token
+# Functional tests will be skipped if secrets are not configured.
+
 jobs:
   unit_tests:
     name: Unit Tests (Python ${{ matrix.python-version }})
@@ -52,3 +58,36 @@ jobs:
         run: |
           # Run all integration tests
           pytest tests/integration/ -v --tb=short
+
+  functional_tests:
+    name: Functional Tests
+    runs-on: ubuntu-latest
+    needs: [integration_tests]
+    # Functional tests will be skipped by pytest if secrets are not configured
+    # This is fine for forks or repos without Workbench access
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+      - name: Run functional tests
+        env:
+          WORKBENCH_URL: ${{ secrets.WORKBENCH_URL }}
+          WORKBENCH_USER: ${{ secrets.WORKBENCH_USER }}
+          WORKBENCH_TOKEN: ${{ secrets.WORKBENCH_TOKEN }}
+        run: |
+          # Run functional tests in parallel (exclude blind-scan which requires toolbox)
+          pytest -v -m "functional and not requires_toolbox" -n 4 --tb=short --junit-xml=functional-test-results.xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: functional-test-results
+          path: functional-test-results.xml
+          if-no-files-found: ignore

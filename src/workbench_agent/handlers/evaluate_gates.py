@@ -256,8 +256,7 @@ def _check_vulnerabilities_gate(
                     f"\n✅ No vulnerabilities found with severity "
                     f"{params.fail_on_vuln_severity.upper()} or higher."
                 )
-                if total_vulns > 0:
-                    _display_vulnerability_breakdown(vuln_counts)
+
                 return GateResult(
                     passed=True,
                     count=total_vulns,
@@ -325,11 +324,11 @@ def _print_next_steps(
 
     # Only show Next Steps if there are failed gates or actionable items
     if next_steps:
-        print("\n" + "=" * 50)
-        print("Next Steps:")
+        print("\nNext Steps:")
         print("=" * 50)
         for link_info in next_steps:
-            print(f"🔗 {link_info['message']}: {link_info['url']}")
+            print(f"\n🔗 {link_info['message']}:")
+            print(f"{link_info['url']}\n")
         print("=" * 50)
 
 
@@ -342,7 +341,7 @@ def _print_gate_summary(params: "argparse.Namespace", results: GateResults) -> N
         results: The gate results
     """
     print("\n" + "=" * 50)
-    print("Gate Evaluation Summary:")
+    print("\nGate Evaluation Summary:")
     print("=" * 50)
 
     # Pending files summary
@@ -417,29 +416,40 @@ def handle_evaluate_gates(client: "WorkbenchClient", params: "argparse.Namespace
     # Ensure scan processes are idle before evaluating gates
     print("\nEnsuring scans finished before evaluating gates...")
     try:
-        # Check that scan is complete
-        try:
-            client.waiting.wait_for_scan_to_finish(
-                scan_code,
-                max_tries=params.scan_number_of_tries,
-                wait_interval=params.scan_wait_time,
+        scan_status = client.status_check.check_scan_status(scan_code)
+        if scan_status.status == "RUNNING":
+            print(
+                "KB Scan is still in progress, "
+                "waiting for it to complete..."
             )
-        except Exception as e:
-            logger.debug(f"Scan status check skipped: {e}")
 
-        # Check that dependency analysis is complete (if it was run)
-        try:
-            client.waiting.wait_for_da_to_finish(
-                scan_code,
-                max_tries=params.scan_number_of_tries,
-                wait_interval=params.scan_wait_time,
+        client.waiting.wait_for_scan_to_finish(
+            scan_code,
+            max_tries=params.scan_number_of_tries,
+            wait_interval=params.scan_wait_time,
+        )
+
+        da_status = client.status_check.check_dependency_analysis_status(
+            scan_code
+        )
+        if da_status.status == "RUNNING":
+            print(
+                "Dependency Analysis is still in progress, "
+                "waiting for it to complete..."
             )
-        except Exception as e:
-            logger.debug(f"Dependency analysis check skipped: {e}")
+
+        client.waiting.wait_for_da_to_finish(
+            scan_code,
+            max_tries=params.scan_number_of_tries,
+            wait_interval=params.scan_wait_time,
+        )
 
         logging.info("Verified all Scan processes are idle. Checking gates...")
     except (ProcessTimeoutError, ApiError, NetworkError) as e:
-        print(f"\n❌ Gate Evaluation Failed: Could not verify scan " f"completion: {e}")
+        print(
+            f"\n❌ Gate Evaluation Failed: Could not verify scan "
+            f"completion: {e}"
+        )
         return False
 
     # Generate all Workbench links once for use throughout the handler

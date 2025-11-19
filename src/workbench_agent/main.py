@@ -34,6 +34,7 @@ from workbench_agent.handlers import (
     handle_show_results,
 )
 from workbench_agent.utilities.config_display import print_configuration
+from workbench_agent.utilities.error_handling import format_and_print_error
 
 
 def setup_logging(log_level: str) -> logging.Logger:
@@ -202,23 +203,31 @@ def main() -> int:
 
     except (ValidationError, ConfigurationError, AuthenticationError) as e:
         # Configuration/validation errors - user fixable
+        # Can occur during CLI parsing, client init, or handler execution
         try:
             logger.error(f"Configuration error: {e}")
         except NameError:
             # logger not yet initialized
             pass
-        print(f"Error: {e}")
+        # Format and print error with appropriate context
+        try:
+            context = getattr(args, "command", "cli")
+            format_and_print_error(e, context, args)
+        except NameError:
+            # args doesn't exist (shouldn't happen - argparse exits on error)
+            print(f"Error: {getattr(e, 'message', str(e))}")
         return 2
 
     except (
+        ProjectNotFoundError,   # Before ApiError (inherits from NotFoundError → ApiError)
+        ScanNotFoundError,      # Before ApiError (inherits from NotFoundError → ApiError)
+        ProcessTimeoutError,    # Before ProcessError (inherits from ProcessError)
+        # Now the base classes
         ApiError,
         NetworkError,
         ProcessError,
-        ProcessTimeoutError,
         FileSystemError,
         CompatibilityError,
-        ProjectNotFoundError,
-        ScanNotFoundError,
     ) as e:
         # Runtime errors during execution
         try:
@@ -226,17 +235,30 @@ def main() -> int:
         except NameError:
             # logger not yet initialized
             pass
-        print(f"Error: {e}")
+        # Format and print error with appropriate context
+        try:
+            # Determine context: could be client init or handler execution
+            context = getattr(args, "command", "init")
+            format_and_print_error(e, context, args)
+        except NameError:
+            # args doesn't exist (shouldn't happen)
+            print(f"Error: {getattr(e, 'message', str(e))}")
         return 1
 
     except Exception as e:
-        # Unexpected errors
+        # Unexpected errors (should be rare - handlers wrap these in WorkbenchAgentError)
         try:
-            logger.error(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}", exc_info=True)
         except NameError:
             # logger not yet initialized
             pass
-        print(f"Unexpected error: {e}")
+        # Format and print error with appropriate context
+        try:
+            context = getattr(args, "command", "unknown")
+            format_and_print_error(e, context, args)
+        except NameError:
+            # args doesn't exist
+            print(f"Unexpected error: {e}")
         return 1
 
 

@@ -6,9 +6,7 @@ and the main configuration printing function.
 """
 
 import argparse
-from io import StringIO
-from unittest.mock import MagicMock, patch
-
+from unittest.mock import patch
 import pytest
 
 from workbench_agent.utilities.config_display import (
@@ -370,12 +368,13 @@ def test_print_connection_info_success(mock_print, mock_params, mock_workbench_c
     # Check connection info header
     assert any("🔗 Workbench Connection Info:" in line for line in printed_lines)
 
-    # Check connection parameters
-    assert any("API URL" in line for line in printed_lines)
-    assert any("https://api.example.com" in line for line in printed_lines)
+    # Check that URL is NOT displayed (security improvement)
+    assert not any("https://api.example.com" in line for line in printed_lines)
+    assert not any("API URL" in line for line in printed_lines)
+
+    # Check connection parameters (API User should still be shown)
     assert any("API User" in line for line in printed_lines)
     assert any("testuser" in line for line in printed_lines)
-    assert any("API Token" in line for line in printed_lines)
 
     # Check server info
     assert any("Server Name" in line for line in printed_lines)
@@ -386,47 +385,6 @@ def test_print_connection_info_success(mock_print, mock_params, mock_workbench_c
 
     # Verify get_config was called
     mock_workbench_client.internal.get_config.assert_called_once()
-
-
-@patch("builtins.print")
-def test_print_connection_info_debug_mode_shows_token(
-    mock_print, mock_params, mock_workbench_client
-):
-    """Test that token is shown in debug mode."""
-    mock_params.log = "DEBUG"
-    mock_workbench_client.internal.get_config.return_value = {
-        "server_name": "Test Server",
-        "version": "24.3.0",
-    }
-
-    _print_connection_info(mock_params, mock_workbench_client)
-
-    printed_lines = [call[0][0] for call in mock_print.call_args_list]
-    token_line = [line for line in printed_lines if "API Token" in line][0]
-
-    # Token should be visible in debug mode
-    assert "secret_token" in token_line
-
-
-@patch("builtins.print")
-def test_print_connection_info_non_debug_mode_masks_token(
-    mock_print, mock_params, mock_workbench_client
-):
-    """Test that token is masked in non-debug mode."""
-    mock_params.log = "INFO"
-    mock_workbench_client.internal.get_config.return_value = {
-        "server_name": "Test Server",
-        "version": "24.3.0",
-    }
-
-    _print_connection_info(mock_params, mock_workbench_client)
-
-    printed_lines = [call[0][0] for call in mock_print.call_args_list]
-    token_line = [line for line in printed_lines if "API Token" in line][0]
-
-    # Token should be masked
-    assert "****" in token_line
-    assert "secret_token" not in token_line
 
 
 @patch("builtins.print")
@@ -441,7 +399,7 @@ def test_print_connection_info_empty_server_info(mock_print, mock_params, mock_w
     # Should show Unknown for server info
     assert any("Server Name" in line and "Unknown" in line for line in printed_lines)
     assert any("Workbench Version" in line and "Unknown" in line for line in printed_lines)
-    assert any("⚠ Could not detect server info" in line for line in printed_lines)
+    assert any("⚠ Could not retrieve server info" in line for line in printed_lines)
 
 
 @patch("builtins.print")
@@ -456,7 +414,7 @@ def test_print_connection_info_exception_handling(mock_print, mock_params, mock_
     # Should show Unknown and error status
     assert any("Server Name" in line and "Unknown" in line for line in printed_lines)
     assert any("Workbench Version" in line and "Unknown" in line for line in printed_lines)
-    assert any("⚠ Could not fetch server info" in line for line in printed_lines)
+    assert any("⚠ Could not retrieve server info" in line for line in printed_lines)
 
 
 @patch("builtins.print")
@@ -551,7 +509,7 @@ def test_print_configuration_full(
 @patch("workbench_agent.utilities.config_display._print_connection_info")
 @patch("builtins.print")
 def test_print_configuration_different_command(
-    mock_print, mock_print_conn, mock_print_cli, mock_params, mock_workbench_client
+    mock_print, mock_params, mock_workbench_client
 ):
     """Test print_configuration with different command."""
     mock_params.command = "show-results"

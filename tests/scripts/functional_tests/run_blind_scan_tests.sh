@@ -1,6 +1,6 @@
 #!/bin/bash
 # Functional tests for blind-scan command
-# Runs actual workbench-agent blind-scan commands
+# Tests end-to-end workflow: blind-scan → show-results → evaluate-gates → download-reports
 
 # Don't exit on error - we want to run all tests
 set +e
@@ -28,7 +28,11 @@ NC='\033[0m' # No Color
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
+# Test configuration
+PROJECT_NAME="FunctionalTestProject"
+SCAN_NAME="BlindScanTest-$$"
 
 # Check for workbench-agent command
 if ! command -v workbench-agent &> /dev/null; then
@@ -57,6 +61,8 @@ fi
 echo -e "${GREEN}=== Running Blind-Scan Functional Tests ===${NC}"
 echo "Workbench URL: $WORKBENCH_URL"
 echo "Workbench User: $WORKBENCH_USER"
+echo "Project Name: $PROJECT_NAME"
+echo "Scan Name: $SCAN_NAME"
 if [ "$DEBUG" = true ]; then
     echo -e "${BLUE}Debug logging: ENABLED${NC}"
 fi
@@ -78,18 +84,44 @@ mkdir -p "$TEST_DIR"
 echo "print('Hello, World!')" > "$TEST_DIR/main.py"
 echo "# Test Project" > "$TEST_DIR/README.md"
 echo "def helper(): pass" > "$TEST_DIR/utils.py"
+echo "requests==2.28.0" > "$TEST_DIR/requirements.txt"
+
+# Create reports directory
+REPORTS_DIR="$TMP_DIR/reports"
+mkdir -p "$REPORTS_DIR"
 
 # Test counter
 PASSED=0
 FAILED=0
 
+# Function to display workflow progress
+show_progress() {
+    local current_step="$1"
+    local steps=("blind-scan" "results" "gates" "reports-project" "reports-scan")
+    local progress=""
+    
+    for step in "${steps[@]}"; do
+        if [ "$step" = "$current_step" ]; then
+            progress+="${YELLOW}[$step]${NC} -> "
+        elif [[ " ${steps[@]:0:$(($(echo "${steps[@]}" | tr ' ' '\n' | grep -n "^$current_step$" | cut -d: -f1) - 1))} " =~ " $step " ]]; then
+            progress+="${GREEN}$step${NC} -> "
+        else
+            progress+="$step -> "
+        fi
+    done
+    progress=${progress% -> }
+    echo -e "${BLUE}[BLIND-SCAN]${NC} Progress: $progress"
+}
+
 # Function to run a test
 run_test() {
     local test_name="$1"
-    shift
+    local progress_step="$2"
+    shift 2
     local cmd="$@"
     
-    echo -e "\n${YELLOW}Test: $test_name${NC}"
+    show_progress "$progress_step"
+    echo -e "${YELLOW}Test: $test_name${NC}"
     echo "Command: $cmd"
     echo "---"
     
@@ -110,51 +142,55 @@ if [ -n "$TOOLBOX_PATH" ]; then
     TOOLBOX_ARG="--fossid-toolbox-path $TOOLBOX_PATH"
 fi
 
-# Test 1: Basic blind-scan
+# Test 1: Blind-Scan
 if [ -n "$TOOLBOX_PATH" ]; then
-    run_test "Basic Blind-Scan" \
+    run_test "Step 1: Blind-Scan" "blind-scan" \
         workbench-agent blind-scan \
-        --project-name "FunctionalTestProject" \
-        --scan-name "BlindScanTest" \
-        --path "$TEST_DIR" \
-        $TOOLBOX_ARG \
-        $LOG_ARG
-else
-    echo -e "${YELLOW}Skipping blind-scan tests (fossid-toolbox not available)${NC}"
-fi
-
-# Test 2: Blind-scan with AutoID
-if [ -n "$TOOLBOX_PATH" ]; then
-    run_test "Blind-Scan with AutoID" \
-        workbench-agent blind-scan \
-        --project-name "FunctionalTestProject" \
-        --scan-name "BlindAutoIDScanTest" \
-        --path "$TEST_DIR" \
-        $TOOLBOX_ARG \
-        --autoid-file-licenses \
-        --autoid-file-copyrights \
-        --autoid-pending-ids \
-        --show-licenses \
-        --show-policy-warnings \
-        $LOG_ARG
-fi
-
-# Test 3: Blind-scan with dependency analysis
-if [ -n "$TOOLBOX_PATH" ]; then
-    # Create package.json for DA test
-    echo '{"dependencies": {"express": "^4.18.0"}}' > "$TEST_DIR/package.json"
-    echo "const express = require('express');" > "$TEST_DIR/main.js"
-    
-    run_test "Blind-Scan with Dependency Analysis" \
-        workbench-agent blind-scan \
-        --project-name "FunctionalTestProject" \
-        --scan-name "BlindDAScanTest" \
+        --project-name "$PROJECT_NAME" \
+        --scan-name "$SCAN_NAME" \
         --path "$TEST_DIR" \
         $TOOLBOX_ARG \
         --run-dependency-analysis \
-        --show-dependencies \
-        --show-vulnerabilities \
         $LOG_ARG
+
+    # Test 2: Show Results
+    run_test "Step 2: Show Results" "results" \
+        workbench-agent show-results \
+        --project-name "$PROJECT_NAME" \
+        --scan-name "$SCAN_NAME" \
+        --show-scan-metrics \
+        --show-licenses \
+        --show-components \
+        --show-policy-warnings \
+        --show-vulnerabilities \
+        --show-dependencies \
+        $LOG_ARG
+
+    # Test 3: Evaluate Gates
+    run_test "Step 3: Evaluate Gates" "gates" \
+        workbench-agent evaluate-gates \
+        --project-name "$PROJECT_NAME" \
+        --scan-name "$SCAN_NAME" \
+        $LOG_ARG
+
+    # Test 4: Download Reports (Project Scope)
+    run_test "Step 4: Download Reports (Project Scope)" "reports-project" \
+        workbench-agent download-reports \
+        --project-name "$PROJECT_NAME" \
+        --report-scope project \
+        --report-save-path "$REPORTS_DIR/project" \
+        $LOG_ARG
+
+    # Test 5: Download Reports (Scan Scope)
+    run_test "Step 5: Download Reports (Scan Scope)" "reports-scan" \
+        workbench-agent download-reports \
+        --project-name "$PROJECT_NAME" \
+        --scan-name "$SCAN_NAME" \
+        --report-scope scan \
+        --report-save-path "$REPORTS_DIR/scan" \
+        $LOG_ARG
+else
+    echo -e "${YELLOW}Skipping blind-scan tests (fossid-toolbox not available)${NC}"
 fi
 
 # Summary

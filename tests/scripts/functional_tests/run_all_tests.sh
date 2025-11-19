@@ -93,7 +93,7 @@ run_test_script() {
             if [ "$DEBUG" = true ]; then
                 DEBUG_ARG="--debug"
             fi
-            bash "$script_path" --parallel --max-parallel=$MAX_PARALLEL $DEBUG_ARG
+            bash "$script_path" $DEBUG_ARG
             local exit_code=$?
             if [ $exit_code -eq 0 ]; then
                 echo -e "${GREEN}[$(date +%H:%M:%S)] ✓ $script completed successfully${NC}"
@@ -134,28 +134,18 @@ for script in "${TEST_SCRIPTS[@]}"; do
     if [ "$PARALLEL" = true ]; then
         # Wait if we've reached max parallel processes
         while [ ${#PIDS[@]} -ge $MAX_PARALLEL ]; do
-            for pid in "${PIDS[@]}"; do
+            # Check for completed processes
+            for i in "${!PIDS[@]}"; do
+                pid="${PIDS[$i]}"
                 if ! kill -0 "$pid" 2>/dev/null; then
-                    # Process finished
-                    wait "$pid"
-                    local exit_code=$?
-                    if [ $exit_code -ne 0 ]; then
-                        FAILED_SCRIPTS+=("$script")
-                        ((TOTAL_FAILED++))
-                    else
-                        ((TOTAL_PASSED++))
-                    fi
+                    # Process finished, wait for it to get exit code
+                    wait "$pid" 2>/dev/null
+                    exit_code=$?
+                    
                     # Remove from array
-                    local idx=0
-                    for p in "${PIDS[@]}"; do
-                        if [ "$p" = "$pid" ]; then
-                            unset PIDS[$idx]
-                            PIDS=("${PIDS[@]}")
-                            break
-                        fi
-                        ((idx++))
-                    done
-                    break
+                    unset 'PIDS[$i]'
+                    PIDS=("${PIDS[@]}")
+                    break 2
                 fi
             done
             sleep 0.1
@@ -174,12 +164,14 @@ done
 if [ "$PARALLEL" = true ]; then
     echo -e "\n${BLUE}Waiting for all test scripts to complete...${NC}"
     for pid in "${PIDS[@]}"; do
-        wait "$pid"
-        local exit_code=$?
-        if [ $exit_code -ne 0 ]; then
-            ((TOTAL_FAILED++))
-        else
-            ((TOTAL_PASSED++))
+        if [ -n "$pid" ]; then
+            wait "$pid" 2>/dev/null
+            exit_code=$?
+            if [ $exit_code -ne 0 ]; then
+                ((TOTAL_FAILED++))
+            else
+                ((TOTAL_PASSED++))
+            fi
         fi
     done
 fi
