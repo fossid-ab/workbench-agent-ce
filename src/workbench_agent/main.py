@@ -209,7 +209,6 @@ def main() -> int:
         except NameError:
             # logger not yet initialized
             pass
-        
         # Format and print error with appropriate context
         try:
             context = getattr(args, "command", "cli")
@@ -217,18 +216,18 @@ def main() -> int:
         except NameError:
             # args doesn't exist (shouldn't happen - argparse exits on error)
             print(f"Error: {getattr(e, 'message', str(e))}")
-        
         return 2
 
     except (
+        ProjectNotFoundError,   # Before ApiError (inherits from NotFoundError → ApiError)
+        ScanNotFoundError,      # Before ApiError (inherits from NotFoundError → ApiError)
+        ProcessTimeoutError,    # Before ProcessError (inherits from ProcessError)
+        # Now the base classes
         ApiError,
         NetworkError,
         ProcessError,
-        ProcessTimeoutError,
         FileSystemError,
         CompatibilityError,
-        ProjectNotFoundError,
-        ScanNotFoundError,
     ) as e:
         # Runtime errors during execution
         try:
@@ -236,7 +235,6 @@ def main() -> int:
         except NameError:
             # logger not yet initialized
             pass
-        
         # Format and print error with appropriate context
         try:
             # Determine context: could be client init or handler execution
@@ -245,7 +243,6 @@ def main() -> int:
         except NameError:
             # args doesn't exist (shouldn't happen)
             print(f"Error: {getattr(e, 'message', str(e))}")
-        
         return 1
 
     except Exception as e:
@@ -255,7 +252,6 @@ def main() -> int:
         except NameError:
             # logger not yet initialized
             pass
-        
         # Format and print error with appropriate context
         try:
             context = getattr(args, "command", "unknown")
@@ -263,7 +259,6 @@ def main() -> int:
         except NameError:
             # args doesn't exist
             print(f"Unexpected error: {e}")
-        
         return 1
 
 

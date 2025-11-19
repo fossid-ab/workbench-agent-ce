@@ -93,7 +93,7 @@ run_test_script() {
             if [ "$DEBUG" = true ]; then
                 DEBUG_ARG="--debug"
             fi
-            bash "$script_path" --parallel --max-parallel=$MAX_PARALLEL $DEBUG_ARG
+            bash "$script_path" $DEBUG_ARG
             local exit_code=$?
             if [ $exit_code -eq 0 ]; then
                 echo -e "${GREEN}[$(date +%H:%M:%S)] ✓ $script completed successfully${NC}"

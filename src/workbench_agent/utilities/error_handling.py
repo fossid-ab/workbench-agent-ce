@@ -57,30 +57,29 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
     # Add context-specific help based on error type
     # Note: Check AuthenticationError before ApiError since AuthenticationError inherits from ApiError
     if isinstance(error, AuthenticationError):
-        print(f"\n❌ Authentication failed")
+        print("\n❌ Authentication failed")
         print(f"   {error_message}")
-        print(f"\n💡 Please check:")
-        print(f"   • Your API credentials are correct")
-        print(f"   • You have the necessary permissions")
+        print("\n💡 Please check:")
+        print("   • Your API credentials are correct")
+        print("   • You have the necessary permissions")
 
     elif isinstance(error, ProjectNotFoundError):
         if is_read_only:
-            print(f"\n❌ Cannot continue: The requested project does not exist")
+            print("\n❌ Cannot continue: The requested project does not exist")
             print(
                 f"   Project '{getattr(params, 'project_name', 'unknown')}' was not found in your Workbench instance."
             )
-            print(f"\n💡 Please check:")
-            print(f"   • The project name is spelled correctly")
-            print(f"   • The project exists in your Workbench instance")
-            print(f"   • You have access to the project")
+            print("\n💡 Please check:")
+            print("   • The project name is spelled correctly")
+            print("   • The project exists in your Workbench instance")
+            print("   • You have access to the project")
         else:
             print(f"\n❌ Error executing '{command}' command: {error_message}")
             print(f"  → Project '{getattr(params, 'project_name', 'unknown')}' was not found")
-            print(f"  → Check the project name or use --create-project to create it")
 
     elif isinstance(error, ScanNotFoundError):
         if is_read_only:
-            print(f"\n❌ Cannot continue: The requested scan does not exist")
+            print("\n❌ Cannot continue: The requested scan does not exist")
             scan_name = getattr(params, "scan_name", "unknown")
             project_name = getattr(params, "project_name", None)
 
@@ -89,16 +88,16 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
             else:
                 print(f"   Scan '{scan_name}' was not found in your Workbench instance.")
 
-            print(f"\n💡 Please check:")
-            print(f"   • The scan name is spelled correctly")
+            print("\n💡 Please check:")
+            print("   • The scan name is spelled correctly")
             if project_name:
                 print(f"   • The scan exists in the '{project_name}' project")
             else:
-                print(f"   • The scan exists in your Workbench instance")
+                print("   • The scan exists in your Workbench instance")
                 print(
-                    f"   • Consider specifying --project-name if the scan is in a specific project"
+                    "   • Consider specifying --project-name if the scan is in a specific project"
                 )
-            print(f"   • You have access to the scan")
+            print("   • You have access to the scan")
         else:
             print(f"\n❌ Error executing '{command}' command: {error_message}")
             print(f"  → Scan '{getattr(params, 'scan_name', 'unknown')}' was not found")
@@ -108,29 +107,29 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
                 )
             else:
                 print(
-                    f"  → Check the scan name or specify --project-name if it exists in a specific project"
+                    "  → Check the scan name or specify --project-name if it exists in a specific project"
                 )
 
     elif isinstance(error, NetworkError):
-        print(f"\n❌ Network connectivity issue")
+        print("\n❌ Network connectivity issue")
         print(f"   {error_message}")
-        print(f"\n💡 Please check:")
-        print(f"   • The Workbench server is accessible")
+        print("\n💡 Please check:")
+        print("   • The Workbench server is accessible")
         print(f"   • The API URL is correct: {getattr(params, 'api_url', '<not specified>')}")
 
     elif isinstance(error, ApiError):
         # Check for credential errors first
         if "user_not_found_or_api_key_is_not_correct" in error_message:
-            print(f"\n❌ Invalid credentials")
-            print(f"   The username or API token provided is incorrect.")
-            print(f"\n💡 Please check:")
+            print("\n❌ Invalid credentials")
+            print("   The username or API token provided is incorrect.")
+            print("\n💡 Please check:")
             print(f"   • Your username: {getattr(params, 'api_user', '<not specified>')}")
-            print(f"   • Your API token is correct and not expired")
-            print(f"   • Your account has access to the Workbench instance")
+            print("   • Your API token is correct and not expired")
+            print("   • Your account has access to the Workbench instance")
             print(f"   • The API URL is correct: {getattr(params, 'api_url', '<not specified>')}")
             return  # Exit early to avoid showing generic API error details
 
-        print(f"\n❌ Workbench API error")
+        print("\n❌ Workbench API error")
         print(f"   {error_message}")
 
         if error_code:
@@ -138,51 +137,51 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
 
             # Special handling for Git repository access errors
             if error_code == "git_repository_access_error":
-                print(f"\n💡 Git repository access issue:")
+                print("\n💡 Git repository access issue:")
                 print(
-                    f"   • Check that the Git URL is correct and accessible from the Workbench server"
+                    "   • Check that the Git URL is correct and accessible from the Workbench server"
                 )
-                print(f"   • Ensure any required authentication is properly configured")
+                print("   • Ensure any required authentication is properly configured")
             else:
-                print(f"\n💡 The Workbench API reported an issue with your request")
+                print("\n💡 The Workbench API reported an issue with your request")
 
     elif isinstance(error, ProcessTimeoutError):
-        print(f"\n❌ Operation timed out")
+        print("\n❌ Operation timed out")
         print(f"   {error_message}")
-        print(f"\n💡 Consider increasing the timeout values:")
+        print("\n💡 Consider increasing the timeout values:")
         print(
             f"   • --scan-number-of-tries (current: {getattr(params, 'scan_number_of_tries', 'default')})"
         )
         print(f"   • --scan-wait-time (current: {getattr(params, 'scan_wait_time', 'default')})")
 
     elif isinstance(error, ProcessError):
-        print(f"\n❌ Workbench process error")
+        print("\n❌ Workbench process error")
         print(f"   {error_message}")
-        print(f"\n💡 A Workbench process failed to complete successfully")
+        print("\n💡 A Workbench process failed to complete successfully")
 
     elif isinstance(error, FileSystemError):
-        print(f"\n❌ File system error")
+        print("\n❌ File system error")
         print(f"   {error_message}")
-        print(f"\n💡 Please check:")
-        print(f"   • File permissions are correct")
-        print(f"   • All specified paths exist")
+        print("\n💡 Please check:")
+        print("   • File permissions are correct")
+        print("   • All specified paths exist")
         if hasattr(params, "path"):
             print(f"   • Path specified: {params.path}")
 
     elif isinstance(error, ValidationError):
-        print(f"\n❌ Invalid input or configuration")
+        print("\n❌ Invalid input or configuration")
         print(f"   {error_message}")
-        print(f"\n💡 Please check your command-line arguments and input files")
+        print("\n💡 Please check your command-line arguments and input files")
 
     elif isinstance(error, ConfigurationError):
-        print(f"\n❌ Configuration error")
+        print("\n❌ Configuration error")
         print(f"   {error_message}")
-        print(f"\n💡 Please check your command-line arguments and configuration")
+        print("\n💡 Please check your command-line arguments and configuration")
 
     elif isinstance(error, CompatibilityError):
-        print(f"\n❌ Compatibility issue")
+        print("\n❌ Compatibility issue")
         print(f"   {error_message}")
-        print(f"\n💡 The requested operation is not compatible with the scan's current state")
+        print("\n💡 The requested operation is not compatible with the scan's current state")
 
     else:
         # Generic error formatting for unexpected errors
@@ -200,7 +199,7 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
 
     # Add help text only for non-read-only operations or when in verbose mode
     if not is_read_only or getattr(params, "verbose", False):
-        print(f"\nFor more details, run with --log DEBUG for verbose output")
+        print("\nFor more details, run with --log DEBUG for verbose output")
 
 
 def handler_error_wrapper(handler_func: Callable) -> Callable:
@@ -253,17 +252,18 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
             return handler_func(workbench, params)
 
         except (
-            ProjectNotFoundError,
-            ScanNotFoundError,
+            AuthenticationError,    # Before ApiError (inherits from ApiError)
+            ProjectNotFoundError,   # Before ApiError (inherits from NotFoundError → ApiError)
+            ScanNotFoundError,      # Before ApiError (inherits from NotFoundError → ApiError)
+            ProcessTimeoutError,    # Before ProcessError (inherits from ProcessError)
+            # Now the base classes and independent exceptions
+            ValidationError,
+            ConfigurationError,
             FileSystemError,
+            CompatibilityError,
             ApiError,
             NetworkError,
             ProcessError,
-            ProcessTimeoutError,
-            ValidationError,
-            CompatibilityError,
-            ConfigurationError,
-            AuthenticationError,
         ) as e:
             # Expected exceptions - log and re-raise for main.py to format
             logger.debug(

@@ -66,7 +66,7 @@ def test_format_and_print_error_project_not_found_write_operation(mock_print, mo
 
     print_calls = [call.args[0] for call in mock_print.call_args_list]
     assert any("Error executing 'scan' command" in call for call in print_calls)
-    assert any("--create-project to create it" in call for call in print_calls)
+    assert any("Project 'test_project' was not found" in call for call in print_calls)
 
 
 @patch("builtins.print")

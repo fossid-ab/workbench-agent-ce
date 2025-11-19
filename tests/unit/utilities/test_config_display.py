@@ -509,7 +509,7 @@ def test_print_configuration_full(
 @patch("workbench_agent.utilities.config_display._print_connection_info")
 @patch("builtins.print")
 def test_print_configuration_different_command(
-    mock_print, mock_print_conn, mock_print_cli, mock_params, mock_workbench_client
+    mock_print, mock_params, mock_workbench_client
 ):
     """Test print_configuration with different command."""
     mock_params.command = "show-results"

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Functional tests for scan-git command
-# Runs actual workbench-agent scan-git commands
+# Tests end-to-end workflow: scan-git → show-results → evaluate-gates → download-reports
 
 # Don't exit on error - we want to run all tests
 set +e
@@ -28,7 +28,11 @@ NC='\033[0m' # No Color
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+
+# Test configuration
+PROJECT_NAME="FunctionalTestProject"
+SCAN_NAME="ScanGitTest-$$"
 
 # Check for workbench-agent command
 if ! command -v workbench-agent &> /dev/null; then
@@ -47,10 +51,20 @@ fi
 echo -e "${GREEN}=== Running Scan-Git Functional Tests ===${NC}"
 echo "Workbench URL: $WORKBENCH_URL"
 echo "Workbench User: $WORKBENCH_USER"
+echo "Project Name: $PROJECT_NAME"
+echo "Scan Name: $SCAN_NAME"
 if [ "$DEBUG" = true ]; then
     echo -e "${BLUE}Debug logging: ENABLED${NC}"
 fi
 echo ""
+
+# Create a temporary directory for reports
+TMP_DIR=$(mktemp -d)
+trap "rm -rf $TMP_DIR" EXIT
+
+# Create reports directory
+REPORTS_DIR="$TMP_DIR/reports"
+mkdir -p "$REPORTS_DIR"
 
 # Build log argument
 LOG_ARG=""
@@ -62,13 +76,34 @@ fi
 PASSED=0
 FAILED=0
 
+# Function to display workflow progress
+show_progress() {
+    local current_step="$1"
+    local steps=("scan-git" "results" "gates" "reports-project" "reports-scan")
+    local progress=""
+    
+    for step in "${steps[@]}"; do
+        if [ "$step" = "$current_step" ]; then
+            progress+="${YELLOW}[$step]${NC} -> "
+        elif [[ " ${steps[@]:0:$(($(echo "${steps[@]}" | tr ' ' '\n' | grep -n "^$current_step$" | cut -d: -f1) - 1))} " =~ " $step " ]]; then
+            progress+="${GREEN}$step${NC} -> "
+        else
+            progress+="$step -> "
+        fi
+    done
+    progress=${progress% -> }
+    echo -e "${BLUE}[SCAN-GIT]${NC} Progress: $progress"
+}
+
 # Function to run a test
 run_test() {
     local test_name="$1"
-    shift
+    local progress_step="$2"
+    shift 2
     local cmd="$@"
     
-    echo -e "\n${YELLOW}Test: $test_name${NC}"
+    show_progress "$progress_step"
+    echo -e "${YELLOW}Test: $test_name${NC}"
     echo "Command: $cmd"
     echo "---"
     
@@ -87,54 +122,52 @@ run_test() {
 TEST_REPO="https://github.com/fossid-ab/workbench-agent"
 TEST_BRANCH="main"
 
-# Test 1: Basic scan-git with branch
-run_test "Basic Scan-Git (Branch)" \
+# Test 1: Scan-Git
+run_test "Step 1: Scan-Git" "scan-git" \
     workbench-agent scan-git \
-    --project-name "FunctionalTestProject" \
-    --scan-name "GitScanTest" \
-    --git-url "$TEST_REPO" \
-    --git-branch "$TEST_BRANCH" \
-    --git-depth 1 \
-    $LOG_ARG
-
-# Test 2: Scan-git with dependency analysis
-run_test "Scan-Git with Dependency Analysis" \
-    workbench-agent scan-git \
-    --project-name "FunctionalTestProject" \
-    --scan-name "GitDAScanTest" \
+    --project-name "$PROJECT_NAME" \
+    --scan-name "$SCAN_NAME" \
     --git-url "$TEST_REPO" \
     --git-branch "$TEST_BRANCH" \
     --git-depth 1 \
     --run-dependency-analysis \
-    --show-dependencies \
-    --show-vulnerabilities \
     $LOG_ARG
 
-# Test 3: Scan-git with delta scan
-run_test "Scan-Git with Delta Scan" \
-    workbench-agent scan-git \
-    --project-name "FunctionalTestProject" \
-    --scan-name "GitDeltaScanTest" \
-    --git-url "$TEST_REPO" \
-    --git-branch "$TEST_BRANCH" \
-    --git-depth 1 \
-    --delta-scan \
+# Test 2: Show Results
+run_test "Step 2: Show Results" "results" \
+    workbench-agent show-results \
+    --project-name "$PROJECT_NAME" \
+    --scan-name "$SCAN_NAME" \
     --show-scan-metrics \
+    --show-licenses \
+    --show-components \
+    --show-policy-warnings \
+    --show-vulnerabilities \
+    --show-dependencies \
     $LOG_ARG
 
-# Test 4: Scan-git with AutoID
-run_test "Scan-Git with AutoID" \
-    workbench-agent scan-git \
-    --project-name "FunctionalTestProject" \
-    --scan-name "GitAutoIDScanTest" \
-    --git-url "$TEST_REPO" \
-    --git-branch "$TEST_BRANCH" \
-    --git-depth 1 \
-    --autoid-file-licenses \
-    --autoid-file-copyrights \
-    --autoid-pending-ids \
-    --show-licenses \
-    --show-policy-warnings \
+# Test 3: Evaluate Gates
+run_test "Step 3: Evaluate Gates" "gates" \
+    workbench-agent evaluate-gates \
+    --project-name "$PROJECT_NAME" \
+    --scan-name "$SCAN_NAME" \
+    $LOG_ARG
+
+# Test 4: Download Reports (Project Scope)
+run_test "Step 4: Download Reports (Project Scope)" "reports-project" \
+    workbench-agent download-reports \
+    --project-name "$PROJECT_NAME" \
+    --report-scope project \
+    --report-save-path "$REPORTS_DIR/project" \
+    $LOG_ARG
+
+# Test 5: Download Reports (Scan Scope)
+run_test "Step 5: Download Reports (Scan Scope)" "reports-scan" \
+    workbench-agent download-reports \
+    --project-name "$PROJECT_NAME" \
+    --scan-name "$SCAN_NAME" \
+    --report-scope scan \
+    --report-save-path "$REPORTS_DIR/scan" \
     $LOG_ARG
 
 # Summary
