@@ -152,7 +152,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
 
     # Upload code to scan
     print("\nUploading Code to Workbench...")
-    client.uploads.upload_scan_target(scan_code, params.path)
+    client.upload_service.upload_scan_target(scan_code, params.path)
 
     # Handle archive extraction
     print("\nExtracting Uploaded Archive...")

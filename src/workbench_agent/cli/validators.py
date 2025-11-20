@@ -126,6 +126,36 @@ def _validate_import_commands(args: Namespace) -> None:
     if not os.path.exists(path):
         raise ValidationError(f"Path does not exist: {path}")
 
+    # Command-specific validation
+    if command == "import-da":
+        _validate_da_results_file(path)
+    # Future: add import-sbom specific validation here if needed
+
+
+def _validate_da_results_file(path: str) -> None:
+    """
+    Best effort validation that the DA results file comes from ORT or FossID-DA.
+
+    Validates:
+    - Path must be a file (not a directory)
+    - Filename must be 'analyzer-results.json'
+
+    Args:
+        path: Path to the dependency analysis results file
+
+    Raises:
+        ValidationError: If validation fails
+    """
+    if not os.path.isfile(path):
+        raise ValidationError(f"The provided path must be a file: {path}")
+
+    filename = os.path.basename(path)
+    if filename != "analyzer-result.json":
+        raise ValidationError(
+            f"The analyzer result must be named 'analyzer-result.json'. "
+            f"Provided filename: {filename}"
+        )
+
 
 def _validate_download_reports_command(args: Namespace) -> None:
     """Validate download-reports command."""

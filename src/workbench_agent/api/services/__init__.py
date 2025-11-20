@@ -9,6 +9,7 @@ from .resolver_service import ResolverService
 from .results_service import ResultsService
 from .scan_operations_service import ScanOperationsService
 from .status_check_service import StatusCheckService
+from .upload_service import UploadService
 from .waiting_service import WaitingService
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     "ResolverService",
     "ResultsService",
     "ScanOperationsService",
+    "UploadService",
     "WaitingService",
 ]

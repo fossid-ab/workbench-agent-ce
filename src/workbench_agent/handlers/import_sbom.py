@@ -192,7 +192,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
         # Upload SBOM file using the prepared upload path
         print("\n--- Uploading SBOM File ---")
         try:
-            client.uploads.upload_sbom_file(scan_code=scan_code, path=upload_path)
+            client.upload_service.upload_sbom_file(scan_code=scan_code, path=upload_path)
             print(f"SBOM uploaded successfully from: {upload_path}")
         except Exception as e:
             logger.error(

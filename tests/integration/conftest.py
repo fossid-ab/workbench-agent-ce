@@ -342,9 +342,11 @@ def mock_workbench_api(mocker):
     mock_client.projects.list.return_value = []  # Empty list for project lookup
     mock_client.projects.create.return_value = {"project_code": "PRJ-MOCK"}
 
-    # --- Mock Uploads Client ---
-    mock_client.uploads = MagicMock()
-    mock_client.uploads.upload_scan_target.return_value = None
+    # --- Mock Upload Service ---
+    mock_client.upload_service = MagicMock()
+    mock_client.upload_service.upload_scan_target.return_value = None
+    mock_client.upload_service.upload_da_results.return_value = None
+    mock_client.upload_service.upload_sbom_file.return_value = None
 
     # --- Mock Vulnerabilities Client ---
     mock_client.vulnerabilities = MagicMock()

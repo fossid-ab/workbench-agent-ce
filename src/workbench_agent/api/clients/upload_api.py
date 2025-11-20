@@ -1,27 +1,32 @@
 """
-UploadsClient - Handles file and directory uploads to Workbench.
+UploadsClient - Handles low-level file upload operations to Workbench.
 
 This client provides:
-- Upload scan targets (files/directories)
-- Upload dependency analysis results
-- Upload SBOM files
+- Low-level file upload operations (upload_file)
 - Chunked upload support with progress tracking
+- Standard upload support
+
+The client handles the actual HTTP communication with the Workbench API.
+Business logic (preparing files, setting headers based on context) is handled
+by UploadService in the services layer.
+
+Example:
+        >>> uploads = UploadsClient(base_api)
+        >>> headers = {"FOSSID-SCAN-CODE": "...", "FOSSID-FILE-NAME": "..."}
+        >>> uploads.upload_file("/path/to/file.zip", headers)
 """
 
-import base64
 import io
 import json
 import logging
 import os
-import shutil
 import time
 from typing import Generator
 
 import requests
 
 from workbench_agent.api.exceptions import ApiError, NetworkError
-from workbench_agent.exceptions import FileSystemError, WorkbenchAgentError
-from workbench_agent.utilities.prep_upload_archive import UploadArchivePrep
+from workbench_agent.exceptions import FileSystemError
 
 logger = logging.getLogger("workbench-agent")
 
@@ -30,20 +35,26 @@ class UploadsClient:
     """
     Uploads API client using composition pattern.
 
-    Handles all file upload operations including:
-    - Scan target uploads (files and directories)
-    - Dependency analysis result uploads
-    - SBOM file uploads
-    - Chunked uploads with progress tracking
+    Handles low-level HTTP operations for file uploads:
+    - File upload with automatic chunking for large files
+    - Progress tracking
+    - Retry logic for chunked uploads
+
+    This client focuses on the HTTP communication layer. For business logic
+    (preparing files, setting headers based on upload type), use UploadService.
 
     Example:
         >>> uploads = UploadsClient(base_api)
-        >>> uploads.upload_scan_target(scan_code, "/path/to/source")
-        >>> uploads.upload_dependency_analysis_results(scan_code, "results.json")
+        >>> headers = {
+        ...     "FOSSID-SCAN-CODE": base64.b64encode(scan_code.encode()).decode(),
+        ...     "FOSSID-FILE-NAME": base64.b64encode(filename.encode()).decode(),
+        ... }
+        >>> uploads.upload_file_standard("/path/to/file.zip", headers)
+        >>> # Or for large files:
+        >>> uploads.upload_file_chunked("/path/to/large_file.zip", headers)
     """
 
-    # Upload Constants
-    CHUNKED_UPLOAD_THRESHOLD = 16 * 1024 * 1024  # 16MB
+    # Upload Constants (HTTP implementation details)
     CHUNK_SIZE = 5 * 1024 * 1024  # 5MB
     MAX_CHUNK_RETRIES = 3
     PROGRESS_UPDATE_INTERVAL = 20  # Percent
@@ -61,148 +72,79 @@ class UploadsClient:
 
     # ===== PUBLIC UPLOAD METHODS =====
 
-    def upload_scan_target(self, scan_code: str, path: str):
+    def upload_file_standard(self, file_path: str, headers: dict) -> None:
         """
-        Uploads a file or directory (as zip) to a scan.
+        Upload a file using standard (non-chunked) HTTP POST.
 
-        Args:
-            scan_code: Code of the scan to upload to
-            path: Path to the file or directory to upload
-
-        Raises:
-            FileSystemError: If path doesn't exist
-            ApiError: If upload fails
-            NetworkError: If there are network issues
-        """
-        if not os.path.exists(path):
-            raise FileSystemError(f"Path does not exist: {path}")
-
-        archive_path = None
-        temp_dir = None
-
-        try:
-            upload_path = path
-            if os.path.isdir(path):
-                print("The path provided is a directory. Compressing for upload...")
-                archive_path = UploadArchivePrep.create_zip_archive(path)
-                upload_path = archive_path
-                temp_dir = os.path.dirname(archive_path)
-
-            upload_basename = os.path.basename(upload_path)
-            name_b64 = base64.b64encode(upload_basename.encode()).decode("utf-8")
-            scan_code_b64 = base64.b64encode(scan_code.encode()).decode("utf-8")
-
-            headers = {
-                "FOSSID-SCAN-CODE": scan_code_b64,
-                "FOSSID-FILE-NAME": name_b64,
-                "Accept": "*/*",
-            }
-
-            self._perform_upload(upload_path, headers)
-
-        except (ApiError, NetworkError) as e:
-            # Re-raise known exceptions
-            raise
-        except Exception as e:
-            # Wrap unexpected exceptions
-            raise WorkbenchAgentError(
-                f"An unexpected error occurred during the upload process: {e}"
-            ) from e
-
-        finally:
-            if archive_path and os.path.exists(archive_path):
-                os.remove(archive_path)
-            if temp_dir and os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir, ignore_errors=True)
-
-    def upload_dependency_analysis_results(self, scan_code: str, path: str):
-        """
-        Uploads a dependency analysis result file to a scan.
-
-        Args:
-            scan_code: Code of the scan to upload to
-            path: Path to the dependency analysis results file
-
-        Raises:
-            FileSystemError: If file doesn't exist
-            ApiError: If upload fails
-            NetworkError: If there are network issues
-        """
-        if not os.path.exists(path) or not os.path.isfile(path):
-            raise FileSystemError(f"Dependency analysis results file does not exist: {path}")
-
-        upload_basename = os.path.basename(path)
-        name_b64 = base64.b64encode(upload_basename.encode()).decode("utf-8")
-        scan_code_b64 = base64.b64encode(scan_code.encode()).decode("utf-8")
-
-        headers = {
-            "FOSSID-SCAN-CODE": scan_code_b64,
-            "FOSSID-FILE-NAME": name_b64,
-            "FOSSID-UPLOAD-TYPE": "dependency_analysis",
-            "Accept": "*/*",
-        }
-
-        self._perform_upload(path, headers)
-
-    def upload_sbom_file(self, scan_code: str, path: str):
-        """
-        Uploads an SBOM file to a scan.
-
-        Args:
-            scan_code: Code of the scan to upload to
-            path: Path to the SBOM file to upload
-
-        Raises:
-            FileSystemError: If file doesn't exist
-            ApiError: If upload fails
-            NetworkError: If there are network issues
-        """
-        if not os.path.exists(path) or not os.path.isfile(path):
-            raise FileSystemError(f"SBOM file does not exist: {path}")
-
-        upload_basename = os.path.basename(path)
-        name_b64 = base64.b64encode(upload_basename.encode()).decode("utf-8")
-        scan_code_b64 = base64.b64encode(scan_code.encode()).decode("utf-8")
-
-        headers = {"FOSSID-SCAN-CODE": scan_code_b64, "FOSSID-FILE-NAME": name_b64, "Accept": "*/*"}
-
-        self._perform_upload(path, headers)
-
-    # ===== INTERNAL UPLOAD HELPERS =====
-
-    def _perform_upload(self, file_path: str, headers: dict) -> None:
-        """
-        Perform file upload with chunking and progress tracking.
+        This is the low-level upload method for standard uploads. Business logic
+        (deciding when to use chunked vs standard, preparing files, setting headers)
+        should be handled by the service layer.
 
         Args:
             file_path: Path to the file to upload
-            headers: HTTP headers for the upload
+            headers: HTTP headers for the upload (must include FOSSID-SCAN-CODE
+                and FOSSID-FILE-NAME, both base64 encoded)
 
         Raises:
             FileSystemError: If file doesn't exist or can't be read
             ApiError: If upload fails
             NetworkError: If there are network issues
+
+        Example:
+            >>> headers = {
+            ...     "FOSSID-SCAN-CODE": base64.b64encode(scan_code.encode()).decode(),
+            ...     "FOSSID-FILE-NAME": base64.b64encode(filename.encode()).decode(),
+            ...     "Accept": "*/*",
+            ... }
+            >>> uploads.upload_file_standard("/path/to/file.zip", headers)
         """
         if not os.path.exists(file_path):
             raise FileSystemError(f"File not found: {file_path}")
 
-        file_size = os.path.getsize(file_path)
         filename = os.path.basename(file_path)
+        file_size = os.path.getsize(file_path)
 
-        # Log upload initiation
-        logger.debug(f"Starting upload for file: {filename} ({file_size / (1024 * 1024):.2f} MB)")
-
-        # Decide between chunked and standard upload
-        if file_size > self.CHUNKED_UPLOAD_THRESHOLD:
-            logger.debug(
-                f"File size exceeds {self.CHUNKED_UPLOAD_THRESHOLD / (1024 * 1024):.0f} MB, using chunked upload."
-            )
-            self._chunked_upload(file_path, file_size, headers)
-        else:
-            logger.debug("Using standard (non-chunked) upload.")
-            self._standard_upload(file_path, headers)
-
+        logger.debug(f"Starting standard upload for file: {filename} ({file_size / (1024 * 1024):.2f} MB)")
+        self._standard_upload(file_path, headers)
         logger.info(f"Upload complete for {filename}")
+
+    def upload_file_chunked(self, file_path: str, headers: dict) -> None:
+        """
+        Upload a file using chunked HTTP POST.
+
+        This is the low-level upload method for chunked uploads. Business logic
+        (deciding when to use chunked vs standard, preparing files, setting headers)
+        should be handled by the service layer.
+
+        Args:
+            file_path: Path to the file to upload
+            headers: HTTP headers for the upload (must include FOSSID-SCAN-CODE
+                and FOSSID-FILE-NAME, both base64 encoded)
+
+        Raises:
+            FileSystemError: If file doesn't exist or can't be read
+            ApiError: If upload fails
+            NetworkError: If there are network issues
+
+        Example:
+            >>> headers = {
+            ...     "FOSSID-SCAN-CODE": base64.b64encode(scan_code.encode()).decode(),
+            ...     "FOSSID-FILE-NAME": base64.b64encode(filename.encode()).decode(),
+            ...     "Accept": "*/*",
+            ... }
+            >>> uploads.upload_file_chunked("/path/to/large_file.zip", headers)
+        """
+        if not os.path.exists(file_path):
+            raise FileSystemError(f"File not found: {file_path}")
+
+        filename = os.path.basename(file_path)
+        file_size = os.path.getsize(file_path)
+
+        logger.debug(f"Starting chunked upload for file: {filename} ({file_size / (1024 * 1024):.2f} MB)")
+        self._chunked_upload(file_path, file_size, headers)
+        logger.info(f"Upload complete for {filename}")
+
+    # ===== INTERNAL UPLOAD HELPERS =====
 
     def _standard_upload(self, file_path: str, headers: dict) -> None:
         """

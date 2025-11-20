@@ -20,7 +20,7 @@ Usage:
     >>> # Use domain clients for direct API operations
     >>> projects = workbench.projects.list_projects()
     >>> scan_info = workbench.scans.get_information(scan_code)
-    >>> workbench.uploads.upload_scan_target(
+    >>> workbench.upload_service.upload_scan_target(
     ...     scan_code, "/path/to/source"
     ... )
     >>>
@@ -59,6 +59,7 @@ from workbench_agent.api.services import (
     ResultsService,
     ScanOperationsService,
     StatusCheckService,
+    UploadService,
     WaitingService,
 )
 
@@ -85,6 +86,7 @@ class WorkbenchClient:
     - `reports`: Report generation with validation and waiting
     - `results`: Fetch and aggregate scan results
     - `scan_operations`: Scan execution with standardized behavior
+    - `upload_service`: File upload operations with business logic
     - `waiting`: Convenient waiting methods for async operations
 
     Example:
@@ -93,7 +95,7 @@ class WorkbenchClient:
         >>> # Direct API operations via clients
         >>> all_projects = workbench.projects.list_projects()
         >>> scan_info = workbench.scans.get_information(scan_code)
-        >>> workbench.uploads.upload_scan_target(scan_code, "./src")
+        >>> workbench.upload_service.upload_scan_target(scan_code, "./src")
         >>>
         >>> # High-level workflows via services
         >>> p_code, s_code, is_new = (
@@ -197,6 +199,8 @@ class WorkbenchClient:
         )
 
         self.waiting = WaitingService(status_check_service=self.status_check)
+
+        self.upload_service = UploadService(uploads_client=self.uploads)
 
         logger.debug("Orchestration services initialized successfully")
         logger.info("WorkbenchClient initialization complete")

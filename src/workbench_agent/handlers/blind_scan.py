@@ -197,7 +197,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
         # ===== STEP 5: Upload hash file to Workbench =====
         print("\nUploading hashes to Workbench...")
-        client.uploads.upload_scan_target(scan_code, hash_file_path)
+        client.upload_service.upload_scan_target(scan_code, hash_file_path)
         print("Hashes uploaded successfully!")
 
         # ===== STEP 6: Run scans =====
