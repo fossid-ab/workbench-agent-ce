@@ -153,7 +153,7 @@ def mock_api_post(mocker):
                 project_code = data.get("project_code")
 
                 # List scans for project
-                if action == "get_project_scans":
+                if action == "get_all_scans":
                     scans_for_project = []
                     scan_idx = 0
 
@@ -331,11 +331,11 @@ def mock_workbench_api(mocker):
     mock_client.scans = MagicMock()
     mock_client.scans.download_content_from_git.return_value = True
     mock_client.scans.remove_uploaded_content.return_value = True
-    mock_client.scans.get_scan_information.return_value = {"status": "NEW", "usage": "git"}
+    mock_client.scans.get_information.return_value = {"status": "NEW", "usage": "git"}
     mock_client.scans.get_dependency_analysis_results.return_value = {}
     mock_client.scans.get_scan_identified_licenses.return_value = []
-    mock_client.scans.get_project_scans.return_value = []  # Empty list for scan lookup
-    mock_client.scans.create_scan.return_value = {"scan_id": 12345}
+    mock_client.scans.get_all_scans.return_value = []  # Empty list for scan lookup
+    mock_client.scans.create.return_value = {"scan_id": 12345}
 
     # --- Mock Projects Client ---
     mock_client.projects = MagicMock()

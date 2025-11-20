@@ -287,7 +287,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
 
             # Add Workbench link for easy navigation to view SBOM results
             try:
-                scan_info = client.scans.get_scan_information(scan_code)
+                scan_info = client.scans.get_information(scan_code)
                 scan_id = scan_info.get("id")
                 if scan_id:
                     link = client.results.link_to_scan(int(scan_id))

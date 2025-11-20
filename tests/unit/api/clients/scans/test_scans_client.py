@@ -35,12 +35,12 @@ def scans_client(base_api):
 
 
 # --- Test Cases ---
-# --- Test create_scan ---
+# --- Test create ---
 @patch.object(BaseAPI, "_send_request")
 def test_create_scan_success(mock_send, scans_client):
     mock_send.return_value = {"status": "1", "data": {"scan_id": 999}}
     data = {"scan_name": "New Scan", "project_code": "PROJ1"}
-    result = scans_client.create_scan(data)
+    result = scans_client.create(data)
     assert result == 999  # Returns scan_id as int
     mock_send.assert_called_once()
     payload = mock_send.call_args[0][0]
@@ -59,7 +59,7 @@ def test_create_scan_with_git_branch(mock_send, scans_client):
         "git_branch": "main",
         "git_ref_type": "branch",
     }
-    result = scans_client.create_scan(data)
+    result = scans_client.create(data)
     assert result == 999  # Returns scan_id as int
     payload = mock_send.call_args[0][0]
     assert payload["data"]["git_repo_url"] == "https://github.com/example/repo.git"
@@ -77,7 +77,7 @@ def test_create_scan_with_git_tag(mock_send, scans_client):
         "git_branch": "v1.0.0",  # API uses git_branch field for both branches and tags
         "git_ref_type": "tag",
     }
-    result = scans_client.create_scan(data)
+    result = scans_client.create(data)
     assert result == 999  # Returns scan_id as int
     payload = mock_send.call_args[0][0]
     assert payload["data"]["git_repo_url"] == "https://github.com/example/repo.git"
@@ -95,7 +95,7 @@ def test_create_scan_with_git_commit(mock_send, scans_client):
         "git_branch": "abc123def456",  # API uses git_branch field for commits too
         "git_ref_type": "commit",
     }
-    result = scans_client.create_scan(data)
+    result = scans_client.create(data)
     assert result == 999  # Returns scan_id as int
     payload = mock_send.call_args[0][0]
     assert payload["data"]["git_repo_url"] == "https://github.com/example/repo.git"
@@ -113,7 +113,7 @@ def test_create_scan_with_git_depth(mock_send, scans_client):
         "git_branch": "main",
         "git_depth": "1",
     }
-    result = scans_client.create_scan(data)
+    result = scans_client.create(data)
     assert result == 999  # Returns scan_id as int
     payload = mock_send.call_args[0][0]
     assert payload["data"]["git_depth"] == "1"
@@ -124,7 +124,7 @@ def test_create_scan_exists(mock_send, scans_client):
     mock_send.return_value = {"status": "0", "error": "Scan code already exists"}
     data = {"scan_name": "Existing Scan", "project_code": "PROJ1"}
     with pytest.raises(ScanExistsError, match="Scan 'Existing Scan' already exists"):
-        scans_client.create_scan(data)
+        scans_client.create(data)
 
 
 # --- Tests for Git operations ---
@@ -598,7 +598,7 @@ def test_get_policy_warnings_counter_success(mock_send, scans_client):
 def test_get_scan_information_failure(mock_send_request, scans_client):
     mock_send_request.return_value = {"status": "0", "error": "Not found"}
     with pytest.raises(ApiError, match="Not found"):
-        scans_client.get_scan_information("scan1")
+        scans_client.get_information("scan1")
 
 
 @patch.object(BaseAPI, "_send_request")
@@ -656,7 +656,7 @@ def test_import_report_api_error(mock_send, scans_client):
 @patch.object(BaseAPI, "_send_request")
 def test_get_scan_information_success(mock_send, scans_client):
     mock_send.return_value = {"status": "1", "data": {"id": 42, "code": "SCN"}}
-    info = scans_client.get_scan_information("scan1")
+    info = scans_client.get_information("scan1")
     assert info["id"] == 42
 
 

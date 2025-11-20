@@ -143,7 +143,7 @@ class ScanExistsError(ResourceExistsError):
 
     Example:
         try:
-            api.create_scan("existing_scan")
+            api.create({"scan_name": "existing_scan"})
         except ScanExistsError as e:
             logger.error(f"Scan already exists: {e.message}")
     """
@@ -156,7 +156,7 @@ class ProjectExistsError(ResourceExistsError):
 
     Example:
         try:
-            api.create_project("existing_project")
+            api.create("existing_project")
         except ProjectExistsError as e:
             logger.error(f"Project already exists: {e.message}")
     """

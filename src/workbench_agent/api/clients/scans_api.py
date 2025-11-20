@@ -1,9 +1,7 @@
 """
-ScansClient - Handles all scan-related Workbench API operations.
-
-This is the largest client with methods for:
-- Listing and managing scans
-- Running KB scans andDependency analysis
+ScansClient - Handles all scan-related Workbench operations like:
+- Managing Scan Creation and Lifecycle
+- Running Scan Operations
 - Git operations
 - Archive extraction
 - Status checking
@@ -26,17 +24,9 @@ class ScansClient:
     """
     Scans API client.
 
-    Provides comprehensive scan management functionality including:
-    - Scan CRUD operations
-    - KB scanning with configurable parameters
-    - Dependency analysis
-    - Git repository imports
-    - Process status checking
-    - Report generation
-
     Example:
         >>> scans = ScansClient(base_api)
-        >>> scan_list = scans.list()
+        >>> scan_list = scans.list_scans()
         >>> scans.run(scan_code, limit=10, sensitivity=6)
     """
 
@@ -51,17 +41,6 @@ class ScansClient:
         logger.debug("ScansClient initialized")
 
     # ===== LIST & INFO OPERATIONS =====
-
-    def list(self) -> List[Dict[str, Any]]:
-        """
-        Retrieves a list of all scans.
-
-        Alias for list_scans() to provide cleaner new-style API.
-
-        Returns:
-            List of scan dictionaries
-        """
-        return self.list_scans()
 
     def list_scans(self) -> List[Dict[str, Any]]:
         """
@@ -111,7 +90,7 @@ class ScansClient:
             error_msg = response.get("error", f"Unexpected response: {response}")
             raise ApiError(f"Failed to list scans: {error_msg}", details=response)
 
-    def get_scan_information(self, scan_code: str) -> Dict[str, Any]:
+    def get_information(self, scan_code: str) -> Dict[str, Any]:
         """
         Retrieves detailed information about a scan.
 
@@ -413,7 +392,7 @@ class ScansClient:
 
     # ===== SCAN MANAGEMENT OPERATIONS =====
 
-    def create_scan(self, data: Dict[str, Any]) -> int:
+    def create(self, data: Dict[str, Any]) -> int:
         """
         Create a new scan with the provided data.
 
@@ -471,7 +450,7 @@ class ScansClient:
                 ) from e
             raise
 
-    def update_scan(
+    def update(
         self,
         scan_code: str,
         scan_name: Optional[str] = None,

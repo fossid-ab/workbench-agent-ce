@@ -9,6 +9,8 @@ This client provides:
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from workbench_agent.exceptions import ValidationError
+
 if TYPE_CHECKING:
     from workbench_agent.api.helpers.base_api import BaseAPI
 
@@ -86,8 +88,6 @@ class DownloadClient:
             ...     f.write(response["_raw_response"].content)
         """
         if report_entity not in ("scans", "projects"):
-            from workbench_agent.exceptions import ValidationError
-
             raise ValidationError(
                 f"Invalid report_entity '{report_entity}'. Must be "
                 f"either 'scans' or 'projects'."

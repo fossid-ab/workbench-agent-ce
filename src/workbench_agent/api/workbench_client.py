@@ -18,8 +18,8 @@ Usage:
     ... )
     >>>
     >>> # Use domain clients for direct API operations
-    >>> projects = workbench.projects.list()
-    >>> scan_info = workbench.scans.get_scan_information(scan_code)
+    >>> projects = workbench.projects.list_projects()
+    >>> scan_info = workbench.scans.get_information(scan_code)
     >>> workbench.uploads.upload_scan_target(
     ...     scan_code, "/path/to/source"
     ... )
@@ -91,8 +91,8 @@ class WorkbenchClient:
         >>> workbench = WorkbenchClient(api_url, api_user, api_token)
         >>>
         >>> # Direct API operations via clients
-        >>> all_projects = workbench.projects.list()
-        >>> scan_info = workbench.scans.get_scan_information(scan_code)
+        >>> all_projects = workbench.projects.list_projects()
+        >>> scan_info = workbench.scans.get_information(scan_code)
         >>> workbench.uploads.upload_scan_target(scan_code, "./src")
         >>>
         >>> # High-level workflows via services
