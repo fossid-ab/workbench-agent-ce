@@ -118,6 +118,7 @@ class UploadService:
                 archive_path = UploadArchivePrep.create_zip_archive(path)
                 upload_path = archive_path
                 temp_dir = os.path.dirname(archive_path)
+                print("Archive prepared! Starting upload...")
 
             upload_basename = os.path.basename(upload_path)
             name_b64 = base64.b64encode(upload_basename.encode()).decode("utf-8")
