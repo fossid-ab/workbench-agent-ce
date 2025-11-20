@@ -160,7 +160,9 @@ def create_scan_control_parser():
 def create_archive_operations_parser():
     """Create parent parser for archive operation control arguments."""
     archive_operations_parent = argparse.ArgumentParser(add_help=False)
-    archive_operations_args = archive_operations_parent.add_argument_group("Archive Extraction Operations")
+    archive_operations_args = archive_operations_parent.add_argument_group(
+        "Archive Extraction Operations"
+    )
     archive_operations_args.add_argument(
         "--recursively-extract-archives",
         help="Recursively extract nested archives (Default: True).",

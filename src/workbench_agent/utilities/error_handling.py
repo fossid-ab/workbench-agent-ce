@@ -13,12 +13,12 @@ from typing import Callable
 from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
+    CompatibilityError,
     NetworkError,
     ProcessError,
     ProcessTimeoutError,
     ProjectNotFoundError,
     ScanNotFoundError,
-    CompatibilityError,
 )
 from workbench_agent.exceptions import (
     ConfigurationError,
@@ -252,10 +252,10 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
             return handler_func(workbench, params)
 
         except (
-            AuthenticationError,    # Before ApiError (inherits from ApiError)
-            ProjectNotFoundError,   # Before ApiError (inherits from NotFoundError → ApiError)
-            ScanNotFoundError,      # Before ApiError (inherits from NotFoundError → ApiError)
-            ProcessTimeoutError,    # Before ProcessError (inherits from ProcessError)
+            AuthenticationError,  # Before ApiError (inherits from ApiError)
+            ProjectNotFoundError,  # Before ApiError (inherits from NotFoundError → ApiError)
+            ScanNotFoundError,  # Before ApiError (inherits from NotFoundError → ApiError)
+            ProcessTimeoutError,  # Before ProcessError (inherits from ProcessError)
             # Now the base classes and independent exceptions
             ValidationError,
             ConfigurationError,

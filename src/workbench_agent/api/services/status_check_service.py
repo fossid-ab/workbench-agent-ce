@@ -421,9 +421,9 @@ class StatusCheckService:
         Returns:
             StatusResult with project report generation status
         """
-        # Call the projects API for project report status
-        raw_status_data = self._projects.check_project_report_status(
-            process_id=int(process_id), project_code=project_code
+        # Call the projects API with report generation type
+        raw_status_data = self._projects.check_status(
+            process_id=int(process_id), process_type="REPORT_GENERATION"
         )
         normalized_status = self._project_report_status_accessor(raw_status_data)
 

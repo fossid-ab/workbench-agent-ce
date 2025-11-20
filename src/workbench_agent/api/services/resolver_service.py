@@ -16,10 +16,10 @@ from typing import Optional, Tuple
 
 from workbench_agent.api.exceptions import (
     ApiError,
+    CompatibilityError,
     NetworkError,
     ProjectNotFoundError,
     ScanNotFoundError,
-    CompatibilityError,
 )
 
 logger = logging.getLogger("workbench-agent")

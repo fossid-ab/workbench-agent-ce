@@ -97,7 +97,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
     # ===== STEP 1: Validate scan parameters =====
     # Note: Path existence is validated at CLI layer (cli/validators.py)
-    
+
     # Business logic validation: blind-scan specifically requires directories
     if not os.path.isdir(params.path):
         raise ValidationError(
@@ -156,7 +156,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
                 scan_status = client.status_check.check_scan_status(scan_code)
                 if scan_status.status == "RUNNING":
                     print("\nA prior Scan operation is in progress, " "waiting for it to complete.")
-                client.waiting.wait_for_scan_to_finish(
+                client.waiting.wait_for_scan(
                     scan_code,
                     max_tries=params.scan_number_of_tries,
                     wait_interval=params.scan_wait_time,
@@ -172,7 +172,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
                         "\nA prior Dependency Analysis operation is in "
                         "progress, waiting for it to complete."
                     )
-                client.waiting.wait_for_da_to_finish(
+                client.waiting.wait_for_da(
                     scan_code,
                     max_tries=params.scan_number_of_tries,
                     wait_interval=params.scan_wait_time,
@@ -208,7 +208,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
         # Handle dependency analysis only mode
         if not scan_operations["run_kb_scan"] and scan_operations["run_dependency_analysis"]:
             print("\nStarting Dependency Analysis only " "(skipping KB scan)...")
-            client.scan_operations.run_da_only(scan_code)
+            client.scan_operations.start_da_only(scan_code)
 
             # Handle no-wait mode
             if getattr(params, "no_wait", False):
@@ -219,7 +219,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
             # Wait for dependency analysis to complete
             print("\nWaiting for Dependency Analysis to complete...")
-            result = client.waiting.wait_for_da_to_finish(
+            result = client.waiting.wait_for_da(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,
@@ -229,7 +229,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
         # Start the KB scan (only if run_kb_scan is True)
         if scan_operations["run_kb_scan"]:
-            print("\nStarting KB Scan Process...")
+            print("\nStarting Scan Process...")
 
             # Resolve ID reuse parameters (if any)
             id_reuse_type, id_reuse_specific_code = client.resolver.resolve_id_reuse(
@@ -241,7 +241,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
             )
 
             # Run scan with resolved ID reuse parameters
-            client.scan_operations.run_scan(
+            client.scan_operations.start_scan(
                 scan_code=scan_code,
                 limit=params.limit,
                 sensitivity=params.sensitivity,
@@ -280,7 +280,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
                 try:
                     # Wait for KB scan completion
-                    kb_scan_status = client.waiting.wait_for_scan_to_finish(
+                    kb_scan_status = client.waiting.wait_for_scan(
                         scan_code,
                         max_tries=params.scan_number_of_tries,
                         wait_interval=params.scan_wait_time,
@@ -292,7 +292,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
                     if "DEPENDENCY_ANALYSIS" in process_types_to_wait:
                         print("\nWaiting for Dependency Analysis to complete...")
                         try:
-                            da_status = client.waiting.wait_for_da_to_finish(
+                            da_status = client.waiting.wait_for_da(
                                 scan_code,
                                 max_tries=params.scan_number_of_tries,
                                 wait_interval=params.scan_wait_time,

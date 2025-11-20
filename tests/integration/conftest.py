@@ -367,10 +367,10 @@ def mock_workbench_api(mocker):
     mock_client.waiting.wait_for_git_clone.return_value = WaitResult(
         status_data={"status": "FINISHED", "is_finished": "1"}, duration=2.0, success=True
     )
-    mock_client.waiting.wait_for_scan_to_finish.return_value = WaitResult(
+    mock_client.waiting.wait_for_scan.return_value = WaitResult(
         status_data={"status": "FINISHED", "is_finished": "1"}, duration=10.0, success=True
     )
-    mock_client.waiting.wait_for_da_to_finish.return_value = WaitResult(
+    mock_client.waiting.wait_for_da.return_value = WaitResult(
         status_data={"status": "FINISHED", "is_finished": "1"}, duration=5.0, success=True
     )
 

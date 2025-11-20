@@ -192,15 +192,15 @@ def test_check_delete_scan_status(status_check_service, mock_scans_client):
 
 def test_check_project_report_status(status_check_service, mock_projects_client):
     """Test check_project_report_status method."""
-    mock_projects_client.check_project_report_status.return_value = {"progress_state": "FINISHED"}
+    mock_projects_client.check_status.return_value = {"progress_state": "FINISHED"}
 
     result = status_check_service.check_project_report_status(123, "PROJ456")
 
     assert isinstance(result, StatusResult)
     assert result.status == "FINISHED"
     assert result.is_finished is True
-    mock_projects_client.check_project_report_status.assert_called_once_with(
-        process_id=123, project_code="PROJ456"
+    mock_projects_client.check_status.assert_called_once_with(
+        process_id=123, process_type="REPORT_GENERATION"
     )
 
 

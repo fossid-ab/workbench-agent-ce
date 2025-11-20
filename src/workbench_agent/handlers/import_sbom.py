@@ -208,7 +208,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
         print("\n--- Starting SBOM Import ---")
 
         try:
-            client.scan_operations.import_sbom(scan_code=scan_code)
+            client.scan_operations.start_sbom_import(scan_code=scan_code)
             print("SBOM import initiated successfully.")
         except Exception as e:
             logger.error(

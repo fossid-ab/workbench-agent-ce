@@ -4,23 +4,23 @@ Workbench API client package for interacting with the FossID Workbench API.
 This package can be used as a standalone SDK for interacting with the Workbench API.
 """
 
-from workbench_agent.api.workbench_client import WorkbenchClient
 from workbench_agent.api.exceptions import (
-    WorkbenchApiError,
     ApiError,
-    NetworkError,
     AuthenticationError,
+    CompatibilityError,
+    NetworkError,
     NotFoundError,
-    ScanNotFoundError,
+    ProcessError,
+    ProcessTimeoutError,
+    ProjectExistsError,
     ProjectNotFoundError,
     ResourceExistsError,
     ScanExistsError,
-    ProjectExistsError,
-    ProcessError,
-    ProcessTimeoutError,
+    ScanNotFoundError,
     UnsupportedStatusCheck,
-    CompatibilityError,
+    WorkbenchApiError,
 )
+from workbench_agent.api.workbench_client import WorkbenchClient
 
 __all__ = [
     "WorkbenchClient",

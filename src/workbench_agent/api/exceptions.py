@@ -172,7 +172,7 @@ class ProcessError(WorkbenchApiError):
 
     Example:
         try:
-            api.wait_for_scan_to_finish(
+            api.wait_for_scan(
                 "SCAN", scan_code, max_tries, wait_time
             )
         except ProcessError as e:
@@ -187,7 +187,7 @@ class ProcessTimeoutError(ProcessError):
 
     Example:
         try:
-            api.wait_for_scan_to_finish(
+            api.wait_for_scan(
                 "SCAN", scan_code, max_tries, wait_time
             )
         except ProcessTimeoutError as e:
@@ -220,4 +220,3 @@ class CompatibilityError(WorkbenchApiError):
     """
 
     pass
-

@@ -15,12 +15,12 @@ import time
 from datetime import datetime
 from typing import Any, Callable, Dict, Optional
 
-from workbench_agent.api.utils.process_waiter import StatusResult, WaitResult
 from workbench_agent.api.exceptions import (
     ProcessError,
     ProcessTimeoutError,
     UnsupportedStatusCheck,
 )
+from workbench_agent.api.utils.process_waiter import StatusResult, WaitResult
 
 logger = logging.getLogger("workbench-agent")
 
@@ -35,8 +35,8 @@ class WaitingService:
         >>> service = WaitingService(status_check_service)
         >>>
         >>> # Simple waiting
-        >>> result = service.wait_for_scan_to_finish("scan_123")
-        >>> result = service.wait_for_da_to_finish("scan_123")
+        >>> result = service.wait_for_scan("scan_123")
+        >>> result = service.wait_for_da("scan_123")
     """
 
     def __init__(self, status_check_service):
@@ -53,7 +53,7 @@ class WaitingService:
     # SCAN OPERATIONS (4 methods)
     # =========================================================================
 
-    def wait_for_scan_to_finish(
+    def wait_for_scan(
         self,
         scan_code: str,
         max_tries: int = 360,
@@ -73,8 +73,8 @@ class WaitingService:
             WaitResult: Result with final status and duration
 
         Example:
-            >>> result = service.wait_for_scan_to_finish("scan_123")
-            >>> result = service.wait_for_scan_to_finish(
+            >>> result = service.wait_for_scan("scan_123")
+            >>> result = service.wait_for_scan(
             ...     "scan_123",
             ...     should_track_files=True
             ... )
@@ -94,7 +94,7 @@ class WaitingService:
             progress_callback=progress_callback,
         )
 
-    def wait_for_da_to_finish(
+    def wait_for_da(
         self, scan_code: str, max_tries: int = 360, wait_interval: int = 10
     ) -> WaitResult:
         """

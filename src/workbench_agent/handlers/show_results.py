@@ -13,7 +13,7 @@ from workbench_agent.api.exceptions import (
 )
 from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
-from workbench_agent.utilities.scan_workflows import fetch_display_save_results
+from workbench_agent.utilities.post_scan_summary import fetch_display_save_results
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -74,7 +74,7 @@ def handle_show_results(client: "WorkbenchClient", params: argparse.Namespace) -
         # Check if KB scan is complete
         logger.debug("Checking KB scan completion status...")
         try:
-            client.waiting.wait_for_scan_to_finish(
+            client.waiting.wait_for_scan(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,
@@ -86,7 +86,7 @@ def handle_show_results(client: "WorkbenchClient", params: argparse.Namespace) -
         # Check if dependency analysis is complete (if applicable)
         logger.debug("Checking dependency analysis completion status...")
         try:
-            client.waiting.wait_for_da_to_finish(
+            client.waiting.wait_for_da(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,

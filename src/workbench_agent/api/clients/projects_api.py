@@ -443,11 +443,12 @@ class ProjectsClient:
                 f"Failed to update project '{project_code}': {error_msg}", details=response
             )
 
-    def generate_project_report_raw(self, payload_data: Dict[str, Any]) -> int:
+    def generate_report(self, payload_data: Dict[str, Any]) -> int:
         """
-        Low-level method to generate a project report using pre-built payload.
+        Generate a project report using pre-built payload.
 
-        This is a raw API method. For most use cases, prefer using
+        This method directly wraps the API's generate_report action.
+        For most use cases, prefer using
         ReportService.generate_project_report() which provides validation,
         version awareness, and parameter handling.
 
@@ -472,7 +473,7 @@ class ProjectsClient:
             ...     "report_type": "xlsx",
             ...     "async": "1"
             ... }
-            >>> process_id = projects.generate_project_report_raw(payload_data)
+            >>> process_id = projects.generate_report(payload_data)
             >>>
             >>> # Recommended: Use ReportService instead
             >>> process_id = client.reports.generate_project_report(
@@ -514,30 +515,42 @@ class ProjectsClient:
                 details=response_data,
             )
 
-    def check_project_report_status(self, process_id: int, project_code: str) -> Dict[str, Any]:
+    def check_status(
+        self,
+        process_id: int,
+        process_type: str,
+    ) -> Dict[str, Any]:
         """
-        Checks the status of an asynchronous project report generation process.
+        Check the status of a project operation.
+
+        This method directly wraps the API's check_status action.
+        For most use cases, prefer using domain-specific service methods
+        like ReportService.check_project_report_status().
 
         Args:
-            process_id: Process queue ID from generate_project_report()
-            project_code: Code of the project (for logging)
+            process_id: Process queue ID from the operation
+            process_type: Type of process (REPORT_GENERATION, etc.)
 
         Returns:
-            Dict with status information
+            dict: Operation status data
 
         Raises:
             ApiError: If status check fails
             NetworkError: If there are network issues
+
+        Example:
+            >>> status = projects.check_status(12345, "REPORT_GENERATION")
         """
         logger.debug(
-            f"Checking report generation status for process {process_id} (project '{project_code}')..."
+            f"Checking {process_type} status for process {process_id}..."
         )
+
         payload = {
             "group": "projects",
             "action": "check_status",
             "data": {
                 "process_id": str(process_id),
-                "type": "REPORT_GENERATION",
+                "type": process_type,
             },
         }
         response = self._api._send_request(payload)
@@ -545,8 +558,11 @@ class ProjectsClient:
         if response.get("status") == "1" and "data" in response:
             return response["data"]
         else:
-            error_msg = response.get("error", f"Unexpected response: {response}")
+            error_msg = response.get(
+                "error", f"Unexpected response: {response}"
+            )
             raise ApiError(
-                f"Failed to check report status for process {process_id} (project '{project_code}'): {error_msg}",
+                f"Failed to check {process_type} status for process "
+                f"{process_id}: {error_msg}",
                 details=response,
             )

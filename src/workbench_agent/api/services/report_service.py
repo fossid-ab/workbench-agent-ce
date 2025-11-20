@@ -29,13 +29,14 @@ class ReportService:
     This service acts as a facade for report generation across projects
     and scans, providing:
     - Centralized report type validation
+    - Parameter validation based on report type capabilities
     - Version-aware parameter handling
     - Payload building with automatic async/sync determination
     - Report download and save functionality
 
     Example:
         >>> report_service = ReportService(
-        ...     projects_client, scans_client
+        ...     projects_client, scans_client, downloads_client
         ... )
         >>> # Generate project report
         >>> process_id = report_service.generate_project_report(
@@ -66,6 +67,66 @@ class ReportService:
         "cyclone_dx",
     }
 
+    # Report type capabilities - defines what parameters each type supports
+    REPORT_TYPE_CAPABILITIES = {
+        "xlsx": {
+            "supports_selection_type": True,
+            "supports_selection_view": True,
+            "supports_vex": True,
+            "supports_dep_det_info": True,
+            "supports_disclaimer": False,
+            "supports_report_content_type": True, 
+        },
+        "spdx": {
+            "supports_selection_type": True,
+            "supports_selection_view": True,
+            "supports_vex": False,
+            "supports_dep_det_info": False,
+            "supports_disclaimer": False,
+            "supports_report_content_type": False,
+        },
+        "spdx_lite": {
+            "supports_selection_type": True,
+            "supports_selection_view": True,
+            "supports_vex": False,
+            "supports_dep_det_info": False,
+            "supports_disclaimer": False,
+            "supports_report_content_type": False,
+        },
+        "cyclone_dx": {
+            "supports_selection_type": False,
+            "supports_selection_view": False,
+            "supports_vex": True,
+            "supports_dep_det_info": False,
+            "supports_disclaimer": False,
+            "supports_report_content_type": False,
+        },
+        "html": {
+            "supports_selection_type": True,
+            "supports_selection_view": True,
+            "supports_vex": True,
+            "supports_dep_det_info": False,
+            "supports_disclaimer": True,
+            "supports_report_content_type": True,  # Scan basic HTML
+        },
+        "dynamic_top_matched_components": {
+            "supports_selection_type": False,
+            "supports_selection_view": False,
+            "supports_vex": False,
+            "supports_dep_det_info": False,
+            "supports_disclaimer": False,
+            "supports_report_content_type": False,
+        },
+        "string_match": {
+            "supports_selection_type": False,
+            "supports_selection_view": True,
+            "supports_vex": False,
+            "supports_dep_det_info": False,
+            "supports_disclaimer": False,
+            "supports_report_content_type": False,
+        },
+    }
+
     # File extension mapping for saving reports
     EXTENSION_MAP = {
         "xlsx": "xlsx",
@@ -78,19 +139,111 @@ class ReportService:
         "basic": "txt",
     }
 
-    def __init__(self, projects_client, scans_client):
+    def __init__(self, projects_client, scans_client, downloads_client):
         """
         Initialize ReportService.
 
         Args:
             projects_client: ProjectsClient instance for project operations
             scans_client: ScansClient instance for scan operations
+            downloads_client: DownloadClient instance for download operations
         """
         self._projects = projects_client
         self._scans = scans_client
+        self._downloads = downloads_client
         logger.debug("ReportService initialized")
 
     # ===== VALIDATION METHODS =====
+
+    def _validate_report_parameters(
+        self,
+        report_type: str,
+        selection_type: Optional[str] = None,
+        selection_view: Optional[str] = None,
+        disclaimer: Optional[str] = None,
+        include_vex: Optional[bool] = None,
+        include_dep_det_info: Optional[bool] = None,
+        report_content_type: Optional[str] = None,
+    ) -> None:
+        """
+        Validate that parameters are supported by the report type.
+
+        Logs warnings for unsupported parameters that were explicitly
+        provided. This helps users understand which parameters will be
+        ignored by the API.
+
+        Args:
+            report_type: Type of report being generated
+            selection_type: License selection filter
+            selection_view: View filter
+            disclaimer: Disclaimer text
+            include_vex: VEX inclusion flag
+            include_dep_det_info: Detailed dependency info flag
+            report_content_type: Excel report content type
+        """
+        capabilities = self.REPORT_TYPE_CAPABILITIES.get(report_type)
+        if not capabilities:
+            # Unknown report type - let the API validate it
+            logger.debug(
+                f"Unknown report type '{report_type}', "
+                f"skipping parameter validation"
+            )
+            return
+
+        # Check each parameter against capabilities
+        if (
+            selection_type is not None
+            and not capabilities["supports_selection_type"]
+        ):
+            logger.warning(
+                f"selection_type is not supported for '{report_type}' "
+                f"reports and will be ignored"
+            )
+
+        if (
+            selection_view is not None
+            and not capabilities["supports_selection_view"]
+        ):
+            logger.warning(
+                f"selection_view is not supported for '{report_type}' "
+                f"reports and will be ignored"
+            )
+
+        if (
+            disclaimer is not None
+            and not capabilities["supports_disclaimer"]
+        ):
+            logger.warning(
+                f"disclaimer is not supported for '{report_type}' "
+                f"reports and will be ignored"
+            )
+
+        if (
+            include_vex is not None
+            and not capabilities["supports_vex"]
+        ):
+            logger.warning(
+                f"include_vex is not supported for '{report_type}' "
+                f"reports and will be ignored"
+            )
+
+        if (
+            include_dep_det_info
+            and not capabilities["supports_dep_det_info"]
+        ):
+            logger.warning(
+                f"include_dep_det_info is only supported for Excel "
+                f"reports, ignoring for '{report_type}'"
+            )
+
+        if (
+            report_content_type is not None
+            and not capabilities["supports_report_content_type"]
+        ):
+            logger.warning(
+                f"report_content_type is only supported for Excel "
+                f"reports, ignoring for '{report_type}'"
+            )
 
     def validate_project_report_type(self, report_type: str) -> None:
         """
@@ -173,8 +326,20 @@ class ReportService:
         # Validate report type
         self.validate_project_report_type(report_type)
 
+        # Validate parameters against report type capabilities
+        self._validate_report_parameters(
+            report_type=report_type,
+            selection_type=selection_type,
+            selection_view=selection_view,
+            disclaimer=disclaimer,
+            include_vex=include_vex if include_vex is not True else None,
+            include_dep_det_info=include_dep_det_info,
+            report_content_type=report_content_type,
+        )
+
         logger.debug(
-            f"Building project report payload: " f"project={project_code}, type={report_type}"
+            f"Building project report payload: "
+            f"project={project_code}, type={report_type}"
         )
 
         # Build base payload
@@ -184,24 +349,35 @@ class ReportService:
             "async": "1",  # Project reports are always async
         }
 
-        # Add optional filtering parameters
-        if selection_type:
+        # Get capabilities for this report type
+        capabilities = self.REPORT_TYPE_CAPABILITIES.get(
+            report_type, {}
+        )
+
+        # Add optional filtering parameters (only if supported)
+        if selection_type and capabilities.get("supports_selection_type"):
             payload_data["selection_type"] = selection_type
-        if selection_view:
+        if selection_view and capabilities.get("supports_selection_view"):
             payload_data["selection_view"] = selection_view
-        if disclaimer:
+        if disclaimer and capabilities.get("supports_disclaimer"):
             payload_data["disclaimer"] = disclaimer
 
-        # Add Excel-specific parameters
-        if report_content_type:
+        # Add Excel-specific parameters (only if supported)
+        if (
+            report_content_type
+            and capabilities.get("supports_report_content_type")
+        ):
             payload_data["report_content_type"] = report_content_type
 
-        # Add include_vex parameter for CycloneDX and Excel reports
-        if report_type in ["cyclone_dx", "xlsx"]:
+        # Add include_vex parameter if supported
+        if capabilities.get("supports_vex"):
             payload_data["include_vex"] = include_vex
 
-        # Add include_dep_det_info parameter if requested
-        if include_dep_det_info:
+        # Add include_dep_det_info parameter if requested and supported
+        if (
+            include_dep_det_info
+            and capabilities.get("supports_dep_det_info")
+        ):
             payload_data["include_dep_det_info"] = include_dep_det_info
 
         return payload_data
@@ -215,6 +391,7 @@ class ReportService:
         disclaimer: Optional[str] = None,
         include_vex: bool = True,
         include_dep_det_info: bool = False,
+        report_content_type: Optional[str] = None,
         async_mode: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """
@@ -228,6 +405,7 @@ class ReportService:
             disclaimer: Optional disclaimer text
             include_vex: Include VEX data
             include_dep_det_info: Include detailed dependency info
+            report_content_type: Report content type (for Excel/HTML)
             async_mode: Override async behavior (None = auto-determine)
 
         Returns:
@@ -239,7 +417,21 @@ class ReportService:
         # Validate report type
         self.validate_scan_report_type(report_type)
 
-        logger.debug(f"Building scan report payload: " f"scan={scan_code}, type={report_type}")
+        # Validate parameters against report type capabilities
+        self._validate_report_parameters(
+            report_type=report_type,
+            selection_type=selection_type,
+            selection_view=selection_view,
+            disclaimer=disclaimer,
+            include_vex=include_vex if include_vex is not True else None,
+            include_dep_det_info=include_dep_det_info,
+            report_content_type=report_content_type,
+        )
+
+        logger.debug(
+            f"Building scan report payload: "
+            f"scan={scan_code}, type={report_type}"
+        )
 
         # Determine async mode
         if async_mode is None:
@@ -256,28 +448,36 @@ class ReportService:
             "async": async_value,
         }
 
-        # Add optional filtering parameters
-        if selection_type:
+        # Get capabilities for this report type
+        capabilities = self.REPORT_TYPE_CAPABILITIES.get(
+            report_type, {}
+        )
+
+        # Add optional filtering parameters (only if supported)
+        if selection_type and capabilities.get("supports_selection_type"):
             payload_data["selection_type"] = selection_type
-        if selection_view:
+        if selection_view and capabilities.get("supports_selection_view"):
             payload_data["selection_view"] = selection_view
-        if disclaimer:
+        if disclaimer and capabilities.get("supports_disclaimer"):
             payload_data["disclaimer"] = disclaimer
 
-        # Add include_vex parameter for CycloneDX and Excel reports
-        if report_type in ["cyclone_dx", "xlsx"]:
+        # Add report_content_type if supported (Excel/HTML)
+        if (
+            report_content_type
+            and capabilities.get("supports_report_content_type")
+        ):
+            payload_data["report_content_type"] = report_content_type
+
+        # Add include_vex parameter if supported
+        if capabilities.get("supports_vex"):
             payload_data["include_vex"] = include_vex
 
-        # Add include_dep_det_info parameter for Excel reports
-        if include_dep_det_info:
-            if report_type == "xlsx":
-                payload_data["include_dep_det_info"] = include_dep_det_info
-            else:
-                logger.warning(
-                    f"include_dep_det_info is only supported for Excel "
-                    f"(xlsx) reports, ignoring for report type "
-                    f"'{report_type}'"
-                )
+        # Add include_dep_det_info parameter if requested and supported
+        if (
+            include_dep_det_info
+            and capabilities.get("supports_dep_det_info")
+        ):
+            payload_data["include_dep_det_info"] = include_dep_det_info
 
         return payload_data
 
@@ -316,7 +516,7 @@ class ReportService:
         logger.info(f"Generating project report: project={project_code}, " f"type={report_type}")
 
         # Delegate to the client's raw method
-        return self._projects.generate_project_report_raw(payload_data)
+        return self._projects.generate_report(payload_data)
 
     def generate_scan_report(
         self,
@@ -351,7 +551,7 @@ class ReportService:
         logger.info(f"Generating scan report: scan={scan_code}, " f"type={report_type}")
 
         # Delegate to the client's raw method
-        return self._scans.generate_scan_report_raw(payload_data)
+        return self._scans.generate_report(payload_data)
 
     # ===== REPORT DOWNLOAD AND SAVE METHODS =====
 
@@ -368,22 +568,12 @@ class ReportService:
         Raises:
             ApiError: If download fails
         """
-        logger.debug(f"Downloading project report for process ID {process_id}...")
+        logger.debug(
+            f"Downloading project report for process ID {process_id}..."
+        )
 
-        # Use the base API's download functionality with proper endpoint
-        base_api = self._projects._api
-
-        payload = {
-            "group": "download",  # Downloads use "download" group
-            "action": "download_report",
-            "data": {
-                "report_entity": "projects",
-                "process_id": str(process_id),
-            },
-        }
-
-        # Downloads can be large and take time - use extended timeout
-        return base_api._send_request(payload, timeout=1800)
+        # Delegate to the downloads client
+        return self._downloads.download_report("projects", process_id)
 
     def download_scan_report(self, process_id: int):
         """
@@ -398,22 +588,50 @@ class ReportService:
         Raises:
             ApiError: If download fails
         """
-        logger.debug(f"Downloading scan report for process ID {process_id}...")
+        logger.debug(
+            f"Downloading scan report for process ID {process_id}..."
+        )
 
-        # Use the base API's download functionality with proper endpoint
-        base_api = self._projects._api
+        # Delegate to the downloads client
+        return self._downloads.download_report("scans", process_id)
 
-        payload = {
-            "group": "download",  # Downloads use "download" group
-            "action": "download_report",
-            "data": {
-                "report_entity": "scans",
-                "process_id": str(process_id),
-            },
-        }
+    # ===== STATUS CHECKING METHODS =====
 
-        # Downloads can be large and take time - use extended timeout
-        return base_api._send_request(payload, timeout=1800)
+    def check_project_report_status(
+        self, process_id: int, project_code: str
+    ) -> Dict[str, Any]:
+        """
+        Check the status of an asynchronous project report generation.
+
+        Args:
+            process_id: Process queue ID from generate_project_report()
+            project_code: Code of the project (for logging context)
+
+        Returns:
+            Dict with status information
+
+        Raises:
+            ApiError: If status check fails
+            NetworkError: If there are network issues
+
+        Example:
+            >>> process_id = reports.generate_project_report(
+            ...     "MyProject", "xlsx"
+            ... )
+            >>> status = reports.check_project_report_status(
+            ...     process_id, "MyProject"
+            ... )
+        """
+        logger.debug(
+            f"Checking report generation status for process {process_id} "
+            f"(project '{project_code}')..."
+        )
+
+        # Delegate to the projects client with report-specific type
+        status_data: Dict[str, Any] = self._projects.check_status(
+            process_id, "REPORT_GENERATION"
+        )
+        return status_data
 
     def save_report(
         self,

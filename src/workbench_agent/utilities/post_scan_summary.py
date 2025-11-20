@@ -4,10 +4,10 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
+from workbench_agent.utilities.scan_workflows import determine_scans_to_run
+
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
-
-from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 
 logger = logging.getLogger("workbench-agent")
 
@@ -222,15 +222,13 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
                 if scopes_str:
                     try:
                         scopes_data = json.loads(scopes_str)
-                        scopes_list = sorted(
-                            list(
-                                set(
-                                    p_info.get("scope")
-                                    for p_info in scopes_data.values()
-                                    if isinstance(p_info, dict) and p_info.get("scope")
-                                )
-                            )
-                        )
+                        scopes_set = set()
+                        for p_info in scopes_data.values():
+                            if isinstance(p_info, dict):
+                                scope = p_info.get("scope")
+                                if scope:
+                                    scopes_set.add(scope)
+                        scopes_list = sorted(scopes_set)
                         if scopes_list:
                             scopes_display = ", ".join(scopes_list)
                     except (json.JSONDecodeError, AttributeError, TypeError) as scope_err:

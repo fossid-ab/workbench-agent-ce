@@ -29,12 +29,12 @@ def scan_operations_service(mock_scans_client, mock_resolver_service):
     return ScanOperationsService(mock_scans_client, mock_resolver_service)
 
 
-# --- Test run_scan ---
-def test_run_scan_basic(scan_operations_service, mock_scans_client):
-    """Test running a basic scan."""
-    mock_scans_client.run_scan_raw.return_value = None
+# --- Test start_scan ---
+def test_start_scan_basic(scan_operations_service, mock_scans_client):
+    """Test starting a basic scan."""
+    mock_scans_client.run.return_value = None
 
-    scan_operations_service.run_scan(
+    scan_operations_service.start_scan(
         scan_code="test_scan",
         limit=100,
         sensitivity=80,
@@ -45,8 +45,8 @@ def test_run_scan_basic(scan_operations_service, mock_scans_client):
     )
 
     # Verify the payload was built correctly
-    mock_scans_client.run_scan_raw.assert_called_once()
-    call_args = mock_scans_client.run_scan_raw.call_args[0][0]
+    mock_scans_client.run.assert_called_once()
+    call_args = mock_scans_client.run.call_args[0][0]
     assert call_args["scan_code"] == "test_scan"
     assert call_args["limit"] == "100"
     assert call_args["sensitivity"] == "80"
@@ -60,11 +60,11 @@ def test_run_scan_basic(scan_operations_service, mock_scans_client):
     assert call_args["advanced_match_scoring"] == "1"
 
 
-def test_run_scan_with_optional_params(scan_operations_service, mock_scans_client):
-    """Test running a scan with optional parameters."""
-    mock_scans_client.run_scan_raw.return_value = None
+def test_start_scan_with_optional_params(scan_operations_service, mock_scans_client):
+    """Test starting a scan with optional parameters."""
+    mock_scans_client.run.return_value = None
 
-    scan_operations_service.run_scan(
+    scan_operations_service.start_scan(
         scan_code="test_scan",
         limit=50,
         sensitivity=90,
@@ -82,7 +82,7 @@ def test_run_scan_with_optional_params(scan_operations_service, mock_scans_clien
         match_filtering_threshold=100,
     )
 
-    call_args = mock_scans_client.run_scan_raw.call_args[0][0]
+    call_args = mock_scans_client.run.call_args[0][0]
     assert call_args["reuse_identification"] == "1"
     assert call_args["identification_reuse_type"] == "any"
     assert call_args["run_dependency_analysis"] == "1"
@@ -93,11 +93,11 @@ def test_run_scan_with_optional_params(scan_operations_service, mock_scans_clien
     assert call_args["match_filtering_threshold"] == "100"
 
 
-def test_run_scan_with_specific_id_reuse(scan_operations_service, mock_scans_client):
-    """Test running a scan with specific ID reuse."""
-    mock_scans_client.run_scan_raw.return_value = None
+def test_start_scan_with_specific_id_reuse(scan_operations_service, mock_scans_client):
+    """Test starting a scan with specific ID reuse."""
+    mock_scans_client.run.return_value = None
 
-    scan_operations_service.run_scan(
+    scan_operations_service.start_scan(
         scan_code="test_scan",
         limit=100,
         sensitivity=80,
@@ -109,35 +109,35 @@ def test_run_scan_with_specific_id_reuse(scan_operations_service, mock_scans_cli
         id_reuse_specific_code="PROJ123",
     )
 
-    call_args = mock_scans_client.run_scan_raw.call_args[0][0]
+    call_args = mock_scans_client.run.call_args[0][0]
     assert call_args["reuse_identification"] == "1"
     assert call_args["identification_reuse_type"] == "specific_project"
     assert call_args["specific_code"] == "PROJ123"
 
 
-# --- Test extract_archives ---
-def test_extract_archives_basic(scan_operations_service, mock_scans_client):
-    """Test extracting archives with basic parameters."""
-    mock_scans_client.extract_archives_raw.return_value = True
+# --- Test start_archive_extraction ---
+def test_start_archive_extraction_basic(scan_operations_service, mock_scans_client):
+    """Test starting archive extraction with basic parameters."""
+    mock_scans_client.extract_archives.return_value = True
 
-    result = scan_operations_service.extract_archives(
+    result = scan_operations_service.start_archive_extraction(
         scan_code="test_scan", recursively_extract_archives=True, jar_file_extraction=False
     )
 
     assert result is True
-    mock_scans_client.extract_archives_raw.assert_called_once()
-    call_args = mock_scans_client.extract_archives_raw.call_args[0][0]
+    mock_scans_client.extract_archives.assert_called_once()
+    call_args = mock_scans_client.extract_archives.call_args[0][0]
     assert call_args["scan_code"] == "test_scan"
     assert call_args["recursively_extract_archives"] == "true"
     assert call_args["jar_file_extraction"] == "false"
     assert call_args["extract_to_directory"] == "0"
 
 
-def test_extract_archives_with_options(scan_operations_service, mock_scans_client):
-    """Test extracting archives with different options."""
-    mock_scans_client.extract_archives_raw.return_value = True
+def test_start_archive_extraction_with_options(scan_operations_service, mock_scans_client):
+    """Test starting archive extraction with different options."""
+    mock_scans_client.extract_archives.return_value = True
 
-    result = scan_operations_service.extract_archives(
+    result = scan_operations_service.start_archive_extraction(
         scan_code="another_scan",
         recursively_extract_archives=False,
         jar_file_extraction=True,
@@ -146,7 +146,7 @@ def test_extract_archives_with_options(scan_operations_service, mock_scans_clien
     )
 
     assert result is True
-    call_args = mock_scans_client.extract_archives_raw.call_args[0][0]
+    call_args = mock_scans_client.extract_archives.call_args[0][0]
     assert call_args["scan_code"] == "another_scan"
     assert call_args["recursively_extract_archives"] == "false"
     assert call_args["jar_file_extraction"] == "true"
@@ -154,57 +154,35 @@ def test_extract_archives_with_options(scan_operations_service, mock_scans_clien
     assert call_args["filename"] == "archive.zip"
 
 
-# --- Test start_dependency_analysis ---
-def test_start_dependency_analysis_basic(scan_operations_service, mock_scans_client):
-    """Test starting dependency analysis with basic parameters."""
-    mock_scans_client.start_dependency_analysis_raw.return_value = None
+# --- Test DA methods ---
+def test_start_da_only(scan_operations_service, mock_scans_client):
+    """Test start_da_only method."""
+    mock_scans_client.run_dependency_analysis.return_value = None
 
-    scan_operations_service.start_dependency_analysis(scan_code="test_scan", import_only=False)
+    scan_operations_service.start_da_only("test_scan")
 
-    mock_scans_client.start_dependency_analysis_raw.assert_called_once()
-    call_args = mock_scans_client.start_dependency_analysis_raw.call_args[0][0]
+    mock_scans_client.run_dependency_analysis.assert_called_once()
+    call_args = mock_scans_client.run_dependency_analysis.call_args[0][0]
     assert call_args["scan_code"] == "test_scan"
     assert call_args["import_only"] == "0"
 
 
-def test_start_dependency_analysis_import_only(scan_operations_service, mock_scans_client):
-    """Test starting dependency analysis in import-only mode."""
-    mock_scans_client.start_dependency_analysis_raw.return_value = None
+def test_start_da_import(scan_operations_service, mock_scans_client):
+    """Test start_da_import method."""
+    mock_scans_client.run_dependency_analysis.return_value = None
 
-    scan_operations_service.start_dependency_analysis(scan_code="import_scan", import_only=True)
+    scan_operations_service.start_da_import("test_scan")
 
-    call_args = mock_scans_client.start_dependency_analysis_raw.call_args[0][0]
-    assert call_args["scan_code"] == "import_scan"
+    mock_scans_client.run_dependency_analysis.assert_called_once()
+    call_args = mock_scans_client.run_dependency_analysis.call_args[0][0]
+    assert call_args["scan_code"] == "test_scan"
     assert call_args["import_only"] == "1"
 
 
-# --- Test convenience methods ---
-def test_run_da_only(scan_operations_service, mock_scans_client):
-    """Test run_da_only convenience method."""
-    mock_scans_client.start_dependency_analysis_raw.return_value = None
-
-    scan_operations_service.run_da_only("test_scan")
-
-    mock_scans_client.start_dependency_analysis_raw.assert_called_once()
-    call_args = mock_scans_client.start_dependency_analysis_raw.call_args[0][0]
-    assert call_args["import_only"] == "0"
-
-
-def test_import_da_results(scan_operations_service, mock_scans_client):
-    """Test import_da_results convenience method."""
-    mock_scans_client.start_dependency_analysis_raw.return_value = None
-
-    scan_operations_service.import_da_results("test_scan")
-
-    mock_scans_client.start_dependency_analysis_raw.assert_called_once()
-    call_args = mock_scans_client.start_dependency_analysis_raw.call_args[0][0]
-    assert call_args["import_only"] == "1"
-
-
-def test_import_sbom(scan_operations_service, mock_scans_client):
-    """Test import_sbom method."""
+def test_start_sbom_import(scan_operations_service, mock_scans_client):
+    """Test start_sbom_import method."""
     mock_scans_client.import_report.return_value = None
 
-    scan_operations_service.import_sbom("test_scan")
+    scan_operations_service.start_sbom_import("test_scan")
 
     mock_scans_client.import_report.assert_called_once_with("test_scan")

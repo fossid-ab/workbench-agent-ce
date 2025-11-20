@@ -188,7 +188,7 @@ def test_remove_uploaded_content_file_not_found(mock_send, scans_client):
     mock_send.assert_called_once()
 
 
-# --- Tests for extract_archives_raw ---
+# --- Tests for extract_archives ---
 @patch.object(BaseAPI, "_send_request")
 def test_extract_archives_success(mock_send, scans_client):
     mock_send.return_value = {"status": "1"}
@@ -197,7 +197,7 @@ def test_extract_archives_success(mock_send, scans_client):
         "recursively_extract_archives": "true",
         "jar_file_extraction": "false",
     }
-    result = scans_client.extract_archives_raw(payload_data)
+    result = scans_client.extract_archives(payload_data)
     assert result is True
     mock_send.assert_called_once()
     payload = mock_send.call_args[0][0]
@@ -217,7 +217,7 @@ def test_extract_archives_not_found(mock_send, scans_client):
         "jar_file_extraction": "true",
     }
     with pytest.raises(ScanNotFoundError, match="Scan 'scan1' not found"):
-        scans_client.extract_archives_raw(payload_data)
+        scans_client.extract_archives(payload_data)
 
 
 @patch.object(BaseAPI, "_send_request")
@@ -229,10 +229,10 @@ def test_extract_archives_api_error(mock_send, scans_client):
         "jar_file_extraction": "true",
     }
     with pytest.raises(ApiError, match="Archive extraction failed for scan 'scan1'"):
-        scans_client.extract_archives_raw(payload_data)
+        scans_client.extract_archives(payload_data)
 
 
-# --- Tests for run_scan_raw and related methods ---
+# --- Tests for run and related methods ---
 
 
 @patch.object(BaseAPI, "_send_request")
@@ -247,7 +247,7 @@ def test_run_scan_basic_success(mock_send, scans_client):
         "auto_identification_resolve_pending_ids": 0,
         "delta_only": 0,
     }
-    scans_client.run_scan_raw(payload_data)
+    scans_client.run(payload_data)
     mock_send.assert_called_once()
     payload = mock_send.call_args[0][0]
     assert payload["group"] == "scans"
@@ -275,7 +275,7 @@ def test_run_scan_with_run_dependency_analysis(mock_send, scans_client):
         "delta_only": 0,
         "run_dependency_analysis": "1",
     }
-    scans_client.run_scan_raw(payload_data)
+    scans_client.run(payload_data)
     mock_send.assert_called_once()
     payload = mock_send.call_args[0][0]
     assert payload["group"] == "scans"
@@ -298,7 +298,7 @@ def test_run_scan_with_id_reuse_any(mock_send, scans_client):
         "reuse_identification": "1",
         "identification_reuse_type": "any",
     }
-    scans_client.run_scan_raw(payload_data)
+    scans_client.run(payload_data)
     payload = mock_send.call_args[0][0]
     assert payload["data"]["reuse_identification"] == "1"
     assert payload["data"]["identification_reuse_type"] == "any"
@@ -319,7 +319,7 @@ def test_run_scan_with_id_reuse_project(mock_send, scans_client):
         "identification_reuse_type": "specific_project",
         "specific_code": "PROJECT_CODE",
     }
-    scans_client.run_scan_raw(payload_data)
+    scans_client.run(payload_data)
     payload = mock_send.call_args[0][0]
     assert payload["data"]["reuse_identification"] == "1"
     assert payload["data"]["identification_reuse_type"] == "specific_project"
@@ -341,7 +341,7 @@ def test_run_scan_with_id_reuse_scan(mock_send, scans_client):
         "identification_reuse_type": "specific_scan",
         "specific_code": "OTHER_SCAN_CODE",
     }
-    scans_client.run_scan_raw(payload_data)
+    scans_client.run(payload_data)
     payload = mock_send.call_args[0][0]
     assert payload["data"]["reuse_identification"] == "1"
     assert payload["data"]["identification_reuse_type"] == "specific_scan"
@@ -361,12 +361,12 @@ def test_run_scan_not_found(mock_send, scans_client):
         "delta_only": 0,
     }
     with pytest.raises(ScanNotFoundError, match="Scan 'scan1' not found"):
-        scans_client.run_scan_raw(payload_data)
+        scans_client.run(payload_data)
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_run_scan_raw_basic_payload(mock_send, scans_client):
-    # Test that run_scan_raw accepts and forwards payload correctly
+def test_run_basic_payload(mock_send, scans_client):
+    # Test that run accepts and forwards payload correctly
     mock_send.return_value = {"status": "1"}
     payload_data = {
         "scan_code": "scan1",
@@ -377,7 +377,7 @@ def test_run_scan_raw_basic_payload(mock_send, scans_client):
         "auto_identification_resolve_pending_ids": 0,
         "delta_only": 0,
     }
-    scans_client.run_scan_raw(payload_data)
+    scans_client.run(payload_data)
 
     # Verify _send_request was called
     mock_send.assert_called_once()
@@ -393,10 +393,10 @@ def test_run_scan_raw_basic_payload(mock_send, scans_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_start_dependency_analysis_success(mock_send, scans_client):
+def test_run_dependency_analysis_success(mock_send, scans_client):
     mock_send.return_value = {"status": "1"}
     payload_data = {"scan_code": "scan1", "import_only": "0"}
-    scans_client.start_dependency_analysis_raw(payload_data)
+    scans_client.run_dependency_analysis(payload_data)
     mock_send.assert_called_once()
     payload = mock_send.call_args[0][0]
     assert payload["group"] == "scans"
@@ -406,22 +406,22 @@ def test_start_dependency_analysis_success(mock_send, scans_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_start_dependency_analysis_import_only(mock_send, scans_client):
+def test_run_dependency_analysis_import_only(mock_send, scans_client):
     mock_send.return_value = {"status": "1"}
     payload_data = {"scan_code": "scan1", "import_only": "1"}
-    scans_client.start_dependency_analysis_raw(payload_data)
+    scans_client.run_dependency_analysis(payload_data)
     payload = mock_send.call_args[0][0]
     assert payload["data"]["import_only"] == "1"
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_start_dependency_analysis_scan_not_found(mock_send, scans_client):
+def test_run_dependency_analysis_scan_not_found(mock_send, scans_client):
     mock_send.return_value = {"status": "0", "error": "Scan not found"}
     payload_data = {"scan_code": "scan1", "import_only": "0"}
     with pytest.raises(
         ApiError, match="Failed to start dependency analysis for 'scan1': Scan not found"
     ):
-        scans_client.start_dependency_analysis_raw(payload_data)
+        scans_client.run_dependency_analysis(payload_data)
 
 
 # --- Tests for check_status ---
@@ -602,7 +602,7 @@ def test_get_scan_information_failure(mock_send_request, scans_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_run_scan_raw_api_failure(mock_send_request, scans_client, caplog):
+def test_run_scan_api_failure(mock_send_request, scans_client, caplog):
     # Test API failure scenario
     mock_send_request.return_value = {"status": "0", "error": "API failure"}
     payload_data = {
@@ -612,7 +612,7 @@ def test_run_scan_raw_api_failure(mock_send_request, scans_client, caplog):
     }
 
     with pytest.raises(ApiError, match="Failed to run scan 'scan1': API failure"):
-        scans_client.run_scan_raw(payload_data)
+        scans_client.run(payload_data)
 
     mock_send_request.assert_called_once()
 
@@ -768,7 +768,7 @@ def test_generate_scan_report_sync_success(mock_send, scans_client):
     raw = object()
     mock_send.return_value = {"_raw_response": raw}
     payload_data = {"scan_code": "scan1", "report_type": "spdx", "async": "0"}
-    result = scans_client.generate_scan_report_raw(payload_data)
+    result = scans_client.generate_report(payload_data)
     assert result is raw
 
 
@@ -776,7 +776,7 @@ def test_generate_scan_report_sync_success(mock_send, scans_client):
 def test_generate_scan_report_async_success(mock_send, scans_client):
     mock_send.return_value = {"status": "1", "data": {"process_queue_id": "123"}}
     payload_data = {"scan_code": "scan1", "report_type": "spdx", "async": "1"}
-    pid = scans_client.generate_scan_report_raw(payload_data)
+    pid = scans_client.generate_report(payload_data)
     assert pid == 123
 
 
@@ -785,4 +785,4 @@ def test_generate_scan_report_error(mock_send, scans_client):
     mock_send.return_value = {"status": "0", "error": "Bad"}
     payload_data = {"scan_code": "scan1", "report_type": "spdx", "async": "1"}
     with pytest.raises(ApiError):
-        scans_client.generate_scan_report_raw(payload_data)
+        scans_client.generate_report(payload_data)

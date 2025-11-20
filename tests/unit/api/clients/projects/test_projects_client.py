@@ -151,7 +151,7 @@ def test_generate_project_report_success(mock_send, projects_client):
         "disclaimer": "Test disclaimer",
         "include_vex": False,
     }
-    result = projects_client.generate_project_report_raw(payload_data)
+    result = projects_client.generate_report(payload_data)
     assert result == 54321
     mock_send.assert_called_once()
     payload = mock_send.call_args[0][0]
@@ -166,9 +166,10 @@ def test_generate_project_report_success(mock_send, projects_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_check_project_report_status_success(mock_send, projects_client):
+def test_check_status_success(mock_send, projects_client):
+    """Test successful project operation status check."""
     mock_send.return_value = {"status": "1", "data": {"status": "FINISHED", "progress": 100}}
-    status = projects_client.check_project_report_status(process_id=12345, project_code="PROJ_A")
+    status = projects_client.check_status(process_id=12345, process_type="REPORT_GENERATION")
     assert status["status"] == "FINISHED"
     assert status["progress"] == 100
     mock_send.assert_called_once()
