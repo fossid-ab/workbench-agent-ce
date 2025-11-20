@@ -33,7 +33,7 @@ def mock_projects_client(mocker):
             "project_code": "TEST_PROJECT",
         }
     ]
-    client.get_project_scans.return_value = [
+    client.get_all_scans.return_value = [
         {
             "name": "test_scan",
             "code": "TEST_SCAN",
@@ -41,7 +41,7 @@ def mock_projects_client(mocker):
             "project_code": "TEST_PROJECT",
         }
     ]
-    client.create_project.return_value = "TEST_PROJECT"
+    client.create.return_value = "TEST_PROJECT"
     return client
 
 
@@ -50,7 +50,7 @@ def mock_scans_client(mocker):
     """Mock ScansClient."""
     client = mocker.MagicMock()
     client.list_scans.return_value = [{"name": "test_scan", "code": "TEST_SCAN", "id": "123"}]
-    client.get_scan_information.return_value = {
+    client.get_information.return_value = {
         "code": "TEST_SCAN",
         "name": "Test Scan",
         "git_repo_url": None,
@@ -88,7 +88,7 @@ def test_ensure_scan_compatible_scan_command_success(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test successful compatibility check for scan command."""
-    mock_scans_client.get_scan_information.return_value = {
+    mock_scans_client.get_information.return_value = {
         "code": "TEST_SCAN",
         "name": "Test Scan",
         "git_repo_url": None,
@@ -98,14 +98,14 @@ def test_ensure_scan_compatible_scan_command_success(
     mock_params.command = "scan"
     # Should not raise
     resolver_service.ensure_scan_compatible("TEST_SCAN", "scan", mock_params)
-    mock_scans_client.get_scan_information.assert_called_once_with("TEST_SCAN")
+    mock_scans_client.get_information.assert_called_once_with("TEST_SCAN")
 
 
 def test_ensure_scan_compatible_scan_git_command_success(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test successful compatibility check for scan-git command."""
-    mock_scans_client.get_scan_information.return_value = {
+    mock_scans_client.get_information.return_value = {
         "code": "TEST_SCAN",
         "name": "Test Scan",
         "git_repo_url": "https://github.com/example/repo.git",
@@ -118,14 +118,14 @@ def test_ensure_scan_compatible_scan_git_command_success(
     mock_params.git_commit = None
     # Should not raise
     resolver_service.ensure_scan_compatible("TEST_SCAN", "scan-git", mock_params)
-    mock_scans_client.get_scan_information.assert_called_once_with("TEST_SCAN")
+    mock_scans_client.get_information.assert_called_once_with("TEST_SCAN")
 
 
 def test_ensure_scan_compatible_scan_command_incompatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test incompatible scan for scan command (has git repo)."""
-    mock_scans_client.get_scan_information.return_value = {
+    mock_scans_client.get_information.return_value = {
         "code": "TEST_SCAN",
         "name": "Test Scan",
         "git_repo_url": "https://github.com/example/repo.git",
@@ -141,7 +141,7 @@ def test_ensure_scan_compatible_scan_git_command_incompatible_url(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test incompatible scan for scan-git command (different URL)."""
-    mock_scans_client.get_scan_information.return_value = {
+    mock_scans_client.get_information.return_value = {
         "code": "TEST_SCAN",
         "name": "Test Scan",
         "git_repo_url": "https://github.com/example/repo.git",
@@ -158,7 +158,7 @@ def test_ensure_scan_compatible_scan_git_command_incompatible_ref_type(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test incompatible scan for scan-git command (different ref type)."""
-    mock_scans_client.get_scan_information.return_value = {
+    mock_scans_client.get_information.return_value = {
         "code": "TEST_SCAN",
         "name": "Test Scan",
         "git_repo_url": "https://github.com/example/repo.git",
@@ -173,21 +173,21 @@ def test_ensure_scan_compatible_scan_git_command_incompatible_ref_type(
 
 def test_ensure_scan_compatible_scan_not_found(resolver_service, mock_scans_client, mock_params):
     """Test graceful handling when scan is not found."""
-    mock_scans_client.get_scan_information.side_effect = ScanNotFoundError("Scan not found")
+    mock_scans_client.get_information.side_effect = ScanNotFoundError("Scan not found")
     # Should NOT raise, just log and return
     resolver_service.ensure_scan_compatible("TEST_SCAN", "scan", mock_params)
 
 
 def test_ensure_scan_compatible_api_error(resolver_service, mock_scans_client, mock_params):
     """Test graceful handling when API error occurs."""
-    mock_scans_client.get_scan_information.side_effect = ApiError("API error")
+    mock_scans_client.get_information.side_effect = ApiError("API error")
     # Should NOT raise, just log and return
     resolver_service.ensure_scan_compatible("TEST_SCAN", "scan", mock_params)
 
 
 def test_ensure_scan_compatible_network_error(resolver_service, mock_scans_client, mock_params):
     """Test graceful handling when network error occurs."""
-    mock_scans_client.get_scan_information.side_effect = NetworkError("Network error")
+    mock_scans_client.get_information.side_effect = NetworkError("Network error")
     # Should NOT raise, just log and return
     resolver_service.ensure_scan_compatible("TEST_SCAN", "scan", mock_params)
 
@@ -197,7 +197,7 @@ def test_ensure_scan_compatible_import_sbom_with_report_scan_compatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test that import-sbom can reuse SBOM import scans."""
-    mock_scans_client.get_scan_information.return_value = {"is_from_report": "1"}
+    mock_scans_client.get_information.return_value = {"is_from_report": "1"}
     # Should not raise
     resolver_service.ensure_scan_compatible("test_scan_code", "import-sbom", mock_params)
 
@@ -206,7 +206,7 @@ def test_ensure_scan_compatible_import_sbom_with_code_scan_incompatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test that import-sbom cannot reuse code upload scans."""
-    mock_scans_client.get_scan_information.return_value = {
+    mock_scans_client.get_information.return_value = {
         "is_from_report": "0",
         "git_repo_url": None,
     }
@@ -221,7 +221,7 @@ def test_ensure_scan_compatible_import_sbom_with_git_scan_incompatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test that import-sbom cannot reuse git scans."""
-    mock_scans_client.get_scan_information.return_value = {
+    mock_scans_client.get_information.return_value = {
         "is_from_report": "0",
         "git_repo_url": "https://github.com/test/repo.git",
     }
@@ -236,7 +236,7 @@ def test_ensure_scan_compatible_scan_with_report_scan_incompatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test that scan command cannot reuse SBOM import scans."""
-    mock_scans_client.get_scan_information.return_value = {"is_from_report": "1"}
+    mock_scans_client.get_information.return_value = {"is_from_report": "1"}
     with pytest.raises(
         CompatibilityError,
         match="was created for SBOM import and cannot be reused for code upload",
@@ -248,7 +248,7 @@ def test_ensure_scan_compatible_scan_git_with_report_scan_incompatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test that scan-git command cannot reuse SBOM import scans."""
-    mock_scans_client.get_scan_information.return_value = {"is_from_report": "1"}
+    mock_scans_client.get_information.return_value = {"is_from_report": "1"}
     mock_params.git_url = "https://github.com/test/repo.git"
     mock_params.git_branch = "main"
     with pytest.raises(
@@ -262,7 +262,7 @@ def test_ensure_scan_compatible_import_da_with_report_scan_incompatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test that import-da cannot reuse SBOM import scans."""
-    mock_scans_client.get_scan_information.return_value = {"is_from_report": "1"}
+    mock_scans_client.get_information.return_value = {"is_from_report": "1"}
     with pytest.raises(
         CompatibilityError,
         match="was created for SBOM import and cannot be reused for dependency analysis import",
@@ -274,7 +274,7 @@ def test_ensure_scan_compatible_blind_scan_command_success(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test successful compatibility check for blind-scan command."""
-    mock_scans_client.get_scan_information.return_value = {
+    mock_scans_client.get_information.return_value = {
         "code": "TEST_SCAN",
         "name": "Test Scan",
         "git_repo_url": None,
@@ -327,20 +327,20 @@ def test_resolve_id_reuse_scan_local_success(
     resolver_service, mock_projects_client, mock_scans_client
 ):
     """Test successful scan ID reuse resolution in current project."""
-    # find_scan uses find_project first, then get_project_scans
+    # find_scan uses find_project first, then get_all_scans
     mock_projects_client.list_projects.return_value = [
         {"project_name": "test_project", "project_code": "TEST_PROJECT"}
     ]
-    mock_projects_client.get_project_scans.return_value = [
+    mock_projects_client.get_all_scans.return_value = [
         {"name": "test_scan", "code": "TEST_SCAN", "id": "123"}
     ]
     result = resolver_service.resolve_id_reuse(
         id_reuse_scan_name="test_scan", current_project_name="test_project"
     )
     assert result == ("specific_scan", "TEST_SCAN")
-    # Should call list_projects for find_project, then get_project_scans
+    # Should call list_projects for find_project, then get_all_scans
     assert mock_projects_client.list_projects.called
-    assert mock_projects_client.get_project_scans.called
+    assert mock_projects_client.get_all_scans.called
 
 
 def test_resolve_id_reuse_scan_global_success(
@@ -352,7 +352,7 @@ def test_resolve_id_reuse_scan_global_success(
         {"project_name": "test_project", "project_code": "TEST_PROJECT"}
     ]
     # First call (current project) - scan not found
-    mock_projects_client.get_project_scans.return_value = []
+    mock_projects_client.get_all_scans.return_value = []
     # Second call (global search) - scan found
     mock_scans_client.list_scans.return_value = [
         {"name": "test_scan", "code": "TEST_SCAN", "id": "123"}
@@ -362,7 +362,7 @@ def test_resolve_id_reuse_scan_global_success(
     )
     assert result == ("specific_scan", "TEST_SCAN")
     # Should try current project first, then global
-    assert mock_projects_client.get_project_scans.called
+    assert mock_projects_client.get_all_scans.called
     assert mock_scans_client.list_scans.called
 
 
@@ -372,7 +372,7 @@ def test_resolve_id_reuse_scan_not_found(resolver_service, mock_projects_client,
     mock_projects_client.list_projects.return_value = [
         {"project_name": "test_project", "project_code": "TEST_PROJECT"}
     ]
-    mock_projects_client.get_project_scans.return_value = []
+    mock_projects_client.get_all_scans.return_value = []
     mock_scans_client.list_scans.return_value = []
     # Should return None, None (graceful degradation)
     result = resolver_service.resolve_id_reuse(
@@ -381,7 +381,7 @@ def test_resolve_id_reuse_scan_not_found(resolver_service, mock_projects_client,
     )
     assert result == (None, None)
     # Should try both current project and global search
-    assert mock_projects_client.get_project_scans.called
+    assert mock_projects_client.get_all_scans.called
     assert mock_scans_client.list_scans.called
 
 
@@ -424,7 +424,7 @@ def test_find_scan_existing_in_project(resolver_service, mock_projects_client, m
     mock_projects_client.list_projects.return_value = [
         {"project_name": "TestProject", "project_code": "PROJ123"}
     ]
-    mock_projects_client.get_project_scans.return_value = [
+    mock_projects_client.get_all_scans.return_value = [
         {"name": "TestScan", "code": "SCAN456", "id": 789},
         {"name": "OtherScan", "code": "SCAN789", "id": 101},
     ]
@@ -435,7 +435,7 @@ def test_find_scan_existing_in_project(resolver_service, mock_projects_client, m
 
     assert result_code == "SCAN456"
     assert result_id == 789
-    mock_projects_client.get_project_scans.assert_called_once_with("PROJ123")
+    mock_projects_client.get_all_scans.assert_called_once_with("PROJ123")
 
 
 def test_find_scan_not_found_in_project(resolver_service, mock_projects_client, mock_scans_client):
@@ -443,7 +443,7 @@ def test_find_scan_not_found_in_project(resolver_service, mock_projects_client, 
     mock_projects_client.list_projects.return_value = [
         {"project_name": "TestProject", "project_code": "PROJ123"}
     ]
-    mock_projects_client.get_project_scans.return_value = [
+    mock_projects_client.get_all_scans.return_value = [
         {"name": "OtherScan", "code": "SCAN789", "id": 101}
     ]
 
@@ -496,7 +496,7 @@ def test_resolve_project_and_scan_both_exist(
     mock_projects_client.list_projects.return_value = [
         {"project_name": "TestProject", "project_code": "PROJ123"}
     ]
-    mock_projects_client.get_project_scans.return_value = [
+    mock_projects_client.get_all_scans.return_value = [
         {"name": "TestScan", "code": "SCAN456", "id": 789}
     ]
     mock_params.command = "scan"
@@ -519,13 +519,13 @@ def test_resolve_project_and_scan_create_project(
         [],  # First call - project doesn't exist
         [{"project_name": "NewProject", "project_code": "PROJ789"}],  # After creation
     ]
-    mock_projects_client.create_project.return_value = "PROJ789"
+    mock_projects_client.create.return_value = "PROJ789"
     # Scan doesn't exist initially, then exists after creation
-    mock_projects_client.get_project_scans.side_effect = [
+    mock_projects_client.get_all_scans.side_effect = [
         [],  # First call - scan doesn't exist
         [{"name": "NewScan", "code": "SCAN999", "id": 888}],  # After creation
     ]
-    mock_scans_client.create_scan.return_value = 888
+    mock_scans_client.create.return_value = 888
     mock_params.command = "scan"
 
     with patch("time.sleep"):  # Mock sleep
@@ -536,8 +536,8 @@ def test_resolve_project_and_scan_create_project(
     assert project_code == "PROJ789"
     assert scan_code == "SCAN999"
     assert scan_is_new is True
-    mock_projects_client.create_project.assert_called_once()
-    mock_scans_client.create_scan.assert_called_once()
+    mock_projects_client.create.assert_called_once()
+    mock_scans_client.create.assert_called_once()
 
 
 def test_resolve_project_and_scan_create_scan(
@@ -547,11 +547,11 @@ def test_resolve_project_and_scan_create_scan(
     mock_projects_client.list_projects.return_value = [
         {"project_name": "TestProject", "project_code": "PROJ123"}
     ]
-    mock_projects_client.get_project_scans.side_effect = [
+    mock_projects_client.get_all_scans.side_effect = [
         [],  # First call - scan doesn't exist
         [{"name": "NewScan", "code": "SCAN999", "id": 888}],  # After creation
     ]
-    mock_scans_client.create_scan.return_value = 888
+    mock_scans_client.create.return_value = 888
     mock_params.command = "scan"
 
     with patch("time.sleep"):  # Mock sleep
@@ -562,4 +562,4 @@ def test_resolve_project_and_scan_create_scan(
     assert project_code == "PROJ123"
     assert scan_code == "SCAN999"
     assert scan_is_new is True
-    mock_scans_client.create_scan.assert_called_once()
+    mock_scans_client.create.assert_called_once()

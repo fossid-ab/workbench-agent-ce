@@ -20,7 +20,7 @@ class QuickScanClient:
 
     Example:
         >>> quick_scan = QuickScanClient(base_api)
-        >>> results = quick_scan.scan_file(file_content_b64, limit=1, sensitivity=10)
+        >>> results = quick_scan.scan_one_file(file_content_b64, limit=1, sensitivity=10)
     """
 
     def __init__(self, base_api):
@@ -33,25 +33,7 @@ class QuickScanClient:
         self._api = base_api
         logger.debug("QuickScanClient initialized")
 
-    def scan_file(
-        self, file_content_b64: str, limit: int = 1, sensitivity: int = 10
-    ) -> List[Dict[str, Any]]:
-        """
-        Perform a quick scan of a single file using base64 content.
-
-        Alias for quick_scan_file() to provide cleaner new-style API.
-
-        Args:
-            file_content_b64: Base64-encoded file content
-            limit: Max number of results to consider
-            sensitivity: Snippet detection sensitivity
-
-        Returns:
-            List of parsed quick scan result dictionaries
-        """
-        return self.quick_scan_file(file_content_b64, limit, sensitivity)
-
-    def quick_scan_file(
+    def scan_one_file(
         self, file_content_b64: str, limit: int = 1, sensitivity: int = 10
     ) -> List[Dict[str, Any]]:
         """

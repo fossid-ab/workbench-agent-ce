@@ -43,43 +43,23 @@ def projects_client(base_api):
 # --- Test Cases ---
 
 
-# --- Test create_project ---
+# --- Test create ---
 @patch.object(BaseAPI, "_send_request")
-@patch.object(ProjectsClient, "list_projects", return_value=[])
-def test_create_project_success(mock_list_projects, mock_send, projects_client):
+def test_create_success(mock_send, projects_client):
     # Configure the API response for project creation
     mock_send.return_value = {"status": "1", "data": {"project_code": "NEW_PROJ"}}
 
-    result = projects_client.create_project("New Project")
+    result = projects_client.create("New Project")
 
     # Verify the result
     assert result == "NEW_PROJ"
 
     # Verify _send_request was called with correct parameters
-    assert mock_send.call_count >= 1  # At least one call
-    # Find the create call
-    create_call = None
-    for call in mock_send.call_args_list:
-        payload = call[0][0]
-        if payload.get("action") == "create":
-            create_call = payload
-            break
-
-    assert create_call is not None, "No create action call was made"
-    assert create_call["group"] == "projects"
-    assert create_call["data"]["project_name"] == "New Project"
-
-
-@patch.object(ProjectsClient, "list_projects")
-def test_create_project_already_exists(mock_list_proj, projects_client):
-    # Setup projects list with existing project
-    mock_list_proj.return_value = [{"name": "New Project", "code": "EXISTING_PROJ"}]
-
-    # Should raise ProjectExistsError
-    with pytest.raises(ProjectExistsError, match="Project 'New Project' already exists"):
-        projects_client.create_project("New Project")
-
-    mock_list_proj.assert_called_once()
+    mock_send.assert_called_once()
+    payload = mock_send.call_args[0][0]
+    assert payload["group"] == "projects"
+    assert payload["action"] == "create"
+    assert payload["data"]["project_name"] == "New Project"
 
 
 # --- Test list_projects ---
@@ -113,14 +93,14 @@ def test_list_projects_api_error(mock_send, projects_client):
         projects_client.list_projects()
 
 
-# --- Test get_project_scans ---
+# --- Test get_all_scans ---
 @patch.object(BaseAPI, "_send_request")
-def test_get_project_scans_success(mock_send, projects_client):
+def test_get_all_scans_success(mock_send, projects_client):
     mock_send.return_value = {
         "status": "1",
         "data": [{"code": "SCAN_A", "name": "Scan A"}, {"code": "SCAN_B", "name": "Scan B"}],
     }
-    scans = projects_client.get_project_scans("PROJ_A")
+    scans = projects_client.get_all_scans("PROJ_A")
     assert len(scans) == 2
     assert scans[0]["code"] == "SCAN_A"
     assert scans[1]["name"] == "Scan B"
@@ -132,10 +112,10 @@ def test_get_project_scans_success(mock_send, projects_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_project_scans_project_not_found(mock_send, projects_client):
+def test_get_all_scans_project_not_found(mock_send, projects_client):
     mock_send.return_value = {"status": "0", "error": "Project code does not exist"}
     # Should return empty list, not raise
-    scans = projects_client.get_project_scans("NONEXISTENT")
+    scans = projects_client.get_all_scans("NONEXISTENT")
     assert scans == []
 
 
@@ -151,7 +131,7 @@ def test_generate_project_report_success(mock_send, projects_client):
         "disclaimer": "Test disclaimer",
         "include_vex": False,
     }
-    result = projects_client.generate_project_report_raw(payload_data)
+    result = projects_client.generate_report(payload_data)
     assert result == 54321
     mock_send.assert_called_once()
     payload = mock_send.call_args[0][0]
@@ -166,9 +146,10 @@ def test_generate_project_report_success(mock_send, projects_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_check_project_report_status_success(mock_send, projects_client):
+def test_check_status_success(mock_send, projects_client):
+    """Test successful project operation status check."""
     mock_send.return_value = {"status": "1", "data": {"status": "FINISHED", "progress": 100}}
-    status = projects_client.check_project_report_status(process_id=12345, project_code="PROJ_A")
+    status = projects_client.check_status(process_id=12345, process_type="REPORT_GENERATION")
     assert status["status"] == "FINISHED"
     assert status["progress"] == 100
     mock_send.assert_called_once()

@@ -1,9 +1,7 @@
 """
-ScansClient - Handles all scan-related Workbench API operations.
-
-This is the largest client with methods for:
-- Listing and managing scans
-- Running KB scans andDependency analysis
+ScansClient - Handles all scan-related Workbench operations like:
+- Managing Scan Creation and Lifecycle
+- Running Scan Operations
 - Git operations
 - Archive extraction
 - Status checking
@@ -26,17 +24,9 @@ class ScansClient:
     """
     Scans API client.
 
-    Provides comprehensive scan management functionality including:
-    - Scan CRUD operations
-    - KB scanning with configurable parameters
-    - Dependency analysis
-    - Git repository imports
-    - Process status checking
-    - Report generation
-
     Example:
         >>> scans = ScansClient(base_api)
-        >>> scan_list = scans.list()
+        >>> scan_list = scans.list_scans()
         >>> scans.run(scan_code, limit=10, sensitivity=6)
     """
 
@@ -51,17 +41,6 @@ class ScansClient:
         logger.debug("ScansClient initialized")
 
     # ===== LIST & INFO OPERATIONS =====
-
-    def list(self) -> List[Dict[str, Any]]:
-        """
-        Retrieves a list of all scans.
-
-        Alias for list_scans() to provide cleaner new-style API.
-
-        Returns:
-            List of scan dictionaries
-        """
-        return self.list_scans()
 
     def list_scans(self) -> List[Dict[str, Any]]:
         """
@@ -111,7 +90,7 @@ class ScansClient:
             error_msg = response.get("error", f"Unexpected response: {response}")
             raise ApiError(f"Failed to list scans: {error_msg}", details=response)
 
-    def get_scan_information(self, scan_code: str) -> Dict[str, Any]:
+    def get_information(self, scan_code: str) -> Dict[str, Any]:
         """
         Retrieves detailed information about a scan.
 
@@ -413,7 +392,7 @@ class ScansClient:
 
     # ===== SCAN MANAGEMENT OPERATIONS =====
 
-    def create_scan(self, data: Dict[str, Any]) -> int:
+    def create(self, data: Dict[str, Any]) -> int:
         """
         Create a new scan with the provided data.
 
@@ -471,7 +450,7 @@ class ScansClient:
                 ) from e
             raise
 
-    def update_scan(
+    def update(
         self,
         scan_code: str,
         scan_name: Optional[str] = None,
@@ -742,13 +721,14 @@ class ScansClient:
 
             raise ApiError(error_msg, details={"error": str(e)})
 
-    def extract_archives_raw(self, payload_data: Dict[str, Any]) -> bool:
+    def extract_archives(self, payload_data: Dict[str, Any]) -> bool:
         """
-        Low-level method to extract archives using pre-built payload.
+        Extract archives using pre-built payload.
 
-        This is a raw API method. For most use cases, prefer using
-        ScanOperationsService.extract_archives() which provides validation
-        and business logic.
+        This method directly wraps the API's extract_archives action.
+        For most use cases, prefer using
+        ScanOperationsService.start_archive_extraction() which provides
+        validation and business logic.
 
         Args:
             payload_data: Pre-built payload data dictionary containing:
@@ -788,13 +768,13 @@ class ScansClient:
                 details=response,
             )
 
-    def run_scan_raw(self, payload_data: Dict[str, Any]):
+    def run(self, payload_data: Dict[str, Any]):
         """
-        Low-level method to run a scan using pre-built payload.
+        Run a scan using pre-built payload.
 
-        This is a raw API method. For most use cases, prefer using
-        ScanOperationsService.run_scan() which provides validation,
-        parameter transformation, and version awareness.
+        This method directly wraps the API's run action. For most use cases,
+        prefer using ScanOperationsService.start_scan() which provides
+        validation, parameter transformation, and version awareness.
 
         Args:
             payload_data: Pre-built payload data dictionary containing:
@@ -841,13 +821,14 @@ class ScansClient:
             )
             raise ApiError(f"Failed to run scan '{scan_code}': {e}") from e
 
-    def start_dependency_analysis_raw(self, payload_data: Dict[str, Any]):
+    def run_dependency_analysis(self, payload_data: Dict[str, Any]):
         """
-        Low-level method to start dependency analysis using pre-built payload.
+        Run dependency analysis using pre-built payload.
 
-        This is a raw API method. For most use cases, prefer using
-        ScanOperationsService.start_dependency_analysis() which provides
-        validation and business logic.
+        This method directly wraps the API's run_dependency_analysis action.
+        For most use cases, prefer using ScanOperationsService.start_da_only()
+        or ScanOperationsService.start_da_import() which provide validation
+        and business logic.
 
         Args:
             payload_data: Pre-built payload data dictionary containing:
@@ -885,8 +866,8 @@ class ScansClient:
         """
         Check the status of a scan operation.
 
-        This is a convenience wrapper around check_status_raw() that builds
-        the payload automatically. Always returns a dict.
+        This method directly wraps the API's check_status action.
+        Always returns a dict, normalizing any non-dict responses from the API.
 
         Args:
             scan_code: Code of the scan to check
@@ -905,6 +886,9 @@ class ScansClient:
             >>> status = scans.check_status("scan_123", "SCAN")
             >>> status = scans.check_status("scan_123", "DEPENDENCY_ANALYSIS")
         """
+        logger.debug(f"Checking {process_type} status for scan '{scan_code}'...")
+
+        # Build payload
         payload_data = {
             "scan_code": scan_code,
             "type": process_type,
@@ -912,55 +896,13 @@ class ScansClient:
         if process_id is not None:
             payload_data["process_id"] = str(process_id)
 
-        return self.check_status_raw(payload_data)
-
-    def check_status_raw(self, payload_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Low-level method to check scan operation status using pre-built payload.
-
-        This is a raw API method. For most use cases, prefer using
-        check_status() which provides a simpler interface.
-
-        This method always returns a dict, normalizing any non-dict responses
-        from the API into a consistent dict format.
-
-        Args:
-            payload_data: Pre-built payload data dictionary containing:
-                - scan_code: Code of the scan
-                - type: Operation type (SCAN, EXTRACT_ARCHIVES, etc.)
-                - process_id: Optional process ID
-                - delay_response: Optional delay in seconds
-
-        Returns:
-            dict: The operation status data, always in dict format.
-                If API returns a non-dict, it will be wrapped appropriately.
-
-        Raises:
-            ScanNotFoundError: If scan doesn't exist
-            ApiError: If status check fails
-
-        Example:
-            >>> # Build payload manually (not recommended)
-            >>> payload_data = {
-            ...     "scan_code": "scan_code",
-            ...     "type": "SCAN"
-            ... }
-            >>> status = scans.check_status_raw(payload_data)
-            >>>
-            >>> # Recommended: Use check_status() instead
-            >>> status = scans.check_status("scan_code", "SCAN")
-        """
-        scan_code = payload_data.get("scan_code", "unknown")
-        operation_type = payload_data.get("type", "UNKNOWN")
-
-        logger.debug(f"Checking {operation_type} status for scan '{scan_code}'...")
-
         payload = {
             "group": "scans",
             "action": "check_status",
             "data": payload_data,
         }
 
+        # Make API call
         response = self._api._send_request(payload)
 
         if response.get("status") == "1" and "data" in response:
@@ -971,14 +913,14 @@ class ScansClient:
             elif isinstance(data, str):
                 # Wrap string responses in dict for consistency
                 logger.warning(
-                    f"API returned string instead of dict for {operation_type} "
+                    f"API returned string instead of dict for {process_type} "
                     f"status (scan '{scan_code}')"
                 )
                 return {"status": data}
             else:
                 # Unexpected type - wrap it
                 logger.warning(
-                    f"Unexpected response type from {operation_type} status API: " f"{type(data)}"
+                    f"Unexpected response type from {process_type} status API: {type(data)}"
                 )
                 return {"status": str(data)}
         else:
@@ -986,18 +928,19 @@ class ScansClient:
             if "Scan not found" in error_msg or "row_not_found" in error_msg:
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
-                f"Failed to retrieve {operation_type} status for "
+                f"Failed to retrieve {process_type} status for "
                 f"scan '{scan_code}': {error_msg}",
                 details=response,
             )
 
     # ===== REPORT OPERATIONS =====
 
-    def generate_scan_report_raw(self, payload_data: Dict[str, Any]):
+    def generate_report(self, payload_data: Dict[str, Any]):
         """
-        Low-level method to generate a scan report using pre-built payload.
+        Generate a scan report using pre-built payload.
 
-        This is a raw API method. For most use cases, prefer using
+        This method directly wraps the API's generate_report action.
+        For most use cases, prefer using
         ReportService.generate_scan_report() which provides validation,
         version awareness, and automatic async/sync determination.
 
@@ -1023,7 +966,7 @@ class ScansClient:
             ...     "report_type": "xlsx",
             ...     "async": "1"
             ... }
-            >>> process_id = scans.generate_scan_report_raw(payload_data)
+            >>> process_id = scans.generate_report(payload_data)
             >>>
             >>> # Recommended: Use ReportService instead
             >>> process_id = client.reports.generate_scan_report(
@@ -1070,17 +1013,17 @@ class ScansClient:
 
     def import_report(self, scan_code: str):
         """
-        Imports an SBOM report into a scan.
+        Imports a SBOM into a scan.
 
         Args:
-            scan_code: Code of the scan to import the report into
+            scan_code: Code of the scan to import the SBOM into
 
         Raises:
             ApiError: If there are API issues
             ScanNotFoundError: If the scan doesn't exist
             NetworkError: If there are network issues
         """
-        logger.info(f"Starting SBOM report import for '{scan_code}'...")
+        logger.info(f"Starting SBOM import for '{scan_code}'...")
         payload = {
             "group": "scans",
             "action": "import_report",

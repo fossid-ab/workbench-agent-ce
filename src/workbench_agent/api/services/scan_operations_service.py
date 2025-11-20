@@ -34,8 +34,8 @@ class ScanOperationsService:
     Example:
         >>> scan_ops = ScanOperationsService(scans_client, resolver_service)
         >>>
-        >>> # Run a scan (ID reuse resolution happens automatically)
-        >>> scan_ops.run_scan(
+        >>> # Start a scan (ID reuse resolution happens automatically)
+        >>> scan_ops.start_scan(
         ...     scan_code="scan_code",
         ...     limit=10,
         ...     sensitivity=6,
@@ -43,8 +43,8 @@ class ScanOperationsService:
         ...     id_reuse_project_name="MyProject"  # Resolved automatically
         ... )
         >>>
-        >>> # Extract archives
-        >>> scan_ops.extract_archives(
+        >>> # Start archive extraction
+        >>> scan_ops.start_archive_extraction(
         ...     scan_code="scan_code",
         ...     recursively_extract_archives=True,
         ...     jar_file_extraction=True
@@ -65,7 +65,7 @@ class ScanOperationsService:
 
     # ===== PUBLIC API =====
 
-    def run_scan(
+    def start_scan(
         self,
         scan_code: str,
         limit: int,
@@ -85,7 +85,7 @@ class ScanOperationsService:
         scan_host: Optional[str] = None,
     ):
         """
-        Run a scan with resolved ID reuse parameters.
+        Start a KB scan with resolved ID reuse parameters.
 
         This method converts Python-friendly parameter names/types to API
         format and delegates to ScansClient. ID reuse should be resolved
@@ -119,8 +119,8 @@ class ScanOperationsService:
         Example:
             >>> # Resolve ID reuse first
             >>> id_type, id_code = resolver.resolve_id_reuse(...)
-            >>> # Run scan with Python-friendly parameter names
-            >>> scan_ops.run_scan(
+            >>> # Start scan with Python-friendly parameter names
+            >>> scan_ops.start_scan(
             ...     scan_code="SCAN123",
             ...     limit=10,
             ...     sensitivity=6,
@@ -169,10 +169,10 @@ class ScanOperationsService:
             f"Built run scan payload with {len(payload_data)} parameters " f"for scan '{scan_code}'"
         )
 
-        # Delegate to client for raw API call
-        return self._scans.run_scan_raw(payload_data)
+        # Delegate to client for API call
+        return self._scans.run(payload_data)
 
-    def extract_archives(
+    def start_archive_extraction(
         self,
         scan_code: str,
         recursively_extract_archives: bool,
@@ -181,7 +181,7 @@ class ScanOperationsService:
         filename: Optional[str] = None,
     ) -> bool:
         """
-        Extract archives for a scan with validation.
+        Start archive extraction for a scan with validation.
 
         This method builds the payload and delegates to ScansClient.
 
@@ -222,48 +222,11 @@ class ScanOperationsService:
         )
 
         # Delegate to client
-        return self._scans.extract_archives_raw(payload_data)
+        return self._scans.extract_archives(payload_data)
 
-    def start_dependency_analysis(self, scan_code: str, import_only: bool = False):
+    def start_da_only(self, scan_code: str):
         """
-        Start or import dependency analysis for a scan.
-
-        This method builds the payload and delegates to ScansClient.
-
-        Args:
-            scan_code: Code of the scan to start dependency analysis for
-            import_only: Whether to only import results without running
-                analysis (useful when dependency files already analyzed)
-
-        Raises:
-            ApiError: If there are API issues
-            ScanNotFoundError: If the scan doesn't exist
-            NetworkError: If there are network issues
-        """
-        logger.info(
-            f"Starting dependency analysis for '{scan_code}' " f"(import_only={import_only})..."
-        )
-
-        # Build payload
-        payload_data = {
-            "scan_code": scan_code,
-            "import_only": "1" if import_only else "0",
-        }
-
-        logger.debug(
-            f"Built dependency analysis payload for scan '{scan_code}' "
-            f"(import_only={import_only})"
-        )
-
-        # Delegate to client
-        return self._scans.start_dependency_analysis_raw(payload_data)
-
-    def run_da_only(self, scan_code: str):
-        """
-        Run dependency analysis only (without KB scan).
-
-        This is a convenience method that calls start_dependency_analysis
-        with import_only=False.
+        Start dependency analysis only (without KB scan).
 
         Args:
             scan_code: Code of the scan to run dependency analysis for
@@ -274,16 +237,26 @@ class ScanOperationsService:
             NetworkError: If there are network issues
 
         Example:
-            >>> scan_ops.run_da_only("SCAN123")
+            >>> scan_ops.start_da_only("SCAN123")
         """
-        return self.start_dependency_analysis(scan_code, import_only=False)
+        logger.info(f"Starting dependency analysis for '{scan_code}'...")
 
-    def import_da_results(self, scan_code: str):
+        payload_data = {
+            "scan_code": scan_code,
+            "import_only": "0",
+        }
+
+        logger.debug(f"Built dependency analysis payload for scan '{scan_code}'")
+
+        # Delegate to client
+        return self._scans.run_dependency_analysis(payload_data)
+
+    def start_da_import(self, scan_code: str):
         """
         Import dependency analysis results (import-only mode).
 
-        This is a convenience method for importing pre-analyzed dependency
-        analysis results without running the analysis.
+        This method imports pre-analyzed dependency analysis results
+        without running the analysis.
 
         Args:
             scan_code: Code of the scan to import dependency analysis
@@ -295,13 +268,23 @@ class ScanOperationsService:
             NetworkError: If there are network issues
 
         Example:
-            >>> scan_ops.import_da_results("SCAN123")
+            >>> scan_ops.start_da_import("SCAN123")
         """
-        return self.start_dependency_analysis(scan_code, import_only=True)
+        logger.info(f"Importing dependency analysis results for '{scan_code}'...")
 
-    def import_sbom(self, scan_code: str):
+        payload_data = {
+            "scan_code": scan_code,
+            "import_only": "1",
+        }
+
+        logger.debug(f"Built dependency analysis import payload for scan '{scan_code}'")
+
+        # Delegate to client
+        return self._scans.run_dependency_analysis(payload_data)
+
+    def start_sbom_import(self, scan_code: str):
         """
-        Import SBOM report into a scan.
+        Start SBOM report import into a scan.
 
         This method delegates to the ScansClient import_report method.
 
@@ -314,7 +297,7 @@ class ScanOperationsService:
             NetworkError: If there are network issues
 
         Example:
-            >>> scan_ops.import_sbom("SCAN123")
+            >>> scan_ops.start_sbom_import("SCAN123")
         """
         logger.info(f"Starting SBOM import for '{scan_code}'...")
         return self._scans.import_report(scan_code)

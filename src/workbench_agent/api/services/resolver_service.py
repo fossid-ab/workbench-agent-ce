@@ -16,10 +16,10 @@ from typing import Optional, Tuple
 
 from workbench_agent.api.exceptions import (
     ApiError,
+    CompatibilityError,
     NetworkError,
     ProjectNotFoundError,
     ScanNotFoundError,
-    CompatibilityError,
 )
 
 logger = logging.getLogger("workbench-agent")
@@ -149,7 +149,7 @@ class ResolverService:
 
             # Step 2: Get scans for this specific project
             # This uses projects->get_all_scans (efficient, scoped)
-            scan_list = self.projects.get_project_scans(project_code)
+            scan_list = self.projects.get_all_scans(project_code)
 
             # Step 3: Find exact scan match
             scan = next((s for s in scan_list if s.get("name") == scan_name), None)
@@ -302,7 +302,7 @@ class ResolverService:
         logger.debug(f"Creating project '{project_name}'...")
         print(f"Creating project '{project_name}'...")
 
-        project_code = self.projects.create_project(
+        project_code = self.projects.create(
             project_name=project_name,
             product_code=product_code,
             product_name=product_name,
@@ -378,10 +378,10 @@ class ResolverService:
             scan_data["import_from_report"] = "1"
 
         # Create the scan
-        self.scans.create_scan(scan_data)
+        self.scans.create(scan_data)
 
         # Fetch the created scan to return its details
-        scan_list = self.projects.get_project_scans(project_code)
+        scan_list = self.projects.get_all_scans(project_code)
         scan = next((s for s in scan_list if s.get("name") == scan_name), None)
         if scan:
             logger.debug(
@@ -422,7 +422,7 @@ class ResolverService:
 
         # Fetch scan information
         try:
-            existing_scan_info = self.scans.get_scan_information(scan_code)
+            existing_scan_info = self.scans.get_information(scan_code)
         except ScanNotFoundError:
             logger.warning(f"Scan '{scan_code}' not found during compatibility check.")
             return

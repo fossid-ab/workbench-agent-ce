@@ -1,20 +1,20 @@
 import logging
 import sys
 
-from workbench_agent.api.workbench_client import WorkbenchClient
-
-# Package imports
-from workbench_agent.cli import parse_cmdline_args
 from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
+    CompatibilityError,
     NetworkError,
     ProcessError,
     ProcessTimeoutError,
     ProjectNotFoundError,
     ScanNotFoundError,
-    CompatibilityError,
 )
+from workbench_agent.api.workbench_client import WorkbenchClient
+
+# Package imports
+from workbench_agent.cli import parse_cmdline_args
 from workbench_agent.exceptions import (
     ConfigurationError,
     FileSystemError,
@@ -219,9 +219,9 @@ def main() -> int:
         return 2
 
     except (
-        ProjectNotFoundError,   # Before ApiError (inherits from NotFoundError → ApiError)
-        ScanNotFoundError,      # Before ApiError (inherits from NotFoundError → ApiError)
-        ProcessTimeoutError,    # Before ProcessError (inherits from ProcessError)
+        ProjectNotFoundError,  # Before ApiError (inherits from NotFoundError → ApiError)
+        ScanNotFoundError,  # Before ApiError (inherits from NotFoundError → ApiError)
+        ProcessTimeoutError,  # Before ProcessError (inherits from ProcessError)
         # Now the base classes
         ApiError,
         NetworkError,

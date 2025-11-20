@@ -101,8 +101,8 @@ def test_wait_for_completion_failure(waiting_service, mock_status_check_service)
 
 
 # --- Test specialized waiting methods ---
-def test_wait_for_scan_to_finish(waiting_service, mock_status_check_service):
-    """Test wait_for_scan_to_finish method."""
+def test_wait_for_scan(waiting_service, mock_status_check_service):
+    """Test wait_for_scan method."""
     mock_status_check_service.check_scan_status.return_value = StatusResult(
         status="FINISHED", raw_data={"status": "FINISHED"}
     )
@@ -112,7 +112,7 @@ def test_wait_for_scan_to_finish(waiting_service, mock_status_check_service):
             status_data={"status": "FINISHED"}, duration=20.0, success=True
         )
 
-        result = waiting_service.wait_for_scan_to_finish("scan123", 10, 5)
+        result = waiting_service.wait_for_scan("scan123", 10, 5)
 
         assert isinstance(result, WaitResult)
         assert result.success is True
@@ -120,14 +120,14 @@ def test_wait_for_scan_to_finish(waiting_service, mock_status_check_service):
         mock_wait.assert_called_once()
 
 
-def test_wait_for_da_to_finish(waiting_service, mock_status_check_service):
-    """Test wait_for_da_to_finish method."""
+def test_wait_for_da(waiting_service, mock_status_check_service):
+    """Test wait_for_da method."""
     with patch.object(waiting_service, "_wait_for_completion") as mock_wait:
         mock_wait.return_value = WaitResult(
             status_data={"status": "FINISHED"}, duration=15.0, success=True
         )
 
-        result = waiting_service.wait_for_da_to_finish("scan456", 8, 3)
+        result = waiting_service.wait_for_da("scan456", 8, 3)
 
         assert isinstance(result, WaitResult)
         assert result.success is True

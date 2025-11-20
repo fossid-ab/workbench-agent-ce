@@ -418,27 +418,19 @@ def handle_evaluate_gates(client: "WorkbenchClient", params: "argparse.Namespace
     try:
         scan_status = client.status_check.check_scan_status(scan_code)
         if scan_status.status == "RUNNING":
-            print(
-                "KB Scan is still in progress, "
-                "waiting for it to complete..."
-            )
+            print("KB Scan is still in progress, " "waiting for it to complete...")
 
-        client.waiting.wait_for_scan_to_finish(
+        client.waiting.wait_for_scan(
             scan_code,
             max_tries=params.scan_number_of_tries,
             wait_interval=params.scan_wait_time,
         )
 
-        da_status = client.status_check.check_dependency_analysis_status(
-            scan_code
-        )
+        da_status = client.status_check.check_dependency_analysis_status(scan_code)
         if da_status.status == "RUNNING":
-            print(
-                "Dependency Analysis is still in progress, "
-                "waiting for it to complete..."
-            )
+            print("Dependency Analysis is still in progress, " "waiting for it to complete...")
 
-        client.waiting.wait_for_da_to_finish(
+        client.waiting.wait_for_da(
             scan_code,
             max_tries=params.scan_number_of_tries,
             wait_interval=params.scan_wait_time,
@@ -446,10 +438,7 @@ def handle_evaluate_gates(client: "WorkbenchClient", params: "argparse.Namespace
 
         logging.info("Verified all Scan processes are idle. Checking gates...")
     except (ProcessTimeoutError, ApiError, NetworkError) as e:
-        print(
-            f"\n❌ Gate Evaluation Failed: Could not verify scan "
-            f"completion: {e}"
-        )
+        print(f"\n❌ Gate Evaluation Failed: Could not verify scan " f"completion: {e}")
         return False
 
     # Generate all Workbench links once for use throughout the handler

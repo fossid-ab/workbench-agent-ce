@@ -93,7 +93,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
             scan_status = client.status_check.check_scan_status(scan_code)
             if scan_status.status == "RUNNING":
                 print("\nA prior Scan operation is in progress, " "waiting for it to complete.")
-            client.waiting.wait_for_scan_to_finish(
+            client.waiting.wait_for_scan(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,
@@ -109,7 +109,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
                     "\nA prior Dependency Analysis operation is in progress, "
                     "waiting for it to complete."
                 )
-            client.waiting.wait_for_da_to_finish(
+            client.waiting.wait_for_da(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,
@@ -166,20 +166,20 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
         # Handle dependency analysis only mode
         if not scan_operations["run_kb_scan"] and scan_operations["run_dependency_analysis"]:
             print("Starting Dependency Analysis only " "(skipping KB scan)...")
-            client.scan_operations.run_da_only(scan_code)
+            client.scan_operations.start_da_only(scan_code)
 
             # Handle no-wait mode
             if getattr(params, "no_wait", False):
                 print("Dependency Analysis has been started.")
                 print("\nExiting without waiting for completion " "(--no-wait mode).")
                 print("You can check the status later using the " "'show-results' command.")
-                print_operation_summary(params, True, project_code, scan_code, durations)
+                print_operation_summary(params, True, durations)
                 return True
 
             # Wait for dependency analysis to complete
             print("\nWaiting for Dependency Analysis to complete...")
             try:
-                da_status = client.waiting.wait_for_da_to_finish(
+                da_status = client.waiting.wait_for_da(
                     scan_code,
                     max_tries=params.scan_number_of_tries,
                     wait_interval=params.scan_wait_time,
@@ -193,7 +193,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
                 scan_completed = True
 
                 # Print operation summary
-                print_operation_summary(params, da_completed, project_code, scan_code, durations)
+                print_operation_summary(params, da_completed, durations)
 
                 # Show results
                 fetch_display_save_results(client, params, scan_code)
@@ -222,7 +222,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
             )
 
             # Run scan with resolved ID reuse parameters
-            client.scan_operations.run_scan(
+            client.scan_operations.start_scan(
                 scan_code=scan_code,
                 limit=params.limit,
                 sensitivity=params.sensitivity,
@@ -250,7 +250,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
                     print("Dependency Analysis will automatically start " "after scan completion.")
 
                 print("\nExiting without waiting for completion " "(--no-wait mode).")
-                print_operation_summary(params, True, project_code, scan_code, durations)
+                print_operation_summary(params, True, durations)
                 return True
             else:
                 # Determine which processes to wait for
@@ -262,7 +262,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
 
                 try:
                     # Wait for KB scan completion
-                    kb_scan_status = client.waiting.wait_for_scan_to_finish(
+                    kb_scan_status = client.waiting.wait_for_scan(
                         scan_code,
                         max_tries=params.scan_number_of_tries,
                         wait_interval=params.scan_wait_time,
@@ -275,7 +275,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
                     if "DEPENDENCY_ANALYSIS" in process_types_to_wait:
                         print("\nWaiting for Dependency Analysis to complete...")
                         try:
-                            da_status = client.waiting.wait_for_da_to_finish(
+                            da_status = client.waiting.wait_for_da(
                                 scan_code,
                                 max_tries=params.scan_number_of_tries,
                                 wait_interval=params.scan_wait_time,
@@ -315,7 +315,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
     # Process completed operations
     if scan_completed:
         # Print operation summary
-        print_operation_summary(params, da_completed, project_code, scan_code, durations)
+        print_operation_summary(params, da_completed, durations)
 
         # Check for pending files (informational)
         try:

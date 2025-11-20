@@ -28,9 +28,16 @@ def mock_scans_client(mocker):
 
 
 @pytest.fixture
-def report_service(mock_projects_client, mock_scans_client):
+def mock_downloads_client(mocker):
+    """Create a mock DownloadClient."""
+    client = mocker.MagicMock()
+    return client
+
+
+@pytest.fixture
+def report_service(mock_projects_client, mock_scans_client, mock_downloads_client):
     """Create a ReportService instance for testing."""
-    return ReportService(mock_projects_client, mock_scans_client)
+    return ReportService(mock_projects_client, mock_scans_client, mock_downloads_client)
 
 
 # --- Tests for save_report (migrated from _save_report_content) ---
@@ -323,25 +330,26 @@ class TestBuildProjectReportPayload:
 
     def test_build_project_report_payload_with_all_options(self, report_service):
         """Test building project report payload with all optional parameters."""
+        # Use xlsx which supports all parameters
         result = report_service.build_project_report_payload(
             project_code="TEST_PROJECT",
-            report_type="spdx_lite",
+            report_type="xlsx",
             selection_type="custom",
             selection_view="licenses",
-            disclaimer="Custom disclaimer text",
             include_vex=True,
             include_dep_det_info=True,
+            report_content_type="abbreviated",
         )
 
         expected = {
             "project_code": "TEST_PROJECT",
-            "report_type": "spdx_lite",
+            "report_type": "xlsx",
             "async": "1",
-            # include_vex is only added for cyclone_dx and xlsx
             "selection_type": "custom",
             "selection_view": "licenses",
-            "disclaimer": "Custom disclaimer text",
+            "include_vex": True,
             "include_dep_det_info": True,
+            "report_content_type": "abbreviated",
         }
         assert result == expected
 
@@ -365,23 +373,26 @@ class TestBuildScanReportPayload:
 
     def test_build_scan_report_payload_with_all_options(self, report_service):
         """Test building scan report payload with all optional parameters."""
+        # Use xlsx which supports most parameters
         result = report_service.build_scan_report_payload(
             scan_code="TEST_SCAN",
-            report_type="spdx",
+            report_type="xlsx",
             selection_type="vulnerabilities",
             selection_view="detailed",
-            disclaimer="Scan disclaimer",
             include_vex=False,
+            include_dep_det_info=True,
+            report_content_type="abbreviated",
         )
 
         expected = {
             "scan_code": "TEST_SCAN",
-            "report_type": "spdx",
-            "async": "1",  # spdx is async
-            # include_vex is only added for cyclone_dx and xlsx
+            "report_type": "xlsx",
+            "async": "1",
             "selection_type": "vulnerabilities",
             "selection_view": "detailed",
-            "disclaimer": "Scan disclaimer",
+            "include_vex": False,
+            "include_dep_det_info": True,
+            "report_content_type": "abbreviated",
         }
         assert result == expected
 
@@ -409,18 +420,19 @@ class TestBuildScanReportPayload:
 
     def test_build_scan_report_payload_async(self, report_service):
         """Test building scan report payload for async report types."""
+        # Use html which supports disclaimer
         result = report_service.build_scan_report_payload(
             scan_code="TEST_SCAN",
-            report_type="xlsx",
+            report_type="html",
             selection_type="all",
             disclaimer="Test disclaimer",
         )
 
         expected = {
             "scan_code": "TEST_SCAN",
-            "report_type": "xlsx",
-            "async": "1",  # xlsx is async
-            "include_vex": True,
+            "report_type": "html",
+            "async": "0",  # html is sync by default
+            "include_vex": True,  # html supports vex
             "selection_type": "all",
             "disclaimer": "Test disclaimer",
         }
@@ -436,7 +448,7 @@ class TestBuildScanReportPayload:
             "scan_code": "TEST_SCAN",
             "report_type": "html",
             "async": "0",  # html is sync
-            # include_vex is only added for cyclone_dx and xlsx
+            "include_vex": True,  # html supports vex
         }
         assert result == expected
 
@@ -445,139 +457,270 @@ class TestBuildScanReportPayload:
 class TestDownloadReports:
     """Test cases for download_project_report and download_scan_report methods."""
 
-    def test_download_project_report_success(self, report_service, mock_projects_client):
+    def test_download_project_report_success(self, report_service, mock_downloads_client):
         """Test successful project report download."""
-        mock_base_api = MagicMock()
-        mock_projects_client._api = mock_base_api
-
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
         mock_response.headers = {
             "content-type": "application/pdf",
             "content-disposition": "attachment; filename=report.pdf",
         }
-        mock_base_api._send_request.return_value = {"_raw_response": mock_response}
+        mock_downloads_client.download_report.return_value = {"_raw_response": mock_response}
 
         result = report_service.download_project_report(12345)
 
-        # Verify _send_request was called with correct payload
-        mock_base_api._send_request.assert_called_once()
-        call_args = mock_base_api._send_request.call_args
-        payload = call_args[0][0]
-        assert payload["group"] == "download"
-        assert payload["action"] == "download_report"
-        assert payload["data"]["report_entity"] == "projects"
-        assert payload["data"]["process_id"] == "12345"
-        assert call_args[1]["timeout"] == 1800
+        # Verify download_report was called with correct entity
+        mock_downloads_client.download_report.assert_called_once_with("projects", 12345)
 
-        # The method returns the result from _send_request
+        # The method returns the result from downloads client
         assert result == {"_raw_response": mock_response}
 
-    def test_download_scan_report_success(self, report_service, mock_projects_client):
+    def test_download_scan_report_success(self, report_service, mock_downloads_client):
         """Test successful scan report download."""
-        mock_base_api = MagicMock()
-        mock_projects_client._api = mock_base_api
-
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
         mock_response.headers = {
             "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "content-disposition": 'attachment; filename="scan_report.xlsx"',
         }
-        mock_base_api._send_request.return_value = {"_raw_response": mock_response}
+        mock_downloads_client.download_report.return_value = {"_raw_response": mock_response}
 
         result = report_service.download_scan_report(54321)
 
-        # Verify _send_request was called with correct payload
-        mock_base_api._send_request.assert_called_once()
-        call_args = mock_base_api._send_request.call_args
-        payload = call_args[0][0]
-        assert payload["group"] == "download"
-        assert payload["action"] == "download_report"
-        assert payload["data"]["report_entity"] == "scans"
-        assert payload["data"]["process_id"] == "54321"
-        assert call_args[1]["timeout"] == 1800
+        # Verify download_report was called with correct entity
+        mock_downloads_client.download_report.assert_called_once_with("scans", 54321)
 
-        # The method returns the result from _send_request
+        # The method returns the result from downloads client
         assert result == {"_raw_response": mock_response}
 
-    def test_download_project_report_api_error(self, report_service, mock_projects_client):
+    def test_download_project_report_api_error(self, report_service, mock_downloads_client):
         """Test download when API returns error."""
         from workbench_agent.api.exceptions import ApiError
 
-        mock_base_api = MagicMock()
-        mock_projects_client._api = mock_base_api
-        mock_base_api._send_request.side_effect = ApiError("Report not found")
+        mock_downloads_client.download_report.side_effect = ApiError("Report not found")
 
         with pytest.raises(ApiError, match="Report not found"):
             report_service.download_project_report(12345)
 
-    def test_download_scan_report_api_error(self, report_service, mock_projects_client):
+    def test_download_scan_report_api_error(self, report_service, mock_downloads_client):
         """Test download when API returns error."""
         from workbench_agent.api.exceptions import ApiError
 
-        mock_base_api = MagicMock()
-        mock_projects_client._api = mock_base_api
-        mock_base_api._send_request.side_effect = ApiError("Report not found")
+        mock_downloads_client.download_report.side_effect = ApiError("Report not found")
 
         with pytest.raises(ApiError, match="Report not found"):
             report_service.download_scan_report(54321)
 
-    def test_download_project_report_network_error(self, report_service, mock_projects_client):
+    def test_download_project_report_network_error(self, report_service, mock_downloads_client):
         """Test download when network request fails."""
         from workbench_agent.api.exceptions import NetworkError
 
-        mock_base_api = MagicMock()
-        mock_projects_client._api = mock_base_api
-        mock_base_api._send_request.side_effect = NetworkError("Connection failed")
+        mock_downloads_client.download_report.side_effect = NetworkError("Connection failed")
 
         with pytest.raises(NetworkError, match="Connection failed"):
             report_service.download_project_report(12345)
 
-    def test_download_scan_report_network_error(self, report_service, mock_projects_client):
+    def test_download_scan_report_network_error(self, report_service, mock_downloads_client):
         """Test download when network request fails."""
         from workbench_agent.api.exceptions import NetworkError
 
-        mock_base_api = MagicMock()
-        mock_projects_client._api = mock_base_api
-        mock_base_api._send_request.side_effect = NetworkError("Connection failed")
+        mock_downloads_client.download_report.side_effect = NetworkError("Connection failed")
 
         with pytest.raises(NetworkError, match="Connection failed"):
             report_service.download_scan_report(54321)
 
     def test_download_project_report_with_content_disposition(
-        self, report_service, mock_projects_client
+        self, report_service, mock_downloads_client
     ):
         """Test download with proper content-disposition header."""
-        mock_base_api = MagicMock()
-        mock_projects_client._api = mock_base_api
-
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
         mock_response.headers = {
             "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "content-disposition": 'attachment; filename="project_report.xlsx"',
         }
-        mock_base_api._send_request.return_value = {"_raw_response": mock_response}
+        mock_downloads_client.download_report.return_value = {"_raw_response": mock_response}
 
         result = report_service.download_project_report(54321)
 
         assert result == {"_raw_response": mock_response}
-        mock_base_api._send_request.assert_called_once()
+        mock_downloads_client.download_report.assert_called_once_with("projects", 54321)
 
     def test_download_scan_report_without_content_disposition_but_binary_type(
-        self, report_service, mock_projects_client
+        self, report_service, mock_downloads_client
     ):
         """Test download with binary content type but no content-disposition."""
-        mock_base_api = MagicMock()
-        mock_projects_client._api = mock_base_api
-
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
         mock_response.headers = {"content-type": "application/octet-stream"}
-        mock_base_api._send_request.return_value = {"_raw_response": mock_response}
+        mock_downloads_client.download_report.return_value = {"_raw_response": mock_response}
 
         result = report_service.download_scan_report(12345)
 
         assert result == {"_raw_response": mock_response}
-        mock_base_api._send_request.assert_called_once()
+        mock_downloads_client.download_report.assert_called_once_with("scans", 12345)
+
+
+# --- Tests for check_project_report_status ---
+class TestCheckProjectReportStatus:
+    """Test cases for check_project_report_status method."""
+
+    def test_check_project_report_status_success(self, report_service, mock_projects_client):
+        """Test successful project report status check."""
+        mock_status = {"progress_state": "FINISHED", "progress": 100}
+        mock_projects_client.check_status.return_value = mock_status
+
+        result = report_service.check_project_report_status(12345, "MyProject")
+
+        # Verify check_status was called with correct parameters
+        mock_projects_client.check_status.assert_called_once_with(12345, "REPORT_GENERATION")
+
+        # Verify result is passed through
+        assert result == mock_status
+
+    def test_check_project_report_status_in_progress(self, report_service, mock_projects_client):
+        """Test checking status when report generation is in progress."""
+        mock_status = {"progress_state": "IN_PROGRESS", "progress": 50}
+        mock_projects_client.check_status.return_value = mock_status
+
+        result = report_service.check_project_report_status(12345, "MyProject")
+
+        mock_projects_client.check_status.assert_called_once_with(12345, "REPORT_GENERATION")
+        assert result["progress_state"] == "IN_PROGRESS"
+        assert result["progress"] == 50
+
+    def test_check_project_report_status_api_error(self, report_service, mock_projects_client):
+        """Test status check when API returns error."""
+        from workbench_agent.api.exceptions import ApiError
+
+        mock_projects_client.check_status.side_effect = ApiError("Process not found")
+
+        with pytest.raises(ApiError, match="Process not found"):
+            report_service.check_project_report_status(12345, "MyProject")
+
+
+# --- Tests for parameter validation ---
+class TestReportParameterValidation:
+    """Test cases for report parameter validation based on capabilities."""
+
+    def test_xlsx_supports_all_parameters(self, report_service):
+        """Test that Excel reports support all parameters."""
+        # Should not raise warnings
+        payload = report_service.build_scan_report_payload(
+            scan_code="scan123",
+            report_type="xlsx",
+            selection_type="include_foss",
+            selection_view="all",
+            include_vex=True,
+            include_dep_det_info=True,
+        )
+        
+        # Verify all parameters are included
+        assert payload["selection_type"] == "include_foss"
+        assert payload["selection_view"] == "all"
+        assert payload["include_vex"] is True
+        assert payload["include_dep_det_info"] is True
+
+    def test_cyclonedx_only_supports_vex(self, report_service):
+        """Test that CycloneDX only supports VEX parameter."""
+        payload = report_service.build_scan_report_payload(
+            scan_code="scan123",
+            report_type="cyclone_dx",
+            selection_type="include_foss",  # Should be ignored
+            selection_view="all",  # Should be ignored
+            include_vex=True,
+            include_dep_det_info=True,  # Should be ignored
+        )
+        
+        # Only include_vex should be in payload
+        assert "selection_type" not in payload
+        assert "selection_view" not in payload
+        assert payload["include_vex"] is True
+        assert "include_dep_det_info" not in payload
+
+    def test_spdx_supports_selection_only(self, report_service):
+        """Test that SPDX supports only selection parameters."""
+        payload = report_service.build_scan_report_payload(
+            scan_code="scan123",
+            report_type="spdx",
+            selection_type="include_foss",
+            selection_view="all",
+            include_vex=True,  # Should be ignored
+            include_dep_det_info=True,  # Should be ignored
+        )
+        
+        assert payload["selection_type"] == "include_foss"
+        assert payload["selection_view"] == "all"
+        assert "include_vex" not in payload
+        assert "include_dep_det_info" not in payload
+
+    def test_html_supports_disclaimer(self, report_service):
+        """Test that HTML reports support disclaimer."""
+        payload = report_service.build_scan_report_payload(
+            scan_code="scan123",
+            report_type="html",
+            disclaimer="Custom disclaimer text",
+            selection_type="include_foss",
+            selection_view="all",
+        )
+        
+        assert payload["disclaimer"] == "Custom disclaimer text"
+        assert payload["selection_type"] == "include_foss"
+        assert payload["selection_view"] == "all"
+
+    def test_dynamic_top_matched_components_no_options(self, report_service):
+        """Test that dynamic_top_matched_components has no optional parameters."""
+        payload = report_service.build_scan_report_payload(
+            scan_code="scan123",
+            report_type="dynamic_top_matched_components",
+            selection_type="include_foss",  # Should be ignored
+            selection_view="all",  # Should be ignored
+            include_vex=True,  # Should be ignored
+        )
+        
+        # No optional parameters should be in payload
+        assert "selection_type" not in payload
+        assert "selection_view" not in payload
+        assert "include_vex" not in payload
+
+    def test_string_match_only_supports_selection_view(self, report_service):
+        """Test that string_match only supports selection_view."""
+        payload = report_service.build_scan_report_payload(
+            scan_code="scan123",
+            report_type="string_match",
+            selection_type="include_foss",  # Should be ignored
+            selection_view="all",
+        )
+        
+        assert "selection_type" not in payload
+        assert payload["selection_view"] == "all"
+
+    def test_project_excel_report_content_type(self, report_service):
+        """Test that project Excel reports support report_content_type."""
+        payload = report_service.build_project_report_payload(
+            project_code="proj123",
+            report_type="xlsx",
+            report_content_type="abbreviated",
+        )
+        
+        assert payload["report_content_type"] == "abbreviated"
+
+    def test_scan_excel_report_content_type(self, report_service):
+        """Test that scan Excel reports support report_content_type."""
+        payload = report_service.build_scan_report_payload(
+            scan_code="scan123",
+            report_type="xlsx",
+            report_content_type="abbreviated",
+        )
+        
+        assert payload["report_content_type"] == "abbreviated"
+
+    def test_scan_html_report_content_type(self, report_service):
+        """Test that scan HTML (basic) reports support report_content_type."""
+        payload = report_service.build_scan_report_payload(
+            scan_code="scan123",
+            report_type="html",
+            report_content_type="abbreviated",
+        )
+        
+        assert payload["report_content_type"] == "abbreviated"

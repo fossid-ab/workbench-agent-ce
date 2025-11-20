@@ -32,20 +32,6 @@ class VulnerabilitiesClient:
         self._api = base_api
         logger.debug("VulnerabilitiesClient initialized")
 
-    def list(self, scan_code: str) -> List[Dict[str, Any]]:
-        """
-        Retrieves vulnerabilities for a scan.
-
-        Alias for list_vulnerabilities() to provide cleaner new-style API.
-
-        Args:
-            scan_code: Code of the scan to get vulnerabilities for
-
-        Returns:
-            List of vulnerability dictionaries
-        """
-        return self.list_vulnerabilities(scan_code)
-
     def list_vulnerabilities(self, scan_code: str) -> List[Dict[str, Any]]:
         """
         Retrieves the list of vulnerabilities associated with a scan.

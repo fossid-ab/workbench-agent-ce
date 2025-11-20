@@ -4,10 +4,10 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
+from workbench_agent.utilities.scan_workflows import determine_scans_to_run
+
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
-
-from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 
 logger = logging.getLogger("workbench-agent")
 
@@ -222,22 +222,19 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
                 if scopes_str:
                     try:
                         scopes_data = json.loads(scopes_str)
-                        scopes_list = sorted(
-                            list(
-                                set(
-                                    p_info.get("scope")
-                                    for p_info in scopes_data.values()
-                                    if isinstance(p_info, dict) and p_info.get("scope")
-                                )
-                            )
-                        )
+                        scopes_set = set()
+                        for p_info in scopes_data.values():
+                            if isinstance(p_info, dict):
+                                scope = p_info.get("scope")
+                                if scope:
+                                    scopes_set.add(scope)
+                        scopes_list = sorted(scopes_set)
                         if scopes_list:
                             scopes_display = ", ".join(scopes_list)
                     except (json.JSONDecodeError, AttributeError, TypeError) as scope_err:
                         logger.debug(
                             f"Could not parse scopes for DA component {comp.get('name')}: {scope_err}"
                         )
-                        pass
                 print(
                     f"  - {comp.get('name', 'N/A')} : {comp.get('version', 'N/A')} "
                     f"(Scope: {scopes_display}, License: {comp.get('license_identifier', 'N/A')})"
@@ -330,7 +327,7 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
                 )
 
                 # Display top 5 vulnerabilities for each component
-                for i, vuln in enumerate(sorted_vulns_list[:5]):
+                for vuln in sorted_vulns_list[:5]:
                     severity = vuln.get("severity", "UNKNOWN").upper()
                     cve = vuln.get("cve", "NO_CVE_ID")
                     print(f"  - [{severity}] {cve}")
@@ -347,7 +344,7 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
     return displayed_something
 
 
-def save_results_to_file(filepath: str, results: Dict, scan_code: str):
+def save_results_to_file(filepath: str, results: Dict):
     """Helper to save collected results dictionary to a JSON file."""
     output_dir = os.path.dirname(filepath) or "."
     try:
@@ -355,7 +352,7 @@ def save_results_to_file(filepath: str, results: Dict, scan_code: str):
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
         print(f"Saved results to: {filepath}")
-    except (IOError, OSError) as e:
+    except OSError as e:
         print(f"\nWarning: Failed to save results to {filepath}: {e}")
 
 
@@ -391,7 +388,7 @@ def fetch_display_save_results(
     if save_path:
         if collected_results:
             print(f"\nSaving collected results to '{save_path}'...")
-            save_results_to_file(save_path, collected_results, scan_code)
+            save_results_to_file(save_path, collected_results)
         else:
             print("\nNo results were successfully collected, skipping save.")
 
@@ -422,9 +419,7 @@ def format_duration(duration_seconds: Optional[Union[int, float]]) -> str:
 def print_operation_summary(
     params: argparse.Namespace,
     da_completed: bool,
-    project_code: str,
-    scan_code: str,
-    durations: Dict[str, float] = None,
+    durations: Optional[Dict[str, float]] = None,
 ):
     """
     Prints a standardized summary of the scan operations performed and settings used.
@@ -432,8 +427,6 @@ def print_operation_summary(
     Args:
         params: Command line parameters
         da_completed: Whether dependency analysis completed successfully
-        project_code: Project code associated with the scan
-        scan_code: Scan code of the operation
         durations: Dictionary containing operation durations in seconds
     """
     durations = durations or {}  # Initialize to empty dict if None

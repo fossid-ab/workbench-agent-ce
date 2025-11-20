@@ -18,8 +18,8 @@ Usage:
     ... )
     >>>
     >>> # Use domain clients for direct API operations
-    >>> projects = workbench.projects.list()
-    >>> scan_info = workbench.scans.get_scan_information(scan_code)
+    >>> projects = workbench.projects.list_projects()
+    >>> scan_info = workbench.scans.get_information(scan_code)
     >>> workbench.uploads.upload_scan_target(
     ...     scan_code, "/path/to/source"
     ... )
@@ -30,7 +30,7 @@ Usage:
     ...         "MyProject", "MyScan", params
     ...     )
     ... )
-    >>> workbench.scan_operations.run_scan(
+    >>> workbench.scan_operations.start_scan(
     ...     scan_code, limit=10, sensitivity=6
     ... )
     >>> process_id = workbench.reports.generate_project_report(
@@ -43,6 +43,7 @@ import logging
 from packaging import version as packaging_version
 
 from workbench_agent.api.clients import (
+    DownloadClient,
     InternalClient,
     ProjectsClient,
     QuickScanClient,
@@ -50,6 +51,7 @@ from workbench_agent.api.clients import (
     UploadsClient,
     VulnerabilitiesClient,
 )
+from workbench_agent.api.exceptions import CompatibilityError
 from workbench_agent.api.helpers.base_api import BaseAPI
 from workbench_agent.api.services import (
     ReportService,
@@ -59,7 +61,6 @@ from workbench_agent.api.services import (
     StatusCheckService,
     WaitingService,
 )
-from workbench_agent.api.exceptions import CompatibilityError
 
 logger = logging.getLogger("workbench-agent")
 
@@ -73,6 +74,7 @@ class WorkbenchClient:
     - `projects`: Project management (list, create, update, reports)
     - `scans`: Scan operations (list, create, update, run, results)
     - `uploads`: File uploads (scan targets, DA, SBOM)
+    - `downloads`: File downloads (reports, etc.)
     - `vulnerabilities`: Vulnerability queries
     - `quick_scan`: Quick file scanning
     - `internal`: Internal/config operations
@@ -89,8 +91,8 @@ class WorkbenchClient:
         >>> workbench = WorkbenchClient(api_url, api_user, api_token)
         >>>
         >>> # Direct API operations via clients
-        >>> all_projects = workbench.projects.list()
-        >>> scan_info = workbench.scans.get_scan_information(scan_code)
+        >>> all_projects = workbench.projects.list_projects()
+        >>> scan_info = workbench.scans.get_information(scan_code)
         >>> workbench.uploads.upload_scan_target(scan_code, "./src")
         >>>
         >>> # High-level workflows via services
@@ -102,7 +104,7 @@ class WorkbenchClient:
         >>> process_id = workbench.reports.generate_project_report(
         ...     project_code, "xlsx"
         ... )
-        >>> workbench.scan_operations.run_scan(
+        >>> workbench.scan_operations.start_scan(
         ...     scan_code, limit=10, sensitivity=6
         ... )
         >>>
@@ -164,6 +166,7 @@ class WorkbenchClient:
         self.projects = ProjectsClient(self._base_api)
         self.scans = ScansClient(self._base_api)
         self.uploads = UploadsClient(self._base_api)
+        self.downloads = DownloadClient(self._base_api)
         self.vulnerabilities = VulnerabilitiesClient(self._base_api)
         self.quick_scan = QuickScanClient(self._base_api)
 
@@ -179,7 +182,11 @@ class WorkbenchClient:
             scans_client=self.scans, projects_client=self.projects
         )
 
-        self.reports = ReportService(projects_client=self.projects, scans_client=self.scans)
+        self.reports = ReportService(
+            projects_client=self.projects,
+            scans_client=self.scans,
+            downloads_client=self.downloads,
+        )
 
         self.results = ResultsService(
             scans_client=self.scans, vulnerabilities_client=self.vulnerabilities
@@ -237,8 +244,8 @@ class WorkbenchClient:
                 # (e.g., "24.3.0-beta", "2025.2.0#19347124129")
                 # Extract just the version number part
                 version_str = workbench_version.split()[0]  # Remove anything after space
-                version_str = version_str.split("-")[0]     # Remove anything after dash
-                version_str = version_str.split("#")[0]     # Remove build metadata after hash
+                version_str = version_str.split("-")[0]  # Remove anything after dash
+                version_str = version_str.split("#")[0]  # Remove build metadata after hash
 
                 parsed_version = packaging_version.parse(version_str)
                 min_version = packaging_version.parse(MINIMUM_VERSION)
@@ -270,7 +277,7 @@ class WorkbenchClient:
 
         except Exception as e:
             # Let CompatibilityError bubble up
-            if e.__class__.__name__ == 'CompatibilityError':
+            if e.__class__.__name__ == "CompatibilityError":
                 raise
             # Wrap other errors
             from workbench_agent.api.exceptions import ApiError, NetworkError

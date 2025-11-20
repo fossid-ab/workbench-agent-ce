@@ -80,7 +80,7 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
     if not scan_is_new:
         print("\nEnsuring Scan is idle before starting import...")
         try:
-            client.waiting.wait_for_da_to_finish(
+            client.waiting.wait_for_da(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,
@@ -109,7 +109,7 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
     print("\n--- Starting Dependency Analysis Import ---")
 
     try:
-        client.scan_operations.import_da_results(scan_code=scan_code)
+        client.scan_operations.start_da_import(scan_code=scan_code)
         print("Dependency analysis import initiated successfully.")
     except Exception as e:
         logger.error(
@@ -127,7 +127,7 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         print("\nExiting without waiting for completion (--no-wait mode).")
 
         # Print operation summary for no-wait mode
-        print_operation_summary(params, True, project_code, scan_code, durations)
+        print_operation_summary(params, True, durations)
         return True
 
     # Wait for dependency analysis to complete
@@ -135,7 +135,7 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
     try:
         print("\nWaiting for Dependency Analysis import to complete...")
         # Use optimized 3-second wait interval for import-only mode
-        dependency_analysis_status = client.waiting.wait_for_da_to_finish(
+        dependency_analysis_status = client.waiting.wait_for_da(
             scan_code,
             max_tries=params.scan_number_of_tries,
             wait_interval=3,  # Faster for import-only mode
@@ -170,7 +170,7 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         ) from e
 
     # Print operation summary
-    print_operation_summary(params, da_completed, project_code, scan_code, durations)
+    print_operation_summary(params, da_completed, durations)
 
     # Fetch and display results if requested
     if da_completed:

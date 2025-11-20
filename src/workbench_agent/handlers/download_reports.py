@@ -117,12 +117,9 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
         try:
             scan_status = client.status_check.check_scan_status(scan_code)
             if scan_status.status == "RUNNING":
-                print(
-                    "\nKB Scan is still in progress, "
-                    "waiting for it to complete..."
-                )
+                print("\nKB Scan is still in progress, " "waiting for it to complete...")
 
-            client.waiting.wait_for_scan_to_finish(
+            client.waiting.wait_for_scan(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,
@@ -132,48 +129,35 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
             print(f"\nWarning: KB Scan did not complete in time: {e}")
             print("Reports may be incomplete.")
             logger.warning(
-                f"Generating reports for scan '{scan_code}' with "
-                f"incomplete KB scan: {e}"
+                f"Generating reports for scan '{scan_code}' with " f"incomplete KB scan: {e}"
             )
         except (ApiError, NetworkError) as e:
             print(f"\nWarning: Could not verify KB Scan completion: {e}")
             print("Proceeding anyway, but reports may be incomplete.")
-            logger.warning(
-                f"Could not verify KB scan completion for '{scan_code}': {e}"
-            )
+            logger.warning(f"Could not verify KB scan completion for '{scan_code}': {e}")
 
         # Wait for dependency analysis using check-first pattern
         try:
-            da_status = client.status_check.check_dependency_analysis_status(
-                scan_code
-            )
+            da_status = client.status_check.check_dependency_analysis_status(scan_code)
             if da_status.status == "RUNNING":
                 print(
-                    "\nDependency Analysis is still in progress, "
-                    "waiting for it to complete..."
+                    "\nDependency Analysis is still in progress, " "waiting for it to complete..."
                 )
 
-            client.waiting.wait_for_da_to_finish(
+            client.waiting.wait_for_da(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,
             )
             print("Dependency Analysis has completed successfully.")
         except ProcessTimeoutError as e:
-            print(
-                f"\nWarning: Dependency Analysis did not complete in time: {e}"
-            )
+            print(f"\nWarning: Dependency Analysis did not complete in time: {e}")
             print("Reports may have incomplete dependency information.")
-            logger.warning(
-                f"Generating reports for scan '{scan_code}' with "
-                f"incomplete DA: {e}"
-            )
+            logger.warning(f"Generating reports for scan '{scan_code}' with " f"incomplete DA: {e}")
         except (ApiError, NetworkError) as e:
             print(f"\nWarning: Could not verify Dependency Analysis status: {e}")
             print("Proceeding anyway, but reports may be incomplete.")
-            logger.warning(
-                f"Could not verify DA completion for '{scan_code}': {e}"
-            )
+            logger.warning(f"Could not verify DA completion for '{scan_code}': {e}")
 
     # Generate and download reports based on scope
     scope_label = "project" if params.report_scope == "project" else "scan"

@@ -208,7 +208,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
         print("\n--- Starting SBOM Import ---")
 
         try:
-            client.scan_operations.import_sbom(scan_code=scan_code)
+            client.scan_operations.start_sbom_import(scan_code=scan_code)
             print("SBOM import initiated successfully.")
         except Exception as e:
             logger.error(
@@ -260,7 +260,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
             ) from e
 
         # Print operation summary
-        print_operation_summary(params, sbom_completed, project_code, scan_code, durations)
+        print_operation_summary(params, sbom_completed, durations)
 
         # Fetch and display results if requested
         if sbom_completed:
@@ -287,7 +287,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
 
             # Add Workbench link for easy navigation to view SBOM results
             try:
-                scan_info = client.scans.get_scan_information(scan_code)
+                scan_info = client.scans.get_information(scan_code)
                 scan_id = scan_info.get("id")
                 if scan_id:
                     link = client.results.link_to_scan(int(scan_id))

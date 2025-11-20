@@ -72,7 +72,7 @@ def handle_quick_scan(
     logger.info(
         f"Quick scanning file with limit={params.limit}, " f"sensitivity={params.sensitivity}"
     )
-    results = client.quick_scan.quick_scan_file(
+    results = client.quick_scan.scan_one_file(
         file_content_b64=file_content_b64,
         limit=params.limit,
         sensitivity=params.sensitivity,

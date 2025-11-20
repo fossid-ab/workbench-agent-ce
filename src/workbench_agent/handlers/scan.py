@@ -111,7 +111,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
             scan_status = client.status_check.check_scan_status(scan_code)
             if scan_status.status == "RUNNING":
                 print("\nA prior Scan operation is in progress, " "waiting for it to complete.")
-            client.waiting.wait_for_scan_to_finish(
+            client.waiting.wait_for_scan(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,
@@ -127,7 +127,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
                     "\nA prior Dependency Analysis operation is in progress, "
                     "waiting for it to complete."
                 )
-            client.waiting.wait_for_da_to_finish(
+            client.waiting.wait_for_da(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,
@@ -156,7 +156,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
 
     # Handle archive extraction
     print("\nExtracting Uploaded Archive...")
-    extraction_triggered = client.scan_operations.extract_archives(
+    extraction_triggered = client.scan_operations.start_archive_extraction(
         scan_code=scan_code,
         recursively_extract_archives=params.recursively_extract_archives,
         jar_file_extraction=params.jar_file_extraction,
@@ -181,7 +181,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     # Handle dependency analysis only mode
     if not scan_operations["run_kb_scan"] and scan_operations["run_dependency_analysis"]:
         print("\nStarting Dependency Analysis only (skipping KB scan)...")
-        client.scan_operations.run_da_only(scan_code)
+        client.scan_operations.start_da_only(scan_code)
 
         # Handle no-wait mode
         if getattr(params, "no_wait", False):
@@ -191,7 +191,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
 
         # Wait for dependency analysis to complete
         try:
-            dependency_analysis_status = client.waiting.wait_for_da_to_finish(
+            dependency_analysis_status = client.waiting.wait_for_da(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
                 wait_interval=params.scan_wait_time,
@@ -202,7 +202,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
             da_completed = True
 
             # Show scan summary and operation details
-            print_operation_summary(params, da_completed, project_code, scan_code, durations)
+            print_operation_summary(params, da_completed, durations)
 
             # Show scan results if any were requested
             if any(
@@ -226,7 +226,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
 
     # Start the KB scan (only if run_kb_scan is True)
     if scan_operations["run_kb_scan"]:
-        print("\nStarting KB Scan Process...")
+        print("\nStarting Scan Process...")
 
         # Resolve ID reuse parameters (if any)
         id_reuse_type, id_reuse_specific_code = client.resolver.resolve_id_reuse(
@@ -238,7 +238,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
         )
 
         # Run scan with resolved ID reuse parameters
-        client.scan_operations.run_scan(
+        client.scan_operations.start_scan(
             scan_code=scan_code,
             limit=params.limit,
             sensitivity=params.sensitivity,
@@ -261,10 +261,10 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
 
         # Check if we should wait for completion
         if getattr(params, "no_wait", False):
-            print("\nKB Scan started successfully.")
+            print("\nScan started successfully.")
 
             if scan_operations["run_dependency_analysis"]:
-                print("Dependency Analysis will start after KB scan completes.")
+                print("Dependency Analysis will run after KB scan.")
 
             print("\nExiting without waiting for completion (--no-wait mode).")
             return True
@@ -278,7 +278,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
 
             try:
                 # Wait for KB scan completion (with file tracking)
-                kb_scan_status = client.waiting.wait_for_scan_to_finish(
+                kb_scan_status = client.waiting.wait_for_scan(
                     scan_code,
                     max_tries=params.scan_number_of_tries,
                     wait_interval=params.scan_wait_time,
@@ -290,7 +290,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
                 if scan_operations["run_dependency_analysis"]:
                     print("\nWaiting for Dependency Analysis to complete...")
                     try:
-                        dependency_analysis_status = client.waiting.wait_for_da_to_finish(
+                        dependency_analysis_status = client.waiting.wait_for_da(
                             scan_code,
                             max_tries=params.scan_number_of_tries,
                             wait_interval=params.scan_wait_time,
@@ -315,7 +315,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
                 da_completed = False
 
         # Show scan summary and operation details
-        print_operation_summary(params, da_completed, project_code, scan_code, durations)
+        print_operation_summary(params, da_completed, durations)
 
         # Show scan results if any were requested
         if any(
