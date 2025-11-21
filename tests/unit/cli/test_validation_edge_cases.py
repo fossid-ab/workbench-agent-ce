@@ -159,13 +159,13 @@ class TestValidationSpecialCases:
 
     def test_import_commands_validation_coverage(self):
         """Test that import commands go through validation."""
-        with patch("os.path.exists", return_value=True):
+        with patch("os.path.exists", return_value=True), patch("os.path.isfile", return_value=True):
             args = Namespace(
                 command="import-da",
                 api_url="https://test.com",
                 api_user="test",
                 api_token="token",
-                path="/valid/path/to/results.json",
+                path="/valid/path/to/analyzer-result.json",
             )
 
             # Should not raise for import commands when path is provided

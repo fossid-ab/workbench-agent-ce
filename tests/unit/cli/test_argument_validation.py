@@ -81,10 +81,10 @@ class TestValidationRules:
     def test_import_da_non_existent_path(self, args, arg_parser):
         """Test validation when import-da path doesn't exist."""
         with patch("os.path.exists", return_value=False):
-            cmd_args = args().import_da(path="/non/existent/analyzer.json").build()
+            cmd_args = args().import_da(path="/non/existent/analyzer-result.json").build()
 
             with pytest.raises(
-                ValidationError, match=re.escape("Path does not exist: /non/existent/analyzer.json")
+                ValidationError, match=re.escape("Path does not exist: /non/existent/analyzer-result.json")
             ):
                 arg_parser(cmd_args)
 

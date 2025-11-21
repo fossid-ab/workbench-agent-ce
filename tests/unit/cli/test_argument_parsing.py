@@ -68,13 +68,14 @@ class TestBasicCommandParsing:
 
     def test_parse_import_da_command(self, args, arg_parser, mock_path_exists):
         """Test import-da command parsing."""
-        cmd_args = args().import_da(project="DAProject", scan="DAScan", path="results.json").build()
-        parsed = arg_parser(cmd_args)
+        with patch("os.path.isfile", return_value=True):
+            cmd_args = args().import_da(project="DAProject", scan="DAScan", path="analyzer-result.json").build()
+            parsed = arg_parser(cmd_args)
 
-        assert parsed.command == "import-da"
-        assert parsed.project_name == "DAProject"
-        assert parsed.scan_name == "DAScan"
-        assert parsed.path == "results.json"
+            assert parsed.command == "import-da"
+            assert parsed.project_name == "DAProject"
+            assert parsed.scan_name == "DAScan"
+            assert parsed.path == "analyzer-result.json"
 
     def test_parse_import_sbom_command(self, args, arg_parser, mock_path_exists):
         """Test import-sbom command parsing."""

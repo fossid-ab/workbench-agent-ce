@@ -146,7 +146,7 @@ class ArgBuilder:
         self.args.extend(["--git-commit", commit])
         return self
 
-    def import_da(self, project="TestProject", scan="TestScan", path="results.json"):
+    def import_da(self, project="TestProject", scan="TestScan", path="analyzer-result.json"):
         self.args.extend(["import-da"])
         self.args.extend(self.global_args)
         self.args.extend(["--project-name", project, "--scan-name", scan, "--path", path])
