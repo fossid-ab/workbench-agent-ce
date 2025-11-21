@@ -62,7 +62,7 @@ def handle_scan_git(
     # Resolve project and scan (find or create)
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    project_code, scan_code, scan_is_new = (
+    _, scan_code, scan_is_new = (
         client.resolver.resolve_project_and_scan(
             project_name=params.project_name,
             scan_name=params.scan_name,
@@ -189,7 +189,7 @@ def handle_scan_git(
             not scan_operations["run_kb_scan"]
             and scan_operations["run_dependency_analysis"]
         ):
-            print("Starting Dependency Analysis only " "(skipping KB scan)...")
+            print("Starting Dependency Analysis only (skipping KB scan)...")
             client.scan_operations.start_da_only(scan_code)
 
             # Handle no-wait mode
@@ -209,14 +209,14 @@ def handle_scan_git(
             # Wait for dependency analysis to complete
             print("\nWaiting for Dependency Analysis to complete...")
             try:
-                da_status = client.waiting.wait_for_da(
+                da_wait_result = client.waiting.wait_for_da(
                     scan_code,
                     max_tries=params.scan_number_of_tries,
                     wait_interval=params.scan_wait_time,
                 )
 
                 # Store the duration
-                durations["dependency_analysis"] = da_status.duration or 0.0
+                durations["dependency_analysis"] = da_wait_result.duration or 0.0
                 da_completed = True
 
                 # Mark scan as completed for result processing
@@ -330,13 +330,13 @@ def handle_scan_git(
                             "\nWaiting for Dependency Analysis to complete..."
                         )
                         try:
-                            da_status = client.waiting.wait_for_da(
+                            da_wait_result = client.waiting.wait_for_da(
                                 scan_code,
                                 max_tries=params.scan_number_of_tries,
                                 wait_interval=params.scan_wait_time,
                             )
                             durations["dependency_analysis"] = (
-                                da_status.duration or 0.0
+                                da_wait_result.duration or 0.0
                             )
                             da_completed = True
                         except Exception as e:

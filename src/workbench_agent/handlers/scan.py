@@ -83,7 +83,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     # Resolve project and scan (find or create)
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    project_code, scan_code, scan_is_new = (
+    _, scan_code, scan_is_new = (
         client.resolver.resolve_project_and_scan(
             project_name=params.project_name,
             scan_name=params.scan_name,
