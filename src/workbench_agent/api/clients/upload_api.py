@@ -17,7 +17,6 @@ Example:
 """
 
 import io
-import json
 import logging
 import os
 import time
@@ -104,8 +103,54 @@ class UploadsClient:
         filename = os.path.basename(file_path)
         file_size = os.path.getsize(file_path)
 
-        logger.debug(f"Starting standard upload for file: {filename} ({file_size / (1024 * 1024):.2f} MB)")
-        self._standard_upload(file_path, headers)
+        logger.debug(
+            f"Starting standard upload for file: {filename} ({file_size / (1024 * 1024):.2f} MB)"
+        )
+
+        try:
+            with open(file_path, "rb") as f:
+                file_data = f.read()
+
+            # Use BaseAPI's session but with HTTP Basic Auth
+            response = requests.post(
+                self._api.api_url,
+                headers=headers,
+                data=file_data,
+                auth=(self._api.api_user, self._api.api_token),
+                timeout=1800,
+            )
+
+            logger.debug(
+                f"Standard upload response code: {response.status_code}"
+            )
+            logger.debug(f"Standard upload response: {response.text[:500]}")
+
+            # Check for errors
+            if response.status_code != 200:
+                raise ApiError(
+                    f"Upload failed with status {response.status_code}: {response.text}"
+                )
+
+            # Parse response
+            try:
+                response_data = response.json()
+                status = str(response_data.get("status", "0"))
+                if status != "1":
+                    error_msg = response_data.get("error", "Unknown error")
+                    raise ApiError(f"Upload failed: {error_msg}")
+            except ValueError:
+                # Some successful uploads may not return JSON
+                logger.debug("Standard upload completed (no JSON response)")
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error during standard upload: {e}")
+            raise NetworkError(f"Network error during upload: {e}") from e
+        except Exception as e:
+            if isinstance(e, (ApiError, NetworkError)):
+                raise
+            logger.error(f"Unexpected error during standard upload: {e}")
+            raise ApiError(f"Unexpected error during upload: {e}") from e
+
         logger.info(f"Upload complete for {filename}")
 
     def upload_file_chunked(self, file_path: str, headers: dict) -> None:
@@ -140,77 +185,10 @@ class UploadsClient:
         filename = os.path.basename(file_path)
         file_size = os.path.getsize(file_path)
 
-        logger.debug(f"Starting chunked upload for file: {filename} ({file_size / (1024 * 1024):.2f} MB)")
-        self._chunked_upload(file_path, file_size, headers)
-        logger.info(f"Upload complete for {filename}")
+        logger.debug(
+            f"Starting chunked upload for file: {filename} ({file_size / (1024 * 1024):.2f} MB)"
+        )
 
-    # ===== INTERNAL UPLOAD HELPERS =====
-
-    def _standard_upload(self, file_path: str, headers: dict) -> None:
-        """
-        Perform standard (non-chunked) file upload.
-
-        Args:
-            file_path: Path to the file to upload
-            headers: HTTP headers for the upload
-
-        Raises:
-            NetworkError: If there are network issues
-            ApiError: If upload fails
-        """
-        try:
-            with open(file_path, "rb") as f:
-                file_data = f.read()
-
-            # Use BaseAPI's session but with HTTP Basic Auth
-            response = requests.post(
-                self._api.api_url,
-                headers=headers,
-                data=file_data,
-                auth=(self._api.api_user, self._api.api_token),
-                timeout=1800,
-            )
-
-            logger.debug(f"Standard upload response code: {response.status_code}")
-            logger.debug(f"Standard upload response: {response.text[:500]}")
-
-            # Check for errors
-            if response.status_code != 200:
-                raise ApiError(f"Upload failed with status {response.status_code}: {response.text}")
-
-            # Parse response
-            try:
-                response_data = response.json()
-                status = str(response_data.get("status", "0"))
-                if status != "1":
-                    error_msg = response_data.get("error", "Unknown error")
-                    raise ApiError(f"Upload failed: {error_msg}")
-            except (ValueError, json.JSONDecodeError):
-                # Some successful uploads may not return JSON
-                logger.debug("Standard upload completed (no JSON response)")
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Network error during standard upload: {e}")
-            raise NetworkError(f"Network error during upload: {e}") from e
-        except Exception as e:
-            if isinstance(e, (ApiError, NetworkError)):
-                raise
-            logger.error(f"Unexpected error during standard upload: {e}")
-            raise ApiError(f"Unexpected error during upload: {e}") from e
-
-    def _chunked_upload(self, file_path: str, file_size: int, headers: dict) -> None:
-        """
-        Perform chunked file upload with progress tracking.
-
-        Args:
-            file_path: Path to the file to upload
-            file_size: Size of the file in bytes
-            headers: HTTP headers for the upload
-
-        Raises:
-            NetworkError: If there are network issues
-            ApiError: If upload fails
-        """
         total_chunks = (file_size + self.CHUNK_SIZE - 1) // self.CHUNK_SIZE
         logger.debug(
             f"Chunked upload: {total_chunks} chunks of {self.CHUNK_SIZE / (1024 * 1024):.2f} MB each"
@@ -220,14 +198,18 @@ class UploadsClient:
         headers_copy = headers.copy()
         headers_copy["Transfer-Encoding"] = "chunked"
         headers_copy["Content-Type"] = "application/octet-stream"
-        logger.debug("Added Transfer-Encoding: chunked header for chunked upload")
+        logger.debug(
+            "Added Transfer-Encoding: chunked header for chunked upload"
+        )
 
         show_progress = total_chunks <= self.SMALL_FILE_CHUNK_THRESHOLD
         last_printed_progress = 0
 
         try:
             with open(file_path, "rb") as f:
-                for i, chunk in enumerate(self._read_in_chunks(f, self.CHUNK_SIZE), start=1):
+                for i, chunk in enumerate(
+                    self._read_in_chunks(f, self.CHUNK_SIZE), start=1
+                ):
                     logger.debug(f"Uploading chunk {i}/{total_chunks}")
                     self._upload_single_chunk(chunk, i, headers_copy)
 
@@ -235,7 +217,8 @@ class UploadsClient:
                     progress = int((i / total_chunks) * 100)
                     if (
                         show_progress
-                        or progress >= last_printed_progress + self.PROGRESS_UPDATE_INTERVAL
+                        or progress
+                        >= last_printed_progress + self.PROGRESS_UPDATE_INTERVAL
                     ):
                         print(f"Upload progress: {progress}%")
                         last_printed_progress = progress
@@ -243,6 +226,10 @@ class UploadsClient:
         except Exception as e:
             logger.error(f"Error during chunked upload: {e}")
             raise
+
+        logger.info(f"Upload complete for {filename}")
+
+    # ===== INTERNAL UPLOAD HELPERS =====
 
     def _read_in_chunks(
         self, file_object: io.BufferedReader, chunk_size: int = 5 * 1024 * 1024
@@ -263,7 +250,9 @@ class UploadsClient:
                 break
             yield data
 
-    def _upload_single_chunk(self, chunk: bytes, chunk_number: int, headers: dict) -> None:
+    def _upload_single_chunk(
+        self, chunk: bytes, chunk_number: int, headers: dict
+    ) -> None:
         """
         Upload a single chunk with retry logic.
 
@@ -294,13 +283,17 @@ class UploadsClient:
                 prepped = self._api.session.prepare_request(req)
                 if "Content-Length" in prepped.headers:
                     del prepped.headers["Content-Length"]
-                    logger.debug(f"Removed Content-Length header for chunk {chunk_number}")
+                    logger.debug(
+                        f"Removed Content-Length header for chunk {chunk_number}"
+                    )
 
                 # Send the request using the shared session
                 resp_chunk = self._api.session.send(prepped, timeout=1800)
 
                 # Validate response
-                self._validate_chunk_response(resp_chunk, chunk_number, retry_count)
+                self._validate_chunk_response(
+                    resp_chunk, chunk_number, retry_count
+                )
                 return  # Success!
 
             except requests.exceptions.RequestException as e:

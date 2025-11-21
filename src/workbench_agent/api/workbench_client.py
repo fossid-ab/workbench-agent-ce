@@ -178,7 +178,9 @@ class WorkbenchClient:
         # Services coordinate multiple clients for complex workflows
         logger.debug("Initializing orchestration services...")
 
-        self.resolver = ResolverService(projects_client=self.projects, scans_client=self.scans)
+        self.resolver = ResolverService(
+            projects_client=self.projects, scans_client=self.scans
+        )
 
         self.status_check = StatusCheckService(
             scans_client=self.scans, projects_client=self.projects
@@ -240,16 +242,24 @@ class WorkbenchClient:
                     details={"config_data": config_data},
                 )
 
-            logger.debug(f"Detected Workbench server version: {workbench_version}")
+            logger.debug(
+                f"Detected Workbench server version: {workbench_version}"
+            )
 
             # Parse and compare versions
             try:
                 # Handle version strings that might have extra info
                 # (e.g., "24.3.0-beta", "2025.2.0#19347124129")
                 # Extract just the version number part
-                version_str = workbench_version.split()[0]  # Remove anything after space
-                version_str = version_str.split("-")[0]  # Remove anything after dash
-                version_str = version_str.split("#")[0]  # Remove build metadata after hash
+                version_str = workbench_version.split()[
+                    0
+                ]  # Remove anything after space
+                version_str = version_str.split("-")[
+                    0
+                ]  # Remove anything after dash
+                version_str = version_str.split("#")[
+                    0
+                ]  # Remove build metadata after hash
 
                 parsed_version = packaging_version.parse(version_str)
                 min_version = packaging_version.parse(MINIMUM_VERSION)

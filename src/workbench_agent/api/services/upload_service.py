@@ -114,14 +114,18 @@ class UploadService:
         try:
             upload_path = path
             if os.path.isdir(path):
-                print("The path provided is a directory. Compressing for upload...")
+                print(
+                    "The path provided is a directory. Compressing for upload..."
+                )
                 archive_path = UploadArchivePrep.create_zip_archive(path)
                 upload_path = archive_path
                 temp_dir = os.path.dirname(archive_path)
-                print("Archive prepared! Starting upload...")
+                print("\nArchive prepared! Starting upload...")
 
             upload_basename = os.path.basename(upload_path)
-            name_b64 = base64.b64encode(upload_basename.encode()).decode("utf-8")
+            name_b64 = base64.b64encode(upload_basename.encode()).decode(
+                "utf-8"
+            )
             scan_code_b64 = base64.b64encode(scan_code.encode()).decode("utf-8")
 
             headers = {
@@ -143,7 +147,7 @@ class UploadService:
                 logger.debug("Using standard (non-chunked) upload.")
                 self._uploads.upload_file_standard(upload_path, headers)
 
-        except (ApiError, NetworkError) as e:
+        except (ApiError, NetworkError):
             # Re-raise known exceptions
             raise
         except Exception as e:
@@ -183,7 +187,9 @@ class UploadService:
             ... )
         """
         if not os.path.exists(path) or not os.path.isfile(path):
-            raise FileSystemError(f"Dependency analysis results file does not exist: {path}")
+            raise FileSystemError(
+                f"Dependency analysis results file does not exist: {path}"
+            )
 
         upload_basename = os.path.basename(path)
         name_b64 = base64.b64encode(upload_basename.encode()).decode("utf-8")
@@ -255,4 +261,3 @@ class UploadService:
         else:
             logger.debug("Using standard (non-chunked) upload.")
             self._uploads.upload_file_standard(path, headers)
-

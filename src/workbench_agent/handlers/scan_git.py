@@ -20,7 +20,9 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
+def handle_scan_git(
+    client: "WorkbenchClient", params: argparse.Namespace
+) -> bool:
     """
     Handler for the 'scan-git' command.
 
@@ -60,10 +62,12 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
     # Resolve project and scan (find or create)
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    project_code, scan_code, scan_is_new = client.resolver.resolve_project_and_scan(
-        project_name=params.project_name,
-        scan_name=params.scan_name,
-        params=params,
+    project_code, scan_code, scan_is_new = (
+        client.resolver.resolve_project_and_scan(
+            project_name=params.project_name,
+            scan_name=params.scan_name,
+            params=params,
+        )
     )
 
     print("\n--- Repo Clone & Scan Prep ---")
@@ -78,7 +82,8 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
             git_status = client.status_check.check_git_clone_status(scan_code)
             if git_status.status == "RUNNING":
                 print(
-                    "\nA prior Git Clone operation is in progress, " "waiting for it to complete..."
+                    "\nA prior Git Clone operation is in progress, "
+                    "waiting for it to complete..."
                 )
             client.waiting.wait_for_git_clone(
                 scan_code,
@@ -92,7 +97,10 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
             # Check status first to inform user if scan is already running
             scan_status = client.status_check.check_scan_status(scan_code)
             if scan_status.status == "RUNNING":
-                print("\nA prior Scan operation is in progress, " "waiting for it to complete.")
+                print(
+                    "\nA prior Scan operation is in progress, "
+                    "waiting for it to complete."
+                )
             client.waiting.wait_for_scan(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
@@ -103,7 +111,9 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
 
         try:
             # Check status first to inform user if DA is already running
-            da_status = client.status_check.check_dependency_analysis_status(scan_code)
+            da_status = client.status_check.check_dependency_analysis_status(
+                scan_code
+            )
             if da_status.status == "RUNNING":
                 print(
                     "\nA prior Dependency Analysis operation is in progress, "
@@ -120,7 +130,11 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
         logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
 
     # Trigger Git clone
-    git_ref_type = "tag" if params.git_tag else ("commit" if params.git_commit else "branch")
+    git_ref_type = (
+        "tag"
+        if params.git_tag
+        else ("commit" if params.git_commit else "branch")
+    )
     git_ref_value = params.git_tag or params.git_commit or params.git_branch
     print(f"\nCloning the repository's {git_ref_value} {git_ref_type}.")
 
@@ -151,8 +165,13 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
         if client.scans.remove_uploaded_content(scan_code, ".git/"):
             print("Successfully removed .git directory.")
     except Exception as e:
-        logger.warning(f"Error removing .git directory: {e}. " f"Continuing with scan...")
-        print(f"Warning: Error removing .git directory: {e}. " f"Continuing with scan...")
+        logger.warning(
+            f"Error removing .git directory: {e}. " f"Continuing with scan..."
+        )
+        print(
+            f"Warning: Error removing .git directory: {e}. "
+            f"Continuing with scan..."
+        )
 
     print("\n--- Scan Operations ---")
     # Determine which scan operations to run
@@ -164,15 +183,24 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
 
     try:
         # Handle dependency analysis only mode
-        if not scan_operations["run_kb_scan"] and scan_operations["run_dependency_analysis"]:
+        if (
+            not scan_operations["run_kb_scan"]
+            and scan_operations["run_dependency_analysis"]
+        ):
             print("Starting Dependency Analysis only " "(skipping KB scan)...")
             client.scan_operations.start_da_only(scan_code)
 
             # Handle no-wait mode
             if getattr(params, "no_wait", False):
                 print("Dependency Analysis has been started.")
-                print("\nExiting without waiting for completion " "(--no-wait mode).")
-                print("You can check the status later using the " "'show-results' command.")
+                print(
+                    "\nExiting without waiting for completion "
+                    "(--no-wait mode)."
+                )
+                print(
+                    "You can check the status later using the "
+                    "'show-results' command."
+                )
                 print_operation_summary(params, True, durations)
                 return True
 
@@ -213,12 +241,20 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
             print("Starting KB Scan...")
 
             # Resolve ID reuse parameters (if any)
-            id_reuse_type, id_reuse_specific_code = client.resolver.resolve_id_reuse(
-                id_reuse_any=getattr(params, "reuse_any_identification", False),
-                id_reuse_my=getattr(params, "reuse_my_identifications", False),
-                id_reuse_project_name=getattr(params, "reuse_project_ids", None),
-                id_reuse_scan_name=getattr(params, "reuse_scan_ids", None),
-                current_project_name=params.project_name,
+            id_reuse_type, id_reuse_specific_code = (
+                client.resolver.resolve_id_reuse(
+                    id_reuse_any=getattr(
+                        params, "reuse_any_identification", False
+                    ),
+                    id_reuse_my=getattr(
+                        params, "reuse_my_identifications", False
+                    ),
+                    id_reuse_project_name=getattr(
+                        params, "reuse_project_ids", None
+                    ),
+                    id_reuse_scan_name=getattr(params, "reuse_scan_ids", None),
+                    current_project_name=params.project_name,
+                )
             )
 
             # Run scan with resolved ID reuse parameters
@@ -232,14 +268,20 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
                 delta_scan=params.delta_scan,
                 id_reuse_type=id_reuse_type,
                 id_reuse_specific_code=id_reuse_specific_code,
-                run_dependency_analysis=scan_operations["run_dependency_analysis"],
+                run_dependency_analysis=scan_operations[
+                    "run_dependency_analysis"
+                ],
                 replace_existing_identifications=getattr(
                     params, "replace_existing_identifications", False
                 ),
                 scan_failed_only=getattr(params, "scan_failed_only", False),
                 full_file_only=getattr(params, "full_file_only", False),
-                advanced_match_scoring=getattr(params, "advanced_match_scoring", True),
-                match_filtering_threshold=getattr(params, "match_filtering_threshold", None),
+                advanced_match_scoring=getattr(
+                    params, "advanced_match_scoring", True
+                ),
+                match_filtering_threshold=getattr(
+                    params, "match_filtering_threshold", None
+                ),
                 scan_host=getattr(params, "scan_host", None),
             )
 
@@ -247,9 +289,15 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
             if getattr(params, "no_wait", False):
                 print("\nKB Scan started successfully.")
                 if scan_operations["run_dependency_analysis"]:
-                    print("Dependency Analysis will automatically start " "after scan completion.")
+                    print(
+                        "Dependency Analysis will automatically start "
+                        "after scan completion."
+                    )
 
-                print("\nExiting without waiting for completion " "(--no-wait mode).")
+                print(
+                    "\nExiting without waiting for completion "
+                    "(--no-wait mode)."
+                )
                 print_operation_summary(params, True, durations)
                 return True
             else:
@@ -258,7 +306,10 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
                 if scan_operations["run_dependency_analysis"]:
                     process_types_to_wait.append("DEPENDENCY_ANALYSIS")
 
-                print(f"\nWaiting for {', '.join(process_types_to_wait)} " f"to complete...")
+                print(
+                    f"\nWaiting for {', '.join(process_types_to_wait)} "
+                    f"to complete..."
+                )
 
                 try:
                     # Wait for KB scan completion
@@ -273,18 +324,25 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
 
                     # Wait for dependency analysis if requested
                     if "DEPENDENCY_ANALYSIS" in process_types_to_wait:
-                        print("\nWaiting for Dependency Analysis to complete...")
+                        print(
+                            "\nWaiting for Dependency Analysis to complete..."
+                        )
                         try:
                             da_status = client.waiting.wait_for_da(
                                 scan_code,
                                 max_tries=params.scan_number_of_tries,
                                 wait_interval=params.scan_wait_time,
                             )
-                            durations["dependency_analysis"] = da_status.duration or 0.0
+                            durations["dependency_analysis"] = (
+                                da_status.duration or 0.0
+                            )
                             da_completed = True
                         except Exception as e:
                             logger.warning(f"Error in dependency analysis: {e}")
-                            print(f"\nWarning: Error waiting for " f"dependency analysis: {e}")
+                            print(
+                                f"\nWarning: Error waiting for "
+                                f"dependency analysis: {e}"
+                            )
                             da_completed = False
                     else:
                         da_completed = False
@@ -310,7 +368,9 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
             f"Error during KB scan for '{scan_code}': {e}",
             exc_info=True,
         )
-        raise WorkbenchAgentError(f"Error during KB scan: {e}", details={"error": str(e)}) from e
+        raise WorkbenchAgentError(
+            f"Error during KB scan: {e}", details={"error": str(e)}
+        ) from e
 
     # Process completed operations
     if scan_completed:
@@ -321,7 +381,10 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
         try:
             pending_files = client.scans.get_pending_files(scan_code)
             if pending_files:
-                print(f"\nNote: {len(pending_files)} files are " f"Pending Identification.")
+                print(
+                    f"\nNote: {len(pending_files)} files are "
+                    f"Pending Identification."
+                )
             else:
                 print("\nNote: No files are Pending Identification.")
         except Exception as e:
@@ -332,6 +395,9 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
     if scan_completed or da_completed:
         fetch_display_save_results(client, params, scan_code)
     else:
-        print("\nSkipping result fetching since scan did not " "complete successfully.")
+        print(
+            "\nSkipping result fetching since scan did not "
+            "complete successfully."
+        )
 
     return scan_completed or da_completed

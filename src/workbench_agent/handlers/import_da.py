@@ -19,7 +19,9 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
+def handle_import_da(
+    client: "WorkbenchClient", params: argparse.Namespace
+) -> bool:
     """
     Handler for the 'import-da' command.
 
@@ -86,11 +88,14 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
     # Upload dependency analysis file
     print("\n--- Uploading Dependency Analysis File ---")
     try:
-        client.upload_service.upload_da_results(scan_code=scan_code, path=params.path)
+        client.upload_service.upload_da_results(
+            scan_code=scan_code, path=params.path
+        )
         print("Dependency analysis results uploaded successfully!")
     except Exception as e:
         logger.error(
-            f"Failed to upload dependency analysis file for " f"'{scan_code}': {e}",
+            f"Failed to upload dependency analysis file for "
+            f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(
@@ -106,7 +111,8 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         print("Dependency analysis import initiated successfully.")
     except Exception as e:
         logger.error(
-            f"Failed to start dependency analysis import for " f"'{scan_code}': {e}",
+            f"Failed to start dependency analysis import for "
+            f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(
@@ -135,26 +141,31 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         )
 
         # Store the DA import duration
-        durations["dependency_analysis"] = dependency_analysis_status.duration or 0.0
+        durations["dependency_analysis"] = (
+            dependency_analysis_status.duration or 0.0
+        )
         da_completed = True
 
         print("Dependency Analysis import completed successfully.")
 
     except ProcessTimeoutError:
         logger.error(
-            f"Error during dependency analysis import for " f"'{scan_code}': timeout",
+            f"Error during dependency analysis import for "
+            f"'{scan_code}': timeout",
             exc_info=True,
         )
         raise
     except ProcessError:
         logger.error(
-            f"Error during dependency analysis import for " f"'{scan_code}': process error",
+            f"Error during dependency analysis import for "
+            f"'{scan_code}': process error",
             exc_info=True,
         )
         raise
     except Exception as e:
         logger.error(
-            f"Unexpected error during dependency analysis import for " f"'{scan_code}': {e}",
+            f"Unexpected error during dependency analysis import for "
+            f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(

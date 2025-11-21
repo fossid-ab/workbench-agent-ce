@@ -58,7 +58,8 @@ class VulnerabilitiesClient:
 
         if count_response.get("status") != "1":
             error_msg = count_response.get(
-                "error", f"Unexpected response format or status: {count_response}"
+                "error",
+                f"Unexpected response format or status: {count_response}",
             )
             raise ApiError(
                 f"Failed to get vulnerability count for scan '{scan_code}': {error_msg}",
@@ -73,7 +74,9 @@ class VulnerabilitiesClient:
         ):
             total_count = int(count_response["data"]["count_results"])
 
-        logger.debug(f"Found {total_count} total vulnerabilities for scan '{scan_code}'")
+        logger.debug(
+            f"Found {total_count} total vulnerabilities for scan '{scan_code}'"
+        )
 
         # If no vulnerabilities, return an empty list
         if total_count == 0:
@@ -81,7 +84,9 @@ class VulnerabilitiesClient:
 
         # Step 2: Calculate number of pages needed (default records_per_page is 100)
         records_per_page = 100
-        total_pages = (total_count + records_per_page - 1) // records_per_page  # Ceiling division
+        total_pages = (
+            total_count + records_per_page - 1
+        ) // records_per_page  # Ceiling division
 
         # Step 3: Fetch all pages and combine results
         all_vulnerabilities = []
@@ -100,7 +105,8 @@ class VulnerabilitiesClient:
 
             if page_response.get("status") != "1":
                 error_msg = page_response.get(
-                    "error", f"Unexpected response format or status: {page_response}"
+                    "error",
+                    f"Unexpected response format or status: {page_response}",
                 )
                 raise ApiError(
                     f"Failed to fetch vulnerabilities page {page} for scan '{scan_code}': {error_msg}",
@@ -113,16 +119,22 @@ class VulnerabilitiesClient:
                 vuln_list = data["list"]
                 if isinstance(vuln_list, list):
                     all_vulnerabilities.extend(vuln_list)
-                    logger.debug(f"Added {len(vuln_list)} vulnerabilities from page {page}")
+                    logger.debug(
+                        f"Added {len(vuln_list)} vulnerabilities from page {page}"
+                    )
                 else:
                     logger.warning(
                         f"Unexpected vulnerability list format on page {page}: {vuln_list}"
                     )
             elif not data or (isinstance(data, dict) and not data):
                 # Empty page - this is unexpected but we'll continue
-                logger.warning(f"Empty data received for vulnerabilities page {page}")
+                logger.warning(
+                    f"Empty data received for vulnerabilities page {page}"
+                )
             else:
-                logger.warning(f"Unexpected data format for vulnerabilities page {page}: {data}")
+                logger.warning(
+                    f"Unexpected data format for vulnerabilities page {page}: {data}"
+                )
 
         logger.debug(
             f"Successfully fetched all {len(all_vulnerabilities)} vulnerabilities for scan '{scan_code}'"

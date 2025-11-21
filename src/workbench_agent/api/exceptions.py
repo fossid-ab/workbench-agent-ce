@@ -24,7 +24,12 @@ class WorkbenchApiError(Exception):
         details: Optional additional error details
     """
 
-    def __init__(self, message: str, code: Optional[str] = None, details: Optional[dict] = None):
+    def __init__(
+        self,
+        message: str,
+        code: Optional[str] = None,
+        details: Optional[dict] = None,
+    ):
         self.message = message
         self.code = code
         self.details = details or {}

@@ -71,7 +71,11 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     print(f"\n--- Running {params.command.upper()} Command ---")
 
     # Initialize timing dictionary
-    durations = {"kb_scan": 0.0, "dependency_analysis": 0.0, "extraction_duration": 0.0}
+    durations = {
+        "kb_scan": 0.0,
+        "dependency_analysis": 0.0,
+        "extraction_duration": 0.0,
+    }
 
     # Note: Path existence is validated at CLI layer (cli/validators.py)
     # We trust that params.path exists and is accessible
@@ -79,10 +83,12 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     # Resolve project and scan (find or create)
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    project_code, scan_code, scan_is_new = client.resolver.resolve_project_and_scan(
-        project_name=params.project_name,
-        scan_name=params.scan_name,
-        params=params,
+    project_code, scan_code, scan_is_new = (
+        client.resolver.resolve_project_and_scan(
+            project_name=params.project_name,
+            scan_name=params.scan_name,
+            params=params,
+        )
     )
 
     # Assert scan is idle before uploading code
@@ -92,7 +98,9 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
         # Check each process type individually (new API pattern)
         try:
             # Check status first to inform user if extraction is running
-            extract_status = client.status_check.check_extract_archives_status(scan_code)
+            extract_status = client.status_check.check_extract_archives_status(
+                scan_code
+            )
             if extract_status.status == "RUNNING":
                 print(
                     "\nA prior Archive Extraction operation is in progress, "
@@ -110,7 +118,10 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
             # Check status first to inform user if scan is already running
             scan_status = client.status_check.check_scan_status(scan_code)
             if scan_status.status == "RUNNING":
-                print("\nA prior Scan operation is in progress, " "waiting for it to complete.")
+                print(
+                    "\nA prior Scan operation is in progress, "
+                    "waiting for it to complete."
+                )
             client.waiting.wait_for_scan(
                 scan_code,
                 max_tries=params.scan_number_of_tries,
@@ -121,7 +132,9 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
 
         try:
             # Check status first to inform user if DA is already running
-            da_status = client.status_check.check_dependency_analysis_status(scan_code)
+            da_status = client.status_check.check_dependency_analysis_status(
+                scan_code
+            )
             if da_status.status == "RUNNING":
                 print(
                     "\nA prior Dependency Analysis operation is in progress, "
@@ -179,7 +192,10 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     da_completed = False
 
     # Handle dependency analysis only mode
-    if not scan_operations["run_kb_scan"] and scan_operations["run_dependency_analysis"]:
+    if (
+        not scan_operations["run_kb_scan"]
+        and scan_operations["run_dependency_analysis"]
+    ):
         print("\nStarting Dependency Analysis only (skipping KB scan)...")
         client.scan_operations.start_da_only(scan_code)
 
@@ -198,7 +214,9 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
             )
 
             # Store the duration
-            durations["dependency_analysis"] = dependency_analysis_status.duration or 0.0
+            durations["dependency_analysis"] = (
+                dependency_analysis_status.duration or 0.0
+            )
             da_completed = True
 
             # Show scan summary and operation details
@@ -220,7 +238,10 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
             return True
 
         except Exception as e:
-            logger.error(f"Error waiting for dependency analysis to complete: {e}", exc_info=True)
+            logger.error(
+                f"Error waiting for dependency analysis to complete: {e}",
+                exc_info=True,
+            )
             print(f"\nError: Dependency analysis failed: {e}")
             return False
 
@@ -229,12 +250,16 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
         print("\nStarting Scan Process...")
 
         # Resolve ID reuse parameters (if any)
-        id_reuse_type, id_reuse_specific_code = client.resolver.resolve_id_reuse(
-            id_reuse_any=getattr(params, "reuse_any_identification", False),
-            id_reuse_my=getattr(params, "reuse_my_identifications", False),
-            id_reuse_project_name=getattr(params, "reuse_project_ids", None),
-            id_reuse_scan_name=getattr(params, "reuse_scan_ids", None),
-            current_project_name=params.project_name,
+        id_reuse_type, id_reuse_specific_code = (
+            client.resolver.resolve_id_reuse(
+                id_reuse_any=getattr(params, "reuse_any_identification", False),
+                id_reuse_my=getattr(params, "reuse_my_identifications", False),
+                id_reuse_project_name=getattr(
+                    params, "reuse_project_ids", None
+                ),
+                id_reuse_scan_name=getattr(params, "reuse_scan_ids", None),
+                current_project_name=params.project_name,
+            )
         )
 
         # Run scan with resolved ID reuse parameters
@@ -254,8 +279,12 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
             ),
             scan_failed_only=getattr(params, "scan_failed_only", False),
             full_file_only=getattr(params, "full_file_only", False),
-            advanced_match_scoring=getattr(params, "advanced_match_scoring", True),
-            match_filtering_threshold=getattr(params, "match_filtering_threshold", None),
+            advanced_match_scoring=getattr(
+                params, "advanced_match_scoring", True
+            ),
+            match_filtering_threshold=getattr(
+                params, "match_filtering_threshold", None
+            ),
             scan_host=getattr(params, "scan_host", None),
         )
 
@@ -274,7 +303,9 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
             if scan_operations["run_dependency_analysis"]:
                 process_types_to_wait.append("DEPENDENCY_ANALYSIS")
 
-            print(f"\nWaiting for {', '.join(process_types_to_wait)} to complete...")
+            print(
+                f"\nWaiting for {', '.join(process_types_to_wait)} to complete..."
+            )
 
             try:
                 # Wait for KB scan completion (with file tracking)
@@ -300,7 +331,9 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
                         )
                         da_completed = True
                     except Exception as da_error:
-                        logger.warning(f"Error in dependency analysis: {da_error}")
+                        logger.warning(
+                            f"Error in dependency analysis: {da_error}"
+                        )
                         print(
                             f"\nWarning: Error waiting for dependency "
                             f"analysis to complete: {da_error}"

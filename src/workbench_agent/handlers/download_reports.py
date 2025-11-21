@@ -5,7 +5,11 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-from workbench_agent.api.exceptions import ApiError, NetworkError, ProcessTimeoutError
+from workbench_agent.api.exceptions import (
+    ApiError,
+    NetworkError,
+    ProcessTimeoutError,
+)
 from workbench_agent.exceptions import FileSystemError, ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 
@@ -16,7 +20,9 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespace):
+def handle_download_reports(
+    client: "WorkbenchClient", params: argparse.Namespace
+):
     """
     Handler for the 'download-reports' command.
 
@@ -55,13 +61,19 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
         for rt in params.report_type.split(","):
             rt = rt.strip().lower()
             # Validate report type (requires API client - can't be done at CLI layer)
-            if params.report_scope == "scan" and rt not in client.reports.SCAN_REPORT_TYPES:
+            if (
+                params.report_scope == "scan"
+                and rt not in client.reports.SCAN_REPORT_TYPES
+            ):
                 raise ValidationError(
                     f"Report type '{rt}' is not supported for scan scope "
                     f"reports. Supported types: "
                     f"{', '.join(sorted(list(client.reports.SCAN_REPORT_TYPES)))}"
                 )
-            elif params.report_scope == "project" and rt not in client.reports.PROJECT_REPORT_TYPES:
+            elif (
+                params.report_scope == "project"
+                and rt not in client.reports.PROJECT_REPORT_TYPES
+            ):
                 raise ValidationError(
                     f"Report type '{rt}' is not supported for project scope "
                     f"reports. Supported types: "
@@ -79,7 +91,11 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
 
     # Note: Project/scan name requirements are validated at CLI layer (cli/validators.py)
     # Resolve project, scan
-    scope_name = params.scan_name if params.report_scope == "scan" else params.project_name
+    scope_name = (
+        params.scan_name
+        if params.report_scope == "scan"
+        else params.project_name
+    )
     print(
         f"\nResolving "
         f"{'scan' if params.report_scope == 'scan' else 'project'} "
@@ -117,7 +133,10 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
         try:
             scan_status = client.status_check.check_scan_status(scan_code)
             if scan_status.status == "RUNNING":
-                print("\nKB Scan is still in progress, " "waiting for it to complete...")
+                print(
+                    "\nKB Scan is still in progress, "
+                    "waiting for it to complete..."
+                )
 
             client.waiting.wait_for_scan(
                 scan_code,
@@ -129,19 +148,25 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
             print(f"\nWarning: KB Scan did not complete in time: {e}")
             print("Reports may be incomplete.")
             logger.warning(
-                f"Generating reports for scan '{scan_code}' with " f"incomplete KB scan: {e}"
+                f"Generating reports for scan '{scan_code}' with "
+                f"incomplete KB scan: {e}"
             )
         except (ApiError, NetworkError) as e:
             print(f"\nWarning: Could not verify KB Scan completion: {e}")
             print("Proceeding anyway, but reports may be incomplete.")
-            logger.warning(f"Could not verify KB scan completion for '{scan_code}': {e}")
+            logger.warning(
+                f"Could not verify KB scan completion for '{scan_code}': {e}"
+            )
 
         # Wait for dependency analysis using check-first pattern
         try:
-            da_status = client.status_check.check_dependency_analysis_status(scan_code)
+            da_status = client.status_check.check_dependency_analysis_status(
+                scan_code
+            )
             if da_status.status == "RUNNING":
                 print(
-                    "\nDependency Analysis is still in progress, " "waiting for it to complete..."
+                    "\nDependency Analysis is still in progress, "
+                    "waiting for it to complete..."
                 )
 
             client.waiting.wait_for_da(
@@ -151,17 +176,29 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
             )
             print("Dependency Analysis has completed successfully.")
         except ProcessTimeoutError as e:
-            print(f"\nWarning: Dependency Analysis did not complete in time: {e}")
+            print(
+                f"\nWarning: Dependency Analysis did not complete in time: {e}"
+            )
             print("Reports may have incomplete dependency information.")
-            logger.warning(f"Generating reports for scan '{scan_code}' with " f"incomplete DA: {e}")
+            logger.warning(
+                f"Generating reports for scan '{scan_code}' with "
+                f"incomplete DA: {e}"
+            )
         except (ApiError, NetworkError) as e:
-            print(f"\nWarning: Could not verify Dependency Analysis status: {e}")
+            print(
+                f"\nWarning: Could not verify Dependency Analysis status: {e}"
+            )
             print("Proceeding anyway, but reports may be incomplete.")
-            logger.warning(f"Could not verify DA completion for '{scan_code}': {e}")
+            logger.warning(
+                f"Could not verify DA completion for '{scan_code}': {e}"
+            )
 
     # Generate and download reports based on scope
     scope_label = "project" if params.report_scope == "project" else "scan"
-    print(f"\nGenerating and downloading {len(report_types)} " f"{scope_label} report(s)...")
+    print(
+        f"\nGenerating and downloading {len(report_types)} "
+        f"{scope_label} report(s)..."
+    )
 
     # Print the actual report types being downloaded
     for rt in sorted(report_types):
@@ -186,7 +223,9 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
 
             # Get the right name component for file naming
             name_component = (
-                params.project_name if params.report_scope == "project" else params.scan_name
+                params.project_name
+                if params.report_scope == "project"
+                else params.scan_name
             )
 
             # Common parameters for report generation
@@ -218,11 +257,16 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
                         project_code, **common_params
                     )
                 else:
-                    process_id = client.reports.generate_scan_report(scan_code, **common_params)
+                    process_id = client.reports.generate_scan_report(
+                        scan_code, **common_params
+                    )
 
                 # Wait for report generation to complete
                 try:
-                    print(f"Waiting for {report_type} report generation to " f"complete...")
+                    print(
+                        f"Waiting for {report_type} report generation to "
+                        f"complete..."
+                    )
 
                     max_tries = getattr(params, "scan_number_of_tries", 60)
                     if params.report_scope == "project":
@@ -270,7 +314,9 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
                 # Download the generated report
                 print(f"Downloading {report_type} report...")
                 if params.report_scope == "project":
-                    response = client.reports.download_project_report(process_id)
+                    response = client.reports.download_project_report(
+                        process_id
+                    )
                 else:
                     response = client.reports.download_scan_report(process_id)
 
@@ -279,9 +325,13 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
                 print(f"Downloading {report_type} report...")
                 if params.report_scope == "project":
                     # Note: Project reports are typically async
-                    response = client.reports.generate_project_report(project_code, **common_params)
+                    response = client.reports.generate_project_report(
+                        project_code, **common_params
+                    )
                 else:
-                    response = client.reports.generate_scan_report(scan_code, **common_params)
+                    response = client.reports.generate_scan_report(
+                        scan_code, **common_params
+                    )
 
             # Save the report content
             client.reports.save_report(
@@ -299,7 +349,10 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
             FileSystemError,
             ValidationError,
         ) as e:
-            print(f"Error processing {report_type} report: " f"{getattr(e, 'message', str(e))}")
+            print(
+                f"Error processing {report_type} report: "
+                f"{getattr(e, 'message', str(e))}"
+            )
             logger.error(
                 f"Failed to generate/download {report_type} report: {e}",
                 exc_info=True,

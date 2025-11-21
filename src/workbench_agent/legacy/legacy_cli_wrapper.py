@@ -51,7 +51,9 @@ class CliWrapper:
         if not os.access(cli_path, os.X_OK):
             raise FileSystemError(f"FossID CLI not executable: {cli_path}")
 
-        logger.debug(f"CliWrapper initialized with cli_path={cli_path}, timeout={timeout}")
+        logger.debug(
+            f"CliWrapper initialized with cli_path={cli_path}, timeout={timeout}"
+        )
 
     def get_version(self) -> str:
         """
@@ -74,11 +76,15 @@ class CliWrapper:
             logger.info(f"FossID CLI version: {version}")
             return version
         except subprocess.TimeoutExpired as e:
-            error_msg = f"CLI version check timed out after {self.timeout} seconds"
+            error_msg = (
+                f"CLI version check timed out after {self.timeout} seconds"
+            )
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
         except subprocess.CalledProcessError as e:
-            error_msg = f"CLI version check failed: {e.cmd} (exit code: {e.returncode})"
+            error_msg = (
+                f"CLI version check failed: {e.cmd} (exit code: {e.returncode})"
+            )
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
         except Exception as e:
@@ -86,7 +92,9 @@ class CliWrapper:
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
 
-    def blind_scan(self, path: str, run_dependency_analysis: bool = False) -> str:
+    def blind_scan(
+        self, path: str, run_dependency_analysis: bool = False
+    ) -> str:
         """
         Call fossid-cli on a given path to generate hashes of the files from that path.
 
@@ -104,9 +112,13 @@ class CliWrapper:
         if not os.path.exists(path):
             raise FileSystemError(f"Scan path does not exist: {path}")
 
-        temporary_file_path = f"/tmp/blind_scan_result_{self.randstring(8)}.fossid"
+        temporary_file_path = (
+            f"/tmp/blind_scan_result_{self.randstring(8)}.fossid"
+        )
         logger.info(f"Starting blind scan of path: {path}")
-        logger.debug(f"Temporary file will be created at: {temporary_file_path}")
+        logger.debug(
+            f"Temporary file will be created at: {temporary_file_path}"
+        )
 
         # Create temporary file, make it empty if already exists
         try:
@@ -148,11 +160,15 @@ class CliWrapper:
 
             # Verify temporary file was created and has content
             if not os.path.exists(temporary_file_path):
-                raise ProcessError(f"Temporary file was not created: {temporary_file_path}")
+                raise ProcessError(
+                    f"Temporary file was not created: {temporary_file_path}"
+                )
 
             file_size = os.path.getsize(temporary_file_path)
             if file_size == 0:
-                logger.warning("Blind scan completed but generated empty results file")
+                logger.warning(
+                    "Blind scan completed but generated empty results file"
+                )
             else:
                 logger.info(
                     f"Blind scan completed successfully. Generated {file_size} bytes of hash data."

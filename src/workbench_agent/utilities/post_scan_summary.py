@@ -45,7 +45,9 @@ def fetch_results(
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
     should_fetch_metrics = getattr(params, "show_scan_metrics", False)
     should_fetch_policy = getattr(params, "show_policy_warnings", False)
-    should_fetch_vulnerabilities = getattr(params, "show_vulnerabilities", False)
+    should_fetch_vulnerabilities = getattr(
+        params, "show_vulnerabilities", False
+    )
 
     if not any(
         [
@@ -58,7 +60,9 @@ def fetch_results(
         ]
     ):
         print("\n=== No Results Requested ===")
-        print("Add flags like --show-licenses, --show-vulnerabilities, etc. to see results.")
+        print(
+            "Add flags like --show-licenses, --show-vulnerabilities, etc. to see results."
+        )
         return {}
 
     logger.debug("\n=== Fetching Requested Results ===")
@@ -87,26 +91,37 @@ def fetch_results(
     # Fetch KB components
     if should_fetch_components:
         try:
-            kb_components = workbench.results.get_identified_components(scan_code)
+            kb_components = workbench.results.get_identified_components(
+                scan_code
+            )
             if kb_components:
                 collected_results["kb_components"] = sorted(
                     kb_components,
-                    key=lambda x: (x.get("name", "").lower(), x.get("version", "")),
+                    key=lambda x: (
+                        x.get("name", "").lower(),
+                        x.get("version", ""),
+                    ),
                 )
         except (ApiError, NetworkError) as e:
-            print(f"Warning: Could not fetch KB Identified Scan Components: {e}")
+            print(
+                f"Warning: Could not fetch KB Identified Scan Components: {e}"
+            )
 
     # Fetch scan metrics
     if should_fetch_metrics:
         try:
-            collected_results["scan_metrics"] = workbench.results.get_scan_metrics(scan_code)
+            collected_results["scan_metrics"] = (
+                workbench.results.get_scan_metrics(scan_code)
+            )
         except (ApiError, NetworkError) as e:
             print(f"Warning: Could not fetch Scan File Metrics: {e}")
 
     # Fetch policy warnings
     if should_fetch_policy:
         try:
-            collected_results["policy_warnings"] = workbench.results.get_policy_warnings(scan_code)
+            collected_results["policy_warnings"] = (
+                workbench.results.get_policy_warnings(scan_code)
+            )
         except (ApiError, NetworkError) as e:
             print(f"Warning: Could not fetch Scan Policy Warnings: {e}")
 
@@ -122,7 +137,9 @@ def fetch_results(
     return collected_results
 
 
-def display_results(collected_results: Dict[str, Any], params: argparse.Namespace) -> bool:
+def display_results(
+    collected_results: Dict[str, Any], params: argparse.Namespace
+) -> bool:
     """
     Displays scan results based on the collected data and user preferences.
     """
@@ -131,7 +148,9 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
     should_fetch_metrics = getattr(params, "show_scan_metrics", False)
     should_fetch_policy = getattr(params, "show_policy_warnings", False)
-    should_fetch_vulnerabilities = getattr(params, "show_vulnerabilities", False)
+    should_fetch_vulnerabilities = getattr(
+        params, "show_vulnerabilities", False
+    )
 
     da_results_data = collected_results.get("dependency_analysis")
     kb_licenses_data = collected_results.get("kb_licenses")
@@ -204,7 +223,9 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
         if kb_components_data:
             print("From Signature Scanning:")
             for comp in kb_components_data:
-                print(f"  - {comp.get('name', 'N/A')} : {comp.get('version', 'N/A')}")
+                print(
+                    f"  - {comp.get('name', 'N/A')} : {comp.get('version', 'N/A')}"
+                )
             print("-" * 25)
         else:
             print("No KB Scan Components found to report.")
@@ -215,7 +236,9 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
         displayed_something = True
         if da_results_data:
             print("Component, Version, Scope, and License of Dependencies:")
-            da_results_data.sort(key=lambda x: (x.get("name", "").lower(), x.get("version", "")))
+            da_results_data.sort(
+                key=lambda x: (x.get("name", "").lower(), x.get("version", ""))
+            )
             for comp in da_results_data:
                 scopes_display = "N/A"
                 scopes_str = comp.get("projects_and_scopes")
@@ -231,7 +254,11 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
                         scopes_list = sorted(scopes_set)
                         if scopes_list:
                             scopes_display = ", ".join(scopes_list)
-                    except (json.JSONDecodeError, AttributeError, TypeError) as scope_err:
+                    except (
+                        json.JSONDecodeError,
+                        AttributeError,
+                        TypeError,
+                    ) as scope_err:
                         logger.debug(
                             f"Could not parse scopes for DA component {comp.get('name')}: {scope_err}"
                         )
@@ -249,9 +276,15 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
         displayed_something = True
         if policy_warnings_data is not None:
             # Check if we have real data with non-zero values
-            total_warnings = int(policy_warnings_data.get("policy_warnings_total", 0))
-            files_with_warnings = int(policy_warnings_data.get("identified_files_with_warnings", 0))
-            deps_with_warnings = int(policy_warnings_data.get("dependencies_with_warnings", 0))
+            total_warnings = int(
+                policy_warnings_data.get("policy_warnings_total", 0)
+            )
+            files_with_warnings = int(
+                policy_warnings_data.get("identified_files_with_warnings", 0)
+            )
+            deps_with_warnings = int(
+                policy_warnings_data.get("dependencies_with_warnings", 0)
+            )
 
             if total_warnings > 0:
                 print(
@@ -262,7 +295,9 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
             else:
                 print("No policy warnings found.")
         else:
-            print("Policy warnings counter data could not be fetched or was empty.")
+            print(
+                "Policy warnings counter data could not be fetched or was empty."
+            )
         print("-" * 25)
 
     # Display Vulnerability Summary
@@ -272,7 +307,13 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
         if vulnerabilities_data:
             num_cves = len(vulnerabilities_data)
             unique_components = set()
-            severity_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "UNKNOWN": 0}
+            severity_counts = {
+                "CRITICAL": 0,
+                "HIGH": 0,
+                "MEDIUM": 0,
+                "LOW": 0,
+                "UNKNOWN": 0,
+            }
 
             for vuln in vulnerabilities_data:
                 comp_name = vuln.get("component_name", "Unknown")
@@ -310,11 +351,19 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
 
             # Sort components by the number of vulnerabilities (descending)
             sorted_components = sorted(
-                components_vulns.items(), key=lambda item: len(item[1]), reverse=True
+                components_vulns.items(),
+                key=lambda item: len(item[1]),
+                reverse=True,
             )
 
             # Define severity order for sorting vulnerabilities within each component
-            severity_order = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1, "UNKNOWN": 0}
+            severity_order = {
+                "CRITICAL": 4,
+                "HIGH": 3,
+                "MEDIUM": 2,
+                "LOW": 1,
+                "UNKNOWN": 0,
+            }
 
             for comp_key, vulns_list in sorted_components:
                 print(f"\n{comp_key} - {len(vulns_list)} vulnerabilities")
@@ -322,7 +371,9 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
                 # Sort vulnerabilities within this component by severity
                 sorted_vulns_list = sorted(
                     vulns_list,
-                    key=lambda v: severity_order.get(v.get("severity", "UNKNOWN").upper(), 0),
+                    key=lambda v: severity_order.get(
+                        v.get("severity", "UNKNOWN").upper(), 0
+                    ),
                     reverse=True,
                 )
 
@@ -338,7 +389,9 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
         print("-" * 25)
 
     if not displayed_something:
-        print("No results were successfully fetched or displayed for the specified flags.")
+        print(
+            "No results were successfully fetched or displayed for the specified flags."
+        )
     print("------------------------------------")
 
     return displayed_something
@@ -440,7 +493,9 @@ def print_operation_summary(
         print(
             f"  - Recursive Archive Extraction: {getattr(params, 'recursively_extract_archives', 'N/A')}"
         )
-        print(f"  - JAR File Extraction: {getattr(params, 'jar_file_extraction', 'N/A')}")
+        print(
+            f"  - JAR File Extraction: {getattr(params, 'jar_file_extraction', 'N/A')}"
+        )
     elif params.command == "scan-git":
         print("  - Method: Git Scan")
         print(f"  - Git Repository URL: {getattr(params, 'git_url', 'N/A')}")
@@ -477,7 +532,9 @@ def print_operation_summary(
         print(
             f"  - Auto-ID Pending IDs: {'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
         )
-        print(f"  - Delta Scan: {'Yes' if getattr(params, 'delta_scan', False) else 'No'}")
+        print(
+            f"  - Delta Scan: {'Yes' if getattr(params, 'delta_scan', False) else 'No'}"
+        )
 
         # Check if any ID reuse option is enabled
         id_reuse_enabled = any(
@@ -488,7 +545,9 @@ def print_operation_summary(
                 getattr(params, "reuse_scan_ids", None) is not None,
             ]
         )
-        print(f"  - Identification Reuse: {'Yes' if id_reuse_enabled else 'No'}")
+        print(
+            f"  - Identification Reuse: {'Yes' if id_reuse_enabled else 'No'}"
+        )
 
         # Show ID reuse details if enabled
         if id_reuse_enabled:
@@ -497,7 +556,10 @@ def print_operation_summary(
             elif getattr(params, "reuse_my_identifications", False):
                 print("    - Reuse Type: My identifications only")
             elif getattr(params, "reuse_project_ids", None):
-                print(f"    - Reuse Type: Project " f"'{params.reuse_project_ids}'")
+                print(
+                    f"    - Reuse Type: Project "
+                    f"'{params.reuse_project_ids}'"
+                )
             elif getattr(params, "reuse_scan_ids", None):
                 print(f"    - Reuse Type: Scan '{params.reuse_scan_ids}'")
 
@@ -513,7 +575,9 @@ def print_operation_summary(
         # Add durations to output only for KB scan and Dependency Analysis
         if kb_scan_performed:
             kb_duration_str = (
-                format_duration(durations.get("kb_scan", 0)) if durations.get("kb_scan") else "N/A"
+                format_duration(durations.get("kb_scan", 0))
+                if durations.get("kb_scan")
+                else "N/A"
             )
             print(f"  - Signature Scan: Yes (Duration: {kb_duration_str})")
         else:

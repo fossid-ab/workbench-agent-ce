@@ -5,7 +5,11 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from workbench_agent.api.exceptions import ApiError, NetworkError, ProcessTimeoutError
+from workbench_agent.api.exceptions import (
+    ApiError,
+    NetworkError,
+    ProcessTimeoutError,
+)
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 
 logger = logging.getLogger("workbench-agent")
@@ -64,7 +68,9 @@ def _extract_policy_count(policy_data: Any) -> int:
         return int(policy_data["data"].get("policy_warnings_total", 0))
 
     # Handle flat structure with fallback
-    return int(policy_data.get("policy_warnings_total", policy_data.get("total", 0)))
+    return int(
+        policy_data.get("policy_warnings_total", policy_data.get("total", 0))
+    )
 
 
 def _display_vulnerability_breakdown(vuln_counts: Dict[str, int]) -> None:
@@ -105,14 +111,17 @@ def _check_pending_files_gate(
         count = len(pending_files)
     except (ApiError, NetworkError) as e:
         print(f"\n⚠️ Warning: Failed to check for pending files: {e}")
-        logger.warning(f"Error checking pending files for scan '{scan_code}': {e}")
+        logger.warning(
+            f"Error checking pending files for scan '{scan_code}': {e}"
+        )
 
         if params.fail_on_pending:
             return GateResult(
                 passed=False,
                 count=0,
                 message=(
-                    "❌ Gate Failed: Unable to verify pending files " "status due to API error"
+                    "❌ Gate Failed: Unable to verify pending files "
+                    "status due to API error"
                 ),
             )
 
@@ -123,11 +132,17 @@ def _check_pending_files_gate(
             return GateResult(
                 passed=False,
                 count=count,
-                message=(f"❌ Gate Failed: {count} files with " f"pending identifications."),
+                message=(
+                    f"❌ Gate Failed: {count} files with "
+                    f"pending identifications."
+                ),
                 link_key="pending",
             )
         else:
-            print("\nNote: Gate is not set to fail " "(--fail-on-pending not specified).")
+            print(
+                "\nNote: Gate is not set to fail "
+                "(--fail-on-pending not specified)."
+            )
             return GateResult(
                 passed=True,
                 count=count,
@@ -136,7 +151,9 @@ def _check_pending_files_gate(
             )
     else:
         print("\n✅ No pending files found - all files have been identified.")
-        return GateResult(passed=True, count=0, message="No pending files found")
+        return GateResult(
+            passed=True, count=0, message="No pending files found"
+        )
 
 
 def _check_policy_warnings_gate(
@@ -169,7 +186,10 @@ def _check_policy_warnings_gate(
                     link_key="policy",
                 )
             else:
-                print("Note: Gate is not set to fail " "(--fail-on-policy not specified).")
+                print(
+                    "Note: Gate is not set to fail "
+                    "(--fail-on-policy not specified)."
+                )
                 return GateResult(
                     passed=True,
                     count=count,
@@ -178,22 +198,29 @@ def _check_policy_warnings_gate(
                 )
         else:
             print("\n✅ No policy warnings found.")
-            return GateResult(passed=True, count=0, message="No policy warnings found")
+            return GateResult(
+                passed=True, count=0, message="No policy warnings found"
+            )
 
     except (ApiError, NetworkError) as e:
         print(f"\n⚠️ Warning: Failed to check for policy warnings: {e}")
-        logger.warning(f"Error checking policy warnings for scan '{scan_code}': {e}")
+        logger.warning(
+            f"Error checking policy warnings for scan '{scan_code}': {e}"
+        )
 
         if params.fail_on_policy:
             return GateResult(
                 passed=False,
                 count=0,
                 message=(
-                    "❌ Gate Failed: Unable to verify policy warnings " "status due to API error"
+                    "❌ Gate Failed: Unable to verify policy warnings "
+                    "status due to API error"
                 ),
             )
         else:
-            return GateResult(passed=True, count=0, message="Policy check failed")
+            return GateResult(
+                passed=True, count=0, message="Policy check failed"
+            )
 
 
 def _check_vulnerabilities_gate(
@@ -236,7 +263,9 @@ def _check_vulnerabilities_gate(
         if total_vulns > 0:
             # Check if we should fail based on severity threshold
             if params.fail_on_vuln_severity:
-                threshold_idx = SEVERITY_ORDER.index(params.fail_on_vuln_severity)
+                threshold_idx = SEVERITY_ORDER.index(
+                    params.fail_on_vuln_severity
+                )
 
                 for severity in SEVERITY_ORDER[: threshold_idx + 1]:
                     if vuln_counts[severity] > 0:
@@ -260,11 +289,16 @@ def _check_vulnerabilities_gate(
                 return GateResult(
                     passed=True,
                     count=total_vulns,
-                    message=(f"Found {total_vulns} vulnerabilities below threshold"),
+                    message=(
+                        f"Found {total_vulns} vulnerabilities below threshold"
+                    ),
                 )
             else:
                 _display_vulnerability_breakdown(vuln_counts)
-                print("\nNote: Gate is not set to fail " "(--fail-on-vuln-severity not specified).")
+                print(
+                    "\nNote: Gate is not set to fail "
+                    "(--fail-on-vuln-severity not specified)."
+                )
                 return GateResult(
                     passed=True,
                     count=total_vulns,
@@ -272,22 +306,29 @@ def _check_vulnerabilities_gate(
                 )
         else:
             print("\n✅ No vulnerabilities found.")
-            return GateResult(passed=True, count=0, message="No vulnerabilities found")
+            return GateResult(
+                passed=True, count=0, message="No vulnerabilities found"
+            )
 
     except (ApiError, NetworkError) as e:
         print(f"\n⚠️ Warning: Failed to check for vulnerabilities: {e}")
-        logger.warning(f"Error checking vulnerabilities for scan '{scan_code}': {e}")
+        logger.warning(
+            f"Error checking vulnerabilities for scan '{scan_code}': {e}"
+        )
 
         if params.fail_on_vuln_severity:
             return GateResult(
                 passed=False,
                 count=0,
                 message=(
-                    "❌ Gate Failed: Unable to verify vulnerabilities " "status due to API error"
+                    "❌ Gate Failed: Unable to verify vulnerabilities "
+                    "status due to API error"
                 ),
             )
         else:
-            return GateResult(passed=True, count=0, message="Vulnerability check failed")
+            return GateResult(
+                passed=True, count=0, message="Vulnerability check failed"
+            )
 
 
 def _print_next_steps(
@@ -332,7 +373,9 @@ def _print_next_steps(
         print("=" * 50)
 
 
-def _print_gate_summary(params: "argparse.Namespace", results: GateResults) -> None:
+def _print_gate_summary(
+    params: "argparse.Namespace", results: GateResults
+) -> None:
     """
     Print the final gate evaluation summary.
 
@@ -347,7 +390,10 @@ def _print_gate_summary(params: "argparse.Namespace", results: GateResults) -> N
     # Pending files summary
     if params.fail_on_pending:
         status = "✅ PASSED" if results.pending_files.passed else "❌ FAILED"
-        print(f"Pending Files Gate: {status} " f"({results.pending_files.count} pending files)")
+        print(
+            f"Pending Files Gate: {status} "
+            f"({results.pending_files.count} pending files)"
+        )
     else:
         icon = "✅" if results.pending_files.count == 0 else "⚠️"
         print(f"Pending Files: {results.pending_files.count} files {icon}")
@@ -355,16 +401,23 @@ def _print_gate_summary(params: "argparse.Namespace", results: GateResults) -> N
     # Policy warnings summary
     if params.fail_on_policy:
         status = "✅ PASSED" if results.policy_warnings.passed else "❌ FAILED"
-        print(f"Policy Warnings Gate: {status} " f"({results.policy_warnings.count} warnings)")
+        print(
+            f"Policy Warnings Gate: {status} "
+            f"({results.policy_warnings.count} warnings)"
+        )
     else:
         icon = "✅" if results.policy_warnings.count == 0 else "⚠️"
-        print(f"Policy Warnings: {results.policy_warnings.count} " f"warnings {icon}")
+        print(
+            f"Policy Warnings: {results.policy_warnings.count} "
+            f"warnings {icon}"
+        )
 
     # Vulnerabilities summary
     if params.fail_on_vuln_severity:
         status = "✅ PASSED" if results.vulnerabilities.passed else "❌ FAILED"
         print(
-            f"Vulnerability Gate: {status} " f"(Threshold: {params.fail_on_vuln_severity.upper()})"
+            f"Vulnerability Gate: {status} "
+            f"(Threshold: {params.fail_on_vuln_severity.upper()})"
         )
     else:
         icon = "✅" if results.vulnerabilities.count == 0 else "⚠️"
@@ -377,7 +430,9 @@ def _print_gate_summary(params: "argparse.Namespace", results: GateResults) -> N
 
 
 @handler_error_wrapper
-def handle_evaluate_gates(client: "WorkbenchClient", params: "argparse.Namespace") -> bool:
+def handle_evaluate_gates(
+    client: "WorkbenchClient", params: "argparse.Namespace"
+) -> bool:
     """
     Handler for the 'evaluate-gates' command.
 
@@ -418,7 +473,9 @@ def handle_evaluate_gates(client: "WorkbenchClient", params: "argparse.Namespace
     try:
         scan_status = client.status_check.check_scan_status(scan_code)
         if scan_status.status == "RUNNING":
-            print("KB Scan is still in progress, " "waiting for it to complete...")
+            print(
+                "KB Scan is still in progress, " "waiting for it to complete..."
+            )
 
         client.waiting.wait_for_scan(
             scan_code,
@@ -426,9 +483,14 @@ def handle_evaluate_gates(client: "WorkbenchClient", params: "argparse.Namespace
             wait_interval=params.scan_wait_time,
         )
 
-        da_status = client.status_check.check_dependency_analysis_status(scan_code)
+        da_status = client.status_check.check_dependency_analysis_status(
+            scan_code
+        )
         if da_status.status == "RUNNING":
-            print("Dependency Analysis is still in progress, " "waiting for it to complete...")
+            print(
+                "Dependency Analysis is still in progress, "
+                "waiting for it to complete..."
+            )
 
         client.waiting.wait_for_da(
             scan_code,
@@ -438,7 +500,10 @@ def handle_evaluate_gates(client: "WorkbenchClient", params: "argparse.Namespace
 
         logging.info("Verified all Scan processes are idle. Checking gates...")
     except (ProcessTimeoutError, ApiError, NetworkError) as e:
-        print(f"\n❌ Gate Evaluation Failed: Could not verify scan " f"completion: {e}")
+        print(
+            f"\n❌ Gate Evaluation Failed: Could not verify scan "
+            f"completion: {e}"
+        )
         return False
 
     # Generate all Workbench links once for use throughout the handler

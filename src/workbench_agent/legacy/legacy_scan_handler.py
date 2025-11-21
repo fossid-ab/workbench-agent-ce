@@ -15,7 +15,9 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool:
+def handle_legacy_scan(
+    workbench: Workbench, params: argparse.Namespace
+) -> bool:
     """
     Legacy scan handler that maintains exact compatibility with original-wb-agent.py.
     Enhanced with modern progress notifications while preserving original behavior.
@@ -79,8 +81,12 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
             params.path, getattr(params, "run_dependency_analysis", False)
         )
         durations["hash_generation"] = time.time() - hash_start_time
-        print(f"Hash generation completed in {format_duration(durations['hash_generation'])}.")
-        print(f"Temporary file containing hashes generated at path: {blind_scan_result_path}")
+        print(
+            f"Hash generation completed in {format_duration(durations['hash_generation'])}."
+        )
+        print(
+            f"Temporary file containing hashes generated at path: {blind_scan_result_path}"
+        )
 
     # Create Project if it doesn't exist (original logic with enhanced feedback)
     print("\n--- Checking Project and Scan Status ---")
@@ -94,7 +100,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
     # Create scan if it doesn't exist (original logic with enhanced feedback)
     scan_exists = workbench.check_if_scan_exists(params.scan_code)
     if not scan_exists:
-        print(f"Scan with code '{params.scan_code}' does not exist. Creating it...")
+        print(
+            f"Scan with code '{params.scan_code}' does not exist. Creating it..."
+        )
         workbench.create_webapp_scan(
             params.scan_code,  # Positional: scan_code
             params.project_code,  # Positional: project_code
@@ -102,7 +110,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
         )
         print(f"Scan '{params.scan_code}' created successfully.")
     else:
-        print(f"Scan with code '{params.scan_code}' already exists. Proceeding to upload...")
+        print(
+            f"Scan with code '{params.scan_code}' already exists. Proceeding to upload..."
+        )
 
     # Handle blind scan differently from regular scan (original logic with timing)
     if getattr(params, "blind_scan", False):
@@ -119,7 +129,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
             os.remove(blind_scan_result_path)
             print("Temporary hash file cleaned up.")
         else:
-            print(f"Can not delete the file {blind_scan_result_path} as it doesn't exists")
+            print(
+                f"Can not delete the file {blind_scan_result_path} as it doesn't exists"
+            )
 
     # Handle normal scanning (original logic with enhanced feedback and timing)
     elif not getattr(params, "target_path", None):
@@ -128,9 +140,13 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
 
         if not os.path.isdir(params.path):
             # The given path is an actual file path. Only this file will be uploaded
-            print(f"Uploading file indicated in --path parameter: {params.path}")
+            print(
+                f"Uploading file indicated in --path parameter: {params.path}"
+            )
             workbench.upload_files(
-                params.scan_code, params.path, getattr(params, "chunked_upload", False)
+                params.scan_code,
+                params.path,
+                getattr(params, "chunked_upload", False),
             )
         else:
             # Get all files found at given path (including in subdirectories). Exclude directories
@@ -150,7 +166,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
             print(f"A total of {counter_files} files uploaded")
 
         durations["upload"] = time.time() - upload_start_time
-        print(f"File upload completed in {format_duration(durations['upload'])}.")
+        print(
+            f"File upload completed in {format_duration(durations['upload'])}."
+        )
 
         print("\n--- Extracting Archives ---")
         print("Calling API scans->extracting_archives")
@@ -161,7 +179,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
             getattr(params, "jar_file_extraction", False),
         )
         durations["extraction"] = time.time() - extraction_start_time
-        print(f"Archive extraction completed in {format_duration(durations['extraction'])}.")
+        print(
+            f"Archive extraction completed in {format_duration(durations['extraction'])}."
+        )
 
     # If --run_only_dependency_analysis parameter is true ONLY run dependency analysis, no KB scanning
     if getattr(params, "run_only_dependency_analysis", False):
@@ -178,7 +198,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
             getattr(params, "scan_wait_time", 30),
         )
         durations["dependency_analysis"] = da_duration
-        print(f"Dependency Analysis completed in {format_duration(da_duration)}.")
+        print(
+            f"Dependency Analysis completed in {format_duration(da_duration)}."
+        )
     # Run scan
     else:
         print("\n--- Running KB Scan ---")
@@ -222,7 +244,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
             getattr(params, "scan_wait_time", 30),
         )
         durations["dependency_analysis"] = da_duration
-        print(f"Dependency Analysis completed in {format_duration(da_duration)}.")
+        print(
+            f"Dependency Analysis completed in {format_duration(da_duration)}."
+        )
 
     # Enhanced operation summary (new feature)
     print("\n--- Legacy Scan Operation Summary ---")
@@ -240,13 +264,17 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
             f"  - Hash Generation: Yes (Duration: {format_duration(durations.get('hash_generation', 0))})"
         )
     if durations.get("upload", 0) > 0:
-        print(f"  - File Upload: Yes (Duration: {format_duration(durations.get('upload', 0))})")
+        print(
+            f"  - File Upload: Yes (Duration: {format_duration(durations.get('upload', 0))})"
+        )
     if durations.get("extraction", 0) > 0:
         print(
             f"  - Archive Extraction: Yes (Duration: {format_duration(durations.get('extraction', 0))})"
         )
     if durations.get("kb_scan", 0) > 0:
-        print(f"  - KB Scan: Yes (Duration: {format_duration(durations.get('kb_scan', 0))})")
+        print(
+            f"  - KB Scan: Yes (Duration: {format_duration(durations.get('kb_scan', 0))})"
+        )
     elif not getattr(params, "run_only_dependency_analysis", False):
         print(f"  - KB Scan: No")
     if da_completed:
@@ -264,7 +292,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
     print("\n--- Collecting Results ---")
     if getattr(params, "get_scan_identified_components", False):
         print("Identified components: ")
-        identified_components = workbench.get_scan_identified_components(params.scan_code)
+        identified_components = workbench.get_scan_identified_components(
+            params.scan_code
+        )
         print(json.dumps(identified_components))
         save_results(params, identified_components)
         return True
@@ -277,7 +307,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
             )
             return False
         print(f"Scan: {params.scan_code} policy warnings info: ")
-        info_policy = workbench.scans_get_policy_warnings_counter(params.scan_code)
+        info_policy = workbench.scans_get_policy_warnings_counter(
+            params.scan_code
+        )
         print(json.dumps(info_policy))
         save_results(params, info_policy)
         return True
@@ -290,7 +322,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
             )
             return False
         print(f"Project {params.project_code} policy warnings info: ")
-        info_policy = workbench.projects_get_policy_warnings_info(params.project_code)
+        info_policy = workbench.projects_get_policy_warnings_info(
+            params.project_code
+        )
         print(json.dumps(info_policy))
         save_results(params, info_policy)
         return True
@@ -304,7 +338,9 @@ def handle_legacy_scan(workbench: Workbench, params: argparse.Namespace) -> bool
 
     else:
         print("Identified licenses: ")
-        identified_licenses = workbench.get_scan_identified_licenses(params.scan_code)
+        identified_licenses = workbench.get_scan_identified_licenses(
+            params.scan_code
+        )
         print(json.dumps(identified_licenses))
         save_results(params, identified_licenses)
         return True

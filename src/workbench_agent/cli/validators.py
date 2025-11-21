@@ -109,11 +109,21 @@ def _validate_id_reuse_args(args: Namespace) -> None:
         )
 
     # Validate that required parameters are provided for arguments that need them
-    if getattr(args, "reuse_scan_ids", None) is not None and not args.reuse_scan_ids.strip():
-        raise ValidationError("--reuse-scan-ids requires a non-empty scan name.")
+    if (
+        getattr(args, "reuse_scan_ids", None) is not None
+        and not args.reuse_scan_ids.strip()
+    ):
+        raise ValidationError(
+            "--reuse-scan-ids requires a non-empty scan name."
+        )
 
-    if getattr(args, "reuse_project_ids", None) is not None and not args.reuse_project_ids.strip():
-        raise ValidationError("--reuse-project-ids requires a non-empty project name.")
+    if (
+        getattr(args, "reuse_project_ids", None) is not None
+        and not args.reuse_project_ids.strip()
+    ):
+        raise ValidationError(
+            "--reuse-project-ids requires a non-empty project name."
+        )
 
 
 def _validate_import_commands(args: Namespace) -> None:
@@ -164,7 +174,9 @@ def _validate_download_reports_command(args: Namespace) -> None:
     scan_name = getattr(args, "scan_name", None)
 
     if report_scope == "project" and not project_name:
-        raise ValidationError("Project name is required for project scope report")
+        raise ValidationError(
+            "Project name is required for project scope report"
+        )
     if report_scope == "scan" and not scan_name:
         raise ValidationError("Scan name is required for scan scope report")
 
@@ -188,7 +200,9 @@ def _validate_quick_scan_command(args: Namespace) -> None:
     # Allow either positional 'file' or --path
     path = getattr(args, "path", None) or getattr(args, "file", None)
     if not path:
-        raise ValidationError("A file must be provided (positional FILE or --path)")
+        raise ValidationError(
+            "A file must be provided (positional FILE or --path)"
+        )
     if not os.path.exists(path) or not os.path.isfile(path):
         raise ValidationError(f"Path does not exist or is not a file: {path}")
     # Normalize to args.path so downstream code can rely on it

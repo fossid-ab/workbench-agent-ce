@@ -98,8 +98,12 @@ class ProjectsClient:
                 )
                 return []
         else:
-            error_msg = response.get("error", f"Unexpected response: {response}")
-            raise ApiError(f"Failed to list projects: {error_msg}", details=response)
+            error_msg = response.get(
+                "error", f"Unexpected response: {response}"
+            )
+            raise ApiError(
+                f"Failed to list projects: {error_msg}", details=response
+            )
 
     def get_information(self, project_code: str) -> Dict[str, Any]:
         """
@@ -125,12 +129,21 @@ class ProjectsClient:
         response = self._api._send_request(payload)
 
         if response.get("status") == "1" and "data" in response:
-            logger.debug(f"Successfully fetched information for project '{project_code}'.")
+            logger.debug(
+                f"Successfully fetched information for project '{project_code}'."
+            )
             return response["data"]
         else:
-            error_msg = response.get("error", f"Unexpected response: {response}")
-            if "Project code does not exist" in error_msg or "row_not_found" in error_msg:
-                raise ProjectNotFoundError(f"Project '{project_code}' not found")
+            error_msg = response.get(
+                "error", f"Unexpected response: {response}"
+            )
+            if (
+                "Project code does not exist" in error_msg
+                or "row_not_found" in error_msg
+            ):
+                raise ProjectNotFoundError(
+                    f"Project '{project_code}' not found"
+                )
             raise ApiError(
                 f"Failed to get information for project '{project_code}': {error_msg}",
                 details=response,
@@ -162,7 +175,9 @@ class ProjectsClient:
         if response.get("status") == "1" and "data" in response:
             data = response["data"]
             if isinstance(data, list):
-                logger.debug(f"Successfully listed {len(data)} scans for project '{project_code}'.")
+                logger.debug(
+                    f"Successfully listed {len(data)} scans for project '{project_code}'."
+                )
                 return data
             else:
                 logger.warning(
@@ -170,13 +185,22 @@ class ProjectsClient:
                 )
                 return []
         elif response.get("status") == "1":
-            logger.warning("API returned success for get_all_scans but no 'data' key found.")
+            logger.warning(
+                "API returned success for get_all_scans but no 'data' key found."
+            )
             return []
         else:
-            error_msg = response.get("error", f"Unexpected response: {response}")
+            error_msg = response.get(
+                "error", f"Unexpected response: {response}"
+            )
             # Treat project not found as empty list of scans
-            if "Project code does not exist" in error_msg or "row_not_found" in error_msg:
-                logger.warning(f"Project '{project_code}' not found when trying to list its scans.")
+            if (
+                "Project code does not exist" in error_msg
+                or "row_not_found" in error_msg
+            ):
+                logger.warning(
+                    f"Project '{project_code}' not found when trying to list its scans."
+                )
                 return []
             else:
                 raise ApiError(
@@ -241,13 +265,19 @@ class ProjectsClient:
         if jira_project_key:
             payload_data["jira_project_key"] = jira_project_key
 
-        payload = {"group": "projects", "action": "create", "data": payload_data}
+        payload = {
+            "group": "projects",
+            "action": "create",
+            "data": payload_data,
+        }
         response = self._api._send_request(payload)
 
         if response.get("status") == "1":
             project_code = response.get("data", {}).get("project_code")
             if not project_code:
-                raise ApiError("Project created but no code returned", details=response)
+                raise ApiError(
+                    "Project created but no code returned", details=response
+                )
             return project_code
         else:
             error_msg = response.get("error", "Unknown error")
@@ -258,7 +288,11 @@ class ProjectsClient:
                 if isinstance(data, list) and len(data) > 0:
                     error_code = data[0].get("code", "")
                     if "not_valid_date_string" in error_code:
-                        field = data[0].get("message_parameters", {}).get("fieldname", "date")
+                        field = (
+                            data[0]
+                            .get("message_parameters", {})
+                            .get("fieldname", "date")
+                        )
                         raise ApiError(
                             f"Failed to create project '{project_name}': Invalid date format for '{field}'. "
                             f"Please provide a valid date string (e.g., '2025-12-31')",
@@ -266,7 +300,8 @@ class ProjectsClient:
                         )
 
             raise ApiError(
-                f"Failed to create project '{project_name}': {error_msg}", details=response
+                f"Failed to create project '{project_name}': {error_msg}",
+                details=response,
             )
 
     def update(
@@ -333,14 +368,22 @@ class ProjectsClient:
         if new_project_owner is not None:
             payload_data["new_project_owner"] = new_project_owner
 
-        payload = {"group": "projects", "action": "update", "data": payload_data}
+        payload = {
+            "group": "projects",
+            "action": "update",
+            "data": payload_data,
+        }
         response = self._api._send_request(payload)
 
         if response.get("status") == "1":
             project_id = response.get("data", {}).get("project_id")
             if not project_id:
-                raise ApiError("Project updated but no ID returned", details=response)
-            logger.debug(f"Successfully updated project '{project_code}' (ID: {project_id}).")
+                raise ApiError(
+                    "Project updated but no ID returned", details=response
+                )
+            logger.debug(
+                f"Successfully updated project '{project_code}' (ID: {project_id})."
+            )
             return int(project_id)
         else:
             error_msg = response.get("error", "Unknown error")
@@ -353,7 +396,11 @@ class ProjectsClient:
 
                     # Invalid date format
                     if "not_valid_date_string" in error_code:
-                        field = data[0].get("message_parameters", {}).get("fieldname", "date")
+                        field = (
+                            data[0]
+                            .get("message_parameters", {})
+                            .get("fieldname", "date")
+                        )
                         raise ApiError(
                             f"Failed to update project '{project_code}': Invalid date format for '{field}'. "
                             f"Please provide a valid date string (e.g., '2025-12-31')",
@@ -362,18 +409,28 @@ class ProjectsClient:
 
                     # Missing mandatory field
                     if error_code == "RequestData.Base.mandatory_field_missing":
-                        field = data[0].get("message_parameters", {}).get("fieldname", "unknown")
+                        field = (
+                            data[0]
+                            .get("message_parameters", {})
+                            .get("fieldname", "unknown")
+                        )
                         raise ApiError(
                             f"Failed to update project: Missing required field '{field}'",
                             details=response,
                         )
 
             # Check for project not found
-            if "Project code does not exist" in error_msg or "row_not_found" in error_msg:
-                raise ProjectNotFoundError(f"Project '{project_code}' not found")
+            if (
+                "Project code does not exist" in error_msg
+                or "row_not_found" in error_msg
+            ):
+                raise ProjectNotFoundError(
+                    f"Project '{project_code}' not found"
+                )
 
             raise ApiError(
-                f"Failed to update project '{project_code}': {error_msg}", details=response
+                f"Failed to update project '{project_code}': {error_msg}",
+                details=response,
             )
 
     def generate_report(self, payload_data: Dict[str, Any]) -> int:
@@ -439,9 +496,16 @@ class ProjectsClient:
             )
             return int(process_id)
         else:
-            error_msg = response_data.get("error", f"Unexpected response: {response_data}")
-            if "Project does not exist" in error_msg or "row_not_found" in error_msg:
-                raise ProjectNotFoundError(f"Project '{project_code}' not found")
+            error_msg = response_data.get(
+                "error", f"Unexpected response: {response_data}"
+            )
+            if (
+                "Project does not exist" in error_msg
+                or "row_not_found" in error_msg
+            ):
+                raise ProjectNotFoundError(
+                    f"Project '{project_code}' not found"
+                )
             raise ApiError(
                 f"Failed to request report generation for project "
                 f"'{project_code}': {error_msg}",

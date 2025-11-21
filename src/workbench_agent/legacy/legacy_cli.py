@@ -18,7 +18,9 @@ def positive_int(value):
     try:
         ivalue = int(value)
         if ivalue <= 0:
-            raise argparse.ArgumentTypeError(f"Invalid positive integer: {value}")
+            raise argparse.ArgumentTypeError(
+                f"Invalid positive integer: {value}"
+            )
         return ivalue
     except ValueError:
         raise argparse.ArgumentTypeError(f"Invalid positive integer: {value}")
@@ -29,10 +31,14 @@ def non_negative_int(value):
     try:
         ivalue = int(value)
         if ivalue < 0:
-            raise argparse.ArgumentTypeError(f"Invalid non-negative integer: {value}")
+            raise argparse.ArgumentTypeError(
+                f"Invalid non-negative integer: {value}"
+            )
         return ivalue
     except ValueError:
-        raise argparse.ArgumentTypeError(f"Invalid non-negative integer: {value}")
+        raise argparse.ArgumentTypeError(
+            f"Invalid non-negative integer: {value}"
+        )
 
 
 def non_empty_string(value):
@@ -133,7 +139,10 @@ Environment Variables for Credentials:
     # Scan Options (legacy underscore format)
     scan_opts = parser.add_argument_group("Scan Options")
     scan_opts.add_argument(
-        "--limit", help="Limits KB scan results (Default: 10)", type=positive_int, default=10
+        "--limit",
+        help="Limits KB scan results (Default: 10)",
+        type=positive_int,
+        default=10,
     )
     scan_opts.add_argument(
         "--sensitivity",
@@ -332,13 +341,19 @@ def validate_reuse_parameters(args):
         reuse_type = getattr(args, "identification_reuse_type", None)
         specific_code = getattr(args, "specific_code", None)
 
-        if reuse_type in ["specific_project", "specific_scan"] and not specific_code:
+        if (
+            reuse_type in ["specific_project", "specific_scan"]
+            and not specific_code
+        ):
             raise ValidationError(
                 "Specific code is required when identification_reuse_type is 'specific_project' or 'specific_scan'"
             )
 
         # Add warning for conflicting arguments
-        if reuse_type not in ["specific_project", "specific_scan"] and specific_code:
+        if (
+            reuse_type not in ["specific_project", "specific_scan"]
+            and specific_code
+        ):
             logger.warning(
                 f"--specific_code ('{specific_code}') provided but --identification_reuse_type is '{reuse_type}'. Source code will be ignored."
             )
@@ -371,8 +386,13 @@ def parse_legacy_args():
     validate_reuse_parameters(args)
 
     # Path validation for both regular and blind scan
-    if not getattr(args, "run_only_dependency_analysis", False) and not args.path:
-        raise ValidationError("Path is required unless using --run_only_dependency_analysis")
+    if (
+        not getattr(args, "run_only_dependency_analysis", False)
+        and not args.path
+    ):
+        raise ValidationError(
+            "Path is required unless using --run_only_dependency_analysis"
+        )
 
     if args.path and not os.path.exists(args.path):
         raise ValidationError(f"Path does not exist: {args.path}")
@@ -391,11 +411,19 @@ def parse_legacy_args():
     args.id_reuse = getattr(args, "reuse_identifications", False)
     args.id_reuse_type = getattr(args, "identification_reuse_type", "any")
     args.id_reuse_source = getattr(args, "specific_code", None)
-    args.autoid_file_licenses = getattr(args, "auto_identification_detect_declaration", False)
-    args.autoid_file_copyrights = getattr(args, "auto_identification_detect_copyright", False)
-    args.autoid_pending_ids = getattr(args, "auto_identification_resolve_pending_ids", False)
+    args.autoid_file_licenses = getattr(
+        args, "auto_identification_detect_declaration", False
+    )
+    args.autoid_file_copyrights = getattr(
+        args, "auto_identification_detect_copyright", False
+    )
+    args.autoid_pending_ids = getattr(
+        args, "auto_identification_resolve_pending_ids", False
+    )
     args.delta_scan = getattr(args, "delta_only", False)
-    args.dependency_analysis_only = getattr(args, "run_only_dependency_analysis", False)
+    args.dependency_analysis_only = getattr(
+        args, "run_only_dependency_analysis", False
+    )
     args.no_wait = False  # Legacy doesn't support no-wait
     args.path_result = getattr(args, "path-result", None)
 

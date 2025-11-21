@@ -108,7 +108,11 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
-        check_func = lambda: self._status_check.check_dependency_analysis_status(scan_code)
+        check_func = (
+            lambda: self._status_check.check_dependency_analysis_status(
+                scan_code
+            )
+        )
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -134,7 +138,11 @@ class WaitingService:
             WaitResult: Result with final status and duration
         """
         try:
-            check_func = lambda: self._status_check.check_extract_archives_status(scan_code)
+            check_func = (
+                lambda: self._status_check.check_extract_archives_status(
+                    scan_code
+                )
+            )
             return self._wait_for_completion(
                 check_function=check_func,
                 max_tries=max_tries,
@@ -165,7 +173,9 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
-        check_func = lambda: self._status_check.check_report_import_status(scan_code)
+        check_func = lambda: self._status_check.check_report_import_status(
+            scan_code
+        )
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -196,7 +206,9 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
-        check_func = lambda: self._status_check.check_scan_report_status(scan_code, process_id)
+        check_func = lambda: self._status_check.check_scan_report_status(
+            scan_code, process_id
+        )
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -254,7 +266,9 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
-        check_func = lambda: self._status_check.check_git_clone_status(scan_code)
+        check_func = lambda: self._status_check.check_git_clone_status(
+            scan_code
+        )
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -353,7 +367,9 @@ class WaitingService:
         max_tries: int,
         wait_interval: int,
         operation_name: str,
-        progress_callback: Optional[Callable[[StatusResult, int, int], None]] = None,
+        progress_callback: Optional[
+            Callable[[StatusResult, int, int], None]
+        ] = None,
     ) -> WaitResult:
         """
         Generic waiting engine for async operations.
@@ -413,7 +429,9 @@ class WaitingService:
                         logger.error(f"{operation_name} failed: {error_msg}")
                         return WaitResult(
                             status_data=result.raw_data,
-                            duration=self._extract_server_duration(result.raw_data),
+                            duration=self._extract_server_duration(
+                                result.raw_data
+                            ),
                             success=False,
                             error_message=error_msg,
                         )
@@ -426,7 +444,10 @@ class WaitingService:
                             operation_name,
                             duration,
                         )
-                        print(f"\n{operation_name} completed successfully " f"({duration:.1f}s)")
+                        print(
+                            f"\n{operation_name} completed successfully "
+                            f"({duration:.1f}s)"
+                        )
                     else:
                         logger.info("%s completed successfully", operation_name)
                         print(f"\n{operation_name} completed successfully")
@@ -447,10 +468,13 @@ class WaitingService:
                 raise
             except Exception as e:
                 logger.warning(
-                    f"Error checking {operation_name} status " f"(attempt {attempts}): {e}"
+                    f"Error checking {operation_name} status "
+                    f"(attempt {attempts}): {e}"
                 )
                 if attempts >= max_tries:
-                    raise ProcessError(f"Failed to check {operation_name} status: {e}") from e
+                    raise ProcessError(
+                        f"Failed to check {operation_name} status: {e}"
+                    ) from e
                 time.sleep(wait_interval)
 
         # Timeout
@@ -460,7 +484,9 @@ class WaitingService:
             f"{timeout_seconds}s ({max_tries} attempts)"
         )
 
-    def _extract_server_duration(self, raw_data: Dict[str, Any]) -> Optional[float]:
+    def _extract_server_duration(
+        self, raw_data: Dict[str, Any]
+    ) -> Optional[float]:
         """
         Extract actual process duration from server timestamps.
 
@@ -478,8 +504,14 @@ class WaitingService:
 
         # Check if this is a git operation response format
         # Git responses look like: {"data": "FINISHED"}
-        if len(raw_data) == 1 and "data" in raw_data and isinstance(raw_data["data"], str):
-            logger.debug("Git operation detected - no server duration available")
+        if (
+            len(raw_data) == 1
+            and "data" in raw_data
+            and isinstance(raw_data["data"], str)
+        ):
+            logger.debug(
+                "Git operation detected - no server duration available"
+            )
             return None
 
         started = raw_data.get("started")
@@ -495,7 +527,8 @@ class WaitingService:
 
             server_duration = (finished_dt - started_dt).total_seconds()
             logger.debug(
-                "Extracted server duration: %.2fs " "(started: %s, finished: %s)",
+                "Extracted server duration: %.2fs "
+                "(started: %s, finished: %s)",
                 server_duration,
                 started,
                 finished,

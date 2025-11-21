@@ -63,5 +63,9 @@ class InternalClient:
                 )
                 return {}
         else:
-            error_msg = response.get("error", f"Unexpected response: {response}")
-            raise ApiError(f"Failed to get configuration: {error_msg}", details=response)
+            error_msg = response.get(
+                "error", f"Unexpected response: {response}"
+            )
+            raise ApiError(
+                f"Failed to get configuration: {error_msg}", details=response
+            )

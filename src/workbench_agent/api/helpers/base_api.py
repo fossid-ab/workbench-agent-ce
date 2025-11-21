@@ -4,12 +4,20 @@ import os
 
 import requests
 
-from workbench_agent.api.exceptions import ApiError, AuthenticationError, NetworkError
+from workbench_agent.api.exceptions import (
+    ApiError,
+    AuthenticationError,
+    NetworkError,
+)
 
 logger = logging.getLogger("workbench-agent")
 
 # Check if header logging is enabled via environment variable
-LOG_HEADERS = os.getenv("WORKBENCH_AGENT_LOG_HEADERS", "").lower() in ("1", "true", "yes")
+LOG_HEADERS = os.getenv("WORKBENCH_AGENT_LOG_HEADERS", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 
 class BaseAPI:
@@ -85,7 +93,9 @@ class BaseAPI:
 
             # Handle authentication errors
             if response.status_code == 401:
-                raise AuthenticationError("Invalid credentials or expired token")
+                raise AuthenticationError(
+                    "Invalid credentials or expired token"
+                )
 
             response.raise_for_status()
 
@@ -94,16 +104,23 @@ class BaseAPI:
                 try:
                     parsed_json = response.json()
                     # Check for API-level errors indicated by status='0'
-                    if isinstance(parsed_json, dict) and parsed_json.get("status") == "0":
-                        error_msg = parsed_json.get("error", "Unknown API error")
+                    if (
+                        isinstance(parsed_json, dict)
+                        and parsed_json.get("status") == "0"
+                    ):
+                        error_msg = parsed_json.get(
+                            "error", "Unknown API error"
+                        )
                         logger.debug(
-                            f"API returned status 0 JSON: {error_msg} | " f"Payload: {payload}"
+                            f"API returned status 0 JSON: {error_msg} | "
+                            f"Payload: {payload}"
                         )
 
                         is_invalid_type_probe = False
                         if (
                             payload.get("action") == "check_status"
-                            and error_msg == "RequestData.Base.issues_while_parsing_request"
+                            and error_msg
+                            == "RequestData.Base.issues_while_parsing_request"
                             and isinstance(parsed_json.get("data"), list)
                             and len(parsed_json["data"]) > 0
                             and isinstance(parsed_json["data"][0], dict)
@@ -116,18 +133,23 @@ class BaseAPI:
                         ):
                             is_invalid_type_probe = True
                             logger.debug(
-                                "Detected 'invalid type option' error during " "check_status probe."
+                                "Detected 'invalid type option' error during "
+                                "check_status probe."
                             )
 
                         # Determine if this error is expected and non-fatal
-                        is_existence_check = payload.get("action") == "get_information"
+                        is_existence_check = (
+                            payload.get("action") == "get_information"
+                        )
 
                         if is_invalid_type_probe or is_existence_check:
                             # Don't raise an exception for these expected cases
                             return parsed_json
                         else:
                             # For other status 0 cases, raise an exception
-                            raise ApiError(f"API Error: {error_msg}", details=parsed_json)
+                            raise ApiError(
+                                f"API Error: {error_msg}", details=parsed_json
+                            )
 
                     return parsed_json
                 except (ValueError, TypeError) as e:
@@ -135,7 +157,9 @@ class BaseAPI:
                     raise ApiError(f"Invalid JSON response: {e}")
             else:
                 # Handle non-JSON responses (like file downloads)
-                logger.debug(f"Non-JSON response received (Content-Type: {content_type})")
+                logger.debug(
+                    f"Non-JSON response received (Content-Type: {content_type})"
+                )
                 return {"_raw_response": response}
 
         except requests.exceptions.Timeout:
@@ -144,7 +168,9 @@ class BaseAPI:
             raise NetworkError(f"Connection error: {e}")
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 401:
-                raise AuthenticationError("Invalid credentials or expired token")
+                raise AuthenticationError(
+                    "Invalid credentials or expired token"
+                )
             raise NetworkError(f"HTTP error {e.response.status_code}: {e}")
         except Exception as e:
             if isinstance(e, (ApiError, AuthenticationError, NetworkError)):

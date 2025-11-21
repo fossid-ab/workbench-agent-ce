@@ -109,8 +109,7 @@ class DownloadClient:
 
         # Use extended timeout for large file downloads
         actual_timeout = (
-            timeout if timeout is not None
-            else self.DEFAULT_DOWNLOAD_TIMEOUT
+            timeout if timeout is not None else self.DEFAULT_DOWNLOAD_TIMEOUT
         )
 
         return self._api._send_request(payload, timeout=actual_timeout)

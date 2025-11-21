@@ -95,7 +95,10 @@ Examples:
 """,
     )
     scan_parser.add_argument(
-        "--path", help="Local directory or file to upload and scan", required=True, metavar="PATH"
+        "--path",
+        help="Local directory or file to upload and scan",
+        required=True,
+        metavar="PATH",
     )
 
     # --- 'blind-scan' Subcommand ---
@@ -141,7 +144,10 @@ Examples:
     cli_group = blind_scan_parser.add_argument_group("FossID Toolbox Options")
     cli_group.add_argument(
         "--fossid-toolbox-path",
-        help=("Path to fossid-toolbox executable " "(Default: /usr/bin/fossid-toolbox)"),
+        help=(
+            "Path to fossid-toolbox executable "
+            "(Default: /usr/bin/fossid-toolbox)"
+        ),
         type=str,
         default="/usr/bin/fossid-toolbox",
     )
@@ -363,7 +369,9 @@ Examples:
         metavar="PATH",
     )
 
-    gen_opts = download_reports_parser.add_argument_group("Report Generation Options")
+    gen_opts = download_reports_parser.add_argument_group(
+        "Report Generation Options"
+    )
     gen_opts.add_argument(
         "--selection-type",
         help="Filter licenses included in the report.",
@@ -382,7 +390,9 @@ Examples:
         metavar="VIEW",
     )
     gen_opts.add_argument(
-        "--disclaimer", help="Include custom text as a disclaimer in the report.", metavar="TEXT"
+        "--disclaimer",
+        help="Include custom text as a disclaimer in the report.",
+        metavar="TEXT",
     )
     gen_opts.add_argument(
         "--include-vex",

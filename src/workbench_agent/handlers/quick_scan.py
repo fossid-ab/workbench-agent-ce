@@ -70,7 +70,8 @@ def handle_quick_scan(
     # Perform quick scan using explicit API
     print("\nPerforming quick scan...")
     logger.info(
-        f"Quick scanning file with limit={params.limit}, " f"sensitivity={params.sensitivity}"
+        f"Quick scanning file with limit={params.limit}, "
+        f"sensitivity={params.sensitivity}"
     )
     results = client.quick_scan.scan_one_file(
         file_content_b64=file_content_b64,
