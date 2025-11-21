@@ -109,11 +109,21 @@ def _validate_id_reuse_args(args: Namespace) -> None:
         )
 
     # Validate that required parameters are provided for arguments that need them
-    if getattr(args, "reuse_scan_ids", None) is not None and not args.reuse_scan_ids.strip():
-        raise ValidationError("--reuse-scan-ids requires a non-empty scan name.")
+    if (
+        getattr(args, "reuse_scan_ids", None) is not None
+        and not args.reuse_scan_ids.strip()
+    ):
+        raise ValidationError(
+            "--reuse-scan-ids requires a non-empty scan name."
+        )
 
-    if getattr(args, "reuse_project_ids", None) is not None and not args.reuse_project_ids.strip():
-        raise ValidationError("--reuse-project-ids requires a non-empty project name.")
+    if (
+        getattr(args, "reuse_project_ids", None) is not None
+        and not args.reuse_project_ids.strip()
+    ):
+        raise ValidationError(
+            "--reuse-project-ids requires a non-empty project name."
+        )
 
 
 def _validate_import_commands(args: Namespace) -> None:
@@ -126,6 +136,36 @@ def _validate_import_commands(args: Namespace) -> None:
     if not os.path.exists(path):
         raise ValidationError(f"Path does not exist: {path}")
 
+    # Command-specific validation
+    if command == "import-da":
+        _validate_da_results_file(path)
+    # Future: add import-sbom specific validation here if needed
+
+
+def _validate_da_results_file(path: str) -> None:
+    """
+    Best effort validation that the DA results file comes from ORT or FossID-DA.
+
+    Validates:
+    - Path must be a file (not a directory)
+    - Filename must be 'analyzer-results.json'
+
+    Args:
+        path: Path to the dependency analysis results file
+
+    Raises:
+        ValidationError: If validation fails
+    """
+    if not os.path.isfile(path):
+        raise ValidationError(f"The provided path must be a file: {path}")
+
+    filename = os.path.basename(path)
+    if filename != "analyzer-result.json":
+        raise ValidationError(
+            f"The analyzer result must be named 'analyzer-result.json'. "
+            f"Provided filename: {filename}"
+        )
+
 
 def _validate_download_reports_command(args: Namespace) -> None:
     """Validate download-reports command."""
@@ -134,7 +174,9 @@ def _validate_download_reports_command(args: Namespace) -> None:
     scan_name = getattr(args, "scan_name", None)
 
     if report_scope == "project" and not project_name:
-        raise ValidationError("Project name is required for project scope report")
+        raise ValidationError(
+            "Project name is required for project scope report"
+        )
     if report_scope == "scan" and not scan_name:
         raise ValidationError("Scan name is required for scan scope report")
 
@@ -158,7 +200,9 @@ def _validate_quick_scan_command(args: Namespace) -> None:
     # Allow either positional 'file' or --path
     path = getattr(args, "path", None) or getattr(args, "file", None)
     if not path:
-        raise ValidationError("A file must be provided (positional FILE or --path)")
+        raise ValidationError(
+            "A file must be provided (positional FILE or --path)"
+        )
     if not os.path.exists(path) or not os.path.isfile(path):
         raise ValidationError(f"Path does not exist or is not a file: {path}")
     # Normalize to args.path so downstream code can rely on it

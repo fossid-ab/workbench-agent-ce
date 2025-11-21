@@ -156,8 +156,13 @@ class TestWorkbenchLinks:
         assert links.pending["message"] == EXPECTED_MESSAGES["pending"]
         assert links.policy["message"] == EXPECTED_MESSAGES["policy"]
         assert links.identified["message"] == EXPECTED_MESSAGES["identified"]
-        assert links.dependencies["message"] == EXPECTED_MESSAGES["dependencies"]
-        assert links.vulnerabilities["message"] == EXPECTED_MESSAGES["vulnerabilities"]
+        assert (
+            links.dependencies["message"] == EXPECTED_MESSAGES["dependencies"]
+        )
+        assert (
+            links.vulnerabilities["message"]
+            == EXPECTED_MESSAGES["vulnerabilities"]
+        )
 
     @pytest.mark.parametrize("api_url", API_URL_VARIANTS)
     def test_api_url_variants(self, api_url):
@@ -202,8 +207,14 @@ class TestWorkbenchLinks:
         test_cases = [
             ("https://example.com/api.php", "https://example.com"),
             ("https://example.com/api.php/", "https://example.com"),
-            ("https://example.com/fossid/api.php", "https://example.com/fossid"),
-            ("https://example.com/path/to/api.php", "https://example.com/path/to"),
+            (
+                "https://example.com/fossid/api.php",
+                "https://example.com/fossid",
+            ),
+            (
+                "https://example.com/path/to/api.php",
+                "https://example.com/path/to",
+            ),
         ]
 
         for input_url, expected_base in test_cases:
@@ -213,7 +224,9 @@ class TestWorkbenchLinks:
             mock_base_api.api_url = input_url
             mock_scans_client._api = mock_base_api
 
-            results_service = ResultsService(mock_scans_client, mock_vulns_client)
+            results_service = ResultsService(
+                mock_scans_client, mock_vulns_client
+            )
             links = results_service.links(TEST_SCAN_ID)
             scan_url = links.scan["url"]
             assert scan_url.startswith(f"{expected_base}/index.html")
@@ -271,4 +284,3 @@ class TestWorkbenchLinks:
         policy_link = mock_results_service.link_to_policy(TEST_SCAN_ID)
         assert_link_data_structure(policy_link)
         assert "current_view=mark_as_identified" in policy_link["url"]
-

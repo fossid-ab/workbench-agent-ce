@@ -20,7 +20,7 @@ Usage:
     >>> # Use domain clients for direct API operations
     >>> projects = workbench.projects.list_projects()
     >>> scan_info = workbench.scans.get_information(scan_code)
-    >>> workbench.uploads.upload_scan_target(
+    >>> workbench.upload_service.upload_scan_target(
     ...     scan_code, "/path/to/source"
     ... )
     >>>
@@ -59,6 +59,7 @@ from workbench_agent.api.services import (
     ResultsService,
     ScanOperationsService,
     StatusCheckService,
+    UploadService,
     WaitingService,
 )
 
@@ -85,6 +86,7 @@ class WorkbenchClient:
     - `reports`: Report generation with validation and waiting
     - `results`: Fetch and aggregate scan results
     - `scan_operations`: Scan execution with standardized behavior
+    - `upload_service`: File upload operations with business logic
     - `waiting`: Convenient waiting methods for async operations
 
     Example:
@@ -93,7 +95,7 @@ class WorkbenchClient:
         >>> # Direct API operations via clients
         >>> all_projects = workbench.projects.list_projects()
         >>> scan_info = workbench.scans.get_information(scan_code)
-        >>> workbench.uploads.upload_scan_target(scan_code, "./src")
+        >>> workbench.upload_service.upload_scan_target(scan_code, "./src")
         >>>
         >>> # High-level workflows via services
         >>> p_code, s_code, is_new = (
@@ -176,7 +178,9 @@ class WorkbenchClient:
         # Services coordinate multiple clients for complex workflows
         logger.debug("Initializing orchestration services...")
 
-        self.resolver = ResolverService(projects_client=self.projects, scans_client=self.scans)
+        self.resolver = ResolverService(
+            projects_client=self.projects, scans_client=self.scans
+        )
 
         self.status_check = StatusCheckService(
             scans_client=self.scans, projects_client=self.projects
@@ -189,7 +193,8 @@ class WorkbenchClient:
         )
 
         self.results = ResultsService(
-            scans_client=self.scans, vulnerabilities_client=self.vulnerabilities
+            scans_client=self.scans,
+            vulnerabilities_client=self.vulnerabilities,
         )
 
         self.scan_operations = ScanOperationsService(
@@ -197,6 +202,8 @@ class WorkbenchClient:
         )
 
         self.waiting = WaitingService(status_check_service=self.status_check)
+
+        self.upload_service = UploadService(uploads_client=self.uploads)
 
         logger.debug("Orchestration services initialized successfully")
         logger.info("WorkbenchClient initialization complete")
@@ -236,16 +243,24 @@ class WorkbenchClient:
                     details={"config_data": config_data},
                 )
 
-            logger.debug(f"Detected Workbench server version: {workbench_version}")
+            logger.debug(
+                f"Detected Workbench server version: {workbench_version}"
+            )
 
             # Parse and compare versions
             try:
                 # Handle version strings that might have extra info
                 # (e.g., "24.3.0-beta", "2025.2.0#19347124129")
                 # Extract just the version number part
-                version_str = workbench_version.split()[0]  # Remove anything after space
-                version_str = version_str.split("-")[0]  # Remove anything after dash
-                version_str = version_str.split("#")[0]  # Remove build metadata after hash
+                version_str = workbench_version.split()[
+                    0
+                ]  # Remove anything after space
+                version_str = version_str.split("-")[
+                    0
+                ]  # Remove anything after dash
+                version_str = version_str.split("#")[
+                    0
+                ]  # Remove build metadata after hash
 
                 parsed_version = packaging_version.parse(version_str)
                 min_version = packaging_version.parse(MINIMUM_VERSION)

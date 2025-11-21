@@ -75,7 +75,7 @@ class ReportService:
             "supports_vex": True,
             "supports_dep_det_info": True,
             "supports_disclaimer": False,
-            "supports_report_content_type": True, 
+            "supports_report_content_type": True,
         },
         "spdx": {
             "supports_selection_type": True,
@@ -209,28 +209,19 @@ class ReportService:
                 f"reports and will be ignored"
             )
 
-        if (
-            disclaimer is not None
-            and not capabilities["supports_disclaimer"]
-        ):
+        if disclaimer is not None and not capabilities["supports_disclaimer"]:
             logger.warning(
                 f"disclaimer is not supported for '{report_type}' "
                 f"reports and will be ignored"
             )
 
-        if (
-            include_vex is not None
-            and not capabilities["supports_vex"]
-        ):
+        if include_vex is not None and not capabilities["supports_vex"]:
             logger.warning(
                 f"include_vex is not supported for '{report_type}' "
                 f"reports and will be ignored"
             )
 
-        if (
-            include_dep_det_info
-            and not capabilities["supports_dep_det_info"]
-        ):
+        if include_dep_det_info and not capabilities["supports_dep_det_info"]:
             logger.warning(
                 f"include_dep_det_info is only supported for Excel "
                 f"reports, ignoring for '{report_type}'"
@@ -350,9 +341,7 @@ class ReportService:
         }
 
         # Get capabilities for this report type
-        capabilities = self.REPORT_TYPE_CAPABILITIES.get(
-            report_type, {}
-        )
+        capabilities = self.REPORT_TYPE_CAPABILITIES.get(report_type, {})
 
         # Add optional filtering parameters (only if supported)
         if selection_type and capabilities.get("supports_selection_type"):
@@ -363,9 +352,8 @@ class ReportService:
             payload_data["disclaimer"] = disclaimer
 
         # Add Excel-specific parameters (only if supported)
-        if (
-            report_content_type
-            and capabilities.get("supports_report_content_type")
+        if report_content_type and capabilities.get(
+            "supports_report_content_type"
         ):
             payload_data["report_content_type"] = report_content_type
 
@@ -374,10 +362,7 @@ class ReportService:
             payload_data["include_vex"] = include_vex
 
         # Add include_dep_det_info parameter if requested and supported
-        if (
-            include_dep_det_info
-            and capabilities.get("supports_dep_det_info")
-        ):
+        if include_dep_det_info and capabilities.get("supports_dep_det_info"):
             payload_data["include_dep_det_info"] = include_dep_det_info
 
         return payload_data
@@ -449,9 +434,7 @@ class ReportService:
         }
 
         # Get capabilities for this report type
-        capabilities = self.REPORT_TYPE_CAPABILITIES.get(
-            report_type, {}
-        )
+        capabilities = self.REPORT_TYPE_CAPABILITIES.get(report_type, {})
 
         # Add optional filtering parameters (only if supported)
         if selection_type and capabilities.get("supports_selection_type"):
@@ -462,9 +445,8 @@ class ReportService:
             payload_data["disclaimer"] = disclaimer
 
         # Add report_content_type if supported (Excel/HTML)
-        if (
-            report_content_type
-            and capabilities.get("supports_report_content_type")
+        if report_content_type and capabilities.get(
+            "supports_report_content_type"
         ):
             payload_data["report_content_type"] = report_content_type
 
@@ -473,10 +455,7 @@ class ReportService:
             payload_data["include_vex"] = include_vex
 
         # Add include_dep_det_info parameter if requested and supported
-        if (
-            include_dep_det_info
-            and capabilities.get("supports_dep_det_info")
-        ):
+        if include_dep_det_info and capabilities.get("supports_dep_det_info"):
             payload_data["include_dep_det_info"] = include_dep_det_info
 
         return payload_data
@@ -511,9 +490,14 @@ class ReportService:
             ApiError: If report generation fails
         """
         # Build payload with validation
-        payload_data = self.build_project_report_payload(project_code, report_type, **options)
+        payload_data = self.build_project_report_payload(
+            project_code, report_type, **options
+        )
 
-        logger.info(f"Generating project report: project={project_code}, " f"type={report_type}")
+        logger.info(
+            f"Generating project report: project={project_code}, "
+            f"type={report_type}"
+        )
 
         # Delegate to the client's raw method
         return self._projects.generate_report(payload_data)
@@ -546,9 +530,13 @@ class ReportService:
             ApiError: If report generation fails
         """
         # Build payload with validation
-        payload_data = self.build_scan_report_payload(scan_code, report_type, **options)
+        payload_data = self.build_scan_report_payload(
+            scan_code, report_type, **options
+        )
 
-        logger.info(f"Generating scan report: scan={scan_code}, " f"type={report_type}")
+        logger.info(
+            f"Generating scan report: scan={scan_code}, " f"type={report_type}"
+        )
 
         # Delegate to the client's raw method
         return self._scans.generate_report(payload_data)
@@ -588,9 +576,7 @@ class ReportService:
         Raises:
             ApiError: If download fails
         """
-        logger.debug(
-            f"Downloading scan report for process ID {process_id}..."
-        )
+        logger.debug(f"Downloading scan report for process ID {process_id}...")
 
         # Delegate to the downloads client
         return self._downloads.download_report("scans", process_id)
@@ -659,20 +645,28 @@ class ReportService:
             FileSystemError: If file operations fail
         """
         if not output_dir:
-            raise ValidationError("Output directory is not specified for saving report.")
+            raise ValidationError(
+                "Output directory is not specified for saving report."
+            )
         if not name_component:
             raise ValidationError(
-                "Name component (scan/project name) is not specified " "for saving report."
+                "Name component (scan/project name) is not specified "
+                "for saving report."
             )
         if not report_type:
-            raise ValidationError("Report type is not specified for saving report.")
+            raise ValidationError(
+                "Report type is not specified for saving report."
+            )
 
         filename = ""
         content_to_write: Union[str, bytes] = b""
         write_mode = "wb"
 
         # Handle wrapped Response objects from base_api
-        if isinstance(response_or_content, dict) and "_raw_response" in response_or_content:
+        if (
+            isinstance(response_or_content, dict)
+            and "_raw_response" in response_or_content
+        ):
             response_or_content = response_or_content["_raw_response"]
 
         if isinstance(response_or_content, requests.Response):
@@ -690,10 +684,16 @@ class ReportService:
             try:
                 content_to_write = response.content
             except Exception as e:
-                raise FileSystemError(f"Failed to read content from response object: {e}")
+                raise FileSystemError(
+                    f"Failed to read content from response object: {e}"
+                )
 
             content_type = response.headers.get("content-type", "").lower()
-            if "text" in content_type or "json" in content_type or "html" in content_type:
+            if (
+                "text" in content_type
+                or "json" in content_type
+                or "html" in content_type
+            ):
                 write_mode = "w"
                 try:
                     content_to_write = content_to_write.decode(
@@ -719,7 +719,8 @@ class ReportService:
                 write_mode = "w"
             except TypeError as e:
                 raise ValidationError(
-                    f"Failed to serialize provided dictionary/list to " f"JSON: {e}"
+                    f"Failed to serialize provided dictionary/list to "
+                    f"JSON: {e}"
                 )
 
         elif isinstance(response_or_content, str):
@@ -742,7 +743,8 @@ class ReportService:
 
         else:
             raise ValidationError(
-                f"Unsupported content type for saving: " f"{type(response_or_content)}"
+                f"Unsupported content type for saving: "
+                f"{type(response_or_content)}"
             )
 
         filepath = os.path.join(output_dir, filename)
@@ -754,7 +756,9 @@ class ReportService:
                 f"Failed to create output directory '{output_dir}': {e}",
                 exc_info=True,
             )
-            raise FileSystemError(f"Could not create output directory '{output_dir}': {e}") from e
+            raise FileSystemError(
+                f"Could not create output directory '{output_dir}': {e}"
+            ) from e
 
         try:
             if write_mode == "w":
@@ -773,10 +777,14 @@ class ReportService:
                 f"Failed to write report to {filepath}: {e}",
                 exc_info=True,
             )
-            raise FileSystemError(f"Failed to write report to '{filepath}': {e}") from e
+            raise FileSystemError(
+                f"Failed to write report to '{filepath}': {e}"
+            ) from e
         except Exception as e:
             logger.error(
                 f"Unexpected error writing report to {filepath}: {e}",
                 exc_info=True,
             )
-            raise FileSystemError(f"Unexpected error writing report to '{filepath}': {e}") from e
+            raise FileSystemError(
+                f"Unexpected error writing report to '{filepath}': {e}"
+            ) from e

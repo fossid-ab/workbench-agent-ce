@@ -8,7 +8,11 @@ import pytest
 import requests
 
 from workbench_agent.api.helpers.base_api import BaseAPI
-from workbench_agent.api.exceptions import ApiError, AuthenticationError, NetworkError
+from workbench_agent.api.exceptions import (
+    ApiError,
+    AuthenticationError,
+    NetworkError,
+)
 
 
 # --- Fixtures ---
@@ -25,7 +29,9 @@ def api_base_inst(mock_session):
     """Create an BaseAPI instance with a properly mocked session."""
     # Create a new instance
     api_base = BaseAPI(
-        api_url="http://dummy.com/api.php", api_user="testuser", api_token="testtoken"
+        api_url="http://dummy.com/api.php",
+        api_user="testuser",
+        api_token="testtoken",
     )
     # Replace the session with our mock
     api_base.session = mock_session
@@ -34,12 +40,16 @@ def api_base_inst(mock_session):
 
 # --- Test BaseAPI init ---
 def test_api_base_init_url_fix():
-    api_base = BaseAPI(api_url="http://dummy.com", api_user="user", api_token="token")
+    api_base = BaseAPI(
+        api_url="http://dummy.com", api_user="user", api_token="token"
+    )
     assert api_base.api_url == "http://dummy.com/api.php"
 
 
 def test_api_base_init_url_correct():
-    api_base = BaseAPI(api_url="http://dummy.com/api.php", api_user="user", api_token="token")
+    api_base = BaseAPI(
+        api_url="http://dummy.com/api.php", api_user="user", api_token="token"
+    )
     assert api_base.api_url == "http://dummy.com/api.php"
 
 
@@ -71,14 +81,18 @@ def test_send_request_api_error(api_base_inst, mock_session):
 
 
 def test_send_request_network_error(api_base_inst, mock_session):
-    mock_session.post.side_effect = requests.exceptions.ConnectionError("Failed to connect")
+    mock_session.post.side_effect = requests.exceptions.ConnectionError(
+        "Failed to connect"
+    )
     payload = {"group": "test", "action": "connectfail"}
     with pytest.raises(NetworkError, match="Connection error:"):
         api_base_inst._send_request(payload)
 
 
 def test_send_request_timeout(api_base_inst, mock_session):
-    mock_session.post.side_effect = requests.exceptions.Timeout("Request timed out")
+    mock_session.post.side_effect = requests.exceptions.Timeout(
+        "Request timed out"
+    )
     payload = {"group": "test", "action": "timeout"}
     with pytest.raises(NetworkError, match="Request timeout after"):
         api_base_inst._send_request(payload)
@@ -89,7 +103,9 @@ def test_send_request_json_decode_error(api_base_inst, mock_session):
     mock_response.status_code = 200
     mock_response.headers = {"content-type": "application/json"}  # Claims JSON
     mock_response.text = "This is not JSON"
-    mock_response.json.side_effect = json.JSONDecodeError("Expecting value", "This is not JSON", 0)
+    mock_response.json.side_effect = json.JSONDecodeError(
+        "Expecting value", "This is not JSON", 0
+    )
     mock_session.post.return_value = mock_response
     payload = {"group": "test", "action": "badjson"}
     with pytest.raises(ApiError, match="Invalid JSON response:"):
@@ -158,5 +174,7 @@ def test_send_request_git_repository_access_error(api_base_inst, mock_session):
     with pytest.raises(ApiError) as exc_info:
         api_base_inst._send_request(payload)
 
-    assert "RequestData.Base.issues_while_parsing_request" in str(exc_info.value)
+    assert "RequestData.Base.issues_while_parsing_request" in str(
+        exc_info.value
+    )
     # The API error should contain the parsing issue message

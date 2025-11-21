@@ -10,4 +10,3 @@ end-to-end workflows. They require:
 Run with: pytest -v -m functional
 Run in parallel: pytest -v -m functional -n 4
 """
-

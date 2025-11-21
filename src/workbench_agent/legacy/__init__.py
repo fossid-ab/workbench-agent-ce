@@ -131,7 +131,9 @@ def handle_legacy_main() -> int:
         # Initialize legacy Workbench API client
         logger.info("Initializing legacy Workbench API client...")
         workbench = Workbench(
-            api_url=params.api_url, api_user=params.api_user, api_token=params.api_token
+            api_url=params.api_url,
+            api_user=params.api_user,
+            api_token=params.api_token,
         )
 
         # Execute legacy scan workflow

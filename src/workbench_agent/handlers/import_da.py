@@ -2,15 +2,10 @@
 
 import argparse
 import logging
-import os
 from typing import TYPE_CHECKING
 
 from workbench_agent.api.exceptions import ProcessError, ProcessTimeoutError
-from workbench_agent.exceptions import (
-    FileSystemError,
-    ValidationError,
-    WorkbenchAgentError,
-)
+from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
     fetch_display_save_results,
@@ -24,7 +19,9 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
+def handle_import_da(
+    client: "WorkbenchClient", params: argparse.Namespace
+) -> bool:
     """
     Handler for the 'import-da' command.
 
@@ -61,15 +58,13 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
     # Initialize timing dictionary
     durations = {"dependency_analysis": 0.0}
 
-    # Note: Path existence is validated at CLI layer (cli/validators.py)
-    # Business logic validation: import-da specifically requires files, not directories
-    if not os.path.isfile(params.path):
-        raise ValidationError(f"The provided path must be a file: {params.path}")
+    # Note: Path existence, file type, and filename validation
+    # are handled at CLI layer (cli/validators.py)
 
     # Resolve project and scan (find or create)
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    project_code, scan_code, scan_is_new = client.resolver.resolve_project_and_scan(
+    _, scan_code, scan_is_new = client.resolver.resolve_project_and_scan(
         project_name=params.project_name,
         scan_name=params.scan_name,
         params=params,
@@ -88,16 +83,21 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         except Exception as e:
             logger.debug(f"Dependency analysis check skipped: {e}")
     else:
-        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
+        logger.debug(
+            "Skipping idle checks - new scan is guaranteed to be idle"
+        )
 
     # Upload dependency analysis file
     print("\n--- Uploading Dependency Analysis File ---")
     try:
-        client.uploads.upload_dependency_analysis_results(scan_code=scan_code, path=params.path)
+        client.upload_service.upload_da_results(
+            scan_code=scan_code, path=params.path
+        )
         print("Dependency analysis results uploaded successfully!")
     except Exception as e:
         logger.error(
-            f"Failed to upload dependency analysis file for " f"'{scan_code}': {e}",
+            f"Failed to upload dependency analysis file for "
+            f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(
@@ -113,7 +113,8 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         print("Dependency analysis import initiated successfully.")
     except Exception as e:
         logger.error(
-            f"Failed to start dependency analysis import for " f"'{scan_code}': {e}",
+            f"Failed to start dependency analysis import for "
+            f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(
@@ -142,26 +143,31 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         )
 
         # Store the DA import duration
-        durations["dependency_analysis"] = dependency_analysis_status.duration or 0.0
+        durations["dependency_analysis"] = (
+            dependency_analysis_status.duration or 0.0
+        )
         da_completed = True
 
         print("Dependency Analysis import completed successfully.")
 
     except ProcessTimeoutError:
         logger.error(
-            f"Error during dependency analysis import for " f"'{scan_code}': timeout",
+            f"Error during dependency analysis import for "
+            f"'{scan_code}': timeout",
             exc_info=True,
         )
         raise
     except ProcessError:
         logger.error(
-            f"Error during dependency analysis import for " f"'{scan_code}': process error",
+            f"Error during dependency analysis import for "
+            f"'{scan_code}': process error",
             exc_info=True,
         )
         raise
     except Exception as e:
         logger.error(
-            f"Unexpected error during dependency analysis import for " f"'{scan_code}': {e}",
+            f"Unexpected error during dependency analysis import for "
+            f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(

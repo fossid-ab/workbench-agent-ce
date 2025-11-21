@@ -101,7 +101,9 @@ def _print_validation_summary(sbom_format: str, version: str, metadata: Dict):
 
 
 @handler_error_wrapper
-def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
+def handle_import_sbom(
+    client: "WorkbenchClient", params: argparse.Namespace
+) -> bool:
     """
     Handler for the 'import-sbom' command.
 
@@ -160,18 +162,22 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
         )
 
         if temp_file_created:
-            print(f"  Converted for upload: " f"{os.path.basename(upload_path)}")
+            print(
+                f"  Converted for upload: " f"{os.path.basename(upload_path)}"
+            )
         else:
             print("  Using original file format")
 
         # Resolve project and scan (find or create)
         print("\n--- Project and Scan Checks ---")
         print("Checking target Project and Scan...")
-        project_code, scan_code, scan_is_new = client.resolver.resolve_project_and_scan(
-            project_name=params.project_name,
-            scan_name=params.scan_name,
-            params=params,
-            import_from_report=True,
+        project_code, scan_code, scan_is_new = (
+            client.resolver.resolve_project_and_scan(
+                project_name=params.project_name,
+                scan_name=params.scan_name,
+                params=params,
+                import_from_report=True,
+            )
         )
 
         # Ensure scan is idle before starting SBOM import
@@ -187,12 +193,16 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
             except Exception as e:
                 logger.debug(f"Report import check skipped: {e}")
         else:
-            logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
+            logger.debug(
+                "Skipping idle checks - new scan is guaranteed to be idle"
+            )
 
         # Upload SBOM file using the prepared upload path
         print("\n--- Uploading SBOM File ---")
         try:
-            client.uploads.upload_sbom_file(scan_code=scan_code, path=upload_path)
+            client.upload_service.upload_sbom_file(
+                scan_code=scan_code, path=upload_path
+            )
             print(f"SBOM uploaded successfully from: {upload_path}")
         except Exception as e:
             logger.error(
@@ -251,7 +261,8 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
             raise
         except Exception as e:
             logger.error(
-                f"Unexpected error during SBOM import for " f"'{scan_code}': {e}",
+                f"Unexpected error during SBOM import for "
+                f"'{scan_code}': {e}",
                 exc_info=True,
             )
             raise WorkbenchAgentError(

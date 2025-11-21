@@ -91,16 +91,24 @@ class ResolverService:
         """
         logger.debug(f"Looking up project '{project_name}'...")
         projects = self.projects.list_projects()
-        project = next((p for p in projects if p.get("project_name") == project_name), None)
+        project = next(
+            (p for p in projects if p.get("project_name") == project_name),
+            None,
+        )
 
         if project:
             project_code = project["project_code"]
-            logger.debug(f"Found project '{project_name}' " f"with code '{project_code}'")
+            logger.debug(
+                f"Found project '{project_name}' "
+                f"with code '{project_code}'"
+            )
             return str(project_code)
 
         raise ProjectNotFoundError(f"Project '{project_name}' not found")
 
-    def find_scan(self, scan_name: str, project_name: Optional[str] = None) -> Tuple[str, int]:
+    def find_scan(
+        self, scan_name: str, project_name: Optional[str] = None
+    ) -> Tuple[str, int]:
         """
         Find a scan by name. Raises if not found.
 
@@ -141,7 +149,10 @@ class ResolverService:
             # Efficient path: Search within specific project
             # Flow: project_name → [list_projects] → project_code →
             #       [get_all_scans] → scan list
-            logger.debug(f"Looking up scan '{scan_name}' " f"in project '{project_name}'...")
+            logger.debug(
+                f"Looking up scan '{scan_name}' "
+                f"in project '{project_name}'..."
+            )
 
             # Step 1: Resolve project_name to project_code
             # This requires projects->list_projects
@@ -152,7 +163,9 @@ class ResolverService:
             scan_list = self.projects.get_all_scans(project_code)
 
             # Step 3: Find exact scan match
-            scan = next((s for s in scan_list if s.get("name") == scan_name), None)
+            scan = next(
+                (s for s in scan_list if s.get("name") == scan_name), None
+            )
             if scan:
                 logger.debug(
                     f"Found scan '{scan_name}' with code '{scan['code']}' "
@@ -161,20 +174,25 @@ class ResolverService:
                 return scan["code"], int(scan["id"])
 
             # Scan not found in this project
-            raise ScanNotFoundError(f"Scan '{scan_name}' not found in project '{project_name}'")
+            raise ScanNotFoundError(
+                f"Scan '{scan_name}' not found in project '{project_name}'"
+            )
         else:
             # Heavy path: Global search across all scans
             # Uses scans->list_scans (memory intensive!)
             # Rarely needed - most use cases should provide project_name
             logger.debug(
-                f"Looking up scan '{scan_name}' globally " f"(using heavy scans->list_scans)..."
+                f"Looking up scan '{scan_name}' globally "
+                f"(using heavy scans->list_scans)..."
             )
             logger.warning(
                 "Global scan search is memory intensive! "
                 "Consider providing project_name if known."
             )
             all_scans = self.scans.list_scans()
-            scan = next((s for s in all_scans if s.get("name") == scan_name), None)
+            scan = next(
+                (s for s in all_scans if s.get("name") == scan_name), None
+            )
             if scan:
                 logger.debug(
                     f"Found scan '{scan_name}' with code '{scan['code']}' "
@@ -234,7 +252,9 @@ class ResolverService:
         # Try to find scan
         scan_is_new = False
         try:
-            scan_code, _ = self.find_scan(scan_name=scan_name, project_name=project_name)
+            scan_code, _ = self.find_scan(
+                scan_name=scan_name, project_name=project_name
+            )
         except ScanNotFoundError:
             scan_code, _ = self._create_scan(
                 scan_name=scan_name,
@@ -261,7 +281,9 @@ class ResolverService:
             self.ensure_scan_compatible(scan_code, params.command, params)
             print("✓ Compatibility check passed")
         else:
-            logger.debug("Skipping compatibility check - new scan is always compatible")
+            logger.debug(
+                "Skipping compatibility check - new scan is always compatible"
+            )
 
         return project_code, scan_code, scan_is_new
 
@@ -339,7 +361,9 @@ class ResolverService:
             ProjectNotFoundError: If project doesn't exist
             ApiError: If scan creation fails
         """
-        logger.debug(f"Creating scan '{scan_name}' in project '{project_code}'...")
+        logger.debug(
+            f"Creating scan '{scan_name}' in project '{project_code}'..."
+        )
         print(f"Creating scan '{scan_name}' in project '{project_code}'...")
 
         # Build scan data from parameters
@@ -385,7 +409,8 @@ class ResolverService:
         scan = next((s for s in scan_list if s.get("name") == scan_name), None)
         if scan:
             logger.debug(
-                f"Created scan '{scan_name}' with code '{scan['code']}' " f"and ID {scan['id']}"
+                f"Created scan '{scan_name}' with code '{scan['code']}' "
+                f"and ID {scan['id']}"
             )
             return scan["code"], int(scan["id"])
 
@@ -417,18 +442,27 @@ class ResolverService:
             failing hard.
         """
         logger.debug(
-            f"Verifying scan '{scan_code}' is compatible with operation " f"'{operation}'..."
+            f"Verifying scan '{scan_code}' is compatible with operation "
+            f"'{operation}'..."
         )
 
         # Fetch scan information
         try:
             existing_scan_info = self.scans.get_information(scan_code)
         except ScanNotFoundError:
-            logger.warning(f"Scan '{scan_code}' not found during compatibility check.")
+            logger.warning(
+                f"Scan '{scan_code}' not found during compatibility check."
+            )
             return
         except (ApiError, NetworkError) as e:
-            logger.warning(f"Error fetching scan information during compatibility " f"check: {e}")
-            print(f"Warning: Could not verify scan compatibility due to API " f"error: {e}")
+            logger.warning(
+                f"Error fetching scan information during compatibility "
+                f"check: {e}"
+            )
+            print(
+                f"Warning: Could not verify scan compatibility due to API "
+                f"error: {e}"
+            )
             return
 
         # Extract existing scan configuration
@@ -450,9 +484,13 @@ class ResolverService:
         current_git_branch = getattr(params, "git_branch", None)
         current_git_tag = getattr(params, "git_tag", None)
         current_git_ref_type = (
-            "tag" if current_git_tag else ("branch" if current_git_branch else None)
+            "tag"
+            if current_git_tag
+            else ("branch" if current_git_branch else None)
         )
-        current_git_ref_value = current_git_tag if current_git_tag else current_git_branch
+        current_git_ref_value = (
+            current_git_tag if current_git_tag else current_git_branch
+        )
 
         error_message = None
 
@@ -493,7 +531,8 @@ class ResolverService:
             elif (
                 current_git_ref_type
                 and existing_git_ref_type
-                and existing_git_ref_type.lower() != current_git_ref_type.lower()
+                and existing_git_ref_type.lower()
+                != current_git_ref_type.lower()
             ):
                 error_message = (
                     f"Scan '{scan_code}' exists with ref type "
@@ -533,21 +572,30 @@ class ResolverService:
         # Raise error if incompatible
         if error_message:
             print("\nError: Incompatible scan usage detected.")
-            logger.error(f"Compatibility check failed for scan '{scan_code}': " f"{error_message}")
+            logger.error(
+                f"Compatibility check failed for scan '{scan_code}': "
+                f"{error_message}"
+            )
             raise CompatibilityError(
-                f"Incompatible usage for existing scan '{scan_code}': " f"{error_message}"
+                f"Incompatible usage for existing scan '{scan_code}': "
+                f"{error_message}"
             )
 
         # Log success
         logging.info("Compatibility check passed! Proceeding...")
         if operation == "scan-git" and existing_git_repo:
-            ref_display = f"{existing_git_ref_type or 'ref'} '{existing_git_ref_value}'"
+            ref_display = (
+                f"{existing_git_ref_type or 'ref'} '{existing_git_ref_value}'"
+            )
             logger.debug(
                 f"Reusing existing scan '{scan_code}' configured for Git "
                 f"repository '{existing_git_repo}' ({ref_display})."
             )
         elif operation in ("scan", "blind-scan") and not existing_git_repo:
-            logger.debug(f"Reusing existing scan '{scan_code}' configured for code " f"upload.")
+            logger.debug(
+                f"Reusing existing scan '{scan_code}' configured for code "
+                f"upload."
+            )
         elif operation == "import-da":
             logger.debug(f"Reusing existing scan '{scan_code}' for DA import.")
         elif operation == "import-sbom":
@@ -612,12 +660,16 @@ class ResolverService:
         if id_reuse_project_name:
             return self._resolve_project_reuse(id_reuse_project_name)
         elif id_reuse_scan_name:
-            return self._resolve_scan_reuse(id_reuse_scan_name, current_project_name)
+            return self._resolve_scan_reuse(
+                id_reuse_scan_name, current_project_name
+            )
 
         # No ID reuse requested
         return None, None
 
-    def _resolve_project_reuse(self, project_name: str) -> tuple[Optional[str], Optional[str]]:
+    def _resolve_project_reuse(
+        self, project_name: str
+    ) -> tuple[Optional[str], Optional[str]]:
         """
         Resolve project reuse - warn and return None if fails.
 
@@ -626,8 +678,12 @@ class ResolverService:
         """
         try:
             project_code = self.find_project(project_name)
-            logger.info(f"ID reuse: project '{project_name}' → '{project_code}'")
-            print(f"✓ Successfully validated ID reuse project '{project_name}'")
+            logger.info(
+                f"ID reuse: project '{project_name}' → '{project_code}'"
+            )
+            print(
+                f"✓ Successfully validated ID reuse project '{project_name}'"
+            )
             return "specific_project", project_code
         except Exception as e:
             self._handle_reuse_failure("project", project_name, e)
@@ -655,7 +711,9 @@ class ResolverService:
                     f"then global if needed)"
                 )
                 try:
-                    scan_code, _ = self.find_scan(scan_name, current_project_name)
+                    scan_code, _ = self.find_scan(
+                        scan_name, current_project_name
+                    )
                     logger.info(
                         f"Found ID reuse source scan '{scan_name}' in current "
                         f"project '{current_project_name}'."
@@ -682,7 +740,9 @@ class ResolverService:
             self._handle_reuse_failure("scan", scan_name, e)
             return None, None
 
-    def _handle_reuse_failure(self, reuse_type: str, name: str, error: Exception) -> None:
+    def _handle_reuse_failure(
+        self, reuse_type: str, name: str, error: Exception
+    ) -> None:
         """
         Handle ID reuse resolution failure with consistent messaging.
 

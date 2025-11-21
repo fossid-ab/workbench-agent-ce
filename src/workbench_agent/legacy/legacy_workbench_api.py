@@ -67,7 +67,9 @@ class Workbench:
         logger.debug("url %s", url)
         logger.debug("url %s", headers)
         logger.debug(req_body)
-        response = requests.request("POST", url, headers=headers, data=req_body, timeout=1800)
+        response = requests.request(
+            "POST", url, headers=headers, data=req_body, timeout=1800
+        )
         logger.debug(response.text)
         try:
             # Attempt to parse the JSON
@@ -81,7 +83,9 @@ class Workbench:
             print("Problematic JSON:")
             print(response.text)
 
-    def _read_in_chunks(self, file_object: io.BufferedReader, chunk_size=5242880):
+    def _read_in_chunks(
+        self, file_object: io.BufferedReader, chunk_size=5242880
+    ):
         """
         Generator to read a file piece by piece.
 
@@ -95,7 +99,9 @@ class Workbench:
                 break
             yield data
 
-    def _chunked_upload_request(self, scan_code: str, headers: dict, chunk: bytes):
+    def _chunked_upload_request(
+        self, scan_code: str, headers: dict, chunk: bytes
+    ):
         """
         This function will make sure Content-Length header is not sent by Requests library
         Args:
@@ -147,7 +153,9 @@ class Workbench:
             print(traceback.print_exc())
             sys.exit(1)
 
-    def upload_files(self, scan_code: str, path: str, chunked_upload: bool = False):
+    def upload_files(
+        self, scan_code: str, path: str, chunked_upload: bool = False
+    ):
         """
         Uploads files to the Workbench using the API's File Upload endpoint.
 
@@ -192,7 +200,10 @@ class Workbench:
             print("Finished uploading.")
         else:
             # Regular upload, no chunk upload
-            headers = {"FOSSID-SCAN-CODE": scan_code_base64, "FOSSID-FILE-NAME": filename_base64}
+            headers = {
+                "FOSSID-SCAN-CODE": scan_code_base64,
+                "FOSSID-FILE-NAME": filename_base64,
+            }
             print("Uploading...")
             try:
                 with open(path, "rb") as file:
@@ -281,10 +292,14 @@ class Workbench:
         }
         response = self._send_request(payload)
         if response["status"] != "1":
-            raise builtins.Exception("Failed to create scan {}: {}".format(scan_code, response))
+            raise builtins.Exception(
+                "Failed to create scan {}: {}".format(scan_code, response)
+            )
         if "error" in response.keys():
             raise builtins.Exception(
-                "Failed to create scan {}: {}".format(scan_code, response["error"])
+                "Failed to create scan {}: {}".format(
+                    scan_code, response["error"]
+                )
             )
         return response["data"]["scan_id"]
 
@@ -395,7 +410,8 @@ class Workbench:
                 ):
                     print(
                         "Scan percentage_done = {}%, scan has finished. Status: {}".format(
-                            scan_status["percentage_done"], scan_status["status"]
+                            scan_status["percentage_done"],
+                            scan_status["status"],
                         )
                     )
                     duration = time.time() - start_time
@@ -408,7 +424,9 @@ class Workbench:
             # If scan did not finished, print info about progress
             print(
                 "Scan {} is running. Percentage done: {}%  Status: {}".format(
-                    scan_code, scan_status["percentage_done"], scan_status["status"]
+                    scan_code,
+                    scan_status["percentage_done"],
+                    scan_status["status"],
                 )
             )
             # Wait given time
@@ -642,7 +660,9 @@ class Workbench:
         }
         response = self._send_request(payload)
         if response["status"] != "1":
-            raise builtins.Exception("Error cancelling scan: {}".format(response))
+            raise builtins.Exception(
+                "Error cancelling scan: {}".format(response)
+            )
 
     def _assert_scan_can_start(self, scan_code: str):
         """
@@ -661,7 +681,9 @@ class Workbench:
         #     public const FAILED = 'FAILED';
         if scan_status["status"] not in ["NEW", "FINISHED", "FAILED"]:
             raise builtins.Exception(
-                "Cannot start scan. Current status of the scan is {}.".format(scan_status["status"])
+                "Cannot start scan. Current status of the scan is {}.".format(
+                    scan_status["status"]
+                )
             )
 
     def assert_dependency_analysis_can_start(self, scan_code: str):
@@ -716,7 +738,9 @@ class Workbench:
         }
         response = self._send_request(payload)
         if response["status"] == "0":
-            raise builtins.Exception("Call extract_archives returned error: {}".format(response))
+            raise builtins.Exception(
+                "Call extract_archives returned error: {}".format(response)
+            )
         return True
 
     def check_if_scan_exists(self, scan_code: str):
@@ -790,7 +814,9 @@ class Workbench:
         }
         response = self._send_request(payload)
         if response["status"] != "1":
-            raise builtins.Exception("Failed to create project: {}".format(response))
+            raise builtins.Exception(
+                "Failed to create project: {}".format(response)
+            )
         print("Created project {}".format(project_code))
 
     def run_scan(
@@ -830,7 +856,9 @@ class Workbench:
         scan_exists = self.check_if_scan_exists(scan_code)
         if not scan_exists:
             raise builtins.Exception(
-                "Scan with scan_code: {} doesn't exist when calling 'run' action!".format(scan_code)
+                "Scan with scan_code: {} doesn't exist when calling 'run' action!".format(
+                    scan_code
+                )
             )
 
         self._assert_scan_can_start(scan_code)
@@ -847,7 +875,9 @@ class Workbench:
                 "auto_identification_detect_declaration": int(
                     auto_identification_detect_declaration
                 ),
-                "auto_identification_detect_copyright": int(auto_identification_detect_copyright),
+                "auto_identification_detect_copyright": int(
+                    auto_identification_detect_copyright
+                ),
                 "auto_identification_resolve_pending_ids": int(
                     auto_identification_resolve_pending_ids
                 ),
@@ -856,12 +886,17 @@ class Workbench:
             },
         }
         if match_filtering_threshold > -1:
-            payload["data"]["match_filtering_threshold"] = match_filtering_threshold
+            payload["data"][
+                "match_filtering_threshold"
+            ] = match_filtering_threshold
         if reuse_identification:
             data = payload["data"]
             data["reuse_identification"] = "1"
             # 'any', 'only_me', 'specific_project', 'specific_scan'
-            if identification_reuse_type in {"specific_project", "specific_scan"}:
+            if identification_reuse_type in {
+                "specific_project",
+                "specific_scan",
+            }:
                 data["identification_reuse_type"] = identification_reuse_type
                 data["specific_code"] = specific_code
             else:
@@ -870,10 +905,14 @@ class Workbench:
         response = self._send_request(payload)
         if response["status"] != "1":
             logger.error(
-                "Failed to start scan {}: {} payload {}".format(scan_code, response, payload)
+                "Failed to start scan {}: {} payload {}".format(
+                    scan_code, response, payload
+                )
             )
             raise builtins.Exception(
-                "Failed to start scan {}: {}".format(scan_code, response["error"])
+                "Failed to start scan {}: {}".format(
+                    scan_code, response["error"]
+                )
             )
         return response
 
@@ -886,7 +925,9 @@ class Workbench:
             filename (str): The file to be deleted
             scan_code (str): The unique identifier for the scan.
         """
-        print("Called scans->remove_uploaded_content on file {}".format(filename))
+        print(
+            "Called scans->remove_uploaded_content on file {}".format(filename)
+        )
         payload = {
             "group": "scans",
             "action": "remove_uploaded_content",

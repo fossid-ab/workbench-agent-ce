@@ -21,7 +21,9 @@ class SBOMValidator:
     SUPPORTED_EXTENSIONS = {".json", ".rdf", ".xml", ".spdx"}
 
     @staticmethod
-    def validate_sbom_file(file_path: str) -> Tuple[str, str, Dict[str, Any], Any]:
+    def validate_sbom_file(
+        file_path: str,
+    ) -> Tuple[str, str, Dict[str, Any], Any]:
         """
         Validates an SBOM file and returns format information and parsed document.
 
@@ -63,10 +65,14 @@ class SBOMValidator:
             return SBOMValidator._validate_spdx(file_path)
 
         # This case is defensive, as _detect_sbom_format should have already raised an error
-        raise ValidationError(f"Unable to determine SBOM format for file: {file_path}")
+        raise ValidationError(
+            f"Unable to determine SBOM format for file: {file_path}"
+        )
 
     @staticmethod
-    def prepare_sbom_for_upload(file_path: str, sbom_format: str, parsed_document: Any) -> str:
+    def prepare_sbom_for_upload(
+        file_path: str, sbom_format: str, parsed_document: Any
+    ) -> str:
         """
         Prepares an SBOM file for upload to Workbench, converting format if needed.
 
@@ -85,12 +91,16 @@ class SBOMValidator:
             # CycloneDX is already in JSON format that Workbench expects
             return file_path
         elif sbom_format == "spdx":
-            return SBOMValidator._prepare_spdx_for_upload(file_path, parsed_document)
+            return SBOMValidator._prepare_spdx_for_upload(
+                file_path, parsed_document
+            )
         else:
             raise ValidationError(f"Unknown SBOM format: {sbom_format}")
 
     @staticmethod
-    def validate_and_prepare_sbom(file_path: str) -> Tuple[str, str, Dict[str, Any], str]:
+    def validate_and_prepare_sbom(
+        file_path: str,
+    ) -> Tuple[str, str, Dict[str, Any], str]:
         """
         Validates an SBOM file and prepares it for upload to Workbench.
         This is a convenience method that combines validation and preparation.
@@ -110,12 +120,14 @@ class SBOMValidator:
             ValidationError: If the file is not a valid SBOM or unsupported format/version
         """
         # Validate the SBOM file
-        sbom_format, version, metadata, parsed_document = SBOMValidator.validate_sbom_file(
-            file_path
+        sbom_format, version, metadata, parsed_document = (
+            SBOMValidator.validate_sbom_file(file_path)
         )
 
         # Prepare for upload
-        upload_path = SBOMValidator.prepare_sbom_for_upload(file_path, sbom_format, parsed_document)
+        upload_path = SBOMValidator.prepare_sbom_for_upload(
+            file_path, sbom_format, parsed_document
+        )
 
         return sbom_format, version, metadata, upload_path
 
@@ -146,7 +158,10 @@ class SBOMValidator:
         # Check for CycloneDX markers
         if '"bomformat"' in content_lower and '"cyclonedx"' in content_lower:
             return "cyclonedx"
-        if '"bomFormat"' in content_preview and '"CycloneDX"' in content_preview:
+        if (
+            '"bomFormat"' in content_preview
+            and '"CycloneDX"' in content_preview
+        ):
             return "cyclonedx"
 
         # Check for SPDX markers
@@ -167,7 +182,9 @@ class SBOMValidator:
             return "spdx"
 
         # Additional checks for XML/RDF SPDX
-        if ("<rdf:" in content_lower or "<RDF:" in content_lower) and "spdx" in content_lower:
+        if (
+            "<rdf:" in content_lower or "<RDF:" in content_lower
+        ) and "spdx" in content_lower:
             return "spdx"
 
         raise ValidationError(
@@ -175,7 +192,9 @@ class SBOMValidator:
         )
 
     @staticmethod
-    def _validate_cyclonedx(file_path: str) -> Tuple[str, str, Dict[str, Any], Dict]:
+    def _validate_cyclonedx(
+        file_path: str,
+    ) -> Tuple[str, str, Dict[str, Any], Dict]:
         """
         Validates a CycloneDX file (JSON format).
 
@@ -199,7 +218,10 @@ class SBOMValidator:
             bom_data = json.loads(content)
 
             # Check if it looks like a CycloneDX BOM
-            if "bomFormat" not in bom_data or bom_data.get("bomFormat") != "CycloneDX":
+            if (
+                "bomFormat" not in bom_data
+                or bom_data.get("bomFormat") != "CycloneDX"
+            ):
                 raise ValidationError(
                     "File does not appear to be a CycloneDX BOM (missing or incorrect bomFormat)"
                 )
@@ -207,7 +229,9 @@ class SBOMValidator:
             # Get spec version
             spec_version = bom_data.get("specVersion", "")
             if not spec_version:
-                raise ValidationError("CycloneDX BOM is missing specVersion field")
+                raise ValidationError(
+                    "CycloneDX BOM is missing specVersion field"
+                )
 
             # Map spec version to SchemaVersion enum
             version_mapping = {
@@ -241,7 +265,9 @@ class SBOMValidator:
                 raise  # Re-raise validation errors as-is
             except Exception as validation_error:
                 # If the validator itself fails, still try to proceed but log the issue
-                logger.warning(f"CycloneDX validator encountered an issue: {validation_error}")
+                logger.warning(
+                    f"CycloneDX validator encountered an issue: {validation_error}"
+                )
                 # We'll still proceed if basic structure is valid
 
             # Check if version is supported for upload (1.4-1.6)
@@ -251,7 +277,9 @@ class SBOMValidator:
                     f"Valid CycloneDX {spec_version} SBOM detected, but only versions {', '.join(supported_upload_versions)} are supported for import. Please convert your SBOM to a supported version."
                 )
 
-            logger.debug(f"Successfully validated CycloneDX file, version {spec_version}")
+            logger.debug(
+                f"Successfully validated CycloneDX file, version {spec_version}"
+            )
 
             # Extract metadata
             metadata = {
@@ -271,9 +299,12 @@ class SBOMValidator:
             raise  # Re-raise validation errors as-is
         except Exception as e:
             logger.error(
-                f"Unexpected error validating CycloneDX file '{file_path}': {e}", exc_info=True
+                f"Unexpected error validating CycloneDX file '{file_path}': {e}",
+                exc_info=True,
             )
-            raise ValidationError(f"Failed to validate CycloneDX file: {e}") from e
+            raise ValidationError(
+                f"Failed to validate CycloneDX file: {e}"
+            ) from e
 
     @staticmethod
     def _validate_spdx(file_path: str) -> Tuple[str, str, Dict[str, Any], Any]:
@@ -286,7 +317,9 @@ class SBOMValidator:
         try:
             from spdx_tools.spdx.model import Document, Version
             from spdx_tools.spdx.parser.parse_anything import parse_file
-            from spdx_tools.spdx.validation.document_validator import validate_full_spdx_document
+            from spdx_tools.spdx.validation.document_validator import (
+                validate_full_spdx_document,
+            )
         except ImportError as e:
             raise ValidationError(
                 "SPDX tools library not available. Please install spdx-tools."
@@ -297,12 +330,16 @@ class SBOMValidator:
             document = parse_file(file_path)
 
             if not isinstance(document, Document):
-                raise ValidationError("File does not contain a valid SPDX document")
+                raise ValidationError(
+                    "File does not contain a valid SPDX document"
+                )
 
             # Validate the document
             validation_messages = validate_full_spdx_document(document)
             if validation_messages:
-                error_messages = [msg.validation_message for msg in validation_messages]
+                error_messages = [
+                    msg.validation_message for msg in validation_messages
+                ]
                 raise ValidationError(
                     f"SPDX document validation failed: {'; '.join(error_messages[:5])}"
                 )  # Show first 5 errors
@@ -321,13 +358,17 @@ class SBOMValidator:
                     f"SPDX version {version_str} is not supported. Supported versions: {', '.join(supported_versions)}"
                 )
 
-            logger.debug(f"Successfully validated SPDX file, version {version_str}")
+            logger.debug(
+                f"Successfully validated SPDX file, version {version_str}"
+            )
 
             metadata = {
                 "spdx_version": version_str,
                 "name": document.creation_info.name,
                 "document_namespace": document.creation_info.document_namespace,
-                "packages_count": len(document.packages) if document.packages else 0,
+                "packages_count": (
+                    len(document.packages) if document.packages else 0
+                ),
                 "files_count": len(document.files) if document.files else 0,
             }
 
@@ -338,7 +379,10 @@ class SBOMValidator:
         except FileNotFoundError:
             raise FileSystemError(f"SBOM file not found: {file_path}")
         except Exception as e:
-            logger.error(f"Unexpected error validating SPDX file '{file_path}': {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error validating SPDX file '{file_path}': {e}",
+                exc_info=True,
+            )
             raise ValidationError(f"Failed to validate SPDX file: {e}") from e
 
     @staticmethod
@@ -357,7 +401,9 @@ class SBOMValidator:
         file_ext = Path(file_path).suffix.lower()
         if file_ext == ".json":
             # Convert JSON SPDX to RDF format
-            logger.debug("Converting SPDX JSON to RDF format for Workbench compatibility")
+            logger.debug(
+                "Converting SPDX JSON to RDF format for Workbench compatibility"
+            )
 
             try:
                 from spdx_tools.spdx.writer.write_anything import write_file
@@ -367,14 +413,20 @@ class SBOMValidator:
                 ) from e
 
             # Create temporary RDF file
-            temp_fd, temp_path = tempfile.mkstemp(suffix=".rdf", prefix="spdx_converted_")
+            temp_fd, temp_path = tempfile.mkstemp(
+                suffix=".rdf", prefix="spdx_converted_"
+            )
             try:
                 os.close(temp_fd)  # Close the file descriptor
 
                 # Write document as RDF
-                write_file(document, temp_path, validate=False)  # Already validated above
+                write_file(
+                    document, temp_path, validate=False
+                )  # Already validated above
 
-                logger.debug(f"Successfully converted SPDX to RDF format: {temp_path}")
+                logger.debug(
+                    f"Successfully converted SPDX to RDF format: {temp_path}"
+                )
                 return temp_path
 
             except Exception as e:
@@ -383,7 +435,9 @@ class SBOMValidator:
                     os.unlink(temp_path)
                 except Exception:
                     pass
-                raise ValidationError(f"Failed to convert SPDX JSON to RDF format: {e}") from e
+                raise ValidationError(
+                    f"Failed to convert SPDX JSON to RDF format: {e}"
+                ) from e
         else:
             # Already in RDF/XML format, use original file
             return file_path
@@ -419,16 +473,24 @@ class SBOMValidator:
         Args:
             file_path: Path to temporary file to clean up
         """
-        if file_path and os.path.exists(file_path) and file_path.startswith(tempfile.gettempdir()):
+        if (
+            file_path
+            and os.path.exists(file_path)
+            and file_path.startswith(tempfile.gettempdir())
+        ):
             try:
                 os.unlink(file_path)
                 logger.debug(f"Cleaned up temporary file: {file_path}")
             except Exception as e:
-                logger.warning(f"Failed to clean up temporary file {file_path}: {e}")
+                logger.warning(
+                    f"Failed to clean up temporary file {file_path}: {e}"
+                )
 
     # Keep the old method for backward compatibility but mark as deprecated
     @staticmethod
-    def validate_sbom_file_deprecated(file_path: str) -> Tuple[str, str, Dict[str, Any]]:
+    def validate_sbom_file_deprecated(
+        file_path: str,
+    ) -> Tuple[str, str, Dict[str, Any]]:
         """
         DEPRECATED: Use validate_sbom_file or validate_and_prepare_sbom instead.
         This method is kept for backward compatibility.
@@ -436,5 +498,7 @@ class SBOMValidator:
         logger.warning(
             "This validate_sbom_file method is deprecated. Use the new validate_sbom_file or validate_and_prepare_sbom instead."
         )
-        format_name, version, metadata, _ = SBOMValidator.validate_sbom_file(file_path)
+        format_name, version, metadata, _ = SBOMValidator.validate_sbom_file(
+            file_path
+        )
         return format_name, version, metadata

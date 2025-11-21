@@ -30,7 +30,9 @@ from workbench_agent.exceptions import (
 logger = logging.getLogger("workbench-agent")
 
 
-def format_and_print_error(error: Exception, context: str, params: argparse.Namespace):
+def format_and_print_error(
+    error: Exception, context: str, params: argparse.Namespace
+):
     """
     Formats and prints a standardized error message for CLI users.
 
@@ -42,7 +44,9 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
         context: Context where error occurred ("cli", "init", or command name)
         params: Command line parameters
     """
-    logger.debug(f"Formatting error from context '{context}': {type(error).__name__}")
+    logger.debug(
+        f"Formatting error from context '{context}': {type(error).__name__}"
+    )
     command = getattr(params, "command", "unknown")
 
     # Get error details if available (for our custom errors)
@@ -75,7 +79,9 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
             print("   • You have access to the project")
         else:
             print(f"\n❌ Error executing '{command}' command: {error_message}")
-            print(f"  → Project '{getattr(params, 'project_name', 'unknown')}' was not found")
+            print(
+                f"  → Project '{getattr(params, 'project_name', 'unknown')}' was not found"
+            )
 
     elif isinstance(error, ScanNotFoundError):
         if is_read_only:
@@ -84,9 +90,13 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
             project_name = getattr(params, "project_name", None)
 
             if project_name:
-                print(f"   Scan '{scan_name}' was not found in project '{project_name}'.")
+                print(
+                    f"   Scan '{scan_name}' was not found in project '{project_name}'."
+                )
             else:
-                print(f"   Scan '{scan_name}' was not found in your Workbench instance.")
+                print(
+                    f"   Scan '{scan_name}' was not found in your Workbench instance."
+                )
 
             print("\n💡 Please check:")
             print("   • The scan name is spelled correctly")
@@ -100,7 +110,9 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
             print("   • You have access to the scan")
         else:
             print(f"\n❌ Error executing '{command}' command: {error_message}")
-            print(f"  → Scan '{getattr(params, 'scan_name', 'unknown')}' was not found")
+            print(
+                f"  → Scan '{getattr(params, 'scan_name', 'unknown')}' was not found"
+            )
             if hasattr(params, "project_name"):
                 print(
                     f"  → Check the scan name or verify it exists in project '{params.project_name}'"
@@ -115,7 +127,9 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
         print(f"   {error_message}")
         print("\n💡 Please check:")
         print("   • The Workbench server is accessible")
-        print(f"   • The API URL is correct: {getattr(params, 'api_url', '<not specified>')}")
+        print(
+            f"   • The API URL is correct: {getattr(params, 'api_url', '<not specified>')}"
+        )
 
     elif isinstance(error, ApiError):
         # Check for credential errors first
@@ -123,10 +137,14 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
             print("\n❌ Invalid credentials")
             print("   The username or API token provided is incorrect.")
             print("\n💡 Please check:")
-            print(f"   • Your username: {getattr(params, 'api_user', '<not specified>')}")
+            print(
+                f"   • Your username: {getattr(params, 'api_user', '<not specified>')}"
+            )
             print("   • Your API token is correct and not expired")
             print("   • Your account has access to the Workbench instance")
-            print(f"   • The API URL is correct: {getattr(params, 'api_url', '<not specified>')}")
+            print(
+                f"   • The API URL is correct: {getattr(params, 'api_url', '<not specified>')}"
+            )
             return  # Exit early to avoid showing generic API error details
 
         print("\n❌ Workbench API error")
@@ -141,9 +159,13 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
                 print(
                     "   • Check that the Git URL is correct and accessible from the Workbench server"
                 )
-                print("   • Ensure any required authentication is properly configured")
+                print(
+                    "   • Ensure any required authentication is properly configured"
+                )
             else:
-                print("\n💡 The Workbench API reported an issue with your request")
+                print(
+                    "\n💡 The Workbench API reported an issue with your request"
+                )
 
     elif isinstance(error, ProcessTimeoutError):
         print("\n❌ Operation timed out")
@@ -152,7 +174,9 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
         print(
             f"   • --scan-number-of-tries (current: {getattr(params, 'scan_number_of_tries', 'default')})"
         )
-        print(f"   • --scan-wait-time (current: {getattr(params, 'scan_wait_time', 'default')})")
+        print(
+            f"   • --scan-wait-time (current: {getattr(params, 'scan_wait_time', 'default')})"
+        )
 
     elif isinstance(error, ProcessError):
         print("\n❌ Workbench process error")
@@ -176,12 +200,16 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
     elif isinstance(error, ConfigurationError):
         print("\n❌ Configuration error")
         print(f"   {error_message}")
-        print("\n💡 Please check your command-line arguments and configuration")
+        print(
+            "\n💡 Please check your command-line arguments and configuration"
+        )
 
     elif isinstance(error, CompatibilityError):
         print("\n❌ Compatibility issue")
         print(f"   {error_message}")
-        print("\n💡 The requested operation is not compatible with the scan's current state")
+        print(
+            "\n💡 The requested operation is not compatible with the scan's current state"
+        )
 
     else:
         # Generic error formatting for unexpected errors
@@ -245,8 +273,12 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
         try:
             # Get the handler name for better logging
             handler_name = handler_func.__name__
-            command_name = params.command if hasattr(params, "command") else "unknown"
-            logger.debug(f"Starting {handler_name} for command '{command_name}'")
+            command_name = (
+                params.command if hasattr(params, "command") else "unknown"
+            )
+            logger.debug(
+                f"Starting {handler_name} for command '{command_name}'"
+            )
 
             # Call the actual handler function
             return handler_func(workbench, params)
@@ -273,7 +305,10 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
 
         except Exception as e:
             # Unexpected errors - log, wrap, and re-raise
-            logger.error(f"Unexpected error in {handler_func.__name__}: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error in {handler_func.__name__}: {e}",
+                exc_info=True,
+            )
 
             # Wrap in WorkbenchAgentError with context
             raise WorkbenchAgentError(

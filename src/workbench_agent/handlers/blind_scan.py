@@ -50,7 +50,9 @@ def cleanup_temp_file(file_path: str) -> bool:
 
 
 @handler_error_wrapper
-def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
+def handle_blind_scan(
+    client: "WorkbenchClient", params: argparse.Namespace
+) -> bool:
     """
     Handler for the 'blind-scan' command.
 
@@ -108,7 +110,9 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
     # ===== STEP 2: Validate FossID Toolbox availability =====
     print("\nValidating FossID Toolbox...")
     toolbox_wrapper = ToolboxWrapper(
-        toolbox_path=getattr(params, "fossid_toolbox_path", "/usr/bin/fossid-toolbox"),
+        toolbox_path=getattr(
+            params, "fossid_toolbox_path", "/usr/bin/fossid-toolbox"
+        ),
     )
 
     try:
@@ -131,19 +135,26 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
         hash_start_time = time.time()
         hash_file_path = toolbox_wrapper.generate_hashes(
             path=params.path,
-            run_dependency_analysis=getattr(params, "run_dependency_analysis", False),
+            run_dependency_analysis=getattr(
+                params, "run_dependency_analysis", False
+            ),
         )
         hash_duration = time.time() - hash_start_time
         durations["hash_generation"] = hash_duration
-        print(f"Hash generation completed in " f"{format_duration(hash_duration)}.")
+        print(
+            f"Hash generation completed in "
+            f"{format_duration(hash_duration)}."
+        )
 
         # ===== STEP 4: Resolve/create project and scan in Workbench =====
         print("\n--- Project and Scan Checks ---")
         print("Checking target Project and Scan...")
-        project_code, scan_code, scan_is_new = client.resolver.resolve_project_and_scan(
-            project_name=params.project_name,
-            scan_name=params.scan_name,
-            params=params,
+        project_code, scan_code, scan_is_new = (
+            client.resolver.resolve_project_and_scan(
+                project_name=params.project_name,
+                scan_name=params.scan_name,
+                params=params,
+            )
         )
 
         # Assert scan is idle before starting blind scan operations
@@ -155,7 +166,10 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
                 # Check status first to inform user if scan is already running
                 scan_status = client.status_check.check_scan_status(scan_code)
                 if scan_status.status == "RUNNING":
-                    print("\nA prior Scan operation is in progress, " "waiting for it to complete.")
+                    print(
+                        "\nA prior Scan operation is in progress, "
+                        "waiting for it to complete."
+                    )
                 client.waiting.wait_for_scan(
                     scan_code,
                     max_tries=params.scan_number_of_tries,
@@ -166,7 +180,11 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
             try:
                 # Check status first to inform user if DA is already running
-                da_status = client.status_check.check_dependency_analysis_status(scan_code)
+                da_status = (
+                    client.status_check.check_dependency_analysis_status(
+                        scan_code
+                    )
+                )
                 if da_status.status == "RUNNING":
                     print(
                         "\nA prior Dependency Analysis operation is in "
@@ -180,7 +198,9 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
             except Exception as e:
                 logger.debug(f"Dependency analysis check skipped: {e}")
         else:
-            logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
+            logger.debug(
+                "Skipping idle checks - new scan is guaranteed to be idle"
+            )
 
         # Clear existing scan content (skip for new scans - they're empty)
         if not scan_is_new:
@@ -197,7 +217,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
         # ===== STEP 5: Upload hash file to Workbench =====
         print("\nUploading hashes to Workbench...")
-        client.uploads.upload_scan_target(scan_code, hash_file_path)
+        client.upload_service.upload_scan_target(scan_code, hash_file_path)
         print("Hashes uploaded successfully!")
 
         # ===== STEP 6: Run scans =====
@@ -206,15 +226,26 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
         da_completed = False
 
         # Handle dependency analysis only mode
-        if not scan_operations["run_kb_scan"] and scan_operations["run_dependency_analysis"]:
-            print("\nStarting Dependency Analysis only " "(skipping KB scan)...")
+        if (
+            not scan_operations["run_kb_scan"]
+            and scan_operations["run_dependency_analysis"]
+        ):
+            print(
+                "\nStarting Dependency Analysis only " "(skipping KB scan)..."
+            )
             client.scan_operations.start_da_only(scan_code)
 
             # Handle no-wait mode
             if getattr(params, "no_wait", False):
                 print("Dependency Analysis has been started.")
-                print("\nExiting without waiting for completion " "(--no-wait mode).")
-                print("You can check the status later using the " "'show-results' command.")
+                print(
+                    "\nExiting without waiting for completion "
+                    "(--no-wait mode)."
+                )
+                print(
+                    "You can check the status later using the "
+                    "'show-results' command."
+                )
                 return True
 
             # Wait for dependency analysis to complete
@@ -232,12 +263,20 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
             print("\nStarting Scan Process...")
 
             # Resolve ID reuse parameters (if any)
-            id_reuse_type, id_reuse_specific_code = client.resolver.resolve_id_reuse(
-                id_reuse_any=getattr(params, "reuse_any_identification", False),
-                id_reuse_my=getattr(params, "reuse_my_identifications", False),
-                id_reuse_project_name=getattr(params, "reuse_project_ids", None),
-                id_reuse_scan_name=getattr(params, "reuse_scan_ids", None),
-                current_project_name=params.project_name,
+            id_reuse_type, id_reuse_specific_code = (
+                client.resolver.resolve_id_reuse(
+                    id_reuse_any=getattr(
+                        params, "reuse_any_identification", False
+                    ),
+                    id_reuse_my=getattr(
+                        params, "reuse_my_identifications", False
+                    ),
+                    id_reuse_project_name=getattr(
+                        params, "reuse_project_ids", None
+                    ),
+                    id_reuse_scan_name=getattr(params, "reuse_scan_ids", None),
+                    current_project_name=params.project_name,
+                )
             )
 
             # Run scan with resolved ID reuse parameters
@@ -251,14 +290,20 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
                 delta_scan=params.delta_scan,
                 id_reuse_type=id_reuse_type,
                 id_reuse_specific_code=id_reuse_specific_code,
-                run_dependency_analysis=scan_operations["run_dependency_analysis"],
+                run_dependency_analysis=scan_operations[
+                    "run_dependency_analysis"
+                ],
                 replace_existing_identifications=getattr(
                     params, "replace_existing_identifications", False
                 ),
                 scan_failed_only=getattr(params, "scan_failed_only", False),
                 full_file_only=getattr(params, "full_file_only", False),
-                advanced_match_scoring=getattr(params, "advanced_match_scoring", True),
-                match_filtering_threshold=getattr(params, "match_filtering_threshold", None),
+                advanced_match_scoring=getattr(
+                    params, "advanced_match_scoring", True
+                ),
+                match_filtering_threshold=getattr(
+                    params, "match_filtering_threshold", None
+                ),
                 scan_host=getattr(params, "scan_host", None),
             )
 
@@ -266,8 +311,14 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
             if getattr(params, "no_wait", False):
                 print("\nKB Scan started successfully.")
                 if scan_operations["run_dependency_analysis"]:
-                    print("Dependency Analysis will start when KB scan " "completes.")
-                print("\nExiting without waiting for completion " "(--no-wait mode).")
+                    print(
+                        "Dependency Analysis will start when KB scan "
+                        "completes."
+                    )
+                print(
+                    "\nExiting without waiting for completion "
+                    "(--no-wait mode)."
+                )
                 return True
             else:
                 # Determine which processes to wait for
@@ -290,18 +341,27 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
                     # Wait for dependency analysis if requested
                     if "DEPENDENCY_ANALYSIS" in process_types_to_wait:
-                        print("\nWaiting for Dependency Analysis to complete...")
+                        print(
+                            "\nWaiting for Dependency Analysis to complete..."
+                        )
                         try:
                             da_status = client.waiting.wait_for_da(
                                 scan_code,
                                 max_tries=params.scan_number_of_tries,
                                 wait_interval=params.scan_wait_time,
                             )
-                            durations["dependency_analysis"] = da_status.duration or 0.0
+                            durations["dependency_analysis"] = (
+                                da_status.duration or 0.0
+                            )
                             da_completed = True
                         except Exception as e:
-                            logger.warning(f"Error in dependency analysis: {e}")
-                            print(f"\nWarning: Error waiting for " f"dependency analysis: {e}")
+                            logger.warning(
+                                f"Error in dependency analysis: {e}"
+                            )
+                            print(
+                                f"\nWarning: Error waiting for "
+                                f"dependency analysis: {e}"
+                            )
                             da_completed = False
                     else:
                         da_completed = False

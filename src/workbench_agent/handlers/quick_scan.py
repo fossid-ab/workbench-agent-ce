@@ -24,7 +24,9 @@ def _format_scan_result(result: dict) -> str:
             return msg
         if match_type == "partial":
             remote_size = result.get("snippet", {}).get("remote_size")
-            msg = f"This file has {remote_size} hits to {artifact} by {author}."
+            msg = (
+                f"This file has {remote_size} hits to {artifact} by {author}."
+            )
 
             return msg
         return "Unknown match type."
@@ -70,7 +72,8 @@ def handle_quick_scan(
     # Perform quick scan using explicit API
     print("\nPerforming quick scan...")
     logger.info(
-        f"Quick scanning file with limit={params.limit}, " f"sensitivity={params.sensitivity}"
+        f"Quick scanning file with limit={params.limit}, "
+        f"sensitivity={params.sensitivity}"
     )
     results = client.quick_scan.scan_one_file(
         file_content_b64=file_content_b64,

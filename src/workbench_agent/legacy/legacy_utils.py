@@ -84,9 +84,13 @@ def save_results(params: Namespace, results: Dict[str, Any]) -> None:
 
     except PermissionError as e:
         logger.error(f"Permission denied when trying to save results: {e}")
-        print(f"Error: Permission denied when trying to save results to {params.path_result}")
+        print(
+            f"Error: Permission denied when trying to save results to {params.path_result}"
+        )
     except Exception as e:
-        logger.error(f"Error trying to save results to {params.path_result}: {e}")
+        logger.error(
+            f"Error trying to save results to {params.path_result}: {e}"
+        )
         print(f"Error trying to save results to {params.path_result}: {e}")
 
 

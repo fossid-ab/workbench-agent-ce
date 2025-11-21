@@ -115,7 +115,10 @@ def mock_api_post(mocker):
                         "json_data": {
                             "status": "1",
                             "data": [
-                                {"name": project_name, "code": state["projects"][project_name]}
+                                {
+                                    "name": project_name,
+                                    "code": state["projects"][project_name],
+                                }
                             ],
                         }
                     }
@@ -125,9 +128,12 @@ def mock_api_post(mocker):
                 # List all projects
                 else:
                     projects_list = [
-                        {"name": name, "code": code} for name, code in state["projects"].items()
+                        {"name": name, "code": code}
+                        for name, code in state["projects"].items()
                     ]
-                    return {"json_data": {"status": "1", "data": projects_list}}
+                    return {
+                        "json_data": {"status": "1", "data": projects_list}
+                    }
 
             # Projects.create - register the project
             elif group == "projects" and action == "create":
@@ -146,7 +152,12 @@ def mock_api_post(mocker):
                     # Create new project
                     project_code = get_next_project_code()
                     state["projects"][project_name] = project_code
-                    return {"json_data": {"status": "1", "data": {"project_code": project_code}}}
+                    return {
+                        "json_data": {
+                            "status": "1",
+                            "data": {"project_code": project_code},
+                        }
+                    }
 
             # Scans management
             elif group == "scans":
@@ -157,14 +168,22 @@ def mock_api_post(mocker):
                     scans_for_project = []
                     scan_idx = 0
 
-                    for (proj_code, scan_name), scan_id in state["scans"].items():
+                    for (proj_code, scan_name), scan_id in state[
+                        "scans"
+                    ].items():
                         if proj_code == project_code:
                             scans_for_project.append(
-                                {"name": scan_name, "code": f"SC{scan_idx}", "id": scan_id}
+                                {
+                                    "name": scan_name,
+                                    "code": f"SC{scan_idx}",
+                                    "id": scan_id,
+                                }
                             )
                             scan_idx += 1
 
-                    return {"json_data": {"status": "1", "data": scans_for_project}}
+                    return {
+                        "json_data": {"status": "1", "data": scans_for_project}
+                    }
 
                 # Create scan
                 elif action == "create_webapp_scan":
@@ -172,7 +191,12 @@ def mock_api_post(mocker):
                     scan_id = get_next_scan_id()
                     if project_code and scan_name:
                         state["scans"][(project_code, scan_name)] = scan_id
-                        return {"json_data": {"status": "1", "data": {"scan_id": scan_id}}}
+                        return {
+                            "json_data": {
+                                "status": "1",
+                                "data": {"scan_id": scan_id},
+                            }
+                        }
 
                 # Get scan status
                 elif action == "get_scan_status":
@@ -184,12 +208,18 @@ def mock_api_post(mocker):
                         return {
                             "json_data": {
                                 "status": "1",
-                                "data": {"status": "FINISHED", "is_finished": "1"},
+                                "data": {
+                                    "status": "FINISHED",
+                                    "is_finished": "1",
+                                },
                             }
                         }
 
                     # For normal scan status, check the scan_id
-                    if scan_id and any(scan_id == s_id for (_, _), s_id in state["scans"].items()):
+                    if scan_id and any(
+                        scan_id == s_id
+                        for (_, _), s_id in state["scans"].items()
+                    ):
                         # Default to NEW for new scans
                         return {
                             "json_data": {
@@ -262,11 +292,15 @@ def mock_api_post(mocker):
             body=json.dumps(request_payload) if request_payload else None
         )
 
-        headers = response_config.get("headers", {"content-type": "application/json"})
+        headers = response_config.get(
+            "headers", {"content-type": "application/json"}
+        )
         mock_response.headers = headers
 
         if headers.get("content-type") == "application/json":
-            json_data = response_config.get("json_data", {"status": "1", "data": {}})
+            json_data = response_config.get(
+                "json_data", {"status": "1", "data": {}}
+            )
             mock_response.json = MagicMock(return_value=json_data)
             mock_response.text = json.dumps(json_data)
             mock_response.content = mock_response.text.encode("utf-8")
@@ -274,12 +308,17 @@ def mock_api_post(mocker):
             content_data = response_config.get("content", b"")
             mock_response.content = content_data
             mock_response.text = content_data.decode("utf-8", errors="ignore")
-            mock_response.json.side_effect = requests.exceptions.JSONDecodeError("Not JSON", "", 0)
+            mock_response.json.side_effect = (
+                requests.exceptions.JSONDecodeError("Not JSON", "", 0)
+            )
 
         # Raise for status simulation
         if 400 <= mock_response.status_code < 600:
-            mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
-                f"{mock_response.status_code} Client/Server Error", response=mock_response
+            mock_response.raise_for_status.side_effect = (
+                requests.exceptions.HTTPError(
+                    f"{mock_response.status_code} Client/Server Error",
+                    response=mock_response,
+                )
             )
         else:
             mock_response.raise_for_status = MagicMock()
@@ -311,7 +350,10 @@ def mock_workbench_api(mocker):
     """Provides a fully mocked WorkbenchClient instance with compositional structure."""
 
     # Import dataclasses for return values
-    from workbench_agent.api.utils.process_waiter import StatusResult, WaitResult
+    from workbench_agent.api.utils.process_waiter import (
+        StatusResult,
+        WaitResult,
+    )
 
     # Create a mock instance of WorkbenchClient
     mock_client = MagicMock()
@@ -321,7 +363,11 @@ def mock_workbench_api(mocker):
 
     # --- Mock Resolver Service ---
     mock_client.resolver = MagicMock()
-    mock_client.resolver.resolve_project_and_scan.return_value = ("PRJ-MOCK", "SCN-MOCK", False)
+    mock_client.resolver.resolve_project_and_scan.return_value = (
+        "PRJ-MOCK",
+        "SCN-MOCK",
+        False,
+    )
     mock_client.resolver.find_project.return_value = "PRJ-MOCK"
     mock_client.resolver.find_scan.return_value = ("SCN-MOCK", 12345)
     mock_client.resolver.resolve_id_reuse.return_value = (None, None)
@@ -331,20 +377,29 @@ def mock_workbench_api(mocker):
     mock_client.scans = MagicMock()
     mock_client.scans.download_content_from_git.return_value = True
     mock_client.scans.remove_uploaded_content.return_value = True
-    mock_client.scans.get_information.return_value = {"status": "NEW", "usage": "git"}
+    mock_client.scans.get_information.return_value = {
+        "status": "NEW",
+        "usage": "git",
+    }
     mock_client.scans.get_dependency_analysis_results.return_value = {}
     mock_client.scans.get_scan_identified_licenses.return_value = []
-    mock_client.scans.get_all_scans.return_value = []  # Empty list for scan lookup
+    mock_client.scans.get_all_scans.return_value = (
+        []
+    )  # Empty list for scan lookup
     mock_client.scans.create.return_value = {"scan_id": 12345}
 
     # --- Mock Projects Client ---
     mock_client.projects = MagicMock()
-    mock_client.projects.list.return_value = []  # Empty list for project lookup
+    mock_client.projects.list.return_value = (
+        []
+    )  # Empty list for project lookup
     mock_client.projects.create.return_value = {"project_code": "PRJ-MOCK"}
 
-    # --- Mock Uploads Client ---
-    mock_client.uploads = MagicMock()
-    mock_client.uploads.upload_scan_target.return_value = None
+    # --- Mock Upload Service ---
+    mock_client.upload_service = MagicMock()
+    mock_client.upload_service.upload_scan_target.return_value = None
+    mock_client.upload_service.upload_da_results.return_value = None
+    mock_client.upload_service.upload_sbom_file.return_value = None
 
     # --- Mock Vulnerabilities Client ---
     mock_client.vulnerabilities = MagicMock()
@@ -352,26 +407,42 @@ def mock_workbench_api(mocker):
 
     # --- Mock Status Check Service ---
     mock_client.status_check = MagicMock()
-    mock_client.status_check.check_git_clone_status.return_value = StatusResult(
-        status="FINISHED", is_finished=True, raw_data={"status": "FINISHED", "is_finished": "1"}
+    mock_client.status_check.check_git_clone_status.return_value = (
+        StatusResult(
+            status="FINISHED",
+            is_finished=True,
+            raw_data={"status": "FINISHED", "is_finished": "1"},
+        )
     )
     mock_client.status_check.check_scan_status.return_value = StatusResult(
-        status="FINISHED", is_finished=True, raw_data={"status": "FINISHED", "is_finished": "1"}
+        status="FINISHED",
+        is_finished=True,
+        raw_data={"status": "FINISHED", "is_finished": "1"},
     )
-    mock_client.status_check.check_dependency_analysis_status.return_value = StatusResult(
-        status="FINISHED", is_finished=True, raw_data={"status": "FINISHED", "is_finished": "1"}
+    mock_client.status_check.check_dependency_analysis_status.return_value = (
+        StatusResult(
+            status="FINISHED",
+            is_finished=True,
+            raw_data={"status": "FINISHED", "is_finished": "1"},
+        )
     )
 
     # --- Mock Waiting Service ---
     mock_client.waiting = MagicMock()
     mock_client.waiting.wait_for_git_clone.return_value = WaitResult(
-        status_data={"status": "FINISHED", "is_finished": "1"}, duration=2.0, success=True
+        status_data={"status": "FINISHED", "is_finished": "1"},
+        duration=2.0,
+        success=True,
     )
     mock_client.waiting.wait_for_scan.return_value = WaitResult(
-        status_data={"status": "FINISHED", "is_finished": "1"}, duration=10.0, success=True
+        status_data={"status": "FINISHED", "is_finished": "1"},
+        duration=10.0,
+        success=True,
     )
     mock_client.waiting.wait_for_da.return_value = WaitResult(
-        status_data={"status": "FINISHED", "is_finished": "1"}, duration=5.0, success=True
+        status_data={"status": "FINISHED", "is_finished": "1"},
+        duration=5.0,
+        success=True,
     )
 
     # --- Mock Scan Operations Service ---
@@ -413,8 +484,12 @@ def mock_workbench_api(mocker):
     # Use context managers to ensure proper cleanup
     with (
         patch.object(
-            workbench_agent.api.workbench_client.WorkbenchClient, "__new__", side_effect=mock_new
+            workbench_agent.api.workbench_client.WorkbenchClient,
+            "__new__",
+            side_effect=mock_new,
         ),
-        patch("workbench_agent.main.WorkbenchClient", return_value=mock_client),
+        patch(
+            "workbench_agent.main.WorkbenchClient", return_value=mock_client
+        ),
     ):
         yield mock_client

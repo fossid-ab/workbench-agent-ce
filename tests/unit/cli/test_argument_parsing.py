@@ -4,10 +4,10 @@ import os
 import sys
 from unittest.mock import patch
 
-import pytest
-
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
+)
 
 from workbench_agent.cli import parse_cmdline_args
 
@@ -17,7 +17,9 @@ class TestBasicCommandParsing:
 
     def test_parse_scan_command(self, args, arg_parser, mock_path_exists):
         """Test basic scan command parsing."""
-        cmd_args = args().scan(project="MyProject", scan="MyScan", path=".").build()
+        cmd_args = (
+            args().scan(project="MyProject", scan="MyScan", path=".").build()
+        )
         parsed = arg_parser(cmd_args)
 
         assert parsed.command == "scan"
@@ -33,7 +35,9 @@ class TestBasicCommandParsing:
         cmd_args = (
             args()
             .scan_git(
-                project="GitProject", scan="GitScan", git_url="https://github.com/owner/repo.git"
+                project="GitProject",
+                scan="GitScan",
+                git_url="https://github.com/owner/repo.git",
             )
             .git_branch("develop")
             .build()
@@ -70,18 +74,33 @@ class TestBasicCommandParsing:
 
     def test_parse_import_da_command(self, args, arg_parser, mock_path_exists):
         """Test import-da command parsing."""
-        cmd_args = args().import_da(project="DAProject", scan="DAScan", path="results.json").build()
-        parsed = arg_parser(cmd_args)
+        with patch("os.path.isfile", return_value=True):
+            cmd_args = (
+                args()
+                .import_da(
+                    project="DAProject",
+                    scan="DAScan",
+                    path="analyzer-result.json",
+                )
+                .build()
+            )
+            parsed = arg_parser(cmd_args)
 
-        assert parsed.command == "import-da"
-        assert parsed.project_name == "DAProject"
-        assert parsed.scan_name == "DAScan"
-        assert parsed.path == "results.json"
+            assert parsed.command == "import-da"
+            assert parsed.project_name == "DAProject"
+            assert parsed.scan_name == "DAScan"
+            assert parsed.path == "analyzer-result.json"
 
-    def test_parse_import_sbom_command(self, args, arg_parser, mock_path_exists):
+    def test_parse_import_sbom_command(
+        self, args, arg_parser, mock_path_exists
+    ):
         """Test import-sbom command parsing."""
         cmd_args = (
-            args().import_sbom(project="SBOMProject", scan="SBOMScan", path="bom.json").build()
+            args()
+            .import_sbom(
+                project="SBOMProject", scan="SBOMScan", path="bom.json"
+            )
+            .build()
         )
         parsed = arg_parser(cmd_args)
 
@@ -92,7 +111,9 @@ class TestBasicCommandParsing:
 
     def test_parse_download_reports_scan_scope(self, args, arg_parser):
         """Test download-reports with scan scope."""
-        cmd_args = args().download_reports(scope="scan").scan_name("TestScan").build()
+        cmd_args = (
+            args().download_reports(scope="scan").scan_name("TestScan").build()
+        )
         parsed = arg_parser(cmd_args)
 
         assert parsed.command == "download-reports"
@@ -103,7 +124,12 @@ class TestBasicCommandParsing:
 
     def test_parse_download_reports_project_scope(self, args, arg_parser):
         """Test download-reports with project scope."""
-        cmd_args = args().download_reports(scope="project").project_name("TestProject").build()
+        cmd_args = (
+            args()
+            .download_reports(scope="project")
+            .project_name("TestProject")
+            .build()
+        )
         parsed = arg_parser(cmd_args)
 
         assert parsed.command == "download-reports"
@@ -114,7 +140,10 @@ class TestBasicCommandParsing:
     def test_parse_show_results_command(self, args, arg_parser):
         """Test show-results command parsing."""
         cmd_args = (
-            args().show_results(project="ShowProject", scan="ShowScan").show_licenses().build()
+            args()
+            .show_results(project="ShowProject", scan="ShowScan")
+            .show_licenses()
+            .build()
         )
         parsed = arg_parser(cmd_args)
 
@@ -128,7 +157,9 @@ class TestBasicCommandParsing:
 class TestFlagsAndDefaults:
     """Test flag parsing and default values."""
 
-    def test_parse_flags_and_log_level(self, args, arg_parser, mock_path_exists):
+    def test_parse_flags_and_log_level(
+        self, args, arg_parser, mock_path_exists
+    ):
         """Test various flags and log level."""
         cmd_args = args().log_level("DEBUG").scan().build()
         # Add flags manually for this test
@@ -145,7 +176,12 @@ class TestFlagsAndDefaults:
     def test_id_reuse_parameters(self, args, arg_parser, mock_path_exists):
         """Test new mutually exclusive ID reuse parameter parsing."""
         # Test project reuse type
-        cmd_args = args().scan().id_reuse(reuse_type="project", source="ReusePrj").build()
+        cmd_args = (
+            args()
+            .scan()
+            .id_reuse(reuse_type="project", source="ReusePrj")
+            .build()
+        )
         parsed = arg_parser(cmd_args)
 
         # Check that new arguments are parsed correctly
@@ -155,7 +191,12 @@ class TestFlagsAndDefaults:
         assert parsed.reuse_scan_ids is None
 
         # Test scan reuse type
-        cmd_args = args().scan().id_reuse(reuse_type="scan", source="ReuseScan").build()
+        cmd_args = (
+            args()
+            .scan()
+            .id_reuse(reuse_type="scan", source="ReuseScan")
+            .build()
+        )
         parsed = arg_parser(cmd_args)
 
         # Check that new arguments are parsed correctly

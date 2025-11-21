@@ -17,7 +17,7 @@ import pytest
 @pytest.mark.requires_toolbox
 class TestBlindScanWorkflow:
     """Test complete blind-scan workflow with all follow-up commands."""
-    
+
     def test_blind_scan_workflow(
         self,
         workbench_config,
@@ -29,19 +29,21 @@ class TestBlindScanWorkflow:
     ):
         """
         Test complete blind-scan workflow.
-        
+
         Steps:
         1. Blind scan with dependency analysis
         2. Show results with all display options
         3. Evaluate quality gates
         4. Download project-level reports
         5. Download scan-level reports
-        
+
         Requires:
         - fossid-toolbox installed on PATH
         """
         # Step 1: Blind-Scan
-        print(f"\n[BLIND-SCAN] Step 1: Performing blind scan '{unique_scan_name}'")
+        print(
+            f"\n[BLIND-SCAN] Step 1: Performing blind scan '{unique_scan_name}'"
+        )
         result = subprocess.run(
             [
                 "workbench-agent",
@@ -59,14 +61,14 @@ class TestBlindScanWorkflow:
             capture_output=True,
             text=True,
         )
-        
+
         assert result.returncode == 0, (
             f"Blind-scan command failed with exit code {result.returncode}\n"
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
         print(f"[BLIND-SCAN] Step 1: ✓ Blind scan completed successfully")
-        
+
         # Step 2: Show Results
         print(f"[BLIND-SCAN] Step 2: Showing results")
         result = subprocess.run(
@@ -87,14 +89,14 @@ class TestBlindScanWorkflow:
             capture_output=True,
             text=True,
         )
-        
+
         assert result.returncode == 0, (
             f"Show results command failed with exit code {result.returncode}\n"
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
         print(f"[BLIND-SCAN] Step 2: ✓ Results displayed successfully")
-        
+
         # Step 3: Evaluate Gates
         print(f"[BLIND-SCAN] Step 3: Evaluating quality gates")
         result = subprocess.run(
@@ -109,19 +111,19 @@ class TestBlindScanWorkflow:
             capture_output=True,
             text=True,
         )
-        
+
         assert result.returncode == 0, (
             f"Evaluate gates command failed with exit code {result.returncode}\n"
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
         print(f"[BLIND-SCAN] Step 3: ✓ Gates evaluated successfully")
-        
+
         # Step 4: Download Reports (Project Scope)
         print(f"[BLIND-SCAN] Step 4: Downloading project-level reports")
         project_reports_dir = temp_reports_dir / "project"
         project_reports_dir.mkdir(parents=True, exist_ok=True)
-        
+
         result = subprocess.run(
             [
                 "workbench-agent",
@@ -136,19 +138,21 @@ class TestBlindScanWorkflow:
             capture_output=True,
             text=True,
         )
-        
+
         assert result.returncode == 0, (
             f"Download project reports failed with exit code {result.returncode}\n"
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
-        print(f"[BLIND-SCAN] Step 4: ✓ Project reports downloaded successfully")
-        
+        print(
+            f"[BLIND-SCAN] Step 4: ✓ Project reports downloaded successfully"
+        )
+
         # Step 5: Download Reports (Scan Scope)
         print(f"[BLIND-SCAN] Step 5: Downloading scan-level reports")
         scan_reports_dir = temp_reports_dir / "scan"
         scan_reports_dir.mkdir(parents=True, exist_ok=True)
-        
+
         result = subprocess.run(
             [
                 "workbench-agent",
@@ -165,7 +169,7 @@ class TestBlindScanWorkflow:
             capture_output=True,
             text=True,
         )
-        
+
         assert result.returncode == 0, (
             f"Download scan reports failed with exit code {result.returncode}\n"
             f"STDOUT: {result.stdout}\n"
@@ -173,4 +177,3 @@ class TestBlindScanWorkflow:
         )
         print(f"[BLIND-SCAN] Step 5: ✓ Scan reports downloaded successfully")
         print(f"[BLIND-SCAN] ✓ Complete workflow passed!")
-

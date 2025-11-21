@@ -30,9 +30,25 @@ from workbench_agent.exceptions import (
 )
 
 # Exception categorization based on inspiration patterns (legacy frozen version)
-USER_SETUP_ERRORS = (AuthenticationError, ConfigurationError, ValidationError, CompatibilityError)
-RUNTIME_ERRORS = (ApiError, NetworkError, ProcessError, ProcessTimeoutError, FileSystemError)
-RESOURCE_ERRORS = (ProjectNotFoundError, ScanNotFoundError, ProjectExistsError, ScanExistsError)
+USER_SETUP_ERRORS = (
+    AuthenticationError,
+    ConfigurationError,
+    ValidationError,
+    CompatibilityError,
+)
+RUNTIME_ERRORS = (
+    ApiError,
+    NetworkError,
+    ProcessError,
+    ProcessTimeoutError,
+    FileSystemError,
+)
+RESOURCE_ERRORS = (
+    ProjectNotFoundError,
+    ScanNotFoundError,
+    ProjectExistsError,
+    ScanExistsError,
+)
 
 logger = logging.getLogger("workbench-agent")
 
@@ -64,7 +80,10 @@ def agent_error_wrapper(parse_args_func: Callable):
                 print(f"Configuration Error: {getattr(e, 'message', str(e))}")
                 if logger:
                     logger.error(
-                        "%s: %s", type(e).__name__, getattr(e, "message", str(e)), exc_info=False
+                        "%s: %s",
+                        type(e).__name__,
+                        getattr(e, "message", str(e)),
+                        exc_info=False,
                     )
                 return 1
 
@@ -74,7 +93,10 @@ def agent_error_wrapper(parse_args_func: Callable):
                 print(f"Runtime Error: {getattr(e, 'message', str(e))}")
                 if logger:
                     logger.error(
-                        "%s: %s", type(e).__name__, getattr(e, "message", str(e)), exc_info=True
+                        "%s: %s",
+                        type(e).__name__,
+                        getattr(e, "message", str(e)),
+                        exc_info=True,
                     )
                 return 1
 
@@ -84,14 +106,19 @@ def agent_error_wrapper(parse_args_func: Callable):
                 print(f"Resource Error: {getattr(e, 'message', str(e))}")
                 if logger:
                     logger.error(
-                        "%s: %s", type(e).__name__, getattr(e, "message", str(e)), exc_info=True
+                        "%s: %s",
+                        type(e).__name__,
+                        getattr(e, "message", str(e)),
+                        exc_info=True,
                     )
                 return 1
 
             except WorkbenchAgentError as e:
                 # Catch any other specific agent errors
                 print(f"\nDetailed Error Information:")
-                print(f"Workbench Agent Error: {getattr(e, 'message', str(e))}")
+                print(
+                    f"Workbench Agent Error: {getattr(e, 'message', str(e))}"
+                )
                 if logger:
                     logger.error(
                         "Unhandled WorkbenchAgentError: %s",
@@ -112,7 +139,9 @@ def agent_error_wrapper(parse_args_func: Callable):
                 print(f"Unexpected Error: {e}")
                 import traceback
 
-                tb_lines = traceback.format_exception(type(e), e, e.__traceback__)
+                tb_lines = traceback.format_exception(
+                    type(e), e, e.__traceback__
+                )
                 print("".join(tb_lines).rstrip())
                 if logger:
                     logger.critical("Unexpected error occurred", exc_info=True)
@@ -150,8 +179,12 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
         try:
             # Get the handler name for better error messages
             handler_name = handler_func.__name__
-            command_name = params.command if hasattr(params, "command") else "unknown"
-            logger.debug(f"Starting {handler_name} for command '{command_name}'")
+            command_name = (
+                params.command if hasattr(params, "command") else "unknown"
+            )
+            logger.debug(
+                f"Starting {handler_name} for command '{command_name}'"
+            )
 
             # Call the actual handler function
             return handler_func(workbench, params)
@@ -179,7 +212,10 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
 
         except Exception as e:
             # Unexpected errors get wrapped in a WorkbenchAgentError
-            logger.error(f"Unexpected error in {handler_func.__name__}: {e}", exc_info=True)
+            logger.error(
+                f"Unexpected error in {handler_func.__name__}: {e}",
+                exc_info=True,
+            )
 
             # Create a WorkbenchAgentError with detailed info
             agent_error = WorkbenchAgentError(
@@ -214,33 +250,51 @@ def format_and_print_error(error: Exception, params: argparse.Namespace):
     # Add context-specific help based on error type
     if isinstance(error, ProjectNotFoundError):
         print(f"\n❌ Project not found")
-        project_ref = getattr(params, "project_code", getattr(params, "project_name", "Unknown"))
-        print(f"   Project '{project_ref}' does not exist in your Workbench instance.")
+        project_ref = getattr(
+            params, "project_code", getattr(params, "project_name", "Unknown")
+        )
+        print(
+            f"   Project '{project_ref}' does not exist in your Workbench instance."
+        )
         print(f"\n💡 Possible solutions:")
         print(f"   • Check that the project name is spelled correctly")
         print(
             f"   • Verify the project exists in Workbench: {getattr(params, 'api_url', 'Unknown')}"
         )
         print(f"   • Ensure your account has access to this project")
-        print(f"   • The project will be created automatically if it doesn't exist")
+        print(
+            f"   • The project will be created automatically if it doesn't exist"
+        )
 
     elif isinstance(error, ScanNotFoundError):
         print(f"\n❌ Scan not found")
-        project_ref = getattr(params, "project_code", getattr(params, "project_name", "Unknown"))
-        scan_ref = getattr(params, "scan_code", getattr(params, "scan_name", "Unknown"))
-        print(f"   Scan '{scan_ref}' does not exist in project '{project_ref}'.")
+        project_ref = getattr(
+            params, "project_code", getattr(params, "project_name", "Unknown")
+        )
+        scan_ref = getattr(
+            params, "scan_code", getattr(params, "scan_name", "Unknown")
+        )
+        print(
+            f"   Scan '{scan_ref}' does not exist in project '{project_ref}'."
+        )
         print(f"\n💡 Possible solutions:")
         print(f"   • Check that the scan name is spelled correctly")
         print(f"   • Verify the scan exists in the specified project")
-        print(f"   • The scan will be created automatically if it doesn't exist")
+        print(
+            f"   • The scan will be created automatically if it doesn't exist"
+        )
 
     elif isinstance(error, NetworkError):
         print(f"\n❌ Network connectivity issue")
         print(f"   Unable to connect to the Workbench server.")
         print(f"   Details: {error_message}")
         print(f"\n💡 Please check:")
-        print(f"   • The Workbench server is accessible from your CI/CD environment")
-        print(f"   • The API URL is correct: {getattr(params, 'api_url', 'Unknown')}")
+        print(
+            f"   • The Workbench server is accessible from your CI/CD environment"
+        )
+        print(
+            f"   • The API URL is correct: {getattr(params, 'api_url', 'Unknown')}"
+        )
         print(f"   • Network firewalls allow outbound HTTPS connections")
         print(f"   • The server is not experiencing downtime")
 
@@ -253,7 +307,9 @@ def format_and_print_error(error: Exception, params: argparse.Namespace):
             print(f"   • Username: {getattr(params, 'api_user', 'Unknown')}")
             print(f"   • API token is correct and not expired")
             print(f"   • Account has access to the Workbench instance")
-            print(f"   • API URL is correct: {getattr(params, 'api_url', 'Unknown')}")
+            print(
+                f"   • API URL is correct: {getattr(params, 'api_url', 'Unknown')}"
+            )
             print(f"\n🔧 In CI/CD pipelines:")
             print(f"   • Store credentials as secure environment variables")
             print(f"   • Ensure API tokens have sufficient permissions")
@@ -274,7 +330,9 @@ def format_and_print_error(error: Exception, params: argparse.Namespace):
         print(
             f"     --scan-number-of-tries (current: {getattr(params, 'scan_number_of_tries', 'Unknown')})"
         )
-        print(f"     --scan-wait-time (current: {getattr(params, 'scan_wait_time', 'Unknown')})")
+        print(
+            f"     --scan-wait-time (current: {getattr(params, 'scan_wait_time', 'Unknown')})"
+        )
         print(f"   • Large codebases may require longer scan times")
         print(f"   • Check Workbench server performance and load")
 
@@ -321,7 +379,9 @@ def format_and_print_error(error: Exception, params: argparse.Namespace):
         # These are usually handled gracefully, but just in case
         print(f"\n⚠️  Resource already exists")
         print(f"   {error_message}")
-        print(f"   This is typically handled automatically - continuing with existing resource.")
+        print(
+            f"   This is typically handled automatically - continuing with existing resource."
+        )
 
     else:
         # Generic error formatting for unexpected errors

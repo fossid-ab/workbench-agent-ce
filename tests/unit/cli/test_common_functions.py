@@ -33,7 +33,12 @@ class TestUsesModernInterface:
     def test_rejects_legacy_only_args(self):
         """Test rejection of legacy-only argument patterns."""
         test_cases = [
-            ["--project_code", "proj", "--scan_code", "myscan"],  # Changed 'scan' to 'myscan'
+            [
+                "--project_code",
+                "proj",
+                "--scan_code",
+                "myscan",
+            ],  # Changed 'scan' to 'myscan'
             ["--api_url", "test.com", "--blind_scan"],
             ["--help"],
             [],
@@ -156,7 +161,9 @@ class TestConstantsIntegrity:
     def test_no_overlap_between_constants(self):
         """Test that modern and legacy indicators don't overlap."""
         # Convert legacy indicators to modern format for comparison
-        modern_equivalent = {indicator.replace("_", "-") for indicator in LEGACY_INDICATORS}
+        modern_equivalent = {
+            indicator.replace("_", "-") for indicator in LEGACY_INDICATORS
+        }
 
         # There should be no direct overlap (legacy uses underscores, modern uses dashes)
         overlap = KNOWN_SUBCOMMANDS.intersection(LEGACY_INDICATORS)

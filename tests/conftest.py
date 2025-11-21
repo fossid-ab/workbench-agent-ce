@@ -82,7 +82,9 @@ def workbench_inst(mock_session, mocker):
 
     with patch.object(WorkbenchClient, "_check_version_compatibility"):
         wb = WorkbenchClient(
-            api_url="http://dummy.com/api.php", api_user="testuser", api_token="testtoken"
+            api_url="http://dummy.com/api.php",
+            api_user="testuser",
+            api_token="testtoken",
         )
         # Replace the session with our mock
         wb._base_api.session = mock_session

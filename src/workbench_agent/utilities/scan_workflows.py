@@ -20,7 +20,9 @@ def determine_scans_to_run(params: argparse.Namespace) -> Dict[str, bool]:
         - run_dependency_analysis: Whether to run dependency analysis
     """
     run_dependency_analysis = getattr(params, "run_dependency_analysis", False)
-    dependency_analysis_only = getattr(params, "dependency_analysis_only", False)
+    dependency_analysis_only = getattr(
+        params, "dependency_analysis_only", False
+    )
     scan_operations = {"run_kb_scan": True, "run_dependency_analysis": False}
     if run_dependency_analysis and dependency_analysis_only:
         print(

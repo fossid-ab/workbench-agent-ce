@@ -14,11 +14,11 @@ import pytest
 @pytest.mark.requires_workbench
 class TestScanGitWorkflow:
     """Test complete scan-git workflow with all follow-up commands."""
-    
+
     # Test repository - using workbench-agent repo itself
     TEST_REPO = "https://github.com/fossid-ab/workbench-agent"
     TEST_BRANCH = "main"
-    
+
     def test_scan_git_workflow(
         self,
         workbench_config,
@@ -28,7 +28,7 @@ class TestScanGitWorkflow:
     ):
         """
         Test complete scan-git workflow.
-        
+
         Steps:
         1. Scan git repository with dependency analysis
         2. Show results with all display options
@@ -57,14 +57,14 @@ class TestScanGitWorkflow:
             capture_output=True,
             text=True,
         )
-        
+
         assert result.returncode == 0, (
             f"Scan-git command failed with exit code {result.returncode}\n"
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
         print(f"[SCAN-GIT] Step 1: ✓ Git scan completed successfully")
-        
+
         # Step 2: Show Results
         print(f"[SCAN-GIT] Step 2: Showing results")
         result = subprocess.run(
@@ -85,14 +85,14 @@ class TestScanGitWorkflow:
             capture_output=True,
             text=True,
         )
-        
+
         assert result.returncode == 0, (
             f"Show results command failed with exit code {result.returncode}\n"
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
         print(f"[SCAN-GIT] Step 2: ✓ Results displayed successfully")
-        
+
         # Step 3: Evaluate Gates
         print(f"[SCAN-GIT] Step 3: Evaluating quality gates")
         result = subprocess.run(
@@ -107,19 +107,19 @@ class TestScanGitWorkflow:
             capture_output=True,
             text=True,
         )
-        
+
         assert result.returncode == 0, (
             f"Evaluate gates command failed with exit code {result.returncode}\n"
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
         print(f"[SCAN-GIT] Step 3: ✓ Gates evaluated successfully")
-        
+
         # Step 4: Download Reports (Project Scope)
         print(f"[SCAN-GIT] Step 4: Downloading project-level reports")
         project_reports_dir = temp_reports_dir / "project"
         project_reports_dir.mkdir(parents=True, exist_ok=True)
-        
+
         result = subprocess.run(
             [
                 "workbench-agent",
@@ -134,19 +134,19 @@ class TestScanGitWorkflow:
             capture_output=True,
             text=True,
         )
-        
+
         assert result.returncode == 0, (
             f"Download project reports failed with exit code {result.returncode}\n"
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
         print(f"[SCAN-GIT] Step 4: ✓ Project reports downloaded successfully")
-        
+
         # Step 5: Download Reports (Scan Scope)
         print(f"[SCAN-GIT] Step 5: Downloading scan-level reports")
         scan_reports_dir = temp_reports_dir / "scan"
         scan_reports_dir.mkdir(parents=True, exist_ok=True)
-        
+
         result = subprocess.run(
             [
                 "workbench-agent",
@@ -163,7 +163,7 @@ class TestScanGitWorkflow:
             capture_output=True,
             text=True,
         )
-        
+
         assert result.returncode == 0, (
             f"Download scan reports failed with exit code {result.returncode}\n"
             f"STDOUT: {result.stdout}\n"
@@ -171,4 +171,3 @@ class TestScanGitWorkflow:
         )
         print(f"[SCAN-GIT] Step 5: ✓ Scan reports downloaded successfully")
         print(f"[SCAN-GIT] ✓ Complete workflow passed!")
-

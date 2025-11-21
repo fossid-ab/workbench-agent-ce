@@ -4,7 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from workbench_agent.api.services.scan_operations_service import ScanOperationsService
+from workbench_agent.api.services.scan_operations_service import (
+    ScanOperationsService,
+)
 from workbench_agent.api.exceptions import ApiError, ScanNotFoundError
 
 
@@ -60,7 +62,9 @@ def test_start_scan_basic(scan_operations_service, mock_scans_client):
     assert call_args["advanced_match_scoring"] == "1"
 
 
-def test_start_scan_with_optional_params(scan_operations_service, mock_scans_client):
+def test_start_scan_with_optional_params(
+    scan_operations_service, mock_scans_client
+):
     """Test starting a scan with optional parameters."""
     mock_scans_client.run.return_value = None
 
@@ -93,7 +97,9 @@ def test_start_scan_with_optional_params(scan_operations_service, mock_scans_cli
     assert call_args["match_filtering_threshold"] == "100"
 
 
-def test_start_scan_with_specific_id_reuse(scan_operations_service, mock_scans_client):
+def test_start_scan_with_specific_id_reuse(
+    scan_operations_service, mock_scans_client
+):
     """Test starting a scan with specific ID reuse."""
     mock_scans_client.run.return_value = None
 
@@ -116,12 +122,16 @@ def test_start_scan_with_specific_id_reuse(scan_operations_service, mock_scans_c
 
 
 # --- Test start_archive_extraction ---
-def test_start_archive_extraction_basic(scan_operations_service, mock_scans_client):
+def test_start_archive_extraction_basic(
+    scan_operations_service, mock_scans_client
+):
     """Test starting archive extraction with basic parameters."""
     mock_scans_client.extract_archives.return_value = True
 
     result = scan_operations_service.start_archive_extraction(
-        scan_code="test_scan", recursively_extract_archives=True, jar_file_extraction=False
+        scan_code="test_scan",
+        recursively_extract_archives=True,
+        jar_file_extraction=False,
     )
 
     assert result is True
@@ -133,7 +143,9 @@ def test_start_archive_extraction_basic(scan_operations_service, mock_scans_clie
     assert call_args["extract_to_directory"] == "0"
 
 
-def test_start_archive_extraction_with_options(scan_operations_service, mock_scans_client):
+def test_start_archive_extraction_with_options(
+    scan_operations_service, mock_scans_client
+):
     """Test starting archive extraction with different options."""
     mock_scans_client.extract_archives.return_value = True
 

@@ -67,28 +67,42 @@ class ScansClient:
                         try:
                             scan_details["id"] = int(scan_id)
                         except ValueError:
-                            logger.warning(f"Non-integer scan ID key found: {scan_id}")
+                            logger.warning(
+                                f"Non-integer scan ID key found: {scan_id}"
+                            )
                             scan_details["id"] = scan_id
 
                         if "code" not in scan_details:
-                            logger.warning(f"Scan details for ID {scan_id} missing 'code' field")
+                            logger.warning(
+                                f"Scan details for ID {scan_id} missing 'code' field"
+                            )
                         scan_list.append(scan_details)
                     else:
-                        logger.warning(f"Unexpected format for scan details with ID {scan_id}")
+                        logger.warning(
+                            f"Unexpected format for scan details with ID {scan_id}"
+                        )
                 logger.debug(f"Successfully listed {len(scan_list)} scans.")
                 return scan_list
             elif isinstance(data, list) and not data:
-                logger.debug("Successfully listed 0 scans (API returned empty list).")
+                logger.debug(
+                    "Successfully listed 0 scans (API returned empty list)."
+                )
                 return []
             else:
                 logger.warning(f"Unexpected data format: {type(data)}")
                 return []
         elif response.get("status") == "1":
-            logger.warning("API returned success for list_scans but no 'data' key found.")
+            logger.warning(
+                "API returned success for list_scans but no 'data' key found."
+            )
             return []
         else:
-            error_msg = response.get("error", f"Unexpected response: {response}")
-            raise ApiError(f"Failed to list scans: {error_msg}", details=response)
+            error_msg = response.get(
+                "error", f"Unexpected response: {response}"
+            )
+            raise ApiError(
+                f"Failed to list scans: {error_msg}", details=response
+            )
 
     def get_information(self, scan_code: str) -> Dict[str, Any]:
         """
@@ -106,7 +120,11 @@ class ScansClient:
             NetworkError: If there are network issues
         """
         logger.debug(f"Fetching information for scan '{scan_code}'...")
-        payload = {"group": "scans", "action": "get_information", "data": {"scan_code": scan_code}}
+        payload = {
+            "group": "scans",
+            "action": "get_information",
+            "data": {"scan_code": scan_code},
+        }
         response = self._api._send_request(payload)
 
         if response.get("status") == "1" and "data" in response:
@@ -116,7 +134,8 @@ class ScansClient:
             if "row_not_found" in error_msg or "Scan not found" in error_msg:
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
-                f"Failed to get information for scan '{scan_code}': {error_msg}", details=response
+                f"Failed to get information for scan '{scan_code}': {error_msg}",
+                details=response,
             )
 
     def get_scan_folder_metrics(self, scan_code: str) -> Dict[str, Any]:
@@ -147,7 +166,9 @@ class ScansClient:
             and "data" in response
             and isinstance(response["data"], dict)
         ):
-            logger.debug(f"Successfully fetched folder metrics for scan '{scan_code}'.")
+            logger.debug(
+                f"Successfully fetched folder metrics for scan '{scan_code}'."
+            )
             return response["data"]
         elif response.get("status") == "1":
             logger.warning(
@@ -160,15 +181,22 @@ class ScansClient:
         else:
             error_msg = response.get("error", "Unknown API error")
             if "row_not_found" in error_msg:
-                logger.warning(f"Scan '{scan_code}' not found when fetching folder metrics.")
+                logger.warning(
+                    f"Scan '{scan_code}' not found when fetching folder metrics."
+                )
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found.")
             else:
                 logger.error(
                     f"API error fetching folder metrics for scan '{scan_code}': {error_msg}"
                 )
-                raise ApiError(f"Failed to get scan folder metrics: {error_msg}", details=response)
+                raise ApiError(
+                    f"Failed to get scan folder metrics: {error_msg}",
+                    details=response,
+                )
 
-    def get_scan_identified_components(self, scan_code: str) -> List[Dict[str, Any]]:
+    def get_scan_identified_components(
+        self, scan_code: str
+    ) -> List[Dict[str, Any]]:
         """
         Gets identified components from KB scanning.
 
@@ -233,7 +261,8 @@ class ScansClient:
             ...                                                unique=False)
         """
         logger.debug(
-            f"Fetching identified licenses for scan '{scan_code}' " f"(unique={unique})..."
+            f"Fetching identified licenses for scan '{scan_code}' "
+            f"(unique={unique})..."
         )
 
         payload = {
@@ -249,29 +278,40 @@ class ScansClient:
         if response.get("status") == "1" and "data" in response:
             data = response["data"]
             if isinstance(data, list):
-                result_type = "unique licenses" if unique else "licenses with paths"
+                result_type = (
+                    "unique licenses" if unique else "licenses with paths"
+                )
                 logger.debug(
-                    f"Successfully fetched {len(data)} {result_type} " f"for scan '{scan_code}'."
+                    f"Successfully fetched {len(data)} {result_type} "
+                    f"for scan '{scan_code}'."
                 )
                 return data
             else:
-                logger.warning(f"Unexpected data type for licenses: {type(data)}")
+                logger.warning(
+                    f"Unexpected data type for licenses: {type(data)}"
+                )
                 return []
         elif response.get("status") == "1":
             logger.warning(
-                "API returned success for get_scan_identified_licenses " "but no 'data' key."
+                "API returned success for get_scan_identified_licenses "
+                "but no 'data' key."
             )
             return []
         else:
-            error_msg = response.get("error", f"Unexpected response: {response}")
+            error_msg = response.get(
+                "error", f"Unexpected response: {response}"
+            )
             if "Scan not found" in error_msg or "row_not_found" in error_msg:
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
-                f"Error getting identified licenses for scan '{scan_code}': " f"{error_msg}",
+                f"Error getting identified licenses for scan '{scan_code}': "
+                f"{error_msg}",
                 details=response,
             )
 
-    def get_dependency_analysis_results(self, scan_code: str) -> List[Dict[str, Any]]:
+    def get_dependency_analysis_results(
+        self, scan_code: str
+    ) -> List[Dict[str, Any]]:
         """
         Gets dependency analysis results.
 
@@ -304,7 +344,9 @@ class ScansClient:
         else:
             error_msg = response.get("error", "")
             if "Dependency analysis has not been run" in error_msg:
-                logger.info(f"Dependency analysis has not been run for '{scan_code}'.")
+                logger.info(
+                    f"Dependency analysis has not been run for '{scan_code}'."
+                )
                 return []
             elif "Scan not found" in error_msg or "row_not_found" in error_msg:
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
@@ -328,7 +370,9 @@ class ScansClient:
             ApiError: If there are API issues
             NetworkError: If there are network issues
         """
-        logger.debug(f"Fetching files with Pending IDs for scan '{scan_code}'...")
+        logger.debug(
+            f"Fetching files with Pending IDs for scan '{scan_code}'..."
+        )
         payload = {
             "group": "scans",
             "action": "get_pending_files",
@@ -339,13 +383,19 @@ class ScansClient:
         if response.get("status") == "1" and "data" in response:
             data = response["data"]
             if isinstance(data, dict):
-                logger.debug(f"The scan {scan_code} has {len(data)} files pending ID.")
+                logger.debug(
+                    f"The scan {scan_code} has {len(data)} files pending ID."
+                )
                 return data
             elif isinstance(data, list) and not data:
-                logger.info(f"Pending files API returned empty list for scan '{scan_code}'.")
+                logger.info(
+                    f"Pending files API returned empty list for scan '{scan_code}'."
+                )
                 return {}
             else:
-                logger.warning(f"Pending files API returned unexpected data type: {type(data)}")
+                logger.warning(
+                    f"Pending files API returned unexpected data type: {type(data)}"
+                )
                 return {}
         elif response.get("status") == "1":
             logger.info(
@@ -353,8 +403,12 @@ class ScansClient:
             )
             return {}
         else:
-            error_msg = response.get("error", f"Unexpected response: {response}")
-            logger.error(f"Failed to get pending files for scan '{scan_code}': {error_msg}")
+            error_msg = response.get(
+                "error", f"Unexpected response: {response}"
+            )
+            logger.error(
+                f"Failed to get pending files for scan '{scan_code}': {error_msg}"
+            )
             return {}
 
     def get_policy_warnings_counter(self, scan_code: str) -> Dict[str, Any]:
@@ -434,15 +488,20 @@ class ScansClient:
                         f"Scan created but no scan_id returned for '{scan_name}'",
                         details=response,
                     )
-                logger.debug(f"Successfully created scan '{scan_name}' with ID {scan_id}")
+                logger.debug(
+                    f"Successfully created scan '{scan_name}' with ID {scan_id}"
+                )
                 return int(scan_id)
             else:
                 error_msg = response.get("error", "Unknown error")
                 raise ApiError(
-                    f"Failed to create scan '{scan_name}': {error_msg}", details=response
+                    f"Failed to create scan '{scan_name}': {error_msg}",
+                    details=response,
                 )
         except ApiError as e:
-            if "Scan code already exists" in str(e) or "code_already_exists" in str(e):
+            if "Scan code already exists" in str(
+                e
+            ) or "code_already_exists" in str(e):
                 logger.debug(f"Scan '{scan_name}' already exists.")
                 raise ScanExistsError(
                     f"Scan '{scan_name}' already exists",
@@ -537,14 +596,22 @@ class ScansClient:
                 logger.debug(f"Successfully updated scan '{scan_code}'")
                 return True
             else:
-                logger.warning(f"Unexpected response when updating scan: {response}")
+                logger.warning(
+                    f"Unexpected response when updating scan: {response}"
+                )
                 error_msg = response.get("error", "Unknown error")
-                raise ApiError(f"Failed to update scan: {error_msg}", details=response)
+                raise ApiError(
+                    f"Failed to update scan: {error_msg}", details=response
+                )
         except ApiError as e:
-            if "not found" in str(e).lower() or "does not exist" in str(e).lower():
+            if (
+                "not found" in str(e).lower()
+                or "does not exist" in str(e).lower()
+            ):
                 logger.debug(f"Scan '{scan_code}' not found.")
                 raise ScanNotFoundError(
-                    f"Scan '{scan_code}' not found", details=getattr(e, "details", None)
+                    f"Scan '{scan_code}' not found",
+                    details=getattr(e, "details", None),
                 )
             raise
 
@@ -575,12 +642,17 @@ class ScansClient:
         response = self._api._send_request(payload)
         if response.get("status") != "1":
             error_msg = response.get("error", "Unknown error")
-            raise ApiError(f"Failed to initiate download from Git: {error_msg}", details=response)
+            raise ApiError(
+                f"Failed to initiate download from Git: {error_msg}",
+                details=response,
+            )
 
         logger.debug("Successfully started Git Clone.")
         return True
 
-    def check_status_download_content_from_git(self, scan_code: str) -> Dict[str, Any]:
+    def check_status_download_content_from_git(
+        self, scan_code: str
+    ) -> Dict[str, Any]:
         """
         Check Git clone status for a scan.
 
@@ -622,10 +694,14 @@ class ScansClient:
                 return {"data": data}
             else:
                 # Unexpected type - wrap it
-                logger.warning(f"Unexpected response type from git status API: {type(data)}")
+                logger.warning(
+                    f"Unexpected response type from git status API: {type(data)}"
+                )
                 return {"data": str(data)}
         else:
-            error_msg = response.get("error", f"Unexpected response: {response}")
+            error_msg = response.get(
+                "error", f"Unexpected response: {response}"
+            )
             if "Scan not found" in error_msg or "row_not_found" in error_msg:
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
@@ -635,7 +711,9 @@ class ScansClient:
 
     # ===== SCAN EXECUTION OPERATIONS =====
 
-    def remove_uploaded_content(self, scan_code: str, filename: Optional[str] = None) -> bool:
+    def remove_uploaded_content(
+        self, scan_code: str, filename: Optional[str] = None
+    ) -> bool:
         """
         Removes uploaded content from a scan.
 
@@ -655,7 +733,9 @@ class ScansClient:
         if filename:
             logger.debug(f"Removing '{filename}' from scan '{scan_code}'...")
         else:
-            logger.debug(f"Removing entire scan directory for scan '{scan_code}'...")
+            logger.debug(
+                f"Removing entire scan directory for scan '{scan_code}'..."
+            )
 
         data = {"scan_code": scan_code}
         if filename:
@@ -671,33 +751,47 @@ class ScansClient:
             response = self._api._send_request(payload)
             if response.get("status") == "1":
                 if filename:
-                    logger.debug(f"Successfully removed '{filename}' from scan '{scan_code}'.")
+                    logger.debug(
+                        f"Successfully removed '{filename}' from scan '{scan_code}'."
+                    )
                 else:
-                    logger.debug(f"Successfully removed entire directory for scan '{scan_code}'.")
+                    logger.debug(
+                        f"Successfully removed entire directory for scan '{scan_code}'."
+                    )
                 return True
             else:
                 error_msg = response.get("error", "Unknown error")
 
                 # Check if this is the specific "file not found" error
-                if error_msg == "RequestData.Base.issues_while_parsing_request" and filename:
+                if (
+                    error_msg
+                    == "RequestData.Base.issues_while_parsing_request"
+                    and filename
+                ):
                     data = response.get("data", [])
                     if isinstance(data, list) and len(data) > 0:
                         error_code = data[0].get("code", "")
-                        if error_code == "RequestData.Traits.PathTrait.filename_is_not_valid":
+                        if (
+                            error_code
+                            == "RequestData.Traits.PathTrait.filename_is_not_valid"
+                        ):
                             logger.warning(
                                 f"File '{filename}' does not exist in scan '{scan_code}'."
                             )
-                            return True  # Non-fatal - file doesn't exist anyway
+                            return (
+                                True  # Non-fatal - file doesn't exist anyway
+                            )
 
                 # Handle other errors
-                if "Scan not found" in error_msg or "row_not_found" in error_msg:
+                if (
+                    "Scan not found" in error_msg
+                    or "row_not_found" in error_msg
+                ):
                     raise ScanNotFoundError(f"Scan '{scan_code}' not found")
 
                 # Build error message based on whether filename was provided
                 if filename:
-                    error_detail = (
-                        f"Failed to remove '{filename}' from scan '{scan_code}': {error_msg}"
-                    )
+                    error_detail = f"Failed to remove '{filename}' from scan '{scan_code}': {error_msg}"
                 else:
                     error_detail = f"Failed to remove content from scan '{scan_code}': {error_msg}"
 
@@ -710,12 +804,11 @@ class ScansClient:
                     f"Unexpected error removing '{filename}' from scan '{scan_code}': {e}",
                     exc_info=True,
                 )
-                error_msg = (
-                    f"Failed to remove '{filename}' from scan '{scan_code}': Unexpected error"
-                )
+                error_msg = f"Failed to remove '{filename}' from scan '{scan_code}': Unexpected error"
             else:
                 logger.error(
-                    f"Unexpected error removing content from scan '{scan_code}': {e}", exc_info=True
+                    f"Unexpected error removing content from scan '{scan_code}': {e}",
+                    exc_info=True,
                 )
                 error_msg = f"Failed to remove content from scan '{scan_code}': Unexpected error"
 
@@ -757,14 +850,17 @@ class ScansClient:
 
         response = self._api._send_request(payload)
         if response.get("status") == "1":
-            logger.debug(f"Archive extraction operation queued for scan '{scan_code}'.")
+            logger.debug(
+                f"Archive extraction operation queued for scan '{scan_code}'."
+            )
             return True
         else:
             error_msg = response.get("error", "Unknown error")
             if "Scan not found" in error_msg or "row_not_found" in error_msg:
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
-                f"Archive extraction failed for scan '{scan_code}': " f"{error_msg}",
+                f"Archive extraction failed for scan '{scan_code}': "
+                f"{error_msg}",
                 details=response,
             )
 
@@ -853,15 +949,21 @@ class ScansClient:
         if response.get("status") != "1":
             error_msg = response.get("error", "Unknown API error")
             raise ApiError(
-                f"Failed to start dependency analysis for '{scan_code}': " f"{error_msg}",
+                f"Failed to start dependency analysis for '{scan_code}': "
+                f"{error_msg}",
                 details=response,
             )
-        logger.info(f"Dependency analysis for '{scan_code}' started successfully.")
+        logger.info(
+            f"Dependency analysis for '{scan_code}' started successfully."
+        )
 
     # ===== STATUS & MONITORING =====
 
     def check_status(
-        self, scan_code: str, process_type: str, process_id: Optional[int] = None
+        self,
+        scan_code: str,
+        process_type: str,
+        process_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Check the status of a scan operation.
@@ -886,7 +988,9 @@ class ScansClient:
             >>> status = scans.check_status("scan_123", "SCAN")
             >>> status = scans.check_status("scan_123", "DEPENDENCY_ANALYSIS")
         """
-        logger.debug(f"Checking {process_type} status for scan '{scan_code}'...")
+        logger.debug(
+            f"Checking {process_type} status for scan '{scan_code}'..."
+        )
 
         # Build payload
         payload_data = {
@@ -924,7 +1028,9 @@ class ScansClient:
                 )
                 return {"status": str(data)}
         else:
-            error_msg = response.get("error", f"Unexpected response: {response}")
+            error_msg = response.get(
+                "error", f"Unexpected response: {response}"
+            )
             if "Scan not found" in error_msg or "row_not_found" in error_msg:
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
@@ -989,7 +1095,10 @@ class ScansClient:
 
         if "_raw_response" in response_data:
             raw_response = response_data["_raw_response"]
-            logger.info(f"Synchronous report generation completed for " f"scan '{scan_code}'.")
+            logger.info(
+                f"Synchronous report generation completed for "
+                f"scan '{scan_code}'."
+            )
             return raw_response
         elif (
             response_data.get("status") == "1"
@@ -1003,11 +1112,14 @@ class ScansClient:
             )
             return int(process_id)
         else:
-            error_msg = response_data.get("error", f"Unexpected response: {response_data}")
+            error_msg = response_data.get(
+                "error", f"Unexpected response: {response_data}"
+            )
             if "Scan not found" in error_msg:
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
-                f"Failed to request report generation for " f"scan '{scan_code}': {error_msg}",
+                f"Failed to request report generation for "
+                f"scan '{scan_code}': {error_msg}",
                 details=response_data,
             )
 

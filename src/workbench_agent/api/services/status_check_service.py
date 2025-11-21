@@ -101,19 +101,26 @@ class StatusCheckService:
                 # Extract status from 'data' field (contains the git clone status string)
                 raw_status = str(data.get("data", "UNKNOWN")).upper()
             else:
-                logger.warning(f"Unexpected data type for git status: {type(data)}")
+                logger.warning(
+                    f"Unexpected data type for git status: {type(data)}"
+                )
                 return "ACCESS_ERROR"
 
             # CRITICAL: Treat "NOT STARTED" as idle/finished state
             # A "NOT STARTED" process hasn't started yet, so it's
             # effectively idle
             if raw_status == "NOT STARTED":
-                logger.debug("Git operation status is NOT STARTED - " "treating as idle")
+                logger.debug(
+                    "Git operation status is NOT STARTED - " "treating as idle"
+                )
                 return "FINISHED"
 
             # Normalize "NOT FINISHED" to "RUNNING" for consistency
             if raw_status == "NOT FINISHED":
-                logger.debug("Git operation status is NOT FINISHED - " "treating as running")
+                logger.debug(
+                    "Git operation status is NOT FINISHED - "
+                    "treating as running"
+                )
                 return "RUNNING"
 
             return raw_status
@@ -155,7 +162,9 @@ class StatusCheckService:
 
                 # CRITICAL: Treat "NEW" as idle/finished state
                 if progress_state_upper == "NEW":
-                    logger.debug("Scan progress_state is NEW - treating as idle")
+                    logger.debug(
+                        "Scan progress_state is NEW - treating as idle"
+                    )
                     return "FINISHED"
 
                 return progress_state_upper
@@ -165,7 +174,8 @@ class StatusCheckService:
             if is_finished is not None:
                 # Handle both boolean and string representations
                 if (isinstance(is_finished, bool) and is_finished) or (
-                    isinstance(is_finished, str) and is_finished.lower() in ("1", "true")
+                    isinstance(is_finished, str)
+                    and is_finished.lower() in ("1", "true")
                 ):
                     return "FINISHED"
                 # If is_finished exists but is False/0, continue checking
@@ -216,7 +226,10 @@ class StatusCheckService:
 
                 # CRITICAL: Treat "NEW" as idle/finished state
                 if progress_state_upper == "NEW":
-                    logger.debug("Project report progress_state is NEW - " "treating as idle")
+                    logger.debug(
+                        "Project report progress_state is NEW - "
+                        "treating as idle"
+                    )
                     return "FINISHED"
 
                 return progress_state_upper
@@ -246,7 +259,9 @@ class StatusCheckService:
             StatusResult with git clone status information
         """
         # Get raw status data from the API (always returns dict)
-        status_data = self._scans.check_status_download_content_from_git(scan_code)
+        status_data = self._scans.check_status_download_content_from_git(
+            scan_code
+        )
 
         # Extract and normalize status
         normalized_status = self._git_status_accessor(status_data)
@@ -287,7 +302,9 @@ class StatusCheckService:
         Returns:
             StatusResult with dependency analysis status information
         """
-        status_data = self._scans.check_status(scan_code, "DEPENDENCY_ANALYSIS")
+        status_data = self._scans.check_status(
+            scan_code, "DEPENDENCY_ANALYSIS"
+        )
         normalized_status = self._standard_scan_status_accessor(status_data)
 
         return StatusResult(
@@ -343,7 +360,9 @@ class StatusCheckService:
         Returns:
             StatusResult with notice extract file status information
         """
-        status_data = self._scans.check_status(scan_code, "NOTICE_EXTRACT_FILE")
+        status_data = self._scans.check_status(
+            scan_code, "NOTICE_EXTRACT_FILE"
+        )
         normalized_status = self._standard_scan_status_accessor(status_data)
 
         return StatusResult(
@@ -351,7 +370,9 @@ class StatusCheckService:
             raw_data=status_data,
         )
 
-    def check_notice_extract_component_status(self, scan_code: str) -> StatusResult:
+    def check_notice_extract_component_status(
+        self, scan_code: str
+    ) -> StatusResult:
         """
         Check the status of a notice component extraction operation.
 
@@ -361,7 +382,9 @@ class StatusCheckService:
         Returns:
             StatusResult with notice extract component status
         """
-        status_data = self._scans.check_status(scan_code, "NOTICE_EXTRACT_COMPONENT")
+        status_data = self._scans.check_status(
+            scan_code, "NOTICE_EXTRACT_COMPONENT"
+        )
         normalized_status = self._standard_scan_status_accessor(status_data)
 
         return StatusResult(
@@ -369,7 +392,9 @@ class StatusCheckService:
             raw_data=status_data,
         )
 
-    def check_notice_extract_aggregate_status(self, scan_code: str) -> StatusResult:
+    def check_notice_extract_aggregate_status(
+        self, scan_code: str
+    ) -> StatusResult:
         """
         Check the status of a notice aggregate extraction operation.
 
@@ -379,7 +404,9 @@ class StatusCheckService:
         Returns:
             StatusResult with notice extract aggregate status
         """
-        status_data = self._scans.check_status(scan_code, "NOTICE_EXTRACT_AGGREGATE")
+        status_data = self._scans.check_status(
+            scan_code, "NOTICE_EXTRACT_AGGREGATE"
+        )
         normalized_status = self._standard_scan_status_accessor(status_data)
 
         return StatusResult(
@@ -389,7 +416,9 @@ class StatusCheckService:
 
     # --- REPORT OPERATIONS ---
 
-    def check_scan_report_status(self, scan_code: str, process_id: int) -> StatusResult:
+    def check_scan_report_status(
+        self, scan_code: str, process_id: int
+    ) -> StatusResult:
         """
         Check the status of a scan report generation operation.
 
@@ -410,7 +439,9 @@ class StatusCheckService:
             raw_data=status_data,
         )
 
-    def check_project_report_status(self, process_id: int, project_code: str) -> StatusResult:
+    def check_project_report_status(
+        self, process_id: int, project_code: str
+    ) -> StatusResult:
         """
         Check the status of a project report generation operation.
 
@@ -425,7 +456,9 @@ class StatusCheckService:
         raw_status_data = self._projects.check_status(
             process_id=int(process_id), process_type="REPORT_GENERATION"
         )
-        normalized_status = self._project_report_status_accessor(raw_status_data)
+        normalized_status = self._project_report_status_accessor(
+            raw_status_data
+        )
 
         return StatusResult(
             status=normalized_status,
@@ -434,7 +467,9 @@ class StatusCheckService:
 
     # --- DELETE OPERATIONS ---
 
-    def check_delete_scan_status(self, scan_code: str, process_id: int) -> StatusResult:
+    def check_delete_scan_status(
+        self, scan_code: str, process_id: int
+    ) -> StatusResult:
         """
         Check the status of a scan deletion operation.
 
@@ -445,7 +480,9 @@ class StatusCheckService:
         Returns:
             StatusResult with delete scan status information
         """
-        status_data = self._scans.check_status(scan_code, "DELETE_SCAN", process_id=str(process_id))
+        status_data = self._scans.check_status(
+            scan_code, "DELETE_SCAN", process_id=str(process_id)
+        )
         normalized_status = self._standard_scan_status_accessor(status_data)
 
         return StatusResult(
@@ -457,7 +494,9 @@ class StatusCheckService:
     # UTILITY METHODS
     # =====================================================================
 
-    def extract_server_duration(self, raw_data: Dict[str, Any]) -> Optional[float]:
+    def extract_server_duration(
+        self, raw_data: Dict[str, Any]
+    ) -> Optional[float]:
         """
         Extract actual process duration from server timestamps.
 
@@ -476,8 +515,14 @@ class StatusCheckService:
 
         # Check if this is a git operation response format
         # Git responses look like: {"data": "FINISHED"}
-        if len(raw_data) == 1 and "data" in raw_data and isinstance(raw_data["data"], str):
-            logger.debug("Git operation detected - no server duration available")
+        if (
+            len(raw_data) == 1
+            and "data" in raw_data
+            and isinstance(raw_data["data"], str)
+        ):
+            logger.debug(
+                "Git operation detected - no server duration available"
+            )
             return None
 
         started = raw_data.get("started")
