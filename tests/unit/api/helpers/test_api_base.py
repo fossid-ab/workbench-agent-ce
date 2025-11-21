@@ -7,12 +7,12 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 import requests
 
-from workbench_agent.api.helpers.base_api import BaseAPI
 from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
     NetworkError,
 )
+from workbench_agent.api.helpers.base_api import BaseAPI
 
 
 # --- Fixtures ---
@@ -48,7 +48,9 @@ def test_api_base_init_url_fix():
 
 def test_api_base_init_url_correct():
     api_base = BaseAPI(
-        api_url="http://dummy.com/api.php", api_user="user", api_token="token"
+        api_url="http://dummy.com/api.php",
+        api_user="user",
+        api_token="token",
     )
     assert api_base.api_url == "http://dummy.com/api.php"
 
@@ -58,7 +60,10 @@ def test_send_request_success(api_base_inst, mock_session):
     mock_response = MagicMock(spec=requests.Response)
     mock_response.status_code = 200
     mock_response.headers = {"content-type": "application/json"}
-    mock_response.json.return_value = {"status": "1", "data": {"key": "value"}}
+    mock_response.json.return_value = {
+        "status": "1",
+        "data": {"key": "value"},
+    }
     mock_session.post.return_value = mock_response
     payload = {"group": "test", "action": "test"}
     result = api_base_inst._send_request(payload)
@@ -101,7 +106,9 @@ def test_send_request_timeout(api_base_inst, mock_session):
 def test_send_request_json_decode_error(api_base_inst, mock_session):
     mock_response = MagicMock(spec=requests.Response)
     mock_response.status_code = 200
-    mock_response.headers = {"content-type": "application/json"}  # Claims JSON
+    mock_response.headers = {
+        "content-type": "application/json"
+    }  # Claims JSON
     mock_response.text = "This is not JSON"
     mock_response.json.side_effect = json.JSONDecodeError(
         "Expecting value", "This is not JSON", 0
@@ -128,8 +135,10 @@ def test_send_request_http_error(api_base_inst, mock_session):
     mock_response = MagicMock(spec=requests.Response)
     mock_response.status_code = 401  # Unauthorized
     mock_response.headers = {}  # Add this line to avoid AttributeError
-    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
-        "401 Client Error", response=mock_response
+    mock_response.raise_for_status.side_effect = (
+        requests.exceptions.HTTPError(
+            "401 Client Error", response=mock_response
+        )
     )
     mock_session.post.return_value = mock_response
 
@@ -142,7 +151,9 @@ def test_send_request_http_error(api_base_inst, mock_session):
         assert "Invalid credentials or expired token" in str(e)
 
 
-def test_send_request_git_repository_access_error(api_base_inst, mock_session):
+def test_send_request_git_repository_access_error(
+    api_base_inst, mock_session
+):
     """Test detection of Git repository access errors."""
     mock_response = MagicMock(spec=requests.Response)
     mock_response.status_code = 200

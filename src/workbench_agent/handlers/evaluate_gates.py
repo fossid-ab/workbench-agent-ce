@@ -71,7 +71,9 @@ def _extract_policy_count(policy_data: Any) -> int:
 
     # Handle flat structure with fallback
     return int(
-        policy_data.get("policy_warnings_total", policy_data.get("total", 0))
+        policy_data.get(
+            "policy_warnings_total", policy_data.get("total", 0)
+        )
     )
 
 
@@ -83,7 +85,9 @@ def _display_vulnerability_breakdown(vuln_counts: Dict[str, int]) -> None:
         vuln_counts: Dictionary of severity levels to counts
     """
     total_vulns = sum(vuln_counts.values())
-    print(f"\n⚠️ Warning: Found {total_vulns} vulnerabilities. By CVSS Score:")
+    print(
+        f"\n⚠️ Warning: Found {total_vulns} vulnerabilities. By CVSS Score:"
+    )
 
     for severity in SEVERITY_ORDER:
         if vuln_counts[severity] > 0:
@@ -129,7 +133,9 @@ def _check_pending_files_gate(
 
     # Determine gate result
     if count > 0:
-        print(f"\n⚠️ Warning: {count} files with " f"pending identifications.")
+        print(
+            f"\n⚠️ Warning: {count} files with " f"pending identifications."
+        )
         if params.fail_on_pending:
             return GateResult(
                 passed=False,
@@ -152,7 +158,9 @@ def _check_pending_files_gate(
                 link_key="pending",
             )
     else:
-        print("\n✅ No pending files found - all files have been identified.")
+        print(
+            "\n✅ No pending files found - all files have been identified."
+        )
         return GateResult(
             passed=True, count=0, message="No pending files found"
         )
@@ -393,7 +401,9 @@ def _print_gate_summary(
 
     # Pending files summary
     if params.fail_on_pending:
-        status = "✅ PASSED" if results.pending_files.passed else "❌ FAILED"
+        status = (
+            "✅ PASSED" if results.pending_files.passed else "❌ FAILED"
+        )
         print(
             f"Pending Files Gate: {status} "
             f"({results.pending_files.count} pending files)"
@@ -404,7 +414,9 @@ def _print_gate_summary(
 
     # Policy warnings summary
     if params.fail_on_policy:
-        status = "✅ PASSED" if results.policy_warnings.passed else "❌ FAILED"
+        status = (
+            "✅ PASSED" if results.policy_warnings.passed else "❌ FAILED"
+        )
         print(
             f"Policy Warnings Gate: {status} "
             f"({results.policy_warnings.count} warnings)"
@@ -418,7 +430,9 @@ def _print_gate_summary(
 
     # Vulnerabilities summary
     if params.fail_on_vuln_severity:
-        status = "✅ PASSED" if results.vulnerabilities.passed else "❌ FAILED"
+        status = (
+            "✅ PASSED" if results.vulnerabilities.passed else "❌ FAILED"
+        )
         print(
             f"Vulnerability Gate: {status} "
             f"(Threshold: {params.fail_on_vuln_severity.upper()})"
@@ -503,7 +517,9 @@ def handle_evaluate_gates(
             wait_interval=params.scan_wait_time,
         )
 
-        logging.info("Verified all Scan processes are idle. Checking gates...")
+        logging.info(
+            "Verified all Scan processes are idle. Checking gates..."
+        )
     except (ProcessTimeoutError, ApiError, NetworkError) as e:
         print(
             f"\n❌ Gate Evaluation Failed: Could not verify scan "
@@ -521,8 +537,12 @@ def handle_evaluate_gates(
     # Run all gate checks
     results = GateResults(
         pending_files=_check_pending_files_gate(client, scan_code, params),
-        policy_warnings=_check_policy_warnings_gate(client, scan_code, params),
-        vulnerabilities=_check_vulnerabilities_gate(client, scan_code, params),
+        policy_warnings=_check_policy_warnings_gate(
+            client, scan_code, params
+        ),
+        vulnerabilities=_check_vulnerabilities_gate(
+            client, scan_code, params
+        ),
     )
 
     # Print final summary

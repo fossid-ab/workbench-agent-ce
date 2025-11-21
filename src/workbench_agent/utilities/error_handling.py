@@ -55,7 +55,11 @@ def format_and_print_error(
     error_details = getattr(error, "details", {})
 
     # Determine if this is a read-only operation
-    read_only_commands = {"show-results", "evaluate-gates", "download-reports"}
+    read_only_commands = {
+        "show-results",
+        "evaluate-gates",
+        "download-reports",
+    }
     is_read_only = command in read_only_commands
 
     # Add context-specific help based on error type
@@ -69,7 +73,9 @@ def format_and_print_error(
 
     elif isinstance(error, ProjectNotFoundError):
         if is_read_only:
-            print("\n❌ Cannot continue: The requested project does not exist")
+            print(
+                "\n❌ Cannot continue: The requested project does not exist"
+            )
             print(
                 f"   Project '{getattr(params, 'project_name', 'unknown')}' was not found in your Workbench instance."
             )
@@ -78,14 +84,18 @@ def format_and_print_error(
             print("   • The project exists in your Workbench instance")
             print("   • You have access to the project")
         else:
-            print(f"\n❌ Error executing '{command}' command: {error_message}")
+            print(
+                f"\n❌ Error executing '{command}' command: {error_message}"
+            )
             print(
                 f"  → Project '{getattr(params, 'project_name', 'unknown')}' was not found"
             )
 
     elif isinstance(error, ScanNotFoundError):
         if is_read_only:
-            print("\n❌ Cannot continue: The requested scan does not exist")
+            print(
+                "\n❌ Cannot continue: The requested scan does not exist"
+            )
             scan_name = getattr(params, "scan_name", "unknown")
             project_name = getattr(params, "project_name", None)
 
@@ -101,7 +111,9 @@ def format_and_print_error(
             print("\n💡 Please check:")
             print("   • The scan name is spelled correctly")
             if project_name:
-                print(f"   • The scan exists in the '{project_name}' project")
+                print(
+                    f"   • The scan exists in the '{project_name}' project"
+                )
             else:
                 print("   • The scan exists in your Workbench instance")
                 print(
@@ -109,7 +121,9 @@ def format_and_print_error(
                 )
             print("   • You have access to the scan")
         else:
-            print(f"\n❌ Error executing '{command}' command: {error_message}")
+            print(
+                f"\n❌ Error executing '{command}' command: {error_message}"
+            )
             print(
                 f"  → Scan '{getattr(params, 'scan_name', 'unknown')}' was not found"
             )
@@ -195,7 +209,9 @@ def format_and_print_error(
     elif isinstance(error, ValidationError):
         print("\n❌ Invalid input or configuration")
         print(f"   {error_message}")
-        print("\n💡 Please check your command-line arguments and input files")
+        print(
+            "\n💡 Please check your command-line arguments and input files"
+        )
 
     elif isinstance(error, ConfigurationError):
         print("\n❌ Configuration error")
@@ -216,7 +232,9 @@ def format_and_print_error(
         print(f"\n❌ Error executing '{command}' command: {error_message}")
 
     # Show error code if available (and not already shown)
-    if error_code and not isinstance(error, (ApiError, ProcessTimeoutError)):
+    if error_code and not isinstance(
+        error, (ApiError, ProcessTimeoutError)
+    ):
         print(f"\nError code: {error_code}")
 
     # Show details in verbose mode
@@ -227,7 +245,9 @@ def format_and_print_error(
 
     # Add help text only for non-read-only operations or when in verbose mode
     if not is_read_only or getattr(params, "verbose", False):
-        print("\nFor more details, run with --log DEBUG for verbose output")
+        print(
+            "\nFor more details, run with --log DEBUG for verbose output"
+        )
 
 
 def handler_error_wrapper(handler_func: Callable) -> Callable:
@@ -313,7 +333,10 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
             # Wrap in WorkbenchAgentError with context
             raise WorkbenchAgentError(
                 f"Unexpected error: {str(e)}",
-                details={"error": str(e), "handler": handler_func.__name__},
+                details={
+                    "error": str(e),
+                    "handler": handler_func.__name__,
+                },
             ) from e
 
     return wrapper

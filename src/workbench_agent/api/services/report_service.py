@@ -209,7 +209,10 @@ class ReportService:
                 f"reports and will be ignored"
             )
 
-        if disclaimer is not None and not capabilities["supports_disclaimer"]:
+        if (
+            disclaimer is not None
+            and not capabilities["supports_disclaimer"]
+        ):
             logger.warning(
                 f"disclaimer is not supported for '{report_type}' "
                 f"reports and will be ignored"
@@ -221,7 +224,10 @@ class ReportService:
                 f"reports and will be ignored"
             )
 
-        if include_dep_det_info and not capabilities["supports_dep_det_info"]:
+        if (
+            include_dep_det_info
+            and not capabilities["supports_dep_det_info"]
+        ):
             logger.warning(
                 f"include_dep_det_info is only supported for Excel "
                 f"reports, ignoring for '{report_type}'"
@@ -362,7 +368,9 @@ class ReportService:
             payload_data["include_vex"] = include_vex
 
         # Add include_dep_det_info parameter if requested and supported
-        if include_dep_det_info and capabilities.get("supports_dep_det_info"):
+        if include_dep_det_info and capabilities.get(
+            "supports_dep_det_info"
+        ):
             payload_data["include_dep_det_info"] = include_dep_det_info
 
         return payload_data
@@ -455,7 +463,9 @@ class ReportService:
             payload_data["include_vex"] = include_vex
 
         # Add include_dep_det_info parameter if requested and supported
-        if include_dep_det_info and capabilities.get("supports_dep_det_info"):
+        if include_dep_det_info and capabilities.get(
+            "supports_dep_det_info"
+        ):
             payload_data["include_dep_det_info"] = include_dep_det_info
 
         return payload_data
@@ -535,7 +545,8 @@ class ReportService:
         )
 
         logger.info(
-            f"Generating scan report: scan={scan_code}, " f"type={report_type}"
+            f"Generating scan report: scan={scan_code}, "
+            f"type={report_type}"
         )
 
         # Delegate to the client's raw method
@@ -576,7 +587,9 @@ class ReportService:
         Raises:
             ApiError: If download fails
         """
-        logger.debug(f"Downloading scan report for process ID {process_id}...")
+        logger.debug(
+            f"Downloading scan report for process ID {process_id}..."
+        )
 
         # Delegate to the downloads client
         return self._downloads.download_report("scans", process_id)
@@ -621,7 +634,9 @@ class ReportService:
 
     def save_report(
         self,
-        response_or_content: Union[requests.Response, str, bytes, dict, list],
+        response_or_content: Union[
+            requests.Response, str, bytes, dict, list
+        ],
         output_dir: str,
         name_component: str,
         report_type: str,
@@ -715,7 +730,9 @@ class ReportService:
             safe_type = re.sub(r"[^\w\-]+", "_", report_type)
             filename = f"{safe_scope}-{safe_name}-{safe_type}.json"
             try:
-                content_to_write = json.dumps(response_or_content, indent=2)
+                content_to_write = json.dumps(
+                    response_or_content, indent=2
+                )
                 write_mode = "w"
             except TypeError as e:
                 raise ValidationError(

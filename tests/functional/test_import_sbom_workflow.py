@@ -39,7 +39,9 @@ class TestImportSBOMWorkflow:
             pytest.skip(f"Test fixture not found: {sbom_file}")
 
         # Step 1: Import-SBOM
-        print(f"\n[IMPORT-SBOM] Step 1: Importing SBOM '{unique_scan_name}'")
+        print(
+            f"\n[IMPORT-SBOM] Step 1: Importing SBOM '{unique_scan_name}'"
+        )
         result = subprocess.run(
             [
                 "workbench-agent",
@@ -168,5 +170,7 @@ class TestImportSBOMWorkflow:
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
-        print(f"[IMPORT-SBOM] Step 5: ✓ Scan reports downloaded successfully")
+        print(
+            f"[IMPORT-SBOM] Step 5: ✓ Scan reports downloaded successfully"
+        )
         print(f"[IMPORT-SBOM] ✓ Complete workflow passed!")

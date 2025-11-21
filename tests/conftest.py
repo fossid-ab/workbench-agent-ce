@@ -107,7 +107,10 @@ def mock_workbench(mocker):
     mock_wb.ensure_scan_compatibility = mocker.MagicMock()
 
     # Setup common returns
-    mock_wb._base_api._send_request.return_value = {"status": "1", "data": {}}
+    mock_wb._base_api._send_request.return_value = {
+        "status": "1",
+        "data": {},
+    }
     return mock_wb
 
 

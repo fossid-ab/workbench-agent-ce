@@ -89,7 +89,9 @@ class UploadArchivePrep:
             try:
                 stat_info = os.stat(file_path)
                 # Allow empty files, but not special files with zero size
-                if stat_info.st_size == 0 and not os.path.isfile(file_path):
+                if stat_info.st_size == 0 and not os.path.isfile(
+                    file_path
+                ):
                     return False
             except OSError:
                 return False
@@ -165,7 +167,9 @@ class UploadArchivePrep:
                 for root, dirs, files in os.walk(abs_path):
                     # Get relative path from source directory
                     rel_root = os.path.relpath(root, abs_path)
-                    normalized_rel_root = "" if rel_root == "." else rel_root
+                    normalized_rel_root = (
+                        "" if rel_root == "." else rel_root
+                    )
 
                     # Filter out excluded directories early
                     dirs_to_remove = []
@@ -202,7 +206,9 @@ class UploadArchivePrep:
                     # Process files
                     for file in files:
                         file_path = os.path.join(root, file)
-                        rel_file_path = os.path.relpath(file_path, abs_path)
+                        rel_file_path = os.path.relpath(
+                            file_path, abs_path
+                        )
 
                         # Check default exclusions
                         if UploadArchivePrep.should_exclude_file(
@@ -314,7 +320,9 @@ class UploadArchivePrep:
                     # Skip empty lines and comments
                     if line and not line.startswith("#"):
                         patterns.append(line)
-            logger.debug(f"Parsed {len(patterns)} patterns from .gitignore")
+            logger.debug(
+                f"Parsed {len(patterns)} patterns from .gitignore"
+            )
         except (OSError, IOError, UnicodeDecodeError) as e:
             logger.warning(f"Could not read .gitignore file: {e}")
 
@@ -406,7 +414,9 @@ class UploadArchivePrep:
             if (
                 is_dir
                 and pattern.endswith("/")
-                and (dir_path.endswith(pattern) or dir_path == pattern[:-1])
+                and (
+                    dir_path.endswith(pattern) or dir_path == pattern[:-1]
+                )
             ):
                 return True
 

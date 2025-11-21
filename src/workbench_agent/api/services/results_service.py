@@ -261,7 +261,9 @@ class ResultsService:
             f"(unique={unique})"
         )
         licenses: List[Dict[str, Any]] = (
-            self._scans.get_scan_identified_licenses(scan_code, unique=unique)
+            self._scans.get_scan_identified_licenses(
+                scan_code, unique=unique
+            )
         )
         logger.debug(f"Retrieved {len(licenses)} licenses")
         return licenses
@@ -290,7 +292,9 @@ class ResultsService:
             >>> for comp in components:
             ...     print(f"{comp['name']} {comp['version']}")
         """
-        logger.debug(f"Fetching identified components for scan '{scan_code}'")
+        logger.debug(
+            f"Fetching identified components for scan '{scan_code}'"
+        )
         components: List[Dict[str, Any]] = (
             self._scans.get_scan_identified_components(scan_code)
         )
@@ -478,9 +482,13 @@ class ResultsService:
         # Determine what to fetch based on flags
         should_fetch_licenses = getattr(params, "show_licenses", False)
         should_fetch_components = getattr(params, "show_components", False)
-        should_fetch_dependencies = getattr(params, "show_dependencies", False)
+        should_fetch_dependencies = getattr(
+            params, "show_dependencies", False
+        )
         should_fetch_metrics = getattr(params, "show_scan_metrics", False)
-        should_fetch_policy = getattr(params, "show_policy_warnings", False)
+        should_fetch_policy = getattr(
+            params, "show_policy_warnings", False
+        )
         should_fetch_vulnerabilities = getattr(
             params, "show_vulnerabilities", False
         )
@@ -496,7 +504,9 @@ class ResultsService:
                 should_fetch_vulnerabilities,
             ]
         ):
-            logger.debug("No results requested - all --show-* flags are False")
+            logger.debug(
+                "No results requested - all --show-* flags are False"
+            )
             return {}
 
         logger.debug("=== Fetching Requested Results ===")
@@ -533,8 +543,12 @@ class ResultsService:
                     )
                     logger.info(f"Fetched {len(kb_licenses)} KB licenses")
             except (ApiError, NetworkError) as e:
-                logger.warning(f"Could not fetch KB Identified Licenses: {e}")
-                print(f"Warning: Could not fetch KB Identified Licenses: {e}")
+                logger.warning(
+                    f"Could not fetch KB Identified Licenses: {e}"
+                )
+                print(
+                    f"Warning: Could not fetch KB Identified Licenses: {e}"
+                )
 
         # Fetch KB components
         if should_fetch_components:
@@ -549,7 +563,9 @@ class ResultsService:
                             x.get("version", ""),
                         ),
                     )
-                    logger.info(f"Fetched {len(kb_components)} KB components")
+                    logger.info(
+                        f"Fetched {len(kb_components)} KB components"
+                    )
             except (ApiError, NetworkError) as e:
                 logger.warning(
                     f"Could not fetch KB Identified Scan Components: {e}"
@@ -578,8 +594,12 @@ class ResultsService:
                     collected_results["policy_warnings"] = warnings
                     logger.info("Fetched policy warnings counter")
             except (ApiError, NetworkError) as e:
-                logger.warning(f"Could not fetch Scan Policy Warnings: {e}")
-                print(f"Warning: Could not fetch Scan Policy Warnings: {e}")
+                logger.warning(
+                    f"Could not fetch Scan Policy Warnings: {e}"
+                )
+                print(
+                    f"Warning: Could not fetch Scan Policy Warnings: {e}"
+                )
 
         # Fetch vulnerabilities
         if should_fetch_vulnerabilities:

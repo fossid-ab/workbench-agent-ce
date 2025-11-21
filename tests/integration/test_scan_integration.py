@@ -66,7 +66,9 @@ class TestScanIntegration:
             # Verify we got a success message in the output
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
-            assert "Workbench Agent finished successfully" in combined_output
+            assert (
+                "Workbench Agent finished successfully" in combined_output
+            )
 
     def test_scan_with_autoid_flags(
         self, mock_workbench_api, tmp_path, capsys

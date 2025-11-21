@@ -160,8 +160,10 @@ def handle_download_reports(
 
         # Wait for dependency analysis using check-first pattern
         try:
-            da_status = client.status_check.check_dependency_analysis_status(
-                scan_code
+            da_status = (
+                client.status_check.check_dependency_analysis_status(
+                    scan_code
+                )
             )
             if da_status.status == "RUNNING":
                 print(
@@ -318,7 +320,9 @@ def handle_download_reports(
                         process_id
                     )
                 else:
-                    response = client.reports.download_scan_report(process_id)
+                    response = client.reports.download_scan_report(
+                        process_id
+                    )
 
             else:
                 # Synchronous report generation (returns response directly)
@@ -367,7 +371,9 @@ def handle_download_reports(
     print(f"Total reports requested: {len(report_types)}")
     print(f"Successfully downloaded: {success_count}")
     if error_count > 0:
-        print(f"Failed to download: {error_count} ({', '.join(error_types)})")
+        print(
+            f"Failed to download: {error_count} ({', '.join(error_types)})"
+        )
     print("=" * 50)
 
     # Return True if at least one report was successfully downloaded

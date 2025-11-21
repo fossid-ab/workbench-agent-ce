@@ -61,7 +61,9 @@ class TestDownloadClientInitialization:
 class TestDownloadReport:
     """Test cases for download_report method."""
 
-    def test_download_report_scan_success(self, downloads_client, base_api):
+    def test_download_report_scan_success(
+        self, downloads_client, base_api
+    ):
         """Test successful scan report download."""
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
@@ -94,7 +96,9 @@ class TestDownloadReport:
         # Check return value
         assert result == {"_raw_response": mock_response}
 
-    def test_download_report_project_success(self, downloads_client, base_api):
+    def test_download_report_project_success(
+        self, downloads_client, base_api
+    ):
         """Test successful project report download."""
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
@@ -127,7 +131,9 @@ class TestDownloadReport:
         # Check return value
         assert result == {"_raw_response": mock_response}
 
-    def test_download_report_custom_timeout(self, downloads_client, base_api):
+    def test_download_report_custom_timeout(
+        self, downloads_client, base_api
+    ):
         """Test download with custom timeout."""
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
@@ -160,7 +166,9 @@ class TestDownloadReport:
         with pytest.raises(ApiError, match="Report not found"):
             downloads_client.download_report("scans", 12345)
 
-    def test_download_report_network_error(self, downloads_client, base_api):
+    def test_download_report_network_error(
+        self, downloads_client, base_api
+    ):
         """Test that network errors are propagated."""
         base_api._send_request = MagicMock(
             side_effect=NetworkError("Connection timeout")
@@ -173,7 +181,9 @@ class TestDownloadReport:
 class TestDownloadClientIntegration:
     """Integration-style tests for DownloadClient."""
 
-    def test_process_id_string_conversion(self, downloads_client, base_api):
+    def test_process_id_string_conversion(
+        self, downloads_client, base_api
+    ):
         """Test that process_id is converted to string in payload."""
         mock_response = MagicMock(spec=requests.Response)
         base_api._send_request = MagicMock(

@@ -14,8 +14,10 @@ import os
 def create_workbench_connection_parser():
     """Create parent parser for Workbench connection arguments."""
     workbench_connection_parent = argparse.ArgumentParser(add_help=False)
-    workbench_connection_args = workbench_connection_parent.add_argument_group(
-        "Workbench Connection"
+    workbench_connection_args = (
+        workbench_connection_parent.add_argument_group(
+            "Workbench Connection"
+        )
     )
     workbench_connection_args.add_argument(
         "--api-url",
@@ -113,7 +115,9 @@ def create_identification_control_parser():
     )
 
     # Mutually exclusive group for identification reuse options
-    reuse_group = identification_control_parent.add_mutually_exclusive_group()
+    reuse_group = (
+        identification_control_parent.add_mutually_exclusive_group()
+    )
     reuse_group.add_argument(
         "--reuse-any-identification",
         help="Reuse any existing identification from the system.",
@@ -330,7 +334,9 @@ def create_project_scan_target_parser():
 def create_git_options_parser():
     """Create parent parser for Git scanning options."""
     git_options_parent = argparse.ArgumentParser(add_help=False)
-    git_args = git_options_parent.add_argument_group("Git Scanning Options")
+    git_args = git_options_parent.add_argument_group(
+        "Git Scanning Options"
+    )
     git_args.add_argument(
         "--git-url",
         help="URL of the Git repository to scan.",
@@ -345,7 +351,9 @@ def create_git_options_parser():
     )
 
     # Use mutually exclusive group for git references
-    ref_group = git_options_parent.add_mutually_exclusive_group(required=True)
+    ref_group = git_options_parent.add_mutually_exclusive_group(
+        required=True
+    )
     ref_group.add_argument(
         "--git-branch",
         help="The git branch to scan.",

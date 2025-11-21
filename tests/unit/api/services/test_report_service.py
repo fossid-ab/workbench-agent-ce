@@ -82,7 +82,9 @@ class TestSaveReport:
                 mock_file.assert_called_once_with(
                     "output_dir/scan-test_scan-xlsx.xlsx", "wb"
                 )
-                mock_file().write.assert_called_once_with(b"\x00\x01\x02\x03")
+                mock_file().write.assert_called_once_with(
+                    b"\x00\x01\x02\x03"
+                )
                 assert result == "output_dir/scan-test_scan-xlsx.xlsx"
 
     def test_save_dict_success(self, report_service):
@@ -132,7 +134,11 @@ class TestSaveReport:
                     FileSystemError, match="Failed to write report to"
                 ):
                     report_service.save_report(
-                        response, "output_dir", "test_scan", "basic", "scan"
+                        response,
+                        "output_dir",
+                        "test_scan",
+                        "basic",
+                        "scan",
                     )
 
     def test_save_json_response_success(self, report_service):
@@ -156,9 +162,12 @@ class TestSaveReport:
                     "w",
                     encoding="utf-8",
                 )
-                mock_file().write.assert_called_once_with('{"key": "value"}')
+                mock_file().write.assert_called_once_with(
+                    '{"key": "value"}'
+                )
                 assert (
-                    result == "output_dir/project-test_project-cyclone_dx.json"
+                    result
+                    == "output_dir/project-test_project-cyclone_dx.json"
                 )
 
     def test_save_list_success(self, report_service):
@@ -168,14 +177,21 @@ class TestSaveReport:
         with patch("builtins.open", mock_open()) as mock_file:
             with patch("os.makedirs"):
                 result = report_service.save_report(
-                    content, "output_dir", "test_project", "results", "project"
+                    content,
+                    "output_dir",
+                    "test_project",
+                    "results",
+                    "project",
                 )
                 mock_file.assert_called_once_with(
                     "output_dir/project-test_project-results.json",
                     "w",
                     encoding="utf-8",
                 )
-                assert result == "output_dir/project-test_project-results.json"
+                assert (
+                    result
+                    == "output_dir/project-test_project-results.json"
+                )
 
     def test_save_string_success(self, report_service):
         """Test saving a string successfully."""
@@ -201,13 +217,19 @@ class TestSaveReport:
         with patch("builtins.open", mock_open()) as mock_file:
             with patch("os.makedirs"):
                 result = report_service.save_report(
-                    content, "output_dir", "test_project", "binary", "project"
+                    content,
+                    "output_dir",
+                    "test_project",
+                    "binary",
+                    "project",
                 )
                 mock_file.assert_called_once_with(
                     "output_dir/project-test_project-binary.bin", "wb"
                 )
                 mock_file().write.assert_called_once_with(content)
-                assert result == "output_dir/project-test_project-binary.bin"
+                assert (
+                    result == "output_dir/project-test_project-binary.bin"
+                )
 
     def test_response_content_read_error(self, report_service):
         """Test handling of response content read errors."""
@@ -254,7 +276,11 @@ class TestSaveReport:
         with patch("builtins.open", mock_open()) as mock_file:
             with patch("os.makedirs"):
                 result = report_service.save_report(
-                    response, "output_dir", "test/scan:name*", "basic", "scan"
+                    response,
+                    "output_dir",
+                    "test/scan:name*",
+                    "basic",
+                    "scan",
                 )
                 # Check that filename was sanitized
                 mock_file.assert_called_once_with(
@@ -262,7 +288,9 @@ class TestSaveReport:
                     "w",
                     encoding="utf-8",
                 )
-                assert result == "output_dir/scan-test_scan_name_-basic.txt"
+                assert (
+                    result == "output_dir/scan-test_scan_name_-basic.txt"
+                )
 
     @pytest.mark.parametrize(
         "report_type,expected_ext",
@@ -289,11 +317,13 @@ class TestSaveReport:
         with patch("builtins.open", mock_open()) as mock_file:
             with patch("os.makedirs"):
                 result = report_service.save_report(
-                    response, "output_dir", "test_scan", report_type, "scan"
+                    response,
+                    "output_dir",
+                    "test_scan",
+                    report_type,
+                    "scan",
                 )
-                expected_filename = (
-                    f"output_dir/scan-test_scan-{report_type}.{expected_ext}"
-                )
+                expected_filename = f"output_dir/scan-test_scan-{report_type}.{expected_ext}"
                 mock_file.assert_called_once_with(expected_filename, "wb")
                 assert result == expected_filename
 
@@ -338,7 +368,11 @@ class TestSaveReport:
             ValidationError, match="Unsupported content type for saving"
         ):
             report_service.save_report(
-                unsupported_content, "output_dir", "test_scan", "basic", "scan"
+                unsupported_content,
+                "output_dir",
+                "test_scan",
+                "basic",
+                "scan",
             )
 
     def test_response_decode_fallback(self, report_service):
@@ -386,7 +420,9 @@ class TestBuildProjectReportPayload:
         }
         assert result == expected
 
-    def test_build_project_report_payload_invalid_type(self, report_service):
+    def test_build_project_report_payload_invalid_type(
+        self, report_service
+    ):
         """Test validation error for invalid project report type."""
         with pytest.raises(
             ValidationError,
@@ -441,7 +477,9 @@ class TestBuildProjectReportPayload:
 class TestBuildScanReportPayload:
     """Test cases for build_scan_report_payload method."""
 
-    def test_build_scan_report_payload_with_all_options(self, report_service):
+    def test_build_scan_report_payload_with_all_options(
+        self, report_service
+    ):
         """Test building scan report payload with all optional parameters."""
         # Use xlsx which supports most parameters
         result = report_service.build_scan_report_payload(
@@ -656,7 +694,9 @@ class TestDownloadReports:
         """Test download with binary content type but no content-disposition."""
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
-        mock_response.headers = {"content-type": "application/octet-stream"}
+        mock_response.headers = {
+            "content-type": "application/octet-stream"
+        }
         mock_downloads_client.download_report.return_value = {
             "_raw_response": mock_response
         }
@@ -680,7 +720,9 @@ class TestCheckProjectReportStatus:
         mock_status = {"progress_state": "FINISHED", "progress": 100}
         mock_projects_client.check_status.return_value = mock_status
 
-        result = report_service.check_project_report_status(12345, "MyProject")
+        result = report_service.check_project_report_status(
+            12345, "MyProject"
+        )
 
         # Verify check_status was called with correct parameters
         mock_projects_client.check_status.assert_called_once_with(
@@ -697,7 +739,9 @@ class TestCheckProjectReportStatus:
         mock_status = {"progress_state": "IN_PROGRESS", "progress": 50}
         mock_projects_client.check_status.return_value = mock_status
 
-        result = report_service.check_project_report_status(12345, "MyProject")
+        result = report_service.check_project_report_status(
+            12345, "MyProject"
+        )
 
         mock_projects_client.check_status.assert_called_once_with(
             12345, "REPORT_GENERATION"
@@ -788,7 +832,9 @@ class TestReportParameterValidation:
         assert payload["selection_type"] == "include_foss"
         assert payload["selection_view"] == "all"
 
-    def test_dynamic_top_matched_components_no_options(self, report_service):
+    def test_dynamic_top_matched_components_no_options(
+        self, report_service
+    ):
         """Test that dynamic_top_matched_components has no optional parameters."""
         payload = report_service.build_scan_report_payload(
             scan_code="scan123",
@@ -803,7 +849,9 @@ class TestReportParameterValidation:
         assert "selection_view" not in payload
         assert "include_vex" not in payload
 
-    def test_string_match_only_supports_selection_view(self, report_service):
+    def test_string_match_only_supports_selection_view(
+        self, report_service
+    ):
         """Test that string_match only supports selection_view."""
         payload = report_service.build_scan_report_payload(
             scan_code="scan123",

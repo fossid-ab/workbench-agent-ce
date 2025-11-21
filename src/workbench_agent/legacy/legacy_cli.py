@@ -23,7 +23,9 @@ def positive_int(value):
             )
         return ivalue
     except ValueError:
-        raise argparse.ArgumentTypeError(f"Invalid positive integer: {value}")
+        raise argparse.ArgumentTypeError(
+            f"Invalid positive integer: {value}"
+        )
 
 
 def non_negative_int(value):

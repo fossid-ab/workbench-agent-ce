@@ -18,14 +18,22 @@ from workbench_agent.utilities.sbom_validator import SBOMValidator
 @pytest.fixture
 def cyclonedx_sbom_path():
     return os.path.join(
-        os.path.dirname(__file__), "..", "..", "fixtures", "cyclonedx-bom.json"
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "fixtures",
+        "cyclonedx-bom.json",
     )
 
 
 @pytest.fixture
 def spdx_sbom_path():
     return os.path.join(
-        os.path.dirname(__file__), "..", "..", "fixtures", "spdx-document.rdf"
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "fixtures",
+        "spdx-document.rdf",
     )
 
 
@@ -34,10 +42,12 @@ class TestSBOMValidatorWithFixtures:
 
     def test_validate_cyclonedx_from_file(self, cyclonedx_sbom_path):
         """Test successful validation of a real CycloneDX file."""
-        assert os.path.exists(cyclonedx_sbom_path), "Fixture file is missing"
-
-        format_name, version, metadata, doc = SBOMValidator.validate_sbom_file(
+        assert os.path.exists(
             cyclonedx_sbom_path
+        ), "Fixture file is missing"
+
+        format_name, version, metadata, doc = (
+            SBOMValidator.validate_sbom_file(cyclonedx_sbom_path)
         )
 
         assert format_name == "cyclonedx"
@@ -49,7 +59,9 @@ class TestSBOMValidatorWithFixtures:
     @patch(
         "workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx"
     )
-    def test_validate_spdx_from_file(self, mock_validate_spdx, spdx_sbom_path):
+    def test_validate_spdx_from_file(
+        self, mock_validate_spdx, spdx_sbom_path
+    ):
         """Test successful validation of a real SPDX file."""
         assert os.path.exists(spdx_sbom_path), "Fixture file is missing"
 
@@ -62,8 +74,8 @@ class TestSBOMValidatorWithFixtures:
             mock_doc,
         )
 
-        format_name, version, metadata, doc = SBOMValidator.validate_sbom_file(
-            spdx_sbom_path
+        format_name, version, metadata, doc = (
+            SBOMValidator.validate_sbom_file(spdx_sbom_path)
         )
 
         assert format_name == "spdx"
@@ -74,8 +86,8 @@ class TestSBOMValidatorWithFixtures:
 
     def test_prepare_cyclonedx_no_conversion(self, cyclonedx_sbom_path):
         """CycloneDX should not require conversion."""
-        format_name, version, metadata, doc = SBOMValidator.validate_sbom_file(
-            cyclonedx_sbom_path
+        format_name, version, metadata, doc = (
+            SBOMValidator.validate_sbom_file(cyclonedx_sbom_path)
         )
 
         upload_path = SBOMValidator.prepare_sbom_for_upload(
@@ -100,8 +112,8 @@ class TestSBOMValidatorWithFixtures:
             mock_doc,
         )
 
-        format_name, version, metadata, doc = SBOMValidator.validate_sbom_file(
-            spdx_sbom_path
+        format_name, version, metadata, doc = (
+            SBOMValidator.validate_sbom_file(spdx_sbom_path)
         )
 
         upload_path = SBOMValidator.prepare_sbom_for_upload(
@@ -130,7 +142,8 @@ class TestCycloneDXValidationErrors:
     """Test cases for CycloneDX validation error conditions."""
 
     @patch.dict(
-        sys.modules, {"cyclonedx.validation": None, "cyclonedx.schema": None}
+        sys.modules,
+        {"cyclonedx.validation": None, "cyclonedx.schema": None},
     )
     def test_validate_cyclonedx_missing_library(self):
         """Test validation fails when CycloneDX library is missing."""
@@ -147,7 +160,8 @@ class TestCycloneDXValidationErrors:
 
         with patch("builtins.open", mock_open(read_data=json_content)):
             with pytest.raises(
-                ValidationError, match="does not appear to be a CycloneDX BOM"
+                ValidationError,
+                match="does not appear to be a CycloneDX BOM",
             ):
                 SBOMValidator._validate_cyclonedx("/path/to/file.json")
 
@@ -225,21 +239,29 @@ class TestCycloneDXValidationErrors:
 
     def test_validate_cyclonedx_invalid_json(self):
         """Test CycloneDX validation fails for invalid JSON."""
-        with patch("builtins.open", mock_open(read_data="{ 'bad': json }")):
-            with pytest.raises(ValidationError, match="Invalid JSON format"):
+        with patch(
+            "builtins.open", mock_open(read_data="{ 'bad': json }")
+        ):
+            with pytest.raises(
+                ValidationError, match="Invalid JSON format"
+            ):
                 SBOMValidator._validate_cyclonedx("/path/to/file.json")
 
     def test_validate_cyclonedx_file_not_found(self):
         """Test CycloneDX validation fails for non-existent file."""
         with patch("builtins.open", side_effect=FileNotFoundError):
-            with pytest.raises(FileSystemError, match="SBOM file not found"):
+            with pytest.raises(
+                FileSystemError, match="SBOM file not found"
+            ):
                 SBOMValidator._validate_cyclonedx("/nonexistent/file.json")
 
 
 class TestSPDXValidationErrors:
     """Test cases for SPDX validation error conditions."""
 
-    @patch.dict(sys.modules, {"spdx_tools.spdx.parser.parse_anything": None})
+    @patch.dict(
+        sys.modules, {"spdx_tools.spdx.parser.parse_anything": None}
+    )
     def test_validate_spdx_missing_library(self):
         """Test validation fails when SPDX library is missing."""
         with pytest.raises(
@@ -301,7 +323,9 @@ class TestSPDXValidationErrors:
     )
     def test_validate_spdx_file_not_found(self, mock_validate_spdx):
         """Test SPDX validation fails for non-existent file."""
-        mock_validate_spdx.side_effect = FileSystemError("SBOM file not found")
+        mock_validate_spdx.side_effect = FileSystemError(
+            "SBOM file not found"
+        )
 
         with pytest.raises(FileSystemError, match="SBOM file not found"):
             SBOMValidator._validate_spdx("/nonexistent/file.rdf")
@@ -347,7 +371,9 @@ class TestCleanupUtility:
         temp_file = "/tmp/spdx_converted_abc123.rdf"
 
         with patch("os.path.exists", return_value=True):
-            with patch("os.unlink", side_effect=OSError("Permission denied")):
+            with patch(
+                "os.unlink", side_effect=OSError("Permission denied")
+            ):
                 with patch("tempfile.gettempdir", return_value="/tmp"):
                     with patch(
                         "workbench_agent.utilities.sbom_validator.logger.warning"

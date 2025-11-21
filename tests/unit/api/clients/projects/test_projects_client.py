@@ -8,13 +8,13 @@ import requests
 
 # Import from the new client structure
 from workbench_agent.api.clients.projects_api import ProjectsClient
-from workbench_agent.api.helpers.base_api import BaseAPI
 from workbench_agent.api.exceptions import (
     ApiError,
     ProjectExistsError,
     ProjectNotFoundError,
     ScanNotFoundError,
 )
+from workbench_agent.api.helpers.base_api import BaseAPI
 
 
 # --- Fixtures ---
@@ -99,7 +99,9 @@ def test_list_projects_empty(mock_send, projects_client):
 @patch.object(BaseAPI, "_send_request")
 def test_list_projects_api_error(mock_send, projects_client):
     mock_send.return_value = {"status": "0", "error": "API error"}
-    with pytest.raises(ApiError, match="Failed to list projects: API error"):
+    with pytest.raises(
+        ApiError, match="Failed to list projects: API error"
+    ):
         projects_client.list_projects()
 
 

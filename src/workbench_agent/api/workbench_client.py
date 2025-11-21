@@ -153,7 +153,9 @@ class WorkbenchClient:
 
         # Core infrastructure - BaseAPI handles all HTTP communication
         self._base_api = BaseAPI(api_url, api_user, api_token)
-        logger.debug(f"BaseAPI initialized with URL: {self._base_api.api_url}")
+        logger.debug(
+            f"BaseAPI initialized with URL: {self._base_api.api_url}"
+        )
 
         # Initialize InternalClient first (needed for version check)
         self.internal = InternalClient(self._base_api)
@@ -201,7 +203,9 @@ class WorkbenchClient:
             scans_client=self.scans, resolver_service=self.resolver
         )
 
-        self.waiting = WaitingService(status_check_service=self.status_check)
+        self.waiting = WaitingService(
+            status_check_service=self.status_check
+        )
 
         self.upload_service = UploadService(uploads_client=self.uploads)
 
@@ -231,7 +235,9 @@ class WorkbenchClient:
         MINIMUM_VERSION = "24.3.0"
 
         try:
-            logger.info("Checking Workbench server version compatibility...")
+            logger.info(
+                "Checking Workbench server version compatibility..."
+            )
             config_data = self.internal.get_config()
             workbench_version = config_data.get("version", "Unknown")
 
@@ -295,7 +301,10 @@ class WorkbenchClient:
             if e.__class__.__name__ == "CompatibilityError":
                 raise
             # Wrap other errors
-            from workbench_agent.api.exceptions import ApiError, NetworkError
+            from workbench_agent.api.exceptions import (
+                ApiError,
+                NetworkError,
+            )
 
             if isinstance(e, (ApiError, NetworkError)):
                 raise

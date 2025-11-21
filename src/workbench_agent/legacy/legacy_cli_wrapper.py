@@ -29,7 +29,9 @@ class CliWrapper:
         timeout (str): Timeout for CLI expressed in seconds
     """
 
-    def __init__(self, cli_path: str, config_path: str, timeout: str = "120"):
+    def __init__(
+        self, cli_path: str, config_path: str, timeout: str = "120"
+    ):
         """
         Initialize CliWrapper.
 
@@ -47,7 +49,9 @@ class CliWrapper:
 
         # Validate CLI path exists and is executable
         if not os.path.exists(cli_path):
-            raise FileSystemError(f"FossID CLI not found at path: {cli_path}")
+            raise FileSystemError(
+                f"FossID CLI not found at path: {cli_path}"
+            )
         if not os.access(cli_path, os.X_OK):
             raise FileSystemError(f"FossID CLI not executable: {cli_path}")
 
@@ -175,7 +179,9 @@ class CliWrapper:
             return temporary_file_path
 
         except subprocess.TimeoutExpired as e:
-            error_msg = f"Blind scan timed out after {self.timeout} seconds"
+            error_msg = (
+                f"Blind scan timed out after {self.timeout} seconds"
+            )
             logger.error(error_msg)
             # Clean up temporary file
             if os.path.exists(temporary_file_path):
@@ -202,7 +208,9 @@ class CliWrapper:
             str: Random string of specified length
         """
         valid_letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        return "".join((random.choice(valid_letters) for i in range(length)))
+        return "".join(
+            (random.choice(valid_letters) for i in range(length))
+        )
 
     def cleanup_temp_file(self, file_path: str) -> bool:
         """
@@ -220,8 +228,12 @@ class CliWrapper:
                 logger.debug(f"Cleaned up temporary file: {file_path}")
                 return True
             else:
-                logger.warning(f"Temporary file does not exist: {file_path}")
+                logger.warning(
+                    f"Temporary file does not exist: {file_path}"
+                )
                 return False
         except Exception as e:
-            logger.error(f"Failed to clean up temporary file {file_path}: {e}")
+            logger.error(
+                f"Failed to clean up temporary file {file_path}: {e}"
+            )
             return False

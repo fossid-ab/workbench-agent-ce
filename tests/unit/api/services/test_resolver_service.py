@@ -10,14 +10,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from workbench_agent.api.services.resolver_service import ResolverService
 from workbench_agent.api.exceptions import (
     ApiError,
+    CompatibilityError,
     NetworkError,
     ProjectNotFoundError,
     ScanNotFoundError,
-    CompatibilityError,
 )
+from workbench_agent.api.services.resolver_service import ResolverService
 
 
 # --- Fixtures ---
@@ -99,7 +99,9 @@ def test_ensure_scan_compatible_scan_command_success(
     }
     mock_params.command = "scan"
     # Should not raise
-    resolver_service.ensure_scan_compatible("TEST_SCAN", "scan", mock_params)
+    resolver_service.ensure_scan_compatible(
+        "TEST_SCAN", "scan", mock_params
+    )
     mock_scans_client.get_information.assert_called_once_with("TEST_SCAN")
 
 
@@ -159,7 +161,8 @@ def test_ensure_scan_compatible_scan_git_command_incompatible_url(
     mock_params.git_url = "https://github.com/example/different.git"
     mock_params.git_branch = "main"
     with pytest.raises(
-        CompatibilityError, match=r"configured for a different Git repository"
+        CompatibilityError,
+        match=r"configured for a different Git repository",
     ):
         resolver_service.ensure_scan_compatible(
             "TEST_SCAN", "scan-git", mock_params
@@ -193,7 +196,9 @@ def test_ensure_scan_compatible_scan_not_found(
         "Scan not found"
     )
     # Should NOT raise, just log and return
-    resolver_service.ensure_scan_compatible("TEST_SCAN", "scan", mock_params)
+    resolver_service.ensure_scan_compatible(
+        "TEST_SCAN", "scan", mock_params
+    )
 
 
 def test_ensure_scan_compatible_api_error(
@@ -202,7 +207,9 @@ def test_ensure_scan_compatible_api_error(
     """Test graceful handling when API error occurs."""
     mock_scans_client.get_information.side_effect = ApiError("API error")
     # Should NOT raise, just log and return
-    resolver_service.ensure_scan_compatible("TEST_SCAN", "scan", mock_params)
+    resolver_service.ensure_scan_compatible(
+        "TEST_SCAN", "scan", mock_params
+    )
 
 
 def test_ensure_scan_compatible_network_error(
@@ -213,7 +220,9 @@ def test_ensure_scan_compatible_network_error(
         "Network error"
     )
     # Should NOT raise, just log and return
-    resolver_service.ensure_scan_compatible("TEST_SCAN", "scan", mock_params)
+    resolver_service.ensure_scan_compatible(
+        "TEST_SCAN", "scan", mock_params
+    )
 
 
 # --- Tests for import-sbom compatibility ---
@@ -221,7 +230,9 @@ def test_ensure_scan_compatible_import_sbom_with_report_scan_compatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test that import-sbom can reuse SBOM import scans."""
-    mock_scans_client.get_information.return_value = {"is_from_report": "1"}
+    mock_scans_client.get_information.return_value = {
+        "is_from_report": "1"
+    }
     # Should not raise
     resolver_service.ensure_scan_compatible(
         "test_scan_code", "import-sbom", mock_params
@@ -266,7 +277,9 @@ def test_ensure_scan_compatible_scan_with_report_scan_incompatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test that scan command cannot reuse SBOM import scans."""
-    mock_scans_client.get_information.return_value = {"is_from_report": "1"}
+    mock_scans_client.get_information.return_value = {
+        "is_from_report": "1"
+    }
     with pytest.raises(
         CompatibilityError,
         match="was created for SBOM import and cannot be reused for code upload",
@@ -280,7 +293,9 @@ def test_ensure_scan_compatible_scan_git_with_report_scan_incompatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test that scan-git command cannot reuse SBOM import scans."""
-    mock_scans_client.get_information.return_value = {"is_from_report": "1"}
+    mock_scans_client.get_information.return_value = {
+        "is_from_report": "1"
+    }
     mock_params.git_url = "https://github.com/test/repo.git"
     mock_params.git_branch = "main"
     with pytest.raises(
@@ -296,7 +311,9 @@ def test_ensure_scan_compatible_import_da_with_report_scan_incompatible(
     resolver_service, mock_scans_client, mock_params
 ):
     """Test that import-da cannot reuse SBOM import scans."""
-    mock_scans_client.get_information.return_value = {"is_from_report": "1"}
+    mock_scans_client.get_information.return_value = {
+        "is_from_report": "1"
+    }
     with pytest.raises(
         CompatibilityError,
         match="was created for SBOM import and cannot be reused for dependency analysis import",
@@ -440,7 +457,9 @@ def test_resolve_id_reuse_scan_without_current_project(
     mock_scans_client.list_scans.return_value = [
         {"name": "test_scan", "code": "TEST_SCAN", "id": "123"}
     ]
-    result = resolver_service.resolve_id_reuse(id_reuse_scan_name="test_scan")
+    result = resolver_service.resolve_id_reuse(
+        id_reuse_scan_name="test_scan"
+    )
     assert result == ("specific_scan", "TEST_SCAN")
 
 
@@ -568,7 +587,9 @@ def test_find_scan_global_search_not_found(
     """Test global scan search with no results raises error."""
     mock_scans_client.list_scans.return_value = []
 
-    with pytest.raises(ScanNotFoundError, match="Scan 'NotFound' not found"):
+    with pytest.raises(
+        ScanNotFoundError, match="Scan 'NotFound' not found"
+    ):
         resolver_service.find_scan(scan_name="NotFound", project_name=None)
 
 
@@ -611,7 +632,9 @@ def test_resolve_project_and_scan_create_project(
     # Scan doesn't exist initially, then exists after creation
     mock_projects_client.get_all_scans.side_effect = [
         [],  # First call - scan doesn't exist
-        [{"name": "NewScan", "code": "SCAN999", "id": 888}],  # After creation
+        [
+            {"name": "NewScan", "code": "SCAN999", "id": 888}
+        ],  # After creation
     ]
     mock_scans_client.create.return_value = 888
     mock_params.command = "scan"
@@ -639,7 +662,9 @@ def test_resolve_project_and_scan_create_scan(
     ]
     mock_projects_client.get_all_scans.side_effect = [
         [],  # First call - scan doesn't exist
-        [{"name": "NewScan", "code": "SCAN999", "id": 888}],  # After creation
+        [
+            {"name": "NewScan", "code": "SCAN999", "id": 888}
+        ],  # After creation
     ]
     mock_scans_client.create.return_value = 888
     mock_params.command = "scan"

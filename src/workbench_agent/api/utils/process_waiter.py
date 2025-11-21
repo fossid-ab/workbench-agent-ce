@@ -61,7 +61,9 @@ class StatusResult:
         if self.is_failed and not self.error_message:
             self.error_message = self.raw_data.get(
                 "error",
-                self.raw_data.get("message", self.raw_data.get("info", "")),
+                self.raw_data.get(
+                    "message", self.raw_data.get("info", "")
+                ),
             )
 
         # Auto-extract progress information

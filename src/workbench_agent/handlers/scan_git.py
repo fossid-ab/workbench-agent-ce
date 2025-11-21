@@ -4,7 +4,10 @@ import argparse
 import logging
 from typing import TYPE_CHECKING
 
-from workbench_agent.api.exceptions import ProcessError, ProcessTimeoutError
+from workbench_agent.api.exceptions import (
+    ProcessError,
+    ProcessTimeoutError,
+)
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
@@ -55,19 +58,21 @@ def handle_scan_git(
     print(f"\n--- Running {params.command.upper()} Command ---")
 
     # Initialize timing dictionary
-    durations = {"kb_scan": 0.0, "dependency_analysis": 0.0, "git_clone": 0.0}
+    durations = {
+        "kb_scan": 0.0,
+        "dependency_analysis": 0.0,
+        "git_clone": 0.0,
+    }
 
     # ID reuse validation happens automatically in the service layer
 
     # Resolve project and scan (find or create)
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    _, scan_code, scan_is_new = (
-        client.resolver.resolve_project_and_scan(
-            project_name=params.project_name,
-            scan_name=params.scan_name,
-            params=params,
-        )
+    _, scan_code, scan_is_new = client.resolver.resolve_project_and_scan(
+        project_name=params.project_name,
+        scan_name=params.scan_name,
+        params=params,
     )
 
     print("\n--- Repo Clone & Scan Prep ---")
@@ -79,7 +84,9 @@ def handle_scan_git(
         # Check each process type individually (new API pattern)
         try:
             # Check status first to inform user if git clone is already running
-            git_status = client.status_check.check_git_clone_status(scan_code)
+            git_status = client.status_check.check_git_clone_status(
+                scan_code
+            )
             if git_status.status == "RUNNING":
                 print(
                     "\nA prior Git Clone operation is in progress, "
@@ -111,8 +118,10 @@ def handle_scan_git(
 
         try:
             # Check status first to inform user if DA is already running
-            da_status = client.status_check.check_dependency_analysis_status(
-                scan_code
+            da_status = (
+                client.status_check.check_dependency_analysis_status(
+                    scan_code
+                )
             )
             if da_status.status == "RUNNING":
                 print(
@@ -137,7 +146,9 @@ def handle_scan_git(
         if params.git_tag
         else ("commit" if params.git_commit else "branch")
     )
-    git_ref_value = params.git_tag or params.git_commit or params.git_branch
+    git_ref_value = (
+        params.git_tag or params.git_commit or params.git_branch
+    )
     print(f"\nCloning the repository's {git_ref_value} {git_ref_type}.")
 
     # Download content from Git
@@ -168,7 +179,8 @@ def handle_scan_git(
             print("Successfully removed .git directory.")
     except Exception as e:
         logger.warning(
-            f"Error removing .git directory: {e}. " f"Continuing with scan..."
+            f"Error removing .git directory: {e}. "
+            f"Continuing with scan..."
         )
         print(
             f"Warning: Error removing .git directory: {e}. "
@@ -189,7 +201,9 @@ def handle_scan_git(
             not scan_operations["run_kb_scan"]
             and scan_operations["run_dependency_analysis"]
         ):
-            print("Starting Dependency Analysis only (skipping KB scan)...")
+            print(
+                "Starting Dependency Analysis only (skipping KB scan)..."
+            )
             client.scan_operations.start_da_only(scan_code)
 
             # Handle no-wait mode
@@ -216,7 +230,9 @@ def handle_scan_git(
                 )
 
                 # Store the duration
-                durations["dependency_analysis"] = da_wait_result.duration or 0.0
+                durations["dependency_analysis"] = (
+                    da_wait_result.duration or 0.0
+                )
                 da_completed = True
 
                 # Mark scan as completed for result processing
@@ -254,7 +270,9 @@ def handle_scan_git(
                     id_reuse_project_name=getattr(
                         params, "reuse_project_ids", None
                     ),
-                    id_reuse_scan_name=getattr(params, "reuse_scan_ids", None),
+                    id_reuse_scan_name=getattr(
+                        params, "reuse_scan_ids", None
+                    ),
                     current_project_name=params.project_name,
                 )
             )
@@ -276,7 +294,9 @@ def handle_scan_git(
                 replace_existing_identifications=getattr(
                     params, "replace_existing_identifications", False
                 ),
-                scan_failed_only=getattr(params, "scan_failed_only", False),
+                scan_failed_only=getattr(
+                    params, "scan_failed_only", False
+                ),
                 full_file_only=getattr(params, "full_file_only", False),
                 advanced_match_scoring=getattr(
                     params, "advanced_match_scoring", True

@@ -31,7 +31,9 @@ class TestDownloadReportsIntegration:
             "dynamic_top_matched_components",
             "string_match",
         }
-        mock_workbench_api.reports.generate_scan_report.return_value = 12345
+        mock_workbench_api.reports.generate_scan_report.return_value = (
+            12345
+        )
         mock_workbench_api.reports.download_scan_report.return_value = (
             b"Mock SPDX report content"
         )
@@ -174,7 +176,9 @@ class TestDownloadReportsIntegration:
             "spdx_lite",
             "cyclone_dx",
         }
-        mock_workbench_api.reports.generate_project_report.return_value = 12345
+        mock_workbench_api.reports.generate_project_report.return_value = (
+            12345
+        )
         mock_workbench_api.reports.download_project_report.return_value = (
             b"Mock project SPDX report content"
         )
@@ -284,8 +288,10 @@ class TestDownloadReportsIntegration:
         # Mock scan resolver to raise ScanNotFoundError
         from workbench_agent.api.exceptions import ScanNotFoundError
 
-        mock_workbench_api.resolver.find_scan.side_effect = ScanNotFoundError(
-            "Scan 'NonExistentScan' not found in project 'TestProj'"
+        mock_workbench_api.resolver.find_scan.side_effect = (
+            ScanNotFoundError(
+                "Scan 'NonExistentScan' not found in project 'TestProj'"
+            )
         )
 
         args = [

@@ -54,7 +54,9 @@ class InternalClient:
         if response.get("status") == "1" and "data" in response:
             data = response["data"]
             if isinstance(data, dict):
-                logger.debug("Successfully retrieved Workbench configuration.")
+                logger.debug(
+                    "Successfully retrieved Workbench configuration."
+                )
                 return data
             else:
                 logger.warning(
@@ -67,5 +69,6 @@ class InternalClient:
                 "error", f"Unexpected response: {response}"
             )
             raise ApiError(
-                f"Failed to get configuration: {error_msg}", details=response
+                f"Failed to get configuration: {error_msg}",
+                details=response,
             )

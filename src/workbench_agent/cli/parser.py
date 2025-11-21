@@ -141,7 +141,9 @@ Examples:
     )
 
     # Toolbox-specific options for blind scan (dash-separated)
-    cli_group = blind_scan_parser.add_argument_group("FossID Toolbox Options")
+    cli_group = blind_scan_parser.add_argument_group(
+        "FossID Toolbox Options"
+    )
     cli_group.add_argument(
         "--fossid-toolbox-path",
         help=(

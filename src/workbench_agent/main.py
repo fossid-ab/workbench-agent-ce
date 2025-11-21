@@ -208,7 +208,9 @@ def main() -> int:
                 f"Unknown command '{command_key}' encountered in main "
                 f"dispatch."
             )
-            raise ValidationError(f"Unknown command/scan type: {command_key}")
+            raise ValidationError(
+                f"Unknown command/scan type: {command_key}"
+            )
 
     except (ValidationError, ConfigurationError, AuthenticationError) as e:
         # Configuration/validation errors - user fixable

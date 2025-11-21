@@ -5,7 +5,10 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, Dict, Tuple
 
-from workbench_agent.api.exceptions import ProcessError, ProcessTimeoutError
+from workbench_agent.api.exceptions import (
+    ProcessError,
+    ProcessTimeoutError,
+)
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
@@ -42,7 +45,9 @@ def _validate_sbom_file(file_path: str) -> Tuple[str, str, Dict, Any]:
             metadata,
             parsed_document,
         ) = SBOMValidator.validate_sbom_file(file_path)
-        logger.debug(f"SBOM validation successful: {sbom_format} v{version}")
+        logger.debug(
+            f"SBOM validation successful: {sbom_format} v{version}"
+        )
         return sbom_format, version, metadata, parsed_document
     except Exception as e:
         logger.error(f"SBOM validation failed for '{file_path}': {e}")
@@ -85,13 +90,17 @@ def _prepare_sbom_for_upload(
         raise
 
 
-def _print_validation_summary(sbom_format: str, version: str, metadata: Dict):
+def _print_validation_summary(
+    sbom_format: str, version: str, metadata: Dict
+):
     """Prints a summary of the SBOM validation results."""
     print("SBOM validation successful:")
     print(f"  Format: {sbom_format.upper()}")
     print(f"  Version: {version}")
     if sbom_format == "cyclonedx":
-        print(f"  Components: {metadata.get('components_count', 'Unknown')}")
+        print(
+            f"  Components: {metadata.get('components_count', 'Unknown')}"
+        )
         if metadata.get("serial_number"):
             print(f"  Serial Number: {metadata['serial_number']}")
     elif sbom_format == "spdx":
@@ -163,7 +172,8 @@ def handle_import_sbom(
 
         if temp_file_created:
             print(
-                f"  Converted for upload: " f"{os.path.basename(upload_path)}"
+                f"  Converted for upload: "
+                f"{os.path.basename(upload_path)}"
             )
         else:
             print("  Using original file format")
@@ -183,7 +193,9 @@ def handle_import_sbom(
         # Ensure scan is idle before starting SBOM import
         # Skip idle checks for new scans (they're guaranteed to be idle)
         if not scan_is_new:
-            print("\nEnsuring the Scan is idle before starting SBOM import...")
+            print(
+                "\nEnsuring the Scan is idle before starting SBOM import..."
+            )
             try:
                 client.waiting.wait_for_report_import(
                     scan_code,
@@ -293,8 +305,12 @@ def handle_import_sbom(
                 try:
                     fetch_display_save_results(client, params, scan_code)
                 except Exception as e:
-                    logger.warning(f"Failed to fetch and display results: {e}")
-                    print(f"Warning: Failed to fetch and display results: {e}")
+                    logger.warning(
+                        f"Failed to fetch and display results: {e}"
+                    )
+                    print(
+                        f"Warning: Failed to fetch and display results: {e}"
+                    )
 
             # Add Workbench link for easy navigation to view SBOM results
             try:

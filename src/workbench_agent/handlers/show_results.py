@@ -90,7 +90,9 @@ def handle_show_results(
             )
         except UnsupportedStatusCheck as e:
             # Older Workbench versions might not support status checking
-            logger.warning(f"Status check not supported: {e}. Continuing...")
+            logger.warning(
+                f"Status check not supported: {e}. Continuing..."
+            )
 
         # Check if dependency analysis is complete (if applicable)
         logger.debug("Checking dependency analysis completion status...")
@@ -104,7 +106,12 @@ def handle_show_results(
             # Dependency analysis might not exist or be supported
             logger.debug(f"Dependency analysis check not available: {e}")
 
-    except (ProcessTimeoutError, ProcessError, ApiError, NetworkError) as e:
+    except (
+        ProcessTimeoutError,
+        ProcessError,
+        ApiError,
+        NetworkError,
+    ) as e:
         logger.warning(
             f"Could not verify scan completion for '{scan_code}': {e}. "
             f"Proceeding anyway."

@@ -4,7 +4,10 @@ import argparse
 import logging
 from typing import TYPE_CHECKING
 
-from workbench_agent.api.exceptions import ProcessError, ProcessTimeoutError
+from workbench_agent.api.exceptions import (
+    ProcessError,
+    ProcessTimeoutError,
+)
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (

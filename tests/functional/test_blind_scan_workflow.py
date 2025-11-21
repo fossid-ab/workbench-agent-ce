@@ -175,5 +175,7 @@ class TestBlindScanWorkflow:
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
-        print(f"[BLIND-SCAN] Step 5: ✓ Scan reports downloaded successfully")
+        print(
+            f"[BLIND-SCAN] Step 5: ✓ Scan reports downloaded successfully"
+        )
         print(f"[BLIND-SCAN] ✓ Complete workflow passed!")

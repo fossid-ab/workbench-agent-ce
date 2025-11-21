@@ -83,7 +83,9 @@ class TestValidationRules:
 
         with pytest.raises(
             ValidationError,
-            match=re.escape("At least one '--show-*' flag must be provided"),
+            match=re.escape(
+                "At least one '--show-*' flag must be provided"
+            ),
         ):
             arg_parser(cmd_args)
 
@@ -175,7 +177,11 @@ class TestArgparseValidation:
         """Test that missing credentials raise SystemExit."""
         with patch.dict(
             os.environ,
-            {"WORKBENCH_URL": "", "WORKBENCH_USER": "", "WORKBENCH_TOKEN": ""},
+            {
+                "WORKBENCH_URL": "",
+                "WORKBENCH_USER": "",
+                "WORKBENCH_TOKEN": "",
+            },
             clear=True,
         ):
             cmd_args = [
@@ -341,7 +347,9 @@ class TestValidationLogic:
 class TestEdgeCases:
     """Test edge cases and boundary conditions."""
 
-    def test_empty_environment_variables(self, arg_parser, mock_path_exists):
+    def test_empty_environment_variables(
+        self, arg_parser, mock_path_exists
+    ):
         """Test behavior with empty environment variables."""
         env_vars = {
             "WORKBENCH_URL": "",
@@ -373,7 +381,9 @@ class TestEdgeCases:
             assert parsed.api_user == "user"
             assert parsed.api_token == "token"
 
-    def test_partial_environment_variables(self, arg_parser, mock_path_exists):
+    def test_partial_environment_variables(
+        self, arg_parser, mock_path_exists
+    ):
         """Test behavior with partial environment variables."""
         env_vars = {
             "WORKBENCH_URL": "https://env.com",

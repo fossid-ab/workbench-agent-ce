@@ -17,7 +17,8 @@ class TestToolboxWrapperInitialization:
     def test_init_success(self):
         """Test successful ToolboxWrapper initialization."""
         toolbox_path = (
-            shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+            shutil.which("fossid-toolbox")
+            or "/usr/local/bin/fossid-toolbox"
         )
         try:
             toolbox_wrapper = ToolboxWrapper(
@@ -32,7 +33,8 @@ class TestToolboxWrapperInitialization:
     def test_init_with_default_timeout(self):
         """Test initialization with default timeout."""
         toolbox_path = (
-            shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+            shutil.which("fossid-toolbox")
+            or "/usr/local/bin/fossid-toolbox"
         )
         try:
             toolbox_wrapper = ToolboxWrapper(toolbox_path=toolbox_path)
@@ -49,7 +51,8 @@ class TestToolboxWrapperGetVersion:
     def toolbox_wrapper(self):
         """Create a ToolboxWrapper instance for testing."""
         toolbox_path = (
-            shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+            shutil.which("fossid-toolbox")
+            or "/usr/local/bin/fossid-toolbox"
         )
         try:
             return ToolboxWrapper(toolbox_path)
@@ -71,7 +74,8 @@ class TestToolboxWrapperGenerateHashes:
     def toolbox_wrapper(self):
         """Create a ToolboxWrapper instance for testing."""
         toolbox_path = (
-            shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+            shutil.which("fossid-toolbox")
+            or "/usr/local/bin/fossid-toolbox"
         )
         try:
             return ToolboxWrapper(toolbox_path)
@@ -101,7 +105,9 @@ class TestToolboxWrapperGenerateHashes:
         # Clean up
         toolbox_wrapper.cleanup_temp_file(result_file)
 
-    def test_generate_hashes_with_dependency_analysis(self, toolbox_wrapper):
+    def test_generate_hashes_with_dependency_analysis(
+        self, toolbox_wrapper
+    ):
         """Test hash generation with dependency analysis enabled using real toolbox."""
         # Use the test file itself as input
         test_file = Path(__file__)
@@ -128,7 +134,9 @@ class TestToolboxWrapperGenerateHashes:
 
     def test_generate_hashes_path_not_exists(self, toolbox_wrapper):
         """Test hash generation when input path doesn't exist."""
-        with pytest.raises(FileSystemError, match="Scan path does not exist"):
+        with pytest.raises(
+            FileSystemError, match="Scan path does not exist"
+        ):
             toolbox_wrapper.generate_hashes(
                 "/nonexistent/path/that/does/not/exist"
             )
@@ -200,7 +208,8 @@ class TestToolboxWrapperCleanupTempFile:
     def toolbox_wrapper(self):
         """Create a ToolboxWrapper instance for testing."""
         toolbox_path = (
-            shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+            shutil.which("fossid-toolbox")
+            or "/usr/local/bin/fossid-toolbox"
         )
         try:
             return ToolboxWrapper(toolbox_path)

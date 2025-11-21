@@ -146,7 +146,9 @@ class ToolboxWrapper:
         if run_dependency_analysis:
             # Enable manifest for dependency analysis
             cmd_args.append("--enable-manifest=true")
-            logger.debug("Manifest capture enabled for dependency analysis")
+            logger.debug(
+                "Manifest capture enabled for dependency analysis"
+            )
 
         cmd_args.append(path)  # Path to scan (must be last)
         logger.debug(
@@ -227,7 +229,9 @@ class ToolboxWrapper:
             str: Random string of specified length
         """
         valid_letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        return "".join((random.choice(valid_letters) for i in range(length)))
+        return "".join(
+            (random.choice(valid_letters) for i in range(length))
+        )
 
     def cleanup_temp_file(self, file_path: str) -> bool:
         """
@@ -245,8 +249,12 @@ class ToolboxWrapper:
                 logger.debug(f"Cleaned up temporary file: {file_path}")
                 return True
             else:
-                logger.warning(f"Temporary file does not exist: {file_path}")
+                logger.warning(
+                    f"Temporary file does not exist: {file_path}"
+                )
                 return False
         except Exception as e:
-            logger.error(f"Failed to clean up temporary file {file_path}: {e}")
+            logger.error(
+                f"Failed to clean up temporary file {file_path}: {e}"
+            )
             return False

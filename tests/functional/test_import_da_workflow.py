@@ -139,7 +139,9 @@ class TestImportDAWorkflow:
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
-        print(f"[IMPORT-DA] Step 4: ✓ Project reports downloaded successfully")
+        print(
+            f"[IMPORT-DA] Step 4: ✓ Project reports downloaded successfully"
+        )
 
         # Step 5: Download Reports (Scan Scope)
         print(f"[IMPORT-DA] Step 5: Downloading scan-level reports")
@@ -168,5 +170,7 @@ class TestImportDAWorkflow:
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
-        print(f"[IMPORT-DA] Step 5: ✓ Scan reports downloaded successfully")
+        print(
+            f"[IMPORT-DA] Step 5: ✓ Scan reports downloaded successfully"
+        )
         print(f"[IMPORT-DA] ✓ Complete workflow passed!")

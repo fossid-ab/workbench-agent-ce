@@ -42,7 +42,9 @@ def cleanup_temp_file(file_path: str) -> bool:
             return True
         else:
             # File doesn't exist, so it's effectively "cleaned up" already
-            logger.debug(f"Temporary file already doesn't exist: {file_path}")
+            logger.debug(
+                f"Temporary file already doesn't exist: {file_path}"
+            )
             return True
     except Exception as e:
         logger.error(f"Failed to clean up temporary file {file_path}: {e}")
@@ -164,7 +166,9 @@ def handle_blind_scan(
             # Check each process type individually (new API pattern)
             try:
                 # Check status first to inform user if scan is already running
-                scan_status = client.status_check.check_scan_status(scan_code)
+                scan_status = client.status_check.check_scan_status(
+                    scan_code
+                )
                 if scan_status.status == "RUNNING":
                     print(
                         "\nA prior Scan operation is in progress, "
@@ -209,8 +213,12 @@ def handle_blind_scan(
                 client.scans.remove_uploaded_content(scan_code, "")
                 print("Successfully cleared existing scan content.")
             except Exception as e:
-                logger.warning(f"Failed to clear existing scan content: {e}")
-                print(f"Warning: Could not clear existing scan content: {e}")
+                logger.warning(
+                    f"Failed to clear existing scan content: {e}"
+                )
+                print(
+                    f"Warning: Could not clear existing scan content: {e}"
+                )
                 print("Continuing with hash upload...")
         else:
             logger.debug("Skipping content clear - new scan is empty")
@@ -274,7 +282,9 @@ def handle_blind_scan(
                     id_reuse_project_name=getattr(
                         params, "reuse_project_ids", None
                     ),
-                    id_reuse_scan_name=getattr(params, "reuse_scan_ids", None),
+                    id_reuse_scan_name=getattr(
+                        params, "reuse_scan_ids", None
+                    ),
                     current_project_name=params.project_name,
                 )
             )
@@ -296,7 +306,9 @@ def handle_blind_scan(
                 replace_existing_identifications=getattr(
                     params, "replace_existing_identifications", False
                 ),
-                scan_failed_only=getattr(params, "scan_failed_only", False),
+                scan_failed_only=getattr(
+                    params, "scan_failed_only", False
+                ),
                 full_file_only=getattr(params, "full_file_only", False),
                 advanced_match_scoring=getattr(
                     params, "advanced_match_scoring", True
@@ -399,6 +411,8 @@ def handle_blind_scan(
         if hash_file_path:
             cleanup_success = cleanup_temp_file(hash_file_path)
             if cleanup_success:
-                logger.debug("Temporary hash file cleaned up successfully.")
+                logger.debug(
+                    "Temporary hash file cleaned up successfully."
+                )
             else:
                 logger.warning("Failed to clean up temporary hash file.")

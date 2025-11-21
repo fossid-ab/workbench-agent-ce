@@ -75,7 +75,9 @@ def _validate_scan_commands(args: Namespace) -> None:
     if command in ["scan", "blind-scan"]:
         path = getattr(args, "path", None)
         if not path:
-            raise ValidationError(f"Path is required for {command} command.")
+            raise ValidationError(
+                f"Path is required for {command} command."
+            )
         if not os.path.exists(path):
             raise ValidationError(f"Path does not exist: {path}")
 
@@ -178,7 +180,9 @@ def _validate_download_reports_command(args: Namespace) -> None:
             "Project name is required for project scope report"
         )
     if report_scope == "scan" and not scan_name:
-        raise ValidationError("Scan name is required for scan scope report")
+        raise ValidationError(
+            "Scan name is required for scan scope report"
+        )
 
 
 def _validate_show_results_command(args: Namespace) -> None:
@@ -192,7 +196,9 @@ def _validate_show_results_command(args: Namespace) -> None:
         getattr(args, "show_vulnerabilities", False),
     ]
     if not any(show_flags):
-        raise ValidationError("At least one '--show-*' flag must be provided")
+        raise ValidationError(
+            "At least one '--show-*' flag must be provided"
+        )
 
 
 def _validate_quick_scan_command(args: Namespace) -> None:
@@ -204,6 +210,8 @@ def _validate_quick_scan_command(args: Namespace) -> None:
             "A file must be provided (positional FILE or --path)"
         )
     if not os.path.exists(path) or not os.path.isfile(path):
-        raise ValidationError(f"Path does not exist or is not a file: {path}")
+        raise ValidationError(
+            f"Path does not exist or is not a file: {path}"
+        )
     # Normalize to args.path so downstream code can rely on it
     args.path = path

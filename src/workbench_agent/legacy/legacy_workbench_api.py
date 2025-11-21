@@ -170,8 +170,12 @@ class Workbench:
         )  # 8MB in bytes. Based on the default value of post_max_size in php.ini
         # Prepare parameters
         filename = os.path.basename(path)
-        filename_base64 = base64.b64encode(filename.encode()).decode("utf-8")
-        scan_code_base64 = base64.b64encode(scan_code.encode()).decode("utf-8")
+        filename_base64 = base64.b64encode(filename.encode()).decode(
+            "utf-8"
+        )
+        scan_code_base64 = base64.b64encode(scan_code.encode()).decode(
+            "utf-8"
+        )
 
         if chunked_upload and (file_size > size_limit):
             print(
@@ -191,7 +195,9 @@ class Workbench:
                 with open(path, "rb") as file:
                     for chunk in self._read_in_chunks(file, 5242880):
                         # Upload each chunk
-                        self._chunked_upload_request(scan_code, headers, chunk)
+                        self._chunked_upload_request(
+                            scan_code, headers, chunk
+                        )
             except IOError:
                 # Error opening file
                 print(f"Failed to upload files to the scan {scan_code}.")
@@ -228,7 +234,9 @@ class Workbench:
                             print(traceback.print_exc())
                             sys.exit(1)
                     else:
-                        print(f"Request failed with status code {status_code}")
+                        print(
+                            f"Request failed with status code {status_code}"
+                        )
                         reason = resp.reason
                         print(f"Reason: {reason}")
                         response_text = resp.text
@@ -264,7 +272,10 @@ class Workbench:
         return self._send_request(payload)
 
     def create_webapp_scan(
-        self, scan_code: str, project_code: str = None, target_path: str = None
+        self,
+        scan_code: str,
+        project_code: str = None,
+        target_path: str = None,
     ) -> bool:
         """
         Creates a Scan in Workbench. The scan can optionally be created inside a Project.
@@ -418,7 +429,8 @@ class Workbench:
                     return scan_status, duration
                 raise builtins.Exception(
                     "Scan finished with status: {}  percentage: {} ".format(
-                        scan_status["status"], scan_status["percentage_done"]
+                        scan_status["status"],
+                        scan_status["percentage_done"],
                     )
                 )
             # If scan did not finished, print info about progress
@@ -693,7 +705,9 @@ class Workbench:
         Args:
             scan_code (str): The unique identifier for the scan.
         """
-        scan_status = self._get_scan_status("DEPENDENCY_ANALYSIS", scan_code)
+        scan_status = self._get_scan_status(
+            "DEPENDENCY_ANALYSIS", scan_code
+        )
         #  List of possible scan statuses taken from Workbench code:
         #     public const NEW = 'NEW';
         #     public const QUEUED = 'QUEUED';
@@ -897,10 +911,14 @@ class Workbench:
                 "specific_project",
                 "specific_scan",
             }:
-                data["identification_reuse_type"] = identification_reuse_type
+                data["identification_reuse_type"] = (
+                    identification_reuse_type
+                )
                 data["specific_code"] = specific_code
             else:
-                data["identification_reuse_type"] = identification_reuse_type
+                data["identification_reuse_type"] = (
+                    identification_reuse_type
+                )
 
         response = self._send_request(payload)
         if response["status"] != "1":
@@ -926,7 +944,9 @@ class Workbench:
             scan_code (str): The unique identifier for the scan.
         """
         print(
-            "Called scans->remove_uploaded_content on file {}".format(filename)
+            "Called scans->remove_uploaded_content on file {}".format(
+                filename
+            )
         )
         payload = {
             "group": "scans",

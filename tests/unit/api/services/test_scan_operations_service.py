@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from workbench_agent.api.exceptions import ApiError, ScanNotFoundError
 from workbench_agent.api.services.scan_operations_service import (
     ScanOperationsService,
 )
-from workbench_agent.api.exceptions import ApiError, ScanNotFoundError
 
 
 # --- Fixtures ---

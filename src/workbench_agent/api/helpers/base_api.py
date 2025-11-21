@@ -80,7 +80,10 @@ class BaseAPI:
 
         try:
             response = self.session.post(
-                self.api_url, headers=headers, data=req_body, timeout=timeout
+                self.api_url,
+                headers=headers,
+                data=req_body,
+                timeout=timeout,
             )
             logger.debug("Response Status Code: %s", response.status_code)
             if LOG_HEADERS:
@@ -148,7 +151,8 @@ class BaseAPI:
                         else:
                             # For other status 0 cases, raise an exception
                             raise ApiError(
-                                f"API Error: {error_msg}", details=parsed_json
+                                f"API Error: {error_msg}",
+                                details=parsed_json,
                             )
 
                     return parsed_json
@@ -173,6 +177,8 @@ class BaseAPI:
                 )
             raise NetworkError(f"HTTP error {e.response.status_code}: {e}")
         except Exception as e:
-            if isinstance(e, (ApiError, AuthenticationError, NetworkError)):
+            if isinstance(
+                e, (ApiError, AuthenticationError, NetworkError)
+            ):
                 raise
             raise NetworkError(f"Unexpected request error: {e}")

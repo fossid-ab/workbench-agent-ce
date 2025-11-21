@@ -81,7 +81,9 @@ class ScansClient:
                         logger.warning(
                             f"Unexpected format for scan details with ID {scan_id}"
                         )
-                logger.debug(f"Successfully listed {len(scan_list)} scans.")
+                logger.debug(
+                    f"Successfully listed {len(scan_list)} scans."
+                )
                 return scan_list
             elif isinstance(data, list) and not data:
                 logger.debug(
@@ -131,7 +133,10 @@ class ScansClient:
             return response["data"]
         else:
             error_msg = response.get("error", "Unknown error")
-            if "row_not_found" in error_msg or "Scan not found" in error_msg:
+            if (
+                "row_not_found" in error_msg
+                or "Scan not found" in error_msg
+            ):
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
                 f"Failed to get information for scan '{scan_code}': {error_msg}",
@@ -223,7 +228,10 @@ class ScansClient:
             return list(data.values()) if isinstance(data, dict) else []
         else:
             error_msg = response.get("error", "Unknown error")
-            if "Scan not found" in error_msg or "row_not_found" in error_msg:
+            if (
+                "Scan not found" in error_msg
+                or "row_not_found" in error_msg
+            ):
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
                 f"Error retrieving identified components from scan '{scan_code}': {error_msg}",
@@ -301,7 +309,10 @@ class ScansClient:
             error_msg = response.get(
                 "error", f"Unexpected response: {response}"
             )
-            if "Scan not found" in error_msg or "row_not_found" in error_msg:
+            if (
+                "Scan not found" in error_msg
+                or "row_not_found" in error_msg
+            ):
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
                 f"Error getting identified licenses for scan '{scan_code}': "
@@ -348,7 +359,10 @@ class ScansClient:
                     f"Dependency analysis has not been run for '{scan_code}'."
                 )
                 return []
-            elif "Scan not found" in error_msg or "row_not_found" in error_msg:
+            elif (
+                "Scan not found" in error_msg
+                or "row_not_found" in error_msg
+            ):
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             else:
                 raise ApiError(
@@ -411,7 +425,9 @@ class ScansClient:
             )
             return {}
 
-    def get_policy_warnings_counter(self, scan_code: str) -> Dict[str, Any]:
+    def get_policy_warnings_counter(
+        self, scan_code: str
+    ) -> Dict[str, Any]:
         """
         Gets the count of policy warnings for a specific scan.
 
@@ -437,7 +453,10 @@ class ScansClient:
             return response["data"]
         else:
             error_msg = response.get("error", "Unknown error")
-            if "Scan not found" in error_msg or "row_not_found" in error_msg:
+            if (
+                "Scan not found" in error_msg
+                or "row_not_found" in error_msg
+            ):
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
                 f"Error getting scan policy warnings counter for '{scan_code}': {error_msg}",
@@ -588,7 +607,11 @@ class ScansClient:
         if git_depth is not None:
             payload_data["git_depth"] = str(git_depth)
 
-        payload = {"group": "scans", "action": "update", "data": payload_data}
+        payload = {
+            "group": "scans",
+            "action": "update",
+            "data": payload_data,
+        }
 
         try:
             response = self._api._send_request(payload)
@@ -702,7 +725,10 @@ class ScansClient:
             error_msg = response.get(
                 "error", f"Unexpected response: {response}"
             )
-            if "Scan not found" in error_msg or "row_not_found" in error_msg:
+            if (
+                "Scan not found" in error_msg
+                or "row_not_found" in error_msg
+            ):
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
                 f"Failed to retrieve Git clone status for scan '{scan_code}': {error_msg}",
@@ -731,7 +757,9 @@ class ScansClient:
             NetworkError: If there are network issues
         """
         if filename:
-            logger.debug(f"Removing '{filename}' from scan '{scan_code}'...")
+            logger.debug(
+                f"Removing '{filename}' from scan '{scan_code}'..."
+            )
         else:
             logger.debug(
                 f"Removing entire scan directory for scan '{scan_code}'..."
@@ -778,16 +806,16 @@ class ScansClient:
                             logger.warning(
                                 f"File '{filename}' does not exist in scan '{scan_code}'."
                             )
-                            return (
-                                True  # Non-fatal - file doesn't exist anyway
-                            )
+                            return True  # Non-fatal - file doesn't exist anyway
 
                 # Handle other errors
                 if (
                     "Scan not found" in error_msg
                     or "row_not_found" in error_msg
                 ):
-                    raise ScanNotFoundError(f"Scan '{scan_code}' not found")
+                    raise ScanNotFoundError(
+                        f"Scan '{scan_code}' not found"
+                    )
 
                 # Build error message based on whether filename was provided
                 if filename:
@@ -856,7 +884,10 @@ class ScansClient:
             return True
         else:
             error_msg = response.get("error", "Unknown error")
-            if "Scan not found" in error_msg or "row_not_found" in error_msg:
+            if (
+                "Scan not found" in error_msg
+                or "row_not_found" in error_msg
+            ):
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
                 f"Archive extraction failed for scan '{scan_code}': "
@@ -903,7 +934,9 @@ class ScansClient:
             else:
                 error_msg = response.get("error", "Unknown error")
                 if "Scan not found" in error_msg:
-                    raise ScanNotFoundError(f"Scan '{scan_code}' not found")
+                    raise ScanNotFoundError(
+                        f"Scan '{scan_code}' not found"
+                    )
                 raise ApiError(
                     f"Failed to run scan '{scan_code}': {error_msg}",
                     details=response,
@@ -1031,7 +1064,10 @@ class ScansClient:
             error_msg = response.get(
                 "error", f"Unexpected response: {response}"
             )
-            if "Scan not found" in error_msg or "row_not_found" in error_msg:
+            if (
+                "Scan not found" in error_msg
+                or "row_not_found" in error_msg
+            ):
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
                 f"Failed to retrieve {process_type} status for "
@@ -1145,7 +1181,10 @@ class ScansClient:
 
         if response.get("status") != "1":
             error_msg = response.get("error", "Unknown API error")
-            if "Scan not found" in error_msg or "row_not_found" in error_msg:
+            if (
+                "Scan not found" in error_msg
+                or "row_not_found" in error_msg
+            ):
                 raise ScanNotFoundError(f"Scan '{scan_code}' not found")
             raise ApiError(
                 f"Failed to start SBOM report import for '{scan_code}': {error_msg}",

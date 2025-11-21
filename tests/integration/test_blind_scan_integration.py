@@ -248,7 +248,9 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert return_code != 0, "Command should exit with error code"
+                assert (
+                    return_code != 0
+                ), "Command should exit with error code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
@@ -289,7 +291,9 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert return_code != 0, "Command should exit with error code"
+                assert (
+                    return_code != 0
+                ), "Command should exit with error code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err

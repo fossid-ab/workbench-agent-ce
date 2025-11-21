@@ -23,7 +23,8 @@ class TestValidationEdgeCases:
         args = Namespace(api_url=None, api_user="test", api_token="token")
 
         with pytest.raises(
-            ValidationError, match="API URL, user, and token must be provided"
+            ValidationError,
+            match="API URL, user, and token must be provided",
         ):
             _validate_api_credentials(args)
 
@@ -34,7 +35,8 @@ class TestValidationEdgeCases:
         )
 
         with pytest.raises(
-            ValidationError, match="API URL, user, and token must be provided"
+            ValidationError,
+            match="API URL, user, and token must be provided",
         ):
             _validate_api_credentials(args)
 
@@ -45,7 +47,8 @@ class TestValidationEdgeCases:
         )
 
         with pytest.raises(
-            ValidationError, match="API URL, user, and token must be provided"
+            ValidationError,
+            match="API URL, user, and token must be provided",
         ):
             _validate_api_credentials(args)
 
@@ -54,7 +57,8 @@ class TestValidationEdgeCases:
         args = Namespace(api_url=None, api_user=None, api_token=None)
 
         with pytest.raises(
-            ValidationError, match="API URL, user, and token must be provided"
+            ValidationError,
+            match="API URL, user, and token must be provided",
         ):
             _validate_api_credentials(args)
 
@@ -73,7 +77,8 @@ class TestValidationEdgeCases:
         args = Namespace(command="blind-scan", path=None)
 
         with pytest.raises(
-            ValidationError, match="Path is required for blind-scan command"
+            ValidationError,
+            match="Path is required for blind-scan command",
         ):
             _validate_scan_commands(args)
 
@@ -83,7 +88,8 @@ class TestValidationEdgeCases:
         args = Namespace(command="scan", path="/non/existent/path")
 
         with pytest.raises(
-            ValidationError, match="Path does not exist: /non/existent/path"
+            ValidationError,
+            match="Path does not exist: /non/existent/path",
         ):
             _validate_scan_commands(args)
 
@@ -95,7 +101,8 @@ class TestValidationEdgeCases:
         args = Namespace(command="blind-scan", path="/non/existent/path")
 
         with pytest.raises(
-            ValidationError, match="Path does not exist: /non/existent/path"
+            ValidationError,
+            match="Path does not exist: /non/existent/path",
         ):
             _validate_scan_commands(args)
 
@@ -135,7 +142,8 @@ class TestValidationEdgeCases:
         )
 
         with pytest.raises(
-            ValidationError, match="API URL, user, and token must be provided"
+            ValidationError,
+            match="API URL, user, and token must be provided",
         ):
             validate_parsed_args(args)
 

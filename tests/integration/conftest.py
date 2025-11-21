@@ -99,9 +99,16 @@ def mock_api_post(mocker):
             if state["expected_responses"]:
                 # For scan status responses, check if the predefined response matches
                 if group == "scans" and action == "get_scan_status":
-                    for idx, resp in enumerate(state["expected_responses"]):
-                        resp_data = resp.get("json_data", {}).get("data", {})
-                        if resp_data.get("status") in ["RUNNING", "FINISHED"]:
+                    for idx, resp in enumerate(
+                        state["expected_responses"]
+                    ):
+                        resp_data = resp.get("json_data", {}).get(
+                            "data", {}
+                        )
+                        if resp_data.get("status") in [
+                            "RUNNING",
+                            "FINISHED",
+                        ]:
                             # Found matching scan status response, remove it and return
                             return state["expected_responses"].pop(idx)
 
@@ -117,7 +124,9 @@ def mock_api_post(mocker):
                             "data": [
                                 {
                                     "name": project_name,
-                                    "code": state["projects"][project_name],
+                                    "code": state["projects"][
+                                        project_name
+                                    ],
                                 }
                             ],
                         }
@@ -182,7 +191,10 @@ def mock_api_post(mocker):
                             scan_idx += 1
 
                     return {
-                        "json_data": {"status": "1", "data": scans_for_project}
+                        "json_data": {
+                            "status": "1",
+                            "data": scans_for_project,
+                        }
                     }
 
                 # Create scan
@@ -224,7 +236,10 @@ def mock_api_post(mocker):
                         return {
                             "json_data": {
                                 "status": "1",
-                                "data": {"status": "NEW", "is_finished": "0"},
+                                "data": {
+                                    "status": "NEW",
+                                    "is_finished": "0",
+                                },
                             }
                         }
 
@@ -276,7 +291,10 @@ def mock_api_post(mocker):
             response_config = smart_response(url, request_payload)
 
         # Log the call
-        call_info = {"request": request_payload, "response": response_config}
+        call_info = {
+            "request": request_payload,
+            "response": response_config,
+        }
         state["call_log"].append(call_info)
 
         if state["debug_mode"]:
@@ -307,7 +325,9 @@ def mock_api_post(mocker):
         else:
             content_data = response_config.get("content", b"")
             mock_response.content = content_data
-            mock_response.text = content_data.decode("utf-8", errors="ignore")
+            mock_response.text = content_data.decode(
+                "utf-8", errors="ignore"
+            )
             mock_response.json.side_effect = (
                 requests.exceptions.JSONDecodeError("Not JSON", "", 0)
             )
@@ -326,7 +346,9 @@ def mock_api_post(mocker):
         return mock_response
 
     # Patch requests.Session.post globally for the test
-    patcher = patch("requests.Session.post", side_effect=mock_post_side_effect)
+    patcher = patch(
+        "requests.Session.post", side_effect=mock_post_side_effect
+    )
     mock_post = patcher.start()
 
     yield setup_responses  # Provide the setup function to the test
@@ -336,7 +358,9 @@ def mock_api_post(mocker):
     # Debug output after test finishes
     if state["debug_mode"]:
         if state["expected_responses"]:
-            print("\nWarning: Not all expected API responses were consumed.")
+            print(
+                "\nWarning: Not all expected API responses were consumed."
+            )
             print("Remaining responses:", state["expected_responses"])
 
         print("\n[DEBUG] Final state:")
@@ -419,12 +443,10 @@ def mock_workbench_api(mocker):
         is_finished=True,
         raw_data={"status": "FINISHED", "is_finished": "1"},
     )
-    mock_client.status_check.check_dependency_analysis_status.return_value = (
-        StatusResult(
-            status="FINISHED",
-            is_finished=True,
-            raw_data={"status": "FINISHED", "is_finished": "1"},
-        )
+    mock_client.status_check.check_dependency_analysis_status.return_value = StatusResult(
+        status="FINISHED",
+        is_finished=True,
+        raw_data={"status": "FINISHED", "is_finished": "1"},
     )
 
     # --- Mock Waiting Service ---
@@ -471,7 +493,9 @@ def mock_workbench_api(mocker):
     import workbench_agent.api.workbench_client
 
     # Store the original __new__ before patching
-    original_new = workbench_agent.api.workbench_client.WorkbenchClient.__new__
+    original_new = (
+        workbench_agent.api.workbench_client.WorkbenchClient.__new__
+    )
 
     def mock_new(cls, *args, **kwargs):
         """Return the mock client instead of creating a real instance."""
@@ -489,7 +513,8 @@ def mock_workbench_api(mocker):
             side_effect=mock_new,
         ),
         patch(
-            "workbench_agent.main.WorkbenchClient", return_value=mock_client
+            "workbench_agent.main.WorkbenchClient",
+            return_value=mock_client,
         ),
     ):
         yield mock_client

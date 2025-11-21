@@ -4,15 +4,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from workbench_agent.api.services.status_check_service import (
-    StatusCheckService,
-)
-from workbench_agent.api.utils.process_waiter import StatusResult
 from workbench_agent.api.exceptions import (
     ApiError,
     NetworkError,
     UnsupportedStatusCheck,
 )
+from workbench_agent.api.services.status_check_service import (
+    StatusCheckService,
+)
+from workbench_agent.api.utils.process_waiter import StatusResult
 
 
 # --- Fixtures ---
@@ -74,7 +74,9 @@ def test_status_result_progress_extraction():
 
 
 # --- Test standard_scan_status_accessor ---
-def test_standard_scan_status_accessor_with_is_finished(status_check_service):
+def test_standard_scan_status_accessor_with_is_finished(
+    status_check_service,
+):
     """Test status accessor with is_finished flag."""
     data = {"is_finished": "1"}
     status = status_check_service._standard_scan_status_accessor(data)
@@ -117,7 +119,9 @@ def test_standard_scan_status_accessor_new_status(status_check_service):
     assert status == "FINISHED"
 
 
-def test_standard_scan_status_accessor_progress_state(status_check_service):
+def test_standard_scan_status_accessor_progress_state(
+    status_check_service,
+):
     """Test status accessor with progress_state field."""
     data = {"progress_state": "RUNNING"}
     status = status_check_service._standard_scan_status_accessor(data)
@@ -141,7 +145,9 @@ def test_check_scan_status(status_check_service, mock_scans_client):
     assert isinstance(result, StatusResult)
     assert result.status == "FINISHED"
     assert result.is_finished is True
-    mock_scans_client.check_status.assert_called_once_with("scan123", "SCAN")
+    mock_scans_client.check_status.assert_called_once_with(
+        "scan123", "SCAN"
+    )
 
 
 def test_check_dependency_analysis_status(
@@ -153,7 +159,9 @@ def test_check_dependency_analysis_status(
         "percentage_done": "75%",
     }
 
-    result = status_check_service.check_dependency_analysis_status("scan456")
+    result = status_check_service.check_dependency_analysis_status(
+        "scan456"
+    )
 
     assert isinstance(result, StatusResult)
     assert result.status == "RUNNING"
@@ -225,7 +233,9 @@ def test_check_project_report_status(
         "progress_state": "FINISHED"
     }
 
-    result = status_check_service.check_project_report_status(123, "PROJ456")
+    result = status_check_service.check_project_report_status(
+        123, "PROJ456"
+    )
 
     assert isinstance(result, StatusResult)
     assert result.status == "FINISHED"
@@ -255,7 +265,9 @@ def test_check_git_clone_status(status_check_service, mock_scans_client):
 def test_git_status_accessor_variants(status_check_service):
     """Test git status accessor with various input formats."""
     # Direct string
-    assert status_check_service._git_status_accessor("finished") == "FINISHED"
+    assert (
+        status_check_service._git_status_accessor("finished") == "FINISHED"
+    )
     # Dict with 'data'
     assert (
         status_check_service._git_status_accessor({"data": "running"})
@@ -288,13 +300,17 @@ def test_project_report_status_accessor(status_check_service):
     )
     # Missing -> UNKNOWN
     assert (
-        status_check_service._project_report_status_accessor({}) == "UNKNOWN"
+        status_check_service._project_report_status_accessor({})
+        == "UNKNOWN"
     )
 
 
 def test_extract_server_duration_valid(status_check_service):
     """Test server duration extraction when started/finished present."""
-    raw = {"started": "2025-08-08 00:00:00", "finished": "2025-08-08 00:00:05"}
+    raw = {
+        "started": "2025-08-08 00:00:00",
+        "finished": "2025-08-08 00:00:05",
+    }
     duration = status_check_service.extract_server_duration(raw)
     assert duration == 5.0
 

@@ -5,12 +5,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from workbench_agent.api.services.waiting_service import WaitingService
-from workbench_agent.api.utils.process_waiter import StatusResult, WaitResult
 from workbench_agent.api.exceptions import (
     ProcessError,
     ProcessTimeoutError,
     UnsupportedStatusCheck,
+)
+from workbench_agent.api.services.waiting_service import WaitingService
+from workbench_agent.api.utils.process_waiter import (
+    StatusResult,
+    WaitResult,
 )
 
 
@@ -94,7 +97,8 @@ def test_wait_for_completion_failure(
     """Test failure during completion waiting."""
     mock_check_func = MagicMock()
     mock_check_func.return_value = StatusResult(
-        status="FAILED", raw_data={"status": "FAILED", "error": "Disk full"}
+        status="FAILED",
+        raw_data={"status": "FAILED", "error": "Disk full"},
     )
 
     with patch("time.sleep", return_value=None):
@@ -114,11 +118,13 @@ def test_wait_for_completion_failure(
 # --- Test specialized waiting methods ---
 def test_wait_for_scan(waiting_service, mock_status_check_service):
     """Test wait_for_scan method."""
-    mock_status_check_service.check_scan_status.return_value = StatusResult(
-        status="FINISHED", raw_data={"status": "FINISHED"}
+    mock_status_check_service.check_scan_status.return_value = (
+        StatusResult(status="FINISHED", raw_data={"status": "FINISHED"})
     )
 
-    with patch.object(waiting_service, "_wait_for_completion") as mock_wait:
+    with patch.object(
+        waiting_service, "_wait_for_completion"
+    ) as mock_wait:
         mock_wait.return_value = WaitResult(
             status_data={"status": "FINISHED"}, duration=20.0, success=True
         )
@@ -133,7 +139,9 @@ def test_wait_for_scan(waiting_service, mock_status_check_service):
 
 def test_wait_for_da(waiting_service, mock_status_check_service):
     """Test wait_for_da method."""
-    with patch.object(waiting_service, "_wait_for_completion") as mock_wait:
+    with patch.object(
+        waiting_service, "_wait_for_completion"
+    ) as mock_wait:
         mock_wait.return_value = WaitResult(
             status_data={"status": "FINISHED"}, duration=15.0, success=True
         )
@@ -146,9 +154,13 @@ def test_wait_for_da(waiting_service, mock_status_check_service):
         mock_wait.assert_called_once()
 
 
-def test_wait_for_extract_archives(waiting_service, mock_status_check_service):
+def test_wait_for_extract_archives(
+    waiting_service, mock_status_check_service
+):
     """Test wait_for_extract_archives method."""
-    with patch.object(waiting_service, "_wait_for_completion") as mock_wait:
+    with patch.object(
+        waiting_service, "_wait_for_completion"
+    ) as mock_wait:
         mock_wait.return_value = WaitResult(
             status_data={"status": "FINISHED"}, duration=10.0, success=True
         )
@@ -181,7 +193,9 @@ def test_wait_for_scan_report_completion(
     waiting_service, mock_status_check_service
 ):
     """Test wait_for_scan_report_completion method."""
-    with patch.object(waiting_service, "_wait_for_completion") as mock_wait:
+    with patch.object(
+        waiting_service, "_wait_for_completion"
+    ) as mock_wait:
         mock_wait.return_value = WaitResult(
             status_data={"status": "FINISHED"}, duration=25.0, success=True
         )
@@ -200,7 +214,9 @@ def test_wait_for_project_report_completion(
     waiting_service, mock_status_check_service
 ):
     """Test wait_for_project_report_completion method."""
-    with patch.object(waiting_service, "_wait_for_completion") as mock_wait:
+    with patch.object(
+        waiting_service, "_wait_for_completion"
+    ) as mock_wait:
         mock_wait.return_value = WaitResult(
             status_data={"status": "FINISHED"}, duration=30.0, success=True
         )
@@ -217,7 +233,9 @@ def test_wait_for_project_report_completion(
 
 def test_wait_for_git_clone(waiting_service, mock_status_check_service):
     """Test wait_for_git_clone method."""
-    with patch.object(waiting_service, "_wait_for_completion") as mock_wait:
+    with patch.object(
+        waiting_service, "_wait_for_completion"
+    ) as mock_wait:
         mock_wait.return_value = WaitResult(
             status_data={"data": "FINISHED"}, duration=12.0, success=True
         )
@@ -233,7 +251,10 @@ def test_wait_for_git_clone(waiting_service, mock_status_check_service):
 # --- Test helper methods ---
 def test_extract_server_duration_valid(waiting_service):
     """Test server duration extraction when started/finished present."""
-    raw = {"started": "2025-08-08 00:00:00", "finished": "2025-08-08 00:00:10"}
+    raw = {
+        "started": "2025-08-08 00:00:00",
+        "finished": "2025-08-08 00:00:10",
+    }
     duration = waiting_service._extract_server_duration(raw)
     assert duration == 10.0
 
@@ -260,7 +281,9 @@ def test_wait_for_completion_with_server_duration(
     waiting_service, mock_status_check_service, capsys
 ):
     """Test that server duration is extracted and displayed."""
-    running = StatusResult(status="RUNNING", raw_data={"status": "RUNNING"})
+    running = StatusResult(
+        status="RUNNING", raw_data={"status": "RUNNING"}
+    )
     finished = StatusResult(
         status="FINISHED",
         raw_data={
@@ -309,8 +332,12 @@ def test_wait_for_completion_retry_on_exception_then_success(
     waiting_service, mock_status_check_service
 ):
     """Test that generic exceptions are retried and then succeed."""
-    running = StatusResult(status="RUNNING", raw_data={"status": "RUNNING"})
-    finished = StatusResult(status="FINISHED", raw_data={"status": "FINISHED"})
+    running = StatusResult(
+        status="RUNNING", raw_data={"status": "RUNNING"}
+    )
+    finished = StatusResult(
+        status="FINISHED", raw_data={"status": "FINISHED"}
+    )
 
     call_states = [Exception("transient"), running, finished]
 

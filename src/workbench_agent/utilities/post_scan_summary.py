@@ -15,7 +15,9 @@ logger = logging.getLogger("workbench-agent")
 
 
 def fetch_results(
-    workbench: "WorkbenchClient", params: argparse.Namespace, scan_code: str
+    workbench: "WorkbenchClient",
+    params: argparse.Namespace,
+    scan_code: str,
 ) -> Dict[str, Any]:
     """
     Fetches requested scan results based on --show-* flags.
@@ -75,15 +77,20 @@ def fetch_results(
             if da_results:
                 collected_results["dependency_analysis"] = da_results
         except (ApiError, NetworkError) as e:
-            print(f"Warning: Could not fetch Dependency Analysis results: {e}")
+            print(
+                f"Warning: Could not fetch Dependency Analysis results: {e}"
+            )
 
     # Fetch KB licenses
     if should_fetch_licenses:
         try:
-            kb_licenses = workbench.results.get_identified_licenses(scan_code)
+            kb_licenses = workbench.results.get_identified_licenses(
+                scan_code
+            )
             if kb_licenses:
                 collected_results["kb_licenses"] = sorted(
-                    kb_licenses, key=lambda x: x.get("identifier", "").lower()
+                    kb_licenses,
+                    key=lambda x: x.get("identifier", "").lower(),
                 )
         except (ApiError, NetworkError) as e:
             print(f"Warning: Could not fetch KB Identified Licenses: {e}")
@@ -128,7 +135,9 @@ def fetch_results(
     # Fetch vulnerabilities
     if should_fetch_vulnerabilities:
         try:
-            vulnerabilities = workbench.results.get_vulnerabilities(scan_code)
+            vulnerabilities = workbench.results.get_vulnerabilities(
+                scan_code
+            )
             if vulnerabilities:
                 collected_results["vulnerabilities"] = vulnerabilities
         except (ApiError, NetworkError) as e:
@@ -168,7 +177,9 @@ def display_results(
         displayed_something = True
         if scan_metrics_data:
             total = scan_metrics_data.get("total", "N/A")
-            pending = scan_metrics_data.get("pending_identification", "N/A")
+            pending = scan_metrics_data.get(
+                "pending_identification", "N/A"
+            )
             identified = scan_metrics_data.get("identified_files", "N/A")
             no_match = scan_metrics_data.get("without_matches", "N/A")
             print(f"  - Total Files Scanned: {total}")
@@ -235,9 +246,14 @@ def display_results(
         print("\n=== Dependency Analysis Results ===")
         displayed_something = True
         if da_results_data:
-            print("Component, Version, Scope, and License of Dependencies:")
+            print(
+                "Component, Version, Scope, and License of Dependencies:"
+            )
             da_results_data.sort(
-                key=lambda x: (x.get("name", "").lower(), x.get("version", ""))
+                key=lambda x: (
+                    x.get("name", "").lower(),
+                    x.get("version", ""),
+                )
             )
             for comp in da_results_data:
                 scopes_display = "N/A"
@@ -280,7 +296,9 @@ def display_results(
                 policy_warnings_data.get("policy_warnings_total", 0)
             )
             files_with_warnings = int(
-                policy_warnings_data.get("identified_files_with_warnings", 0)
+                policy_warnings_data.get(
+                    "identified_files_with_warnings", 0
+                )
             )
             deps_with_warnings = int(
                 policy_warnings_data.get("dependencies_with_warnings", 0)
@@ -345,7 +363,9 @@ def display_results(
             # Group vulnerabilities by component:version
             for vuln in vulnerabilities_data:
                 comp_name = vuln.get("component_name", "UnknownComponent")
-                comp_version = vuln.get("component_version", "UnknownVersion")
+                comp_version = vuln.get(
+                    "component_version", "UnknownVersion"
+                )
                 comp_key = f"{comp_name}:{comp_version}"
                 if comp_key not in components_vulns:
                     components_vulns[comp_key] = []
@@ -412,7 +432,9 @@ def save_results_to_file(filepath: str, results: Dict):
 
 
 def fetch_display_save_results(
-    workbench: "WorkbenchClient", params: argparse.Namespace, scan_code: str
+    workbench: "WorkbenchClient",
+    params: argparse.Namespace,
+    scan_code: str,
 ):
     """
     Orchestrates fetching, displaying, and saving scan results.
@@ -445,7 +467,9 @@ def fetch_display_save_results(
             print(f"\nSaving collected results to '{save_path}'...")
             save_results_to_file(save_path, collected_results)
         else:
-            print("\nNo results were successfully collected, skipping save.")
+            print(
+                "\nNo results were successfully collected, skipping save."
+            )
 
 
 # --- Formatting and Summaries ---
@@ -500,7 +524,9 @@ def print_operation_summary(
         )
     elif params.command == "scan-git":
         print("  - Method: Git Scan")
-        print(f"  - Git Repository URL: {getattr(params, 'git_url', 'N/A')}")
+        print(
+            f"  - Git Repository URL: {getattr(params, 'git_url', 'N/A')}"
+        )
         if getattr(params, "git_tag", None):
             print(f"  - Git Tag: {params.git_tag}")
         elif getattr(params, "git_branch", None):
@@ -572,7 +598,9 @@ def print_operation_summary(
         # Determine what scans were actually performed
         scan_operations = determine_scans_to_run(params)
         kb_scan_performed = scan_operations.get("run_kb_scan", False)
-        da_requested = scan_operations.get("run_dependency_analysis", False)
+        da_requested = scan_operations.get(
+            "run_dependency_analysis", False
+        )
 
         # Add durations to output only for KB scan and Dependency Analysis
         if kb_scan_performed:
@@ -595,7 +623,9 @@ def print_operation_summary(
                 f"  - Dependency Analysis: Yes (Duration: {da_duration_str})"
             )
         elif da_requested and not da_completed:
-            print("  - Dependency Analysis: Requested but failed/incomplete")
+            print(
+                "  - Dependency Analysis: Requested but failed/incomplete"
+            )
         else:
             print("  - Dependency Analysis: No")
 

@@ -79,7 +79,9 @@ class QuickScanClient:
             error_msg = response.get(
                 "error", f"Unexpected response: {response}"
             )
-            raise ApiError(f"Quick scan failed: {error_msg}", details=response)
+            raise ApiError(
+                f"Quick scan failed: {error_msg}", details=response
+            )
 
         results_raw = response.get("data", [])
         if not isinstance(results_raw, list):

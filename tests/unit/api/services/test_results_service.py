@@ -155,9 +155,12 @@ class TestWorkbenchLinks:
         assert links.scan["message"] == EXPECTED_MESSAGES["scan"]
         assert links.pending["message"] == EXPECTED_MESSAGES["pending"]
         assert links.policy["message"] == EXPECTED_MESSAGES["policy"]
-        assert links.identified["message"] == EXPECTED_MESSAGES["identified"]
         assert (
-            links.dependencies["message"] == EXPECTED_MESSAGES["dependencies"]
+            links.identified["message"] == EXPECTED_MESSAGES["identified"]
+        )
+        assert (
+            links.dependencies["message"]
+            == EXPECTED_MESSAGES["dependencies"]
         )
         assert (
             links.vulnerabilities["message"]
@@ -173,7 +176,9 @@ class TestWorkbenchLinks:
         mock_base_api.api_url = api_url
         mock_scans_client._api = mock_base_api
 
-        results_service = ResultsService(mock_scans_client, mock_vulns_client)
+        results_service = ResultsService(
+            mock_scans_client, mock_vulns_client
+        )
         links = results_service.links(TEST_SCAN_ID)
 
         # All URLs should be properly formatted regardless of input
@@ -253,7 +258,9 @@ class TestWorkbenchLinks:
             link_data = getattr(links, prop_name)
             url = link_data["url"]
             for param in required_params:
-                assert param in url, f"Missing '{param}' in link URL: {url}"
+                assert (
+                    param in url
+                ), f"Missing '{param}' in link URL: {url}"
 
     def test_view_parameters_correctness(self, mock_results_service):
         """Test that view parameters are correctly added to URLs."""
@@ -269,7 +276,9 @@ class TestWorkbenchLinks:
         assert "current_view=mark_as_identified" in links.policy["url"]
 
         # Dependencies link should have current_view=dependency_analysis
-        assert "current_view=dependency_analysis" in links.dependencies["url"]
+        assert (
+            "current_view=dependency_analysis" in links.dependencies["url"]
+        )
 
     def test_direct_method_access(self, mock_results_service):
         """Test direct method access like link_to_pending."""

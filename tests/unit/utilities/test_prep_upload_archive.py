@@ -16,7 +16,8 @@ def test_should_exclude_file_defaults():
     """Test default exclusions."""
     # Should exclude git directories
     assert (
-        UploadArchivePrep.should_exclude_file("/path/to/.git/config") is True
+        UploadArchivePrep.should_exclude_file("/path/to/.git/config")
+        is True
     )
     assert (
         UploadArchivePrep.should_exclude_file("/path/to/project/.git/HEAD")
@@ -30,7 +31,9 @@ def test_should_exclude_file_defaults():
         )
         is True
     )
-    assert UploadArchivePrep.should_exclude_file("/path/to/file.pyc") is True
+    assert (
+        UploadArchivePrep.should_exclude_file("/path/to/file.pyc") is True
+    )
 
     # Should exclude node_modules
     assert (
@@ -41,30 +44,48 @@ def test_should_exclude_file_defaults():
     )
 
     # Should exclude OS files
-    assert UploadArchivePrep.should_exclude_file("/path/to/.DS_Store") is True
-    assert UploadArchivePrep.should_exclude_file("/path/to/Thumbs.db") is True
+    assert (
+        UploadArchivePrep.should_exclude_file("/path/to/.DS_Store") is True
+    )
+    assert (
+        UploadArchivePrep.should_exclude_file("/path/to/Thumbs.db") is True
+    )
 
     # Should exclude IDE files
     assert (
-        UploadArchivePrep.should_exclude_file("/path/to/.vscode/settings.json")
+        UploadArchivePrep.should_exclude_file(
+            "/path/to/.vscode/settings.json"
+        )
         is True
     )
     assert (
-        UploadArchivePrep.should_exclude_file("/path/to/.idea/workspace.xml")
+        UploadArchivePrep.should_exclude_file(
+            "/path/to/.idea/workspace.xml"
+        )
         is True
     )
 
     # Should exclude temp files
-    assert UploadArchivePrep.should_exclude_file("/path/to/file.tmp") is True
-    assert UploadArchivePrep.should_exclude_file("/path/to/file.temp") is True
+    assert (
+        UploadArchivePrep.should_exclude_file("/path/to/file.tmp") is True
+    )
+    assert (
+        UploadArchivePrep.should_exclude_file("/path/to/file.temp") is True
+    )
 
 
 def test_should_exclude_file_include_regular():
     """Test that regular files are not excluded."""
-    assert UploadArchivePrep.should_exclude_file("/path/to/main.py") is False
-    assert UploadArchivePrep.should_exclude_file("/path/to/README.md") is False
     assert (
-        UploadArchivePrep.should_exclude_file("/path/to/package.json") is False
+        UploadArchivePrep.should_exclude_file("/path/to/main.py") is False
+    )
+    assert (
+        UploadArchivePrep.should_exclude_file("/path/to/README.md")
+        is False
+    )
+    assert (
+        UploadArchivePrep.should_exclude_file("/path/to/package.json")
+        is False
     )
     assert (
         UploadArchivePrep.should_exclude_file("/path/to/src/module.js")
@@ -113,11 +134,15 @@ def test_should_exclude_file_custom_exclusions():
 def test_should_exclude_file_empty_exclusions():
     """Test with empty exclusions set."""
     assert (
-        UploadArchivePrep.should_exclude_file("/path/to/.git/config", set())
+        UploadArchivePrep.should_exclude_file(
+            "/path/to/.git/config", set()
+        )
         is False
     )
     assert (
-        UploadArchivePrep.should_exclude_file("/path/to/any/file.txt", set())
+        UploadArchivePrep.should_exclude_file(
+            "/path/to/any/file.txt", set()
+        )
         is False
     )
 
@@ -273,7 +298,9 @@ def test_is_excluded_by_gitignore_simple_patterns():
         is True
     )  # build directory
     assert (
-        UploadArchivePrep._is_excluded_by_gitignore("__pycache__", patterns)
+        UploadArchivePrep._is_excluded_by_gitignore(
+            "__pycache__", patterns
+        )
         is True
     )
 
@@ -283,7 +310,9 @@ def test_is_excluded_by_gitignore_simple_patterns():
         is False
     )
     assert (
-        UploadArchivePrep._is_excluded_by_gitignore("src/main.py", patterns)
+        UploadArchivePrep._is_excluded_by_gitignore(
+            "src/main.py", patterns
+        )
         is False
     )
     # build/output.js should NOT match because the pattern "build/" matches the directory, not files inside it
@@ -451,7 +480,9 @@ def test_create_zip_archive_with_exclusions(
                 result = UploadArchivePrep.create_zip_archive("/source")
 
     # Verify only non-excluded files were added
-    assert mock_zip_instance.write.call_count == 2  # Only .py and .txt files
+    assert (
+        mock_zip_instance.write.call_count == 2
+    )  # Only .py and .txt files
 
 
 @patch("os.path.isdir")
@@ -517,8 +548,12 @@ def test_create_zip_archive_zipfile_error(
     mock_mkdtemp.return_value = "/tmp/workbench_upload_123"
     mock_zipfile.side_effect = OSError("Cannot create zip")
 
-    with patch.object(UploadArchivePrep, "_parse_gitignore", return_value=[]):
-        with pytest.raises(FileSystemError, match="Archive creation failed"):
+    with patch.object(
+        UploadArchivePrep, "_parse_gitignore", return_value=[]
+    ):
+        with pytest.raises(
+            FileSystemError, match="Archive creation failed"
+        ):
             UploadArchivePrep.create_zip_archive("/source")
 
 
@@ -526,13 +561,17 @@ def test_create_zip_archive_zipfile_error(
 @patch("os.path.isfile")
 @patch("os.path.isdir")
 @patch("os.path.islink")
-def test_get_file_type_description_file(mock_islink, mock_isdir, mock_isfile):
+def test_get_file_type_description_file(
+    mock_islink, mock_isdir, mock_isfile
+):
     """Test file type description for regular file."""
     mock_isfile.return_value = True
     mock_isdir.return_value = False
     mock_islink.return_value = False
 
-    result = UploadArchivePrep._get_file_type_description("/path/to/file.txt")
+    result = UploadArchivePrep._get_file_type_description(
+        "/path/to/file.txt"
+    )
     assert result == "regular file"
 
 
@@ -547,7 +586,9 @@ def test_get_file_type_description_directory(
     mock_isdir.return_value = True
     mock_islink.return_value = False
 
-    result = UploadArchivePrep._get_file_type_description("/path/to/directory")
+    result = UploadArchivePrep._get_file_type_description(
+        "/path/to/directory"
+    )
     assert result == "directory"
 
 
@@ -581,7 +622,9 @@ def test_get_file_type_description_unknown(
     mock_isdir.return_value = False
     mock_islink.return_value = False
 
-    result = UploadArchivePrep._get_file_type_description("/path/to/special")
+    result = UploadArchivePrep._get_file_type_description(
+        "/path/to/special"
+    )
     assert result == "special file"
 
 
@@ -605,7 +648,9 @@ def test_create_zip_archive_integration():
             (temp_dir / "__pycache__").mkdir()  # Should be excluded
 
             # Create some files
-            (temp_dir / "src" / "main.py").write_text("print('Hello, world!')")
+            (temp_dir / "src" / "main.py").write_text(
+                "print('Hello, world!')"
+            )
             (temp_dir / "docs" / "readme.md").write_text("# Test Project")
             (temp_dir / ".git" / "config").write_text("# Git config")
             (temp_dir / ".gitignore").write_text("*.log\nbuild/\n")

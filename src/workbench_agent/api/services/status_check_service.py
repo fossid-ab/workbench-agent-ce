@@ -67,7 +67,9 @@ class StatusCheckService:
     # STATUS ACCESSOR METHODS
     # =====================================================================
 
-    def _git_status_accessor(self, data: Union[Dict[str, Any], str]) -> str:
+    def _git_status_accessor(
+        self, data: Union[Dict[str, Any], str]
+    ) -> str:
         """
         Status accessor for git clone operations.
 
@@ -111,7 +113,8 @@ class StatusCheckService:
             # effectively idle
             if raw_status == "NOT STARTED":
                 logger.debug(
-                    "Git operation status is NOT STARTED - " "treating as idle"
+                    "Git operation status is NOT STARTED - "
+                    "treating as idle"
                 )
                 return "FINISHED"
 
@@ -193,7 +196,9 @@ class StatusCheckService:
                 return status_upper
 
             # No status information found
-            logger.warning(f"No status information found in scan data: {data}")
+            logger.warning(
+                f"No status information found in scan data: {data}"
+            )
             return "UNKNOWN"
 
         except Exception as e:
@@ -235,11 +240,15 @@ class StatusCheckService:
                 return progress_state_upper
 
             # No progress_state found
-            logger.warning(f"No progress_state in project report data: {data}")
+            logger.warning(
+                f"No progress_state in project report data: {data}"
+            )
             return "UNKNOWN"
 
         except Exception as e:
-            logger.warning(f"Error processing project report status data: {e}")
+            logger.warning(
+                f"Error processing project report status data: {e}"
+            )
             return "ACCESS_ERROR"
 
     # =====================================================================
@@ -285,14 +294,18 @@ class StatusCheckService:
             StatusResult with scan status information
         """
         status_data = self._scans.check_status(scan_code, "SCAN")
-        normalized_status = self._standard_scan_status_accessor(status_data)
+        normalized_status = self._standard_scan_status_accessor(
+            status_data
+        )
 
         return StatusResult(
             status=normalized_status,
             raw_data=status_data,
         )
 
-    def check_dependency_analysis_status(self, scan_code: str) -> StatusResult:
+    def check_dependency_analysis_status(
+        self, scan_code: str
+    ) -> StatusResult:
         """
         Check the status of a dependency analysis operation.
 
@@ -305,14 +318,18 @@ class StatusCheckService:
         status_data = self._scans.check_status(
             scan_code, "DEPENDENCY_ANALYSIS"
         )
-        normalized_status = self._standard_scan_status_accessor(status_data)
+        normalized_status = self._standard_scan_status_accessor(
+            status_data
+        )
 
         return StatusResult(
             status=normalized_status,
             raw_data=status_data,
         )
 
-    def check_extract_archives_status(self, scan_code: str) -> StatusResult:
+    def check_extract_archives_status(
+        self, scan_code: str
+    ) -> StatusResult:
         """
         Check the status of an archive extraction operation.
 
@@ -322,8 +339,12 @@ class StatusCheckService:
         Returns:
             StatusResult with archive extraction status information
         """
-        status_data = self._scans.check_status(scan_code, "EXTRACT_ARCHIVES")
-        normalized_status = self._standard_scan_status_accessor(status_data)
+        status_data = self._scans.check_status(
+            scan_code, "EXTRACT_ARCHIVES"
+        )
+        normalized_status = self._standard_scan_status_accessor(
+            status_data
+        )
 
         return StatusResult(
             status=normalized_status,
@@ -341,7 +362,9 @@ class StatusCheckService:
             StatusResult with report import status information
         """
         status_data = self._scans.check_status(scan_code, "REPORT_IMPORT")
-        normalized_status = self._standard_scan_status_accessor(status_data)
+        normalized_status = self._standard_scan_status_accessor(
+            status_data
+        )
 
         return StatusResult(
             status=normalized_status,
@@ -350,7 +373,9 @@ class StatusCheckService:
 
     # --- NOTICE EXTRACTION OPERATIONS ---
 
-    def check_notice_extract_file_status(self, scan_code: str) -> StatusResult:
+    def check_notice_extract_file_status(
+        self, scan_code: str
+    ) -> StatusResult:
         """
         Check the status of a notice file extraction operation.
 
@@ -363,7 +388,9 @@ class StatusCheckService:
         status_data = self._scans.check_status(
             scan_code, "NOTICE_EXTRACT_FILE"
         )
-        normalized_status = self._standard_scan_status_accessor(status_data)
+        normalized_status = self._standard_scan_status_accessor(
+            status_data
+        )
 
         return StatusResult(
             status=normalized_status,
@@ -385,7 +412,9 @@ class StatusCheckService:
         status_data = self._scans.check_status(
             scan_code, "NOTICE_EXTRACT_COMPONENT"
         )
-        normalized_status = self._standard_scan_status_accessor(status_data)
+        normalized_status = self._standard_scan_status_accessor(
+            status_data
+        )
 
         return StatusResult(
             status=normalized_status,
@@ -407,7 +436,9 @@ class StatusCheckService:
         status_data = self._scans.check_status(
             scan_code, "NOTICE_EXTRACT_AGGREGATE"
         )
-        normalized_status = self._standard_scan_status_accessor(status_data)
+        normalized_status = self._standard_scan_status_accessor(
+            status_data
+        )
 
         return StatusResult(
             status=normalized_status,
@@ -432,7 +463,9 @@ class StatusCheckService:
         status_data = self._scans.check_status(
             scan_code, "REPORT_GENERATION", process_id=str(process_id)
         )
-        normalized_status = self._standard_scan_status_accessor(status_data)
+        normalized_status = self._standard_scan_status_accessor(
+            status_data
+        )
 
         return StatusResult(
             status=normalized_status,
@@ -483,7 +516,9 @@ class StatusCheckService:
         status_data = self._scans.check_status(
             scan_code, "DELETE_SCAN", process_id=str(process_id)
         )
-        normalized_status = self._standard_scan_status_accessor(status_data)
+        normalized_status = self._standard_scan_status_accessor(
+            status_data
+        )
 
         return StatusResult(
             status=normalized_status,

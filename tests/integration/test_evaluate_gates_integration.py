@@ -10,7 +10,9 @@ from workbench_agent.main import main
 class TestEvaluateGatesIntegration:
     """Integration tests for the evaluate-gates command"""
 
-    def test_evaluate_gates_pass_no_issues(self, mock_workbench_api, capsys):
+    def test_evaluate_gates_pass_no_issues(
+        self, mock_workbench_api, capsys
+    ):
         """
         Test evaluate-gates command when no issues are found (should pass).
         """
@@ -40,7 +42,9 @@ class TestEvaluateGatesIntegration:
         combined_output = captured.out + captured.err
         assert "EVALUATE-GATES" in combined_output
 
-    def test_evaluate_gates_fail_on_pending(self, mock_workbench_api, capsys):
+    def test_evaluate_gates_fail_on_pending(
+        self, mock_workbench_api, capsys
+    ):
         """
         Test evaluate-gates command when pending files are found and --fail-on-pending is set.
         """
@@ -200,8 +204,10 @@ class TestEvaluateGatesIntegration:
         """
         from workbench_agent.api.exceptions import ScanNotFoundError
 
-        mock_workbench_api.resolver.find_scan.side_effect = ScanNotFoundError(
-            "Scan 'TestScan' not found in project 'NonExistentProj'"
+        mock_workbench_api.resolver.find_scan.side_effect = (
+            ScanNotFoundError(
+                "Scan 'TestScan' not found in project 'NonExistentProj'"
+            )
         )
 
         args = [

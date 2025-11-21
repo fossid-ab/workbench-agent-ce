@@ -7,6 +7,7 @@ and the main configuration printing function.
 
 import argparse
 from unittest.mock import patch
+
 import pytest
 
 from workbench_agent.utilities.config_display import (
@@ -373,7 +374,9 @@ def test_print_connection_info_success(
     )
 
     # Check that URL is NOT displayed (security improvement)
-    assert not any("https://api.example.com" in line for line in printed_lines)
+    assert not any(
+        "https://api.example.com" in line for line in printed_lines
+    )
     assert not any("API URL" in line for line in printed_lines)
 
     # Check connection parameters (API User should still be shown)
@@ -404,14 +407,16 @@ def test_print_connection_info_empty_server_info(
 
     # Should show Unknown for server info
     assert any(
-        "Server Name" in line and "Unknown" in line for line in printed_lines
+        "Server Name" in line and "Unknown" in line
+        for line in printed_lines
     )
     assert any(
         "Workbench Version" in line and "Unknown" in line
         for line in printed_lines
     )
     assert any(
-        "⚠ Could not retrieve server info" in line for line in printed_lines
+        "⚠ Could not retrieve server info" in line
+        for line in printed_lines
     )
 
 
@@ -430,14 +435,16 @@ def test_print_connection_info_exception_handling(
 
     # Should show Unknown and error status
     assert any(
-        "Server Name" in line and "Unknown" in line for line in printed_lines
+        "Server Name" in line and "Unknown" in line
+        for line in printed_lines
     )
     assert any(
         "Workbench Version" in line and "Unknown" in line
         for line in printed_lines
     )
     assert any(
-        "⚠ Could not retrieve server info" in line for line in printed_lines
+        "⚠ Could not retrieve server info" in line
+        for line in printed_lines
     )
 
 
@@ -457,7 +464,8 @@ def test_print_connection_info_partial_server_info(
 
     # Should show Unknown for missing fields
     assert any(
-        "Server Name" in line and "Unknown" in line for line in printed_lines
+        "Server Name" in line and "Unknown" in line
+        for line in printed_lines
     )
     assert any("24.3.0" in line for line in printed_lines)
 
@@ -476,7 +484,9 @@ def test_print_cli_parameters_calls_all_sections(
     assert mock_print_section.call_count == 7
 
     # Get section titles
-    section_titles = [call[0][0] for call in mock_print_section.call_args_list]
+    section_titles = [
+        call[0][0] for call in mock_print_section.call_args_list
+    ]
 
     assert "⚙️  Agent Configuration:" in section_titles
     assert "🎯 Scan Target:" in section_titles
@@ -536,7 +546,9 @@ def test_print_configuration_full(
 
     # Check sub-functions were called
     mock_print_cli.assert_called_once_with(mock_params)
-    mock_print_conn.assert_called_once_with(mock_params, mock_workbench_client)
+    mock_print_conn.assert_called_once_with(
+        mock_params, mock_workbench_client
+    )
 
     # Check footer
     assert any(

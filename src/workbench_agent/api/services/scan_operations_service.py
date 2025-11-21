@@ -151,7 +151,9 @@ class ScanOperationsService:
             ),
             "scan_failed_only": "1" if scan_failed_only else "0",
             "full_file_only": "1" if full_file_only else "0",
-            "advanced_match_scoring": ("1" if advanced_match_scoring else "0"),
+            "advanced_match_scoring": (
+                "1" if advanced_match_scoring else "0"
+            ),
         }
 
         # Add ID reuse parameters (already resolved)

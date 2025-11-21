@@ -289,9 +289,16 @@ class TestFetchDisplaySaveResults:
 
     @patch("workbench_agent.utilities.post_scan_summary.fetch_results")
     @patch("workbench_agent.utilities.post_scan_summary.display_results")
-    @patch("workbench_agent.utilities.post_scan_summary.save_results_to_file")
+    @patch(
+        "workbench_agent.utilities.post_scan_summary.save_results_to_file"
+    )
     def test_complete_workflow(
-        self, mock_save, mock_display, mock_fetch, mock_workbench, mock_params
+        self,
+        mock_save,
+        mock_display,
+        mock_fetch,
+        mock_workbench,
+        mock_params,
     ):
         """Test complete fetch, display, and save workflow."""
         mock_params.result_save_path = "output.json"
@@ -299,7 +306,9 @@ class TestFetchDisplaySaveResults:
         mock_fetch.return_value = {"test": "data"}
         mock_display.return_value = True
 
-        fetch_display_save_results(mock_workbench, mock_params, TEST_SCAN_CODE)
+        fetch_display_save_results(
+            mock_workbench, mock_params, TEST_SCAN_CODE
+        )
 
         mock_fetch.assert_called_once_with(
             mock_workbench, mock_params, TEST_SCAN_CODE
@@ -318,7 +327,9 @@ class TestFetchDisplaySaveResults:
         mock_fetch.return_value = {"test": "data"}
         mock_display.return_value = True
 
-        fetch_display_save_results(mock_workbench, mock_params, TEST_SCAN_CODE)
+        fetch_display_save_results(
+            mock_workbench, mock_params, TEST_SCAN_CODE
+        )
 
         mock_fetch.assert_called_once_with(
             mock_workbench, mock_params, TEST_SCAN_CODE

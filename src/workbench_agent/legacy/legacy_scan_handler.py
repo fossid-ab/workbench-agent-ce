@@ -7,8 +7,13 @@ from typing import Any, Dict
 
 from workbench_agent.exceptions import FileSystemError, ValidationError
 from workbench_agent.legacy.legacy_cli_wrapper import CliWrapper
-from workbench_agent.legacy.legacy_error_handling import handler_error_wrapper
-from workbench_agent.legacy.legacy_utils import format_duration, save_results
+from workbench_agent.legacy.legacy_error_handling import (
+    handler_error_wrapper,
+)
+from workbench_agent.legacy.legacy_utils import (
+    format_duration,
+    save_results,
+)
 from workbench_agent.legacy.legacy_workbench_api import Workbench
 
 logger = logging.getLogger("workbench-agent")
@@ -108,7 +113,9 @@ def handle_legacy_scan(
         workbench.create_webapp_scan(
             params.scan_code,  # Positional: scan_code
             params.project_code,  # Positional: project_code
-            getattr(params, "target_path", None),  # Positional: target_path
+            getattr(
+                params, "target_path", None
+            ),  # Positional: target_path
         )
         print(f"Scan '{params.scan_code}' created successfully.")
     else:
@@ -124,7 +131,9 @@ def handle_legacy_scan(
         upload_start_time = time.time()
         workbench.upload_files(params.scan_code, blind_scan_result_path)
         durations["upload"] = time.time() - upload_start_time
-        print(f"Hash file uploaded in {format_duration(durations['upload'])}.")
+        print(
+            f"Hash file uploaded in {format_duration(durations['upload'])}."
+        )
 
         # Delete .fossid file containing hashes (after upload to scan)
         if os.path.isfile(blind_scan_result_path):
@@ -210,9 +219,13 @@ def handle_legacy_scan(
             params.scan_code,
             getattr(params, "limit", 10),
             getattr(params, "sensitivity", 10),
-            getattr(params, "auto_identification_detect_declaration", False),
+            getattr(
+                params, "auto_identification_detect_declaration", False
+            ),
             getattr(params, "auto_identification_detect_copyright", False),
-            getattr(params, "auto_identification_resolve_pending_ids", False),
+            getattr(
+                params, "auto_identification_resolve_pending_ids", False
+            ),
             getattr(params, "delta_only", False),
             getattr(params, "reuse_identifications", False),
             getattr(params, "identification_reuse_type", "any"),
@@ -222,11 +235,13 @@ def handle_legacy_scan(
         )
 
         # Check if finished with enhanced progress notifications
-        scan_status_data, scan_duration = workbench.wait_for_scan_to_finish(
-            "SCAN",
-            params.scan_code,
-            getattr(params, "scan_number_of_tries", 960),
-            getattr(params, "scan_wait_time", 30),
+        scan_status_data, scan_duration = (
+            workbench.wait_for_scan_to_finish(
+                "SCAN",
+                params.scan_code,
+                getattr(params, "scan_number_of_tries", 960),
+                getattr(params, "scan_wait_time", 30),
+            )
         )
         durations["kb_scan"] = scan_duration
         print(f"KB Scan completed in {format_duration(scan_duration)}.")

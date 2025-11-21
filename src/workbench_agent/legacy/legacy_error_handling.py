@@ -77,7 +77,9 @@ def agent_error_wrapper(parse_args_func: Callable):
             except USER_SETUP_ERRORS as e:
                 # Errors typically due to user input/setup
                 print(f"\nDetailed Error Information:")
-                print(f"Configuration Error: {getattr(e, 'message', str(e))}")
+                print(
+                    f"Configuration Error: {getattr(e, 'message', str(e))}"
+                )
                 if logger:
                     logger.error(
                         "%s: %s",
@@ -144,7 +146,9 @@ def agent_error_wrapper(parse_args_func: Callable):
                 )
                 print("".join(tb_lines).rstrip())
                 if logger:
-                    logger.critical("Unexpected error occurred", exc_info=True)
+                    logger.critical(
+                        "Unexpected error occurred", exc_info=True
+                    )
                 return 1
 
             finally:
@@ -220,7 +224,10 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
             # Create a WorkbenchAgentError with detailed info
             agent_error = WorkbenchAgentError(
                 f"Failed to execute {params.command if hasattr(params, 'command') else 'command'}: {str(e)}",
-                details={"error": str(e), "handler": handler_func.__name__},
+                details={
+                    "error": str(e),
+                    "handler": handler_func.__name__,
+                },
             )
 
             # Format and display the error message
@@ -251,7 +258,9 @@ def format_and_print_error(error: Exception, params: argparse.Namespace):
     if isinstance(error, ProjectNotFoundError):
         print(f"\n❌ Project not found")
         project_ref = getattr(
-            params, "project_code", getattr(params, "project_name", "Unknown")
+            params,
+            "project_code",
+            getattr(params, "project_name", "Unknown"),
         )
         print(
             f"   Project '{project_ref}' does not exist in your Workbench instance."
@@ -269,7 +278,9 @@ def format_and_print_error(error: Exception, params: argparse.Namespace):
     elif isinstance(error, ScanNotFoundError):
         print(f"\n❌ Scan not found")
         project_ref = getattr(
-            params, "project_code", getattr(params, "project_name", "Unknown")
+            params,
+            "project_code",
+            getattr(params, "project_name", "Unknown"),
         )
         scan_ref = getattr(
             params, "scan_code", getattr(params, "scan_name", "Unknown")
@@ -304,14 +315,18 @@ def format_and_print_error(error: Exception, params: argparse.Namespace):
             print(f"\n❌ Invalid Workbench credentials")
             print(f"   The username or API token provided is incorrect.")
             print(f"\n💡 Please verify:")
-            print(f"   • Username: {getattr(params, 'api_user', 'Unknown')}")
+            print(
+                f"   • Username: {getattr(params, 'api_user', 'Unknown')}"
+            )
             print(f"   • API token is correct and not expired")
             print(f"   • Account has access to the Workbench instance")
             print(
                 f"   • API URL is correct: {getattr(params, 'api_url', 'Unknown')}"
             )
             print(f"\n🔧 In CI/CD pipelines:")
-            print(f"   • Store credentials as secure environment variables")
+            print(
+                f"   • Store credentials as secure environment variables"
+            )
             print(f"   • Ensure API tokens have sufficient permissions")
             return  # Exit early to avoid showing generic API error details
 
@@ -320,7 +335,9 @@ def format_and_print_error(error: Exception, params: argparse.Namespace):
 
         if error_code:
             print(f"   Error code: {error_code}")
-        print(f"\n💡 The Workbench API reported an issue with your request")
+        print(
+            f"\n💡 The Workbench API reported an issue with your request"
+        )
 
     elif isinstance(error, ProcessTimeoutError):
         print(f"\n❌ Operation timed out")

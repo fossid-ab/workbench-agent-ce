@@ -84,7 +84,11 @@ class ProjectsClient:
         """
         logger.debug("Listing all projects...")
 
-        payload = {"group": "projects", "action": "list_projects", "data": {}}
+        payload = {
+            "group": "projects",
+            "action": "list_projects",
+            "data": {},
+        }
         response = self._api._send_request(payload)
 
         if response.get("status") == "1" and "data" in response:
@@ -120,7 +124,9 @@ class ProjectsClient:
             ApiError: If there are API issues
             NetworkError: If there are network issues
         """
-        logger.debug(f"Fetching information for project '{project_code}'...")
+        logger.debug(
+            f"Fetching information for project '{project_code}'..."
+        )
         payload = {
             "group": "projects",
             "action": "get_information",
@@ -276,14 +282,18 @@ class ProjectsClient:
             project_code = response.get("data", {}).get("project_code")
             if not project_code:
                 raise ApiError(
-                    "Project created but no code returned", details=response
+                    "Project created but no code returned",
+                    details=response,
                 )
             return project_code
         else:
             error_msg = response.get("error", "Unknown error")
 
             # Provide helpful error message for date validation issues
-            if error_msg == "RequestData.Base.issues_while_parsing_request":
+            if (
+                error_msg
+                == "RequestData.Base.issues_while_parsing_request"
+            ):
                 data = response.get("data", [])
                 if isinstance(data, list) and len(data) > 0:
                     error_code = data[0].get("code", "")
@@ -389,7 +399,10 @@ class ProjectsClient:
             error_msg = response.get("error", "Unknown error")
 
             # Handle missing mandatory field errors
-            if error_msg == "RequestData.Base.issues_while_parsing_request":
+            if (
+                error_msg
+                == "RequestData.Base.issues_while_parsing_request"
+            ):
                 data = response.get("data", [])
                 if isinstance(data, list) and len(data) > 0:
                     error_code = data[0].get("code", "")

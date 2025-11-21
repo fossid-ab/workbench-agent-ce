@@ -10,8 +10,8 @@ import requests
 from workbench_agent.api.clients.vulnerabilities_api import (
     VulnerabilitiesClient,
 )
-from workbench_agent.api.helpers.base_api import BaseAPI
 from workbench_agent.api.exceptions import ApiError
+from workbench_agent.api.helpers.base_api import BaseAPI
 
 
 # --- Fixtures ---
@@ -124,19 +124,27 @@ def test_list_vulnerabilities_multiple_pages(
     # Mock page 1 response
     page1_response = {
         "status": "1",
-        "data": {"list": [{"id": i, "severity": "HIGH"} for i in range(100)]},
+        "data": {
+            "list": [{"id": i, "severity": "HIGH"} for i in range(100)]
+        },
     }
 
     # Mock page 2 response
     page2_response = {
         "status": "1",
         "data": {
-            "list": [{"id": i, "severity": "MEDIUM"} for i in range(100, 150)]
+            "list": [
+                {"id": i, "severity": "MEDIUM"} for i in range(100, 150)
+            ]
         },
     }
 
     # Set up the mock to return different responses for each call
-    mock_send.side_effect = [count_response, page1_response, page2_response]
+    mock_send.side_effect = [
+        count_response,
+        page1_response,
+        page2_response,
+    ]
 
     vulnerabilities = vulnerabilities_client.list_vulnerabilities("scan1")
 
@@ -192,7 +200,9 @@ def test_list_vulnerabilities_unexpected_data_format(
     # Mock page response with unexpected data format
     page_response = {
         "status": "1",
-        "data": {"list": "not_a_list"},  # Should be a list but it's a string
+        "data": {
+            "list": "not_a_list"
+        },  # Should be a list but it's a string
     }
 
     mock_send.side_effect = [count_response, page_response]

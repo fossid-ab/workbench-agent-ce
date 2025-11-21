@@ -61,7 +61,9 @@ def mock_main_dependencies():
         mock_wb.return_value = mocks["workbench_instance"]
 
         # Mock _check_version_compatibility to avoid actual API calls during init
-        mocks["workbench_instance"]._check_version_compatibility = MagicMock()
+        mocks["workbench_instance"]._check_version_compatibility = (
+            MagicMock()
+        )
 
         # Set up common API methods that handlers might use
         # Note: These are now accessed via client composition (e.g., workbench.resolver, workbench.scans, etc.)
@@ -107,7 +109,9 @@ def mock_main_dependencies():
         with (
             patch("workbench_agent.main.handle_scan") as mock_scan,
             patch("workbench_agent.main.handle_scan_git") as mock_scan_git,
-            patch("workbench_agent.main.handle_blind_scan") as mock_blind_scan,
+            patch(
+                "workbench_agent.main.handle_blind_scan"
+            ) as mock_blind_scan,
             patch("workbench_agent.main.handle_import_da") as mock_import,
             patch(
                 "workbench_agent.main.handle_import_sbom"
@@ -116,8 +120,12 @@ def mock_main_dependencies():
             patch(
                 "workbench_agent.main.handle_download_reports"
             ) as mock_download,
-            patch("workbench_agent.main.handle_evaluate_gates") as mock_gates,
-            patch("workbench_agent.main.handle_quick_scan") as mock_quick_scan,
+            patch(
+                "workbench_agent.main.handle_evaluate_gates"
+            ) as mock_gates,
+            patch(
+                "workbench_agent.main.handle_quick_scan"
+            ) as mock_quick_scan,
         ):
 
             mocks["handle_scan"] = mock_scan
@@ -151,7 +159,14 @@ class ArgBuilder:
         self.args.extend(["scan"])
         self.args.extend(self.global_args)
         self.args.extend(
-            ["--project-name", project, "--scan-name", scan, "--path", path]
+            [
+                "--project-name",
+                project,
+                "--scan-name",
+                scan,
+                "--path",
+                path,
+            ]
         )
         return self
 
@@ -196,7 +211,14 @@ class ArgBuilder:
         self.args.extend(["import-da"])
         self.args.extend(self.global_args)
         self.args.extend(
-            ["--project-name", project, "--scan-name", scan, "--path", path]
+            [
+                "--project-name",
+                project,
+                "--scan-name",
+                scan,
+                "--path",
+                path,
+            ]
         )
         return self
 
@@ -206,7 +228,14 @@ class ArgBuilder:
         self.args.extend(["import-sbom"])
         self.args.extend(self.global_args)
         self.args.extend(
-            ["--project-name", project, "--scan-name", scan, "--path", path]
+            [
+                "--project-name",
+                project,
+                "--scan-name",
+                scan,
+                "--path",
+                path,
+            ]
         )
         return self
 

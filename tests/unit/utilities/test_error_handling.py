@@ -6,6 +6,7 @@ import pytest
 from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
+    CompatibilityError,
     NetworkError,
     ProcessError,
     ProcessTimeoutError,
@@ -13,7 +14,6 @@ from workbench_agent.api.exceptions import (
     ProjectNotFoundError,
     ScanExistsError,
     ScanNotFoundError,
-    CompatibilityError,
 )
 from workbench_agent.exceptions import (
     ConfigurationError,
@@ -60,7 +60,8 @@ def test_format_and_print_error_project_not_found_read_only(
         for call in print_calls
     )
     assert any(
-        "Project 'test_project' was not found" in call for call in print_calls
+        "Project 'test_project' was not found" in call
+        for call in print_calls
     )
 
 
@@ -79,7 +80,8 @@ def test_format_and_print_error_project_not_found_write_operation(
         "Error executing 'scan' command" in call for call in print_calls
     )
     assert any(
-        "Project 'test_project' was not found" in call for call in print_calls
+        "Project 'test_project' was not found" in call
+        for call in print_calls
     )
 
 
@@ -130,7 +132,9 @@ def test_format_and_print_error_network_error(mock_print, mock_params):
     format_and_print_error(error, "test_handler", mock_params)
 
     print_calls = [call.args[0] for call in mock_print.call_args_list]
-    assert any("Network connectivity issue" in call for call in print_calls)
+    assert any(
+        "Network connectivity issue" in call for call in print_calls
+    )
     assert any("Connection failed" in call for call in print_calls)
     assert any(
         "The API URL is correct: https://api.example.com" in call
@@ -148,18 +152,26 @@ def test_format_and_print_error_api_error(mock_print, mock_params):
     print_calls = [call.args[0] for call in mock_print.call_args_list]
     assert any("Workbench API error" in call for call in print_calls)
     assert any("Invalid request" in call for call in print_calls)
-    assert any("Error code: invalid_request" in call for call in print_calls)
+    assert any(
+        "Error code: invalid_request" in call for call in print_calls
+    )
 
 
 @patch("builtins.print")
-def test_format_and_print_error_api_error_git_access(mock_print, mock_params):
+def test_format_and_print_error_api_error_git_access(
+    mock_print, mock_params
+):
     """Test error formatting for ApiError with git repository access error."""
-    error = ApiError("Git access denied", code="git_repository_access_error")
+    error = ApiError(
+        "Git access denied", code="git_repository_access_error"
+    )
 
     format_and_print_error(error, "test_handler", mock_params)
 
     print_calls = [call.args[0] for call in mock_print.call_args_list]
-    assert any("Git repository access issue" in call for call in print_calls)
+    assert any(
+        "Git repository access issue" in call for call in print_calls
+    )
     assert any(
         "Check that the Git URL is correct" in call for call in print_calls
     )
@@ -175,9 +187,12 @@ def test_format_and_print_error_process_timeout(mock_print, mock_params):
     print_calls = [call.args[0] for call in mock_print.call_args_list]
     assert any("Operation timed out" in call for call in print_calls)
     assert any(
-        "--scan-number-of-tries (current: 60)" in call for call in print_calls
+        "--scan-number-of-tries (current: 60)" in call
+        for call in print_calls
     )
-    assert any("--scan-wait-time (current: 5)" in call for call in print_calls)
+    assert any(
+        "--scan-wait-time (current: 5)" in call for call in print_calls
+    )
 
 
 @patch("builtins.print")
@@ -202,7 +217,9 @@ def test_format_and_print_error_file_system_error(mock_print, mock_params):
     print_calls = [call.args[0] for call in mock_print.call_args_list]
     assert any("File system error" in call for call in print_calls)
     assert any("File not found" in call for call in print_calls)
-    assert any("Path specified: /test/path" in call for call in print_calls)
+    assert any(
+        "Path specified: /test/path" in call for call in print_calls
+    )
 
 
 @patch("builtins.print")
@@ -220,7 +237,9 @@ def test_format_and_print_error_validation_error(mock_print, mock_params):
 
 
 @patch("builtins.print")
-def test_format_and_print_error_configuration_error(mock_print, mock_params):
+def test_format_and_print_error_configuration_error(
+    mock_print, mock_params
+):
     """Test error formatting for ConfigurationError."""
     error = ConfigurationError("Bad config")
 
@@ -232,7 +251,9 @@ def test_format_and_print_error_configuration_error(mock_print, mock_params):
 
 
 @patch("builtins.print")
-def test_format_and_print_error_compatibility_error(mock_print, mock_params):
+def test_format_and_print_error_compatibility_error(
+    mock_print, mock_params
+):
     """Test error formatting for CompatibilityError."""
     error = CompatibilityError("Incompatible")
 
@@ -244,7 +265,9 @@ def test_format_and_print_error_compatibility_error(mock_print, mock_params):
 
 
 @patch("builtins.print")
-def test_format_and_print_error_authentication_error(mock_print, mock_params):
+def test_format_and_print_error_authentication_error(
+    mock_print, mock_params
+):
     """Test error formatting for AuthenticationError."""
     error = AuthenticationError("Auth failed")
 
@@ -254,7 +277,9 @@ def test_format_and_print_error_authentication_error(mock_print, mock_params):
     # AuthenticationError now has its own specific handling (checked before ApiError)
     assert any("Authentication failed" in call for call in print_calls)
     assert any("Auth failed" in call for call in print_calls)
-    assert any("API credentials are correct" in call for call in print_calls)
+    assert any(
+        "API credentials are correct" in call for call in print_calls
+    )
 
 
 @patch("builtins.print")
@@ -276,13 +301,16 @@ def test_format_and_print_error_with_verbose(mock_print, mock_params):
     """Test error formatting with verbose mode."""
     mock_params.verbose = True
     error = ApiError(
-        "API error", details={"request_id": "123", "timestamp": "2023-01-01"}
+        "API error",
+        details={"request_id": "123", "timestamp": "2023-01-01"},
     )
 
     format_and_print_error(error, "test_handler", mock_params)
 
     print_calls = [call.args[0] for call in mock_print.call_args_list]
-    assert any("Detailed error information:" in call for call in print_calls)
+    assert any(
+        "Detailed error information:" in call for call in print_calls
+    )
     assert any("request_id: 123" in call for call in print_calls)
     assert any("timestamp: 2023-01-01" in call for call in print_calls)
 
@@ -407,7 +435,9 @@ def test_format_and_print_error_credential_error(mock_print, mock_params):
     mock_params.api_url = "https://example.com/api.php"
 
     # Create an API error with the credential error message
-    error = ApiError("Classes.FossID.user_not_found_or_api_key_is_not_correct")
+    error = ApiError(
+        "Classes.FossID.user_not_found_or_api_key_is_not_correct"
+    )
 
     # Call the error formatting function
     format_and_print_error(error, "test_handler", mock_params)
@@ -429,7 +459,9 @@ def test_format_and_print_error_credential_error(mock_print, mock_params):
     )  # Should show the API URL
 
     # Verify generic API error message is NOT shown
-    assert not any("❌ Workbench API error" in call for call in print_calls)
+    assert not any(
+        "❌ Workbench API error" in call for call in print_calls
+    )
     assert not any(
         "Classes.FossID.user_not_found_or_api_key_is_not_correct" in call
         for call in print_calls

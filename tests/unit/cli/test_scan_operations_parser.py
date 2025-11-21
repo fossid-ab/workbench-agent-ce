@@ -2,7 +2,9 @@
 
 import pytest
 
-from workbench_agent.cli.parent_parsers import create_scan_operations_parser
+from workbench_agent.cli.parent_parsers import (
+    create_scan_operations_parser,
+)
 
 
 class TestScanOperationsParser:
@@ -77,13 +79,17 @@ class TestScanOperationsParser:
         parser = create_scan_operations_parser()
 
         # Test --run-dependency-analysis with --no-wait
-        args1 = parser.parse_args(["--run-dependency-analysis", "--no-wait"])
+        args1 = parser.parse_args(
+            ["--run-dependency-analysis", "--no-wait"]
+        )
         assert args1.run_dependency_analysis is True
         assert args1.dependency_analysis_only is False
         assert args1.no_wait is True
 
         # Test --dependency-analysis-only with --no-wait
-        args2 = parser.parse_args(["--dependency-analysis-only", "--no-wait"])
+        args2 = parser.parse_args(
+            ["--dependency-analysis-only", "--no-wait"]
+        )
         assert args2.run_dependency_analysis is False
         assert args2.dependency_analysis_only is True
         assert args2.no_wait is True
@@ -120,9 +126,13 @@ class TestScanOperationsParser:
         # Check for key phrases in help text
         assert "Run dependency analysis after KB scan" in help_text
         assert (
-            "Run dependency analysis without performing a KB scan" in help_text
+            "Run dependency analysis without performing a KB scan"
+            in help_text
         )
-        assert "Mutually exclusive with --run-dependency-analysis" in help_text
+        assert (
+            "Mutually exclusive with --run-dependency-analysis"
+            in help_text
+        )
         assert "Exit after confirming scan has started" in help_text
         assert "waiting for completion" in help_text
 

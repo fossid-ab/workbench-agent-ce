@@ -20,7 +20,10 @@ from workbench_agent.api.exceptions import (
     ProcessTimeoutError,
     UnsupportedStatusCheck,
 )
-from workbench_agent.api.utils.process_waiter import StatusResult, WaitResult
+from workbench_agent.api.utils.process_waiter import (
+    StatusResult,
+    WaitResult,
+)
 
 logger = logging.getLogger("workbench-agent")
 
@@ -86,7 +89,9 @@ class WaitingService:
         # Create custom progress callback if file tracking requested
         progress_callback = None
         if should_track_files:
-            progress_callback = self._create_scan_progress_callback(scan_code)
+            progress_callback = self._create_scan_progress_callback(
+                scan_code
+            )
 
         return self._wait_for_completion(
             check_function=check_func,
@@ -159,7 +164,9 @@ class WaitingService:
                 "Archive extraction status checking not supported on this "
                 "Workbench version, using fallback wait (5 seconds)"
             )
-            print("Using fallback wait for archive extraction (5 seconds)...")
+            print(
+                "Using fallback wait for archive extraction (5 seconds)..."
+            )
             time.sleep(5)
             return WaitResult(status_data={}, duration=None, success=True)
 
@@ -419,7 +426,9 @@ class WaitingService:
 
                 # Log status changes
                 if result.status != last_status:
-                    logger.debug(f"{operation_name} status: {result.status}")
+                    logger.debug(
+                        f"{operation_name} status: {result.status}"
+                    )
                     last_status = result.status
 
                 # Use custom progress callback if provided
@@ -437,8 +446,12 @@ class WaitingService:
                 # Check if complete
                 if result.is_finished:
                     if result.is_failed:
-                        error_msg = result.error_message or "Operation failed"
-                        logger.error(f"{operation_name} failed: {error_msg}")
+                        error_msg = (
+                            result.error_message or "Operation failed"
+                        )
+                        logger.error(
+                            f"{operation_name} failed: {error_msg}"
+                        )
                         return WaitResult(
                             status_data=result.raw_data,
                             duration=self._extract_server_duration(
@@ -449,7 +462,9 @@ class WaitingService:
                         )
 
                     # Success!
-                    duration = self._extract_server_duration(result.raw_data)
+                    duration = self._extract_server_duration(
+                        result.raw_data
+                    )
                     if duration:
                         logger.info(
                             "%s completed successfully (%.2fs)",

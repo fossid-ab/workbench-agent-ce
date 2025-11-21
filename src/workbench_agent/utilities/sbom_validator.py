@@ -156,7 +156,10 @@ class SBOMValidator:
         content_lower = content_preview.lower()
 
         # Check for CycloneDX markers
-        if '"bomformat"' in content_lower and '"cyclonedx"' in content_lower:
+        if (
+            '"bomformat"' in content_lower
+            and '"cyclonedx"' in content_lower
+        ):
             return "cyclonedx"
         if (
             '"bomFormat"' in content_preview
@@ -307,7 +310,9 @@ class SBOMValidator:
             ) from e
 
     @staticmethod
-    def _validate_spdx(file_path: str) -> Tuple[str, str, Dict[str, Any], Any]:
+    def _validate_spdx(
+        file_path: str,
+    ) -> Tuple[str, str, Dict[str, Any], Any]:
         """
         Validates an SPDX file in any supported format.
 
@@ -369,7 +374,9 @@ class SBOMValidator:
                 "packages_count": (
                     len(document.packages) if document.packages else 0
                 ),
-                "files_count": len(document.files) if document.files else 0,
+                "files_count": (
+                    len(document.files) if document.files else 0
+                ),
             }
 
             return "spdx", version_str, metadata, document
@@ -383,7 +390,9 @@ class SBOMValidator:
                 f"Unexpected error validating SPDX file '{file_path}': {e}",
                 exc_info=True,
             )
-            raise ValidationError(f"Failed to validate SPDX file: {e}") from e
+            raise ValidationError(
+                f"Failed to validate SPDX file: {e}"
+            ) from e
 
     @staticmethod
     def _prepare_spdx_for_upload(file_path: str, document: Any) -> str:
@@ -406,7 +415,9 @@ class SBOMValidator:
             )
 
             try:
-                from spdx_tools.spdx.writer.write_anything import write_file
+                from spdx_tools.spdx.writer.write_anything import (
+                    write_file,
+                )
             except ImportError as e:
                 raise ValidationError(
                     "SPDX tools library not available for conversion. Please install spdx-tools."
@@ -498,7 +509,7 @@ class SBOMValidator:
         logger.warning(
             "This validate_sbom_file method is deprecated. Use the new validate_sbom_file or validate_and_prepare_sbom instead."
         )
-        format_name, version, metadata, _ = SBOMValidator.validate_sbom_file(
-            file_path
+        format_name, version, metadata, _ = (
+            SBOMValidator.validate_sbom_file(file_path)
         )
         return format_name, version, metadata

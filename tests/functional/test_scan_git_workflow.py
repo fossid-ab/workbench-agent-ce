@@ -37,7 +37,9 @@ class TestScanGitWorkflow:
         5. Download scan-level reports
         """
         # Step 1: Scan-Git
-        print(f"\n[SCAN-GIT] Step 1: Performing git scan '{unique_scan_name}'")
+        print(
+            f"\n[SCAN-GIT] Step 1: Performing git scan '{unique_scan_name}'"
+        )
         result = subprocess.run(
             [
                 "workbench-agent",
@@ -140,7 +142,9 @@ class TestScanGitWorkflow:
             f"STDOUT: {result.stdout}\n"
             f"STDERR: {result.stderr}"
         )
-        print(f"[SCAN-GIT] Step 4: ✓ Project reports downloaded successfully")
+        print(
+            f"[SCAN-GIT] Step 4: ✓ Project reports downloaded successfully"
+        )
 
         # Step 5: Download Reports (Scan Scope)
         print(f"[SCAN-GIT] Step 5: Downloading scan-level reports")

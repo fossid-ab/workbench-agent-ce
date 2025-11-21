@@ -364,7 +364,9 @@ class ResolverService:
         logger.debug(
             f"Creating scan '{scan_name}' in project '{project_code}'..."
         )
-        print(f"Creating scan '{scan_name}' in project '{project_code}'...")
+        print(
+            f"Creating scan '{scan_name}' in project '{project_code}'..."
+        )
 
         # Build scan data from parameters
         scan_data = {
@@ -406,7 +408,9 @@ class ResolverService:
 
         # Fetch the created scan to return its details
         scan_list = self.projects.get_all_scans(project_code)
-        scan = next((s for s in scan_list if s.get("name") == scan_name), None)
+        scan = next(
+            (s for s in scan_list if s.get("name") == scan_name), None
+        )
         if scan:
             logger.debug(
                 f"Created scan '{scan_name}' with code '{scan['code']}' "
@@ -414,7 +418,9 @@ class ResolverService:
             )
             return scan["code"], int(scan["id"])
 
-        raise ApiError(f"Failed to retrieve scan '{scan_name}' after creation")
+        raise ApiError(
+            f"Failed to retrieve scan '{scan_name}' after creation"
+        )
 
     # ===== VALIDATION METHODS =====
 
@@ -471,7 +477,9 @@ class ResolverService:
         )
         existing_git_ref_value = existing_scan_info.get("git_branch")
         existing_git_ref_type = existing_scan_info.get("git_ref_type")
-        existing_is_from_report = existing_scan_info.get("is_from_report", "0")
+        existing_is_from_report = existing_scan_info.get(
+            "is_from_report", "0"
+        )
         existing_is_report_scan = existing_is_from_report in [
             "1",
             1,
@@ -584,9 +592,7 @@ class ResolverService:
         # Log success
         logging.info("Compatibility check passed! Proceeding...")
         if operation == "scan-git" and existing_git_repo:
-            ref_display = (
-                f"{existing_git_ref_type or 'ref'} '{existing_git_ref_value}'"
-            )
+            ref_display = f"{existing_git_ref_type or 'ref'} '{existing_git_ref_value}'"
             logger.debug(
                 f"Reusing existing scan '{scan_code}' configured for Git "
                 f"repository '{existing_git_repo}' ({ref_display})."
@@ -597,7 +603,9 @@ class ResolverService:
                 f"upload."
             )
         elif operation == "import-da":
-            logger.debug(f"Reusing existing scan '{scan_code}' for DA import.")
+            logger.debug(
+                f"Reusing existing scan '{scan_code}' for DA import."
+            )
         elif operation == "import-sbom":
             logger.debug(
                 f"Reusing existing scan '{scan_code}' for SBOM import "

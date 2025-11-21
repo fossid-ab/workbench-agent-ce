@@ -25,7 +25,9 @@ def upload_service(mock_uploads_client):
 # --- Test Cases ---
 
 
-def test_upload_service_initialization(upload_service, mock_uploads_client):
+def test_upload_service_initialization(
+    upload_service, mock_uploads_client
+):
     """Test that UploadService can be initialized properly."""
     assert upload_service._uploads == mock_uploads_client
 
@@ -73,7 +75,9 @@ def test_upload_sbom_file_validation(mock_exists, upload_service):
 
 @patch("os.path.exists")
 @patch("os.path.isfile")
-def test_upload_sbom_file_not_a_file(mock_isfile, mock_exists, upload_service):
+def test_upload_sbom_file_not_a_file(
+    mock_isfile, mock_exists, upload_service
+):
     """Test that upload_sbom_file validates that path is a file."""
     mock_exists.return_value = True
     mock_isfile.return_value = False  # Path exists but is not a file

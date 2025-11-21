@@ -194,8 +194,12 @@ class UploadService:
             )
 
         upload_basename = os.path.basename(path)
-        name_b64 = base64.b64encode(upload_basename.encode()).decode("utf-8")
-        scan_code_b64 = base64.b64encode(scan_code.encode()).decode("utf-8")
+        name_b64 = base64.b64encode(upload_basename.encode()).decode(
+            "utf-8"
+        )
+        scan_code_b64 = base64.b64encode(scan_code.encode()).decode(
+            "utf-8"
+        )
 
         headers = {
             "FOSSID-SCAN-CODE": scan_code_b64,
@@ -242,8 +246,12 @@ class UploadService:
             raise FileSystemError(f"SBOM file does not exist: {path}")
 
         upload_basename = os.path.basename(path)
-        name_b64 = base64.b64encode(upload_basename.encode()).decode("utf-8")
-        scan_code_b64 = base64.b64encode(scan_code.encode()).decode("utf-8")
+        name_b64 = base64.b64encode(upload_basename.encode()).decode(
+            "utf-8"
+        )
+        scan_code_b64 = base64.b64encode(scan_code.encode()).decode(
+            "utf-8"
+        )
 
         headers = {
             "FOSSID-SCAN-CODE": scan_code_b64,

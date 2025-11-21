@@ -18,7 +18,9 @@ class TestBasicCommandParsing:
     def test_parse_scan_command(self, args, arg_parser, mock_path_exists):
         """Test basic scan command parsing."""
         cmd_args = (
-            args().scan(project="MyProject", scan="MyScan", path=".").build()
+            args()
+            .scan(project="MyProject", scan="MyScan", path=".")
+            .build()
         )
         parsed = arg_parser(cmd_args)
 
@@ -26,7 +28,9 @@ class TestBasicCommandParsing:
         assert parsed.project_name == "MyProject"
         assert parsed.scan_name == "MyScan"
         assert parsed.path == "."
-        assert parsed.api_url == "https://test.com/api.php"  # Check URL fix
+        assert (
+            parsed.api_url == "https://test.com/api.php"
+        )  # Check URL fix
         assert parsed.limit == 10  # Check default
         assert parsed.log == "WARNING"  # Check default
 
@@ -72,7 +76,9 @@ class TestBasicCommandParsing:
         assert parsed.git_branch is None
         assert parsed.git_tag is None
 
-    def test_parse_import_da_command(self, args, arg_parser, mock_path_exists):
+    def test_parse_import_da_command(
+        self, args, arg_parser, mock_path_exists
+    ):
         """Test import-da command parsing."""
         with patch("os.path.isfile", return_value=True):
             cmd_args = (
@@ -112,7 +118,10 @@ class TestBasicCommandParsing:
     def test_parse_download_reports_scan_scope(self, args, arg_parser):
         """Test download-reports with scan scope."""
         cmd_args = (
-            args().download_reports(scope="scan").scan_name("TestScan").build()
+            args()
+            .download_reports(scope="scan")
+            .scan_name("TestScan")
+            .build()
         )
         parsed = arg_parser(cmd_args)
 
@@ -249,7 +258,9 @@ class TestEnvironmentVariables:
             ]
             parsed = arg_parser(cmd_args)
 
-            assert parsed.api_url == "http://env.com/api.php"  # Check URL fix
+            assert (
+                parsed.api_url == "http://env.com/api.php"
+            )  # Check URL fix
             assert parsed.api_user == "env_user"
             assert parsed.api_token == "env_token"
 
@@ -257,7 +268,9 @@ class TestEnvironmentVariables:
 class TestUrlHandling:
     """Test API URL handling and normalization."""
 
-    def test_api_url_normalization(self, args, arg_parser, mock_path_exists):
+    def test_api_url_normalization(
+        self, args, arg_parser, mock_path_exists
+    ):
         """Test that API URLs are properly normalized."""
         # Test URL without /api.php
         scan_cmd = [

@@ -12,7 +12,9 @@ from workbench_agent.main import main
 class TestScanGitIntegration:
     """Integration tests for the scan-git command"""
 
-    def test_scan_git_success_flow_branch(self, mock_workbench_api, capsys):
+    def test_scan_git_success_flow_branch(
+        self, mock_workbench_api, capsys
+    ):
         """
         Integration test for a successful 'scan-git' command flow with git branch.
         """
@@ -37,7 +39,9 @@ class TestScanGitIntegration:
 
         with patch.object(sys, "argv", args):
             return_code = main()
-            assert return_code == 0, "Command should exit with success code"
+            assert (
+                return_code == 0
+            ), "Command should exit with success code"
 
         captured = capsys.readouterr()
         combined_output = captured.out + captured.err
@@ -142,7 +146,9 @@ class TestScanGitIntegration:
         combined_output = captured.out + captured.err
         assert "SCAN-GIT" in combined_output
 
-    def test_scan_git_with_id_reuse(self, mock_workbench_api, mocker, capsys):
+    def test_scan_git_with_id_reuse(
+        self, mock_workbench_api, mocker, capsys
+    ):
         """
         Test scan-git command with ID reuse enabled.
         """
@@ -171,7 +177,9 @@ class TestScanGitIntegration:
 
         with patch.object(sys, "argv", args):
             return_code = main()
-            assert return_code == 0, "Scan-git with ID reuse should succeed"
+            assert (
+                return_code == 0
+            ), "Scan-git with ID reuse should succeed"
 
     def test_scan_git_failure_invalid_git_url(
         self, mock_workbench_api, capsys
@@ -238,7 +246,10 @@ class TestScanGitIntegration:
             "v1.0.0",
         ]
 
-        with patch.object(sys, "argv", args), pytest.raises(SystemExit) as e:
+        with (
+            patch.object(sys, "argv", args),
+            pytest.raises(SystemExit) as e,
+        ):
             main()
 
         assert e.type == SystemExit
@@ -267,7 +278,10 @@ class TestScanGitIntegration:
             "https://github.com/example/repo.git",
         ]
 
-        with patch.object(sys, "argv", args), pytest.raises(SystemExit) as e:
+        with (
+            patch.object(sys, "argv", args),
+            pytest.raises(SystemExit) as e,
+        ):
             main()
 
         assert e.type == SystemExit

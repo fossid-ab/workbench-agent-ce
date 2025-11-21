@@ -123,7 +123,9 @@ class UploadsClient:
             logger.debug(
                 f"Standard upload response code: {response.status_code}"
             )
-            logger.debug(f"Standard upload response: {response.text[:500]}")
+            logger.debug(
+                f"Standard upload response: {response.text[:500]}"
+            )
 
             # Check for errors
             if response.status_code != 200:
@@ -140,7 +142,9 @@ class UploadsClient:
                     raise ApiError(f"Upload failed: {error_msg}")
             except ValueError:
                 # Some successful uploads may not return JSON
-                logger.debug("Standard upload completed (no JSON response)")
+                logger.debug(
+                    "Standard upload completed (no JSON response)"
+                )
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Network error during standard upload: {e}")
@@ -233,7 +237,9 @@ class UploadsClient:
     # ===== INTERNAL UPLOAD HELPERS =====
 
     def _read_in_chunks(
-        self, file_object: io.BufferedReader, chunk_size: int = 5 * 1024 * 1024
+        self,
+        file_object: io.BufferedReader,
+        chunk_size: int = 5 * 1024 * 1024,
     ) -> Generator[bytes, None, None]:
         """
         Generator to read a file piece by piece.
@@ -314,7 +320,10 @@ class UploadsClient:
                     )
 
     def _validate_chunk_response(
-        self, response: requests.Response, chunk_number: int, retry_count: int
+        self,
+        response: requests.Response,
+        chunk_number: int,
+        retry_count: int,
     ) -> None:
         """
         Validate the response from a chunk upload.
