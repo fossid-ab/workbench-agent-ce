@@ -13,7 +13,7 @@ Architecture:
 import logging
 import time
 from datetime import datetime
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 from workbench_agent.api.exceptions import (
     ProcessError,
@@ -79,7 +79,8 @@ class WaitingService:
             ...     should_track_files=True
             ... )
         """
-        check_func = lambda: self._status_check.check_scan_status(scan_code)
+        def check_func():
+            return self._status_check.check_scan_status(scan_code)
 
         # Create custom progress callback if file tracking requested
         progress_callback = None
@@ -108,11 +109,10 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
-        check_func = (
-            lambda: self._status_check.check_dependency_analysis_status(
+        def check_func():
+            return self._status_check.check_dependency_analysis_status(
                 scan_code
             )
-        )
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -138,11 +138,10 @@ class WaitingService:
             WaitResult: Result with final status and duration
         """
         try:
-            check_func = (
-                lambda: self._status_check.check_extract_archives_status(
+            def check_func():
+                return self._status_check.check_extract_archives_status(
                     scan_code
                 )
-            )
             return self._wait_for_completion(
                 check_function=check_func,
                 max_tries=max_tries,
@@ -173,9 +172,8 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
-        check_func = lambda: self._status_check.check_report_import_status(
-            scan_code
-        )
+        def check_func():
+            return self._status_check.check_report_import_status(scan_code)
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -206,9 +204,10 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
-        check_func = lambda: self._status_check.check_scan_report_status(
-            scan_code, process_id
-        )
+        def check_func():
+            return self._status_check.check_scan_report_status(
+                scan_code, process_id
+            )
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -238,9 +237,10 @@ class WaitingService:
         Raises:
             UnsupportedStatusCheck: If Workbench < 23.1.0
         """
-        check_func = lambda: self._status_check.check_project_report_status(
-            process_id, project_code
-        )
+        def check_func():
+            return self._status_check.check_project_report_status(
+                process_id, project_code
+            )
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -266,9 +266,8 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
-        check_func = lambda: self._status_check.check_git_clone_status(
-            scan_code
-        )
+        def check_func():
+            return self._status_check.check_git_clone_status(scan_code)
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -449,7 +448,9 @@ class WaitingService:
                             f"({duration:.1f}s)"
                         )
                     else:
-                        logger.info("%s completed successfully", operation_name)
+                        logger.info(
+                            "%s completed successfully", operation_name
+                        )
                         print(f"\n{operation_name} completed successfully")
 
                     return WaitResult(
@@ -485,7 +486,7 @@ class WaitingService:
         )
 
     def _extract_server_duration(
-        self, raw_data: Dict[str, Any]
+        self, raw_data: Any
     ) -> Optional[float]:
         """
         Extract actual process duration from server timestamps.
