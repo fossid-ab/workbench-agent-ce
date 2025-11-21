@@ -23,7 +23,11 @@ def mock_session(mocker):
 @pytest.fixture
 def base_api(mock_session):
     """Create a BaseAPI instance with a properly mocked session."""
-    api = BaseAPI(api_url="http://dummy.com/api.php", api_user="testuser", api_token="testtoken")
+    api = BaseAPI(
+        api_url="http://dummy.com/api.php",
+        api_user="testuser",
+        api_token="testtoken",
+    )
     api.session = mock_session
     return api
 
@@ -40,20 +44,26 @@ def uploads_client(base_api):
 # These are marked as skipped based on the original test file structure.
 
 
-@pytest.mark.skip(reason="Upload file tests require more complex mocking than is feasible")
+@pytest.mark.skip(
+    reason="Upload file tests require more complex mocking than is feasible"
+)
 def test_upload_file_success():
     # This test is skipped because it requires complex mocking of file I/O operations
     # and needs access to the internal implementation of the upload_file method
     pass
 
 
-@pytest.mark.skip(reason="Upload file tests require more complex mocking than is feasible")
+@pytest.mark.skip(
+    reason="Upload file tests require more complex mocking than is feasible"
+)
 def test_upload_file_chunked_success():
     # This test would verify chunked upload functionality for large files
     pass
 
 
-@pytest.mark.skip(reason="Upload file tests require more complex mocking than is feasible")
+@pytest.mark.skip(
+    reason="Upload file tests require more complex mocking than is feasible"
+)
 def test_upload_file_network_error():
     # This test would verify proper handling of network errors during upload
     pass

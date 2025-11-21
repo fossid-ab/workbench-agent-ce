@@ -355,7 +355,9 @@ def handle_blind_scan(
                             )
                             da_completed = True
                         except Exception as e:
-                            logger.warning(f"Error in dependency analysis: {e}")
+                            logger.warning(
+                                f"Error in dependency analysis: {e}"
+                            )
                             print(
                                 f"\nWarning: Error waiting for "
                                 f"dependency analysis: {e}"

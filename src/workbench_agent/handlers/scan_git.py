@@ -127,7 +127,9 @@ def handle_scan_git(
         except Exception as e:
             logger.debug(f"Dependency analysis check skipped: {e}")
     else:
-        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
+        logger.debug(
+            "Skipping idle checks - new scan is guaranteed to be idle"
+        )
 
     # Trigger Git clone
     git_ref_type = (
@@ -338,7 +340,9 @@ def handle_scan_git(
                             )
                             da_completed = True
                         except Exception as e:
-                            logger.warning(f"Error in dependency analysis: {e}")
+                            logger.warning(
+                                f"Error in dependency analysis: {e}"
+                            )
                             print(
                                 f"\nWarning: Error waiting for "
                                 f"dependency analysis: {e}"

@@ -83,7 +83,9 @@ def handle_import_da(
         except Exception as e:
             logger.debug(f"Dependency analysis check skipped: {e}")
     else:
-        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
+        logger.debug(
+            "Skipping idle checks - new scan is guaranteed to be idle"
+        )
 
     # Upload dependency analysis file
     print("\n--- Uploading Dependency Analysis File ---")

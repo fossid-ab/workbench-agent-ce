@@ -16,9 +16,13 @@ class TestToolboxWrapperInitialization:
 
     def test_init_success(self):
         """Test successful ToolboxWrapper initialization."""
-        toolbox_path = shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+        toolbox_path = (
+            shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+        )
         try:
-            toolbox_wrapper = ToolboxWrapper(toolbox_path=toolbox_path, timeout="120")
+            toolbox_wrapper = ToolboxWrapper(
+                toolbox_path=toolbox_path, timeout="120"
+            )
         except FileSystemError:
             pytest.skip("fossid-toolbox not available")
 
@@ -27,7 +31,9 @@ class TestToolboxWrapperInitialization:
 
     def test_init_with_default_timeout(self):
         """Test initialization with default timeout."""
-        toolbox_path = shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+        toolbox_path = (
+            shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+        )
         try:
             toolbox_wrapper = ToolboxWrapper(toolbox_path=toolbox_path)
         except FileSystemError:
@@ -42,7 +48,9 @@ class TestToolboxWrapperGetVersion:
     @pytest.fixture
     def toolbox_wrapper(self):
         """Create a ToolboxWrapper instance for testing."""
-        toolbox_path = shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+        toolbox_path = (
+            shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+        )
         try:
             return ToolboxWrapper(toolbox_path)
         except FileSystemError:
@@ -62,7 +70,9 @@ class TestToolboxWrapperGenerateHashes:
     @pytest.fixture
     def toolbox_wrapper(self):
         """Create a ToolboxWrapper instance for testing."""
-        toolbox_path = shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+        toolbox_path = (
+            shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+        )
         try:
             return ToolboxWrapper(toolbox_path)
         except FileSystemError:
@@ -78,9 +88,15 @@ class TestToolboxWrapperGenerateHashes:
         result_file = toolbox_wrapper.generate_hashes(str(test_file))
 
         # Verify result file was created and has content
-        assert os.path.exists(result_file), f"Result file should exist: {result_file}"
-        assert result_file.endswith(".fossid"), "Result file should have .fossid extension"
-        assert os.path.getsize(result_file) > 0, "Result file should not be empty"
+        assert os.path.exists(
+            result_file
+        ), f"Result file should exist: {result_file}"
+        assert result_file.endswith(
+            ".fossid"
+        ), "Result file should have .fossid extension"
+        assert (
+            os.path.getsize(result_file) > 0
+        ), "Result file should not be empty"
 
         # Clean up
         toolbox_wrapper.cleanup_temp_file(result_file)
@@ -92,12 +108,20 @@ class TestToolboxWrapperGenerateHashes:
         assert test_file.exists(), "Test file should exist"
 
         # Generate hashes with dependency analysis enabled
-        result_file = toolbox_wrapper.generate_hashes(str(test_file), run_dependency_analysis=True)
+        result_file = toolbox_wrapper.generate_hashes(
+            str(test_file), run_dependency_analysis=True
+        )
 
         # Verify result file was created and has content
-        assert os.path.exists(result_file), f"Result file should exist: {result_file}"
-        assert result_file.endswith(".fossid"), "Result file should have .fossid extension"
-        assert os.path.getsize(result_file) > 0, "Result file should not be empty"
+        assert os.path.exists(
+            result_file
+        ), f"Result file should exist: {result_file}"
+        assert result_file.endswith(
+            ".fossid"
+        ), "Result file should have .fossid extension"
+        assert (
+            os.path.getsize(result_file) > 0
+        ), "Result file should not be empty"
 
         # Clean up
         toolbox_wrapper.cleanup_temp_file(result_file)
@@ -105,12 +129,16 @@ class TestToolboxWrapperGenerateHashes:
     def test_generate_hashes_path_not_exists(self, toolbox_wrapper):
         """Test hash generation when input path doesn't exist."""
         with pytest.raises(FileSystemError, match="Scan path does not exist"):
-            toolbox_wrapper.generate_hashes("/nonexistent/path/that/does/not/exist")
+            toolbox_wrapper.generate_hashes(
+                "/nonexistent/path/that/does/not/exist"
+            )
 
     def test_generate_hashes_empty_output(self, toolbox_wrapper):
         """Test hash generation with empty output file (warning case)."""
         # Create a temporary empty file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".py") as tmp_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".py"
+        ) as tmp_file:
             tmp_file.write("# Empty test file\n")
             tmp_path = tmp_file.name
 
@@ -119,8 +147,12 @@ class TestToolboxWrapperGenerateHashes:
             result_file = toolbox_wrapper.generate_hashes(tmp_path)
 
             # Result file should still be created (even if empty)
-            assert os.path.exists(result_file), f"Result file should exist: {result_file}"
-            assert result_file.endswith(".fossid"), "Result file should have .fossid extension"
+            assert os.path.exists(
+                result_file
+            ), f"Result file should exist: {result_file}"
+            assert result_file.endswith(
+                ".fossid"
+            ), "Result file should have .fossid extension"
 
             # Clean up
             toolbox_wrapper.cleanup_temp_file(result_file)
@@ -167,7 +199,9 @@ class TestToolboxWrapperCleanupTempFile:
     @pytest.fixture
     def toolbox_wrapper(self):
         """Create a ToolboxWrapper instance for testing."""
-        toolbox_path = shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+        toolbox_path = (
+            shutil.which("fossid-toolbox") or "/usr/local/bin/fossid-toolbox"
+        )
         try:
             return ToolboxWrapper(toolbox_path)
         except FileSystemError:
@@ -176,20 +210,28 @@ class TestToolboxWrapperCleanupTempFile:
     def test_cleanup_success(self, toolbox_wrapper):
         """Test successful file cleanup."""
         # Create a temporary file to clean up
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".fossid") as tmp_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".fossid"
+        ) as tmp_file:
             tmp_path = tmp_file.name
             tmp_file.write("test content")
 
-        assert os.path.exists(tmp_path), "Temp file should exist before cleanup"
+        assert os.path.exists(
+            tmp_path
+        ), "Temp file should exist before cleanup"
 
         result = toolbox_wrapper.cleanup_temp_file(tmp_path)
 
         assert result is True
-        assert not os.path.exists(tmp_path), "Temp file should be deleted after cleanup"
+        assert not os.path.exists(
+            tmp_path
+        ), "Temp file should be deleted after cleanup"
 
     def test_cleanup_file_not_exists(self, toolbox_wrapper):
         """Test cleanup when file doesn't exist."""
-        result = toolbox_wrapper.cleanup_temp_file("/tmp/nonexistent_file_12345.fossid")
+        result = toolbox_wrapper.cleanup_temp_file(
+            "/tmp/nonexistent_file_12345.fossid"
+        )
         assert result is False
 
     def test_cleanup_empty_path(self, toolbox_wrapper):

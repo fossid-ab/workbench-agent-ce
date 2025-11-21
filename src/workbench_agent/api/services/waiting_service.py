@@ -79,6 +79,7 @@ class WaitingService:
             ...     should_track_files=True
             ... )
         """
+
         def check_func():
             return self._status_check.check_scan_status(scan_code)
 
@@ -109,10 +110,12 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
+
         def check_func():
             return self._status_check.check_dependency_analysis_status(
                 scan_code
             )
+
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -138,10 +141,12 @@ class WaitingService:
             WaitResult: Result with final status and duration
         """
         try:
+
             def check_func():
                 return self._status_check.check_extract_archives_status(
                     scan_code
                 )
+
             return self._wait_for_completion(
                 check_function=check_func,
                 max_tries=max_tries,
@@ -172,8 +177,10 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
+
         def check_func():
             return self._status_check.check_report_import_status(scan_code)
+
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -204,10 +211,12 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
+
         def check_func():
             return self._status_check.check_scan_report_status(
                 scan_code, process_id
             )
+
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -237,10 +246,12 @@ class WaitingService:
         Raises:
             UnsupportedStatusCheck: If Workbench < 23.1.0
         """
+
         def check_func():
             return self._status_check.check_project_report_status(
                 process_id, project_code
             )
+
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -266,8 +277,10 @@ class WaitingService:
         Returns:
             WaitResult: Result with final status and duration
         """
+
         def check_func():
             return self._status_check.check_git_clone_status(scan_code)
+
         return self._wait_for_completion(
             check_function=check_func,
             max_tries=max_tries,
@@ -485,9 +498,7 @@ class WaitingService:
             f"{timeout_seconds}s ({max_tries} attempts)"
         )
 
-    def _extract_server_duration(
-        self, raw_data: Any
-    ) -> Optional[float]:
+    def _extract_server_duration(self, raw_data: Any) -> Optional[float]:
         """
         Extract actual process duration from server timestamps.
 

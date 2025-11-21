@@ -116,7 +116,9 @@ def agent_error_wrapper(parse_args_func: Callable):
             except WorkbenchAgentError as e:
                 # Catch any other specific agent errors
                 print(f"\nDetailed Error Information:")
-                print(f"Workbench Agent Error: {getattr(e, 'message', str(e))}")
+                print(
+                    f"Workbench Agent Error: {getattr(e, 'message', str(e))}"
+                )
                 if logger:
                     logger.error(
                         "Unhandled WorkbenchAgentError: %s",

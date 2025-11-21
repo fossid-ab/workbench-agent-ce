@@ -24,7 +24,11 @@ class TestScanOperationsParser:
 
         # Parse with all scan operation arguments
         args = parser.parse_args(
-            ["--run-dependency-analysis", "--dependency-analysis-only", "--no-wait"]
+            [
+                "--run-dependency-analysis",
+                "--dependency-analysis-only",
+                "--no-wait",
+            ]
         )
 
         assert hasattr(args, "run_dependency_analysis")
@@ -89,7 +93,9 @@ class TestScanOperationsParser:
         parser = create_scan_operations_parser()
 
         # The parser should accept both flags - validation logic handles conflicts
-        args = parser.parse_args(["--run-dependency-analysis", "--dependency-analysis-only"])
+        args = parser.parse_args(
+            ["--run-dependency-analysis", "--dependency-analysis-only"]
+        )
         assert args.run_dependency_analysis is True
         assert args.dependency_analysis_only is True
         # Validation logic elsewhere should catch this conflict
@@ -113,7 +119,9 @@ class TestScanOperationsParser:
 
         # Check for key phrases in help text
         assert "Run dependency analysis after KB scan" in help_text
-        assert "Run dependency analysis without performing a KB scan" in help_text
+        assert (
+            "Run dependency analysis without performing a KB scan" in help_text
+        )
         assert "Mutually exclusive with --run-dependency-analysis" in help_text
         assert "Exit after confirming scan has started" in help_text
         assert "waiting for completion" in help_text
@@ -125,11 +133,19 @@ class TestScanOperationsParser:
         # Parse and verify the action behavior
         args_empty = parser.parse_args([])
         args_with_flags = parser.parse_args(
-            ["--run-dependency-analysis", "--dependency-analysis-only", "--no-wait"]
+            [
+                "--run-dependency-analysis",
+                "--dependency-analysis-only",
+                "--no-wait",
+            ]
         )
 
         # Verify boolean behavior
-        for attr in ["run_dependency_analysis", "dependency_analysis_only", "no_wait"]:
+        for attr in [
+            "run_dependency_analysis",
+            "dependency_analysis_only",
+            "no_wait",
+        ]:
             assert getattr(args_empty, attr) is False
             assert getattr(args_with_flags, attr) is True
 

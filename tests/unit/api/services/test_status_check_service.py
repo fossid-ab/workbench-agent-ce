@@ -4,7 +4,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from workbench_agent.api.services.status_check_service import StatusCheckService
+from workbench_agent.api.services.status_check_service import (
+    StatusCheckService,
+)
 from workbench_agent.api.utils.process_waiter import StatusResult
 from workbench_agent.api.exceptions import (
     ApiError,
@@ -46,7 +48,9 @@ def test_status_result_creation():
 
 def test_status_result_failed_status():
     """Test StatusResult with failed status."""
-    result = StatusResult(status="FAILED", raw_data={"error": "Something went wrong"})
+    result = StatusResult(
+        status="FAILED", raw_data={"error": "Something went wrong"}
+    )
     assert result.status == "FAILED"
     # FAILED is a completion state, so is_finished should be True
     assert result.is_finished is True
@@ -127,7 +131,10 @@ def test_standard_scan_status_accessor_progress_state(status_check_service):
 # --- Test specialized status checking methods ---
 def test_check_scan_status(status_check_service, mock_scans_client):
     """Test check_scan_status method."""
-    mock_scans_client.check_status.return_value = {"status": "FINISHED", "is_finished": "1"}
+    mock_scans_client.check_status.return_value = {
+        "status": "FINISHED",
+        "is_finished": "1",
+    }
 
     result = status_check_service.check_scan_status("scan123")
 
@@ -137,21 +144,33 @@ def test_check_scan_status(status_check_service, mock_scans_client):
     mock_scans_client.check_status.assert_called_once_with("scan123", "SCAN")
 
 
-def test_check_dependency_analysis_status(status_check_service, mock_scans_client):
+def test_check_dependency_analysis_status(
+    status_check_service, mock_scans_client
+):
     """Test check_dependency_analysis_status method."""
-    mock_scans_client.check_status.return_value = {"status": "RUNNING", "percentage_done": "75%"}
+    mock_scans_client.check_status.return_value = {
+        "status": "RUNNING",
+        "percentage_done": "75%",
+    }
 
     result = status_check_service.check_dependency_analysis_status("scan456")
 
     assert isinstance(result, StatusResult)
     assert result.status == "RUNNING"
     assert result.is_finished is False
-    mock_scans_client.check_status.assert_called_once_with("scan456", "DEPENDENCY_ANALYSIS")
+    mock_scans_client.check_status.assert_called_once_with(
+        "scan456", "DEPENDENCY_ANALYSIS"
+    )
 
 
-def test_check_extract_archives_status(status_check_service, mock_scans_client):
+def test_check_extract_archives_status(
+    status_check_service, mock_scans_client
+):
     """Test check_extract_archives_status method."""
-    mock_scans_client.check_status.return_value = {"status": "FAILED", "error": "Archive corrupted"}
+    mock_scans_client.check_status.return_value = {
+        "status": "FAILED",
+        "error": "Archive corrupted",
+    }
 
     result = status_check_service.check_extract_archives_status("scan789")
 
@@ -159,12 +178,17 @@ def test_check_extract_archives_status(status_check_service, mock_scans_client):
     assert result.status == "FAILED"
     assert result.is_failed is True
     assert result.error_message == "Archive corrupted"
-    mock_scans_client.check_status.assert_called_once_with("scan789", "EXTRACT_ARCHIVES")
+    mock_scans_client.check_status.assert_called_once_with(
+        "scan789", "EXTRACT_ARCHIVES"
+    )
 
 
 def test_check_scan_report_status(status_check_service, mock_scans_client):
     """Test check_scan_report_status method."""
-    mock_scans_client.check_status.return_value = {"status": "FINISHED", "is_finished": "1"}
+    mock_scans_client.check_status.return_value = {
+        "status": "FINISHED",
+        "is_finished": "1",
+    }
 
     result = status_check_service.check_scan_report_status("scan123", 456)
 
@@ -178,7 +202,10 @@ def test_check_scan_report_status(status_check_service, mock_scans_client):
 
 def test_check_delete_scan_status(status_check_service, mock_scans_client):
     """Test check_delete_scan_status method."""
-    mock_scans_client.check_status.return_value = {"status": "FINISHED", "is_finished": "1"}
+    mock_scans_client.check_status.return_value = {
+        "status": "FINISHED",
+        "is_finished": "1",
+    }
 
     result = status_check_service.check_delete_scan_status("scan123", 789)
 
@@ -190,9 +217,13 @@ def test_check_delete_scan_status(status_check_service, mock_scans_client):
     )
 
 
-def test_check_project_report_status(status_check_service, mock_projects_client):
+def test_check_project_report_status(
+    status_check_service, mock_projects_client
+):
     """Test check_project_report_status method."""
-    mock_projects_client.check_status.return_value = {"progress_state": "FINISHED"}
+    mock_projects_client.check_status.return_value = {
+        "progress_state": "FINISHED"
+    }
 
     result = status_check_service.check_project_report_status(123, "PROJ456")
 
@@ -206,14 +237,18 @@ def test_check_project_report_status(status_check_service, mock_projects_client)
 
 def test_check_git_clone_status(status_check_service, mock_scans_client):
     """Test check_git_clone_status method."""
-    mock_scans_client.check_status_download_content_from_git.return_value = {"data": "FINISHED"}
+    mock_scans_client.check_status_download_content_from_git.return_value = {
+        "data": "FINISHED"
+    }
 
     result = status_check_service.check_git_clone_status("scan123")
 
     assert isinstance(result, StatusResult)
     assert result.status == "FINISHED"
     assert result.is_finished is True
-    mock_scans_client.check_status_download_content_from_git.assert_called_once_with("scan123")
+    mock_scans_client.check_status_download_content_from_git.assert_called_once_with(
+        "scan123"
+    )
 
 
 # --- Test status accessor methods ---
@@ -222,9 +257,15 @@ def test_git_status_accessor_variants(status_check_service):
     # Direct string
     assert status_check_service._git_status_accessor("finished") == "FINISHED"
     # Dict with 'data'
-    assert status_check_service._git_status_accessor({"data": "running"}) == "RUNNING"
+    assert (
+        status_check_service._git_status_accessor({"data": "running"})
+        == "RUNNING"
+    )
     # NOT STARTED maps to FINISHED (idle)
-    assert status_check_service._git_status_accessor({"data": "NOT STARTED"}) == "FINISHED"
+    assert (
+        status_check_service._git_status_accessor({"data": "NOT STARTED"})
+        == "FINISHED"
+    )
     # Unexpected type -> ACCESS_ERROR
     assert status_check_service._git_status_accessor(123) == "ACCESS_ERROR"
 
@@ -233,16 +274,22 @@ def test_project_report_status_accessor(status_check_service):
     """Test project report status accessor."""
     # NEW -> FINISHED
     assert (
-        status_check_service._project_report_status_accessor({"progress_state": "NEW"})
+        status_check_service._project_report_status_accessor(
+            {"progress_state": "NEW"}
+        )
         == "FINISHED"
     )
     # RUNNING -> RUNNING
     assert (
-        status_check_service._project_report_status_accessor({"progress_state": "RUNNING"})
+        status_check_service._project_report_status_accessor(
+            {"progress_state": "RUNNING"}
+        )
         == "RUNNING"
     )
     # Missing -> UNKNOWN
-    assert status_check_service._project_report_status_accessor({}) == "UNKNOWN"
+    assert (
+        status_check_service._project_report_status_accessor({}) == "UNKNOWN"
+    )
 
 
 def test_extract_server_duration_valid(status_check_service):

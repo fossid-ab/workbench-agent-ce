@@ -302,7 +302,9 @@ class StatusCheckService:
         Returns:
             StatusResult with dependency analysis status information
         """
-        status_data = self._scans.check_status(scan_code, "DEPENDENCY_ANALYSIS")
+        status_data = self._scans.check_status(
+            scan_code, "DEPENDENCY_ANALYSIS"
+        )
         normalized_status = self._standard_scan_status_accessor(status_data)
 
         return StatusResult(
@@ -358,7 +360,9 @@ class StatusCheckService:
         Returns:
             StatusResult with notice extract file status information
         """
-        status_data = self._scans.check_status(scan_code, "NOTICE_EXTRACT_FILE")
+        status_data = self._scans.check_status(
+            scan_code, "NOTICE_EXTRACT_FILE"
+        )
         normalized_status = self._standard_scan_status_accessor(status_data)
 
         return StatusResult(

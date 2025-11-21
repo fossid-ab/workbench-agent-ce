@@ -29,7 +29,11 @@ def mock_session(mocker):
 @pytest.fixture
 def base_api(mock_session):
     """Create a BaseAPI instance with a properly mocked session."""
-    api = BaseAPI(api_url="http://dummy.com/api.php", api_user="testuser", api_token="testtoken")
+    api = BaseAPI(
+        api_url="http://dummy.com/api.php",
+        api_user="testuser",
+        api_token="testtoken",
+    )
     api.session = mock_session
     return api
 
@@ -47,7 +51,10 @@ def projects_client(base_api):
 @patch.object(BaseAPI, "_send_request")
 def test_create_success(mock_send, projects_client):
     # Configure the API response for project creation
-    mock_send.return_value = {"status": "1", "data": {"project_code": "NEW_PROJ"}}
+    mock_send.return_value = {
+        "status": "1",
+        "data": {"project_code": "NEW_PROJ"},
+    }
 
     result = projects_client.create("New Project")
 
@@ -67,7 +74,10 @@ def test_create_success(mock_send, projects_client):
 def test_list_projects_success(mock_send, projects_client):
     mock_send.return_value = {
         "status": "1",
-        "data": [{"name": "Project A", "code": "PROJ_A"}, {"name": "Project B", "code": "PROJ_B"}],
+        "data": [
+            {"name": "Project A", "code": "PROJ_A"},
+            {"name": "Project B", "code": "PROJ_B"},
+        ],
     }
     projects = projects_client.list_projects()
     assert len(projects) == 2
@@ -98,7 +108,10 @@ def test_list_projects_api_error(mock_send, projects_client):
 def test_get_all_scans_success(mock_send, projects_client):
     mock_send.return_value = {
         "status": "1",
-        "data": [{"code": "SCAN_A", "name": "Scan A"}, {"code": "SCAN_B", "name": "Scan B"}],
+        "data": [
+            {"code": "SCAN_A", "name": "Scan A"},
+            {"code": "SCAN_B", "name": "Scan B"},
+        ],
     }
     scans = projects_client.get_all_scans("PROJ_A")
     assert len(scans) == 2
@@ -113,7 +126,10 @@ def test_get_all_scans_success(mock_send, projects_client):
 
 @patch.object(BaseAPI, "_send_request")
 def test_get_all_scans_project_not_found(mock_send, projects_client):
-    mock_send.return_value = {"status": "0", "error": "Project code does not exist"}
+    mock_send.return_value = {
+        "status": "0",
+        "error": "Project code does not exist",
+    }
     # Should return empty list, not raise
     scans = projects_client.get_all_scans("NONEXISTENT")
     assert scans == []
@@ -122,7 +138,10 @@ def test_get_all_scans_project_not_found(mock_send, projects_client):
 # --- Test project report generation ---
 @patch.object(BaseAPI, "_send_request")
 def test_generate_project_report_success(mock_send, projects_client):
-    mock_send.return_value = {"status": "1", "data": {"process_queue_id": 54321}}
+    mock_send.return_value = {
+        "status": "1",
+        "data": {"process_queue_id": 54321},
+    }
     payload_data = {
         "project_code": "PROJ_A",
         "report_type": "xlsx",
@@ -148,8 +167,13 @@ def test_generate_project_report_success(mock_send, projects_client):
 @patch.object(BaseAPI, "_send_request")
 def test_check_status_success(mock_send, projects_client):
     """Test successful project operation status check."""
-    mock_send.return_value = {"status": "1", "data": {"status": "FINISHED", "progress": 100}}
-    status = projects_client.check_status(process_id=12345, process_type="REPORT_GENERATION")
+    mock_send.return_value = {
+        "status": "1",
+        "data": {"status": "FINISHED", "progress": 100},
+    }
+    status = projects_client.check_status(
+        process_id=12345, process_type="REPORT_GENERATION"
+    )
     assert status["status"] == "FINISHED"
     assert status["progress"] == 100
     mock_send.assert_called_once()

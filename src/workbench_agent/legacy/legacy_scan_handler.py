@@ -44,7 +44,9 @@ def handle_legacy_scan(
         Exception: Uses original script's exception handling
     """
     print("--- Running LEGACY SCAN Mode ---")
-    print("NOTE: Legacy mode is deprecated. Please migrate to modern commands:")
+    print(
+        "NOTE: Legacy mode is deprecated. Please migrate to modern commands:"
+    )
     print("  Legacy: workbench-agent --blind_scan ...")
     print("  Modern: workbench-agent blind-scan ...")
     print("  Legacy: workbench-agent --path ...")

@@ -193,7 +193,8 @@ class WorkbenchClient:
         )
 
         self.results = ResultsService(
-            scans_client=self.scans, vulnerabilities_client=self.vulnerabilities
+            scans_client=self.scans,
+            vulnerabilities_client=self.vulnerabilities,
         )
 
         self.scan_operations = ScanOperationsService(

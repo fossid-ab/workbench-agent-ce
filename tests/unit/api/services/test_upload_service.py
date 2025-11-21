@@ -43,12 +43,17 @@ def test_upload_scan_target_path_validation(mock_exists, upload_service):
 
 @patch("os.path.exists")
 @patch("os.path.isfile")
-def test_upload_da_results_validation(mock_isfile, mock_exists, upload_service):
+def test_upload_da_results_validation(
+    mock_isfile, mock_exists, upload_service
+):
     """Test that upload_da_results validates file existence."""
     mock_exists.return_value = True
     mock_isfile.return_value = False  # Path exists but is not a file
 
-    with pytest.raises(FileSystemError, match="Dependency analysis results file does not exist"):
+    with pytest.raises(
+        FileSystemError,
+        match="Dependency analysis results file does not exist",
+    ):
         upload_service.upload_da_results("scan1", "/path/to/directory")
 
     mock_exists.assert_called_once_with("/path/to/directory")

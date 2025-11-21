@@ -408,7 +408,10 @@ class ProjectsClient:
                         )
 
                     # Missing mandatory field
-                    if error_code == "RequestData.Base.mandatory_field_missing":
+                    if (
+                        error_code
+                        == "RequestData.Base.mandatory_field_missing"
+                    ):
                         field = (
                             data[0]
                             .get("message_parameters", {})

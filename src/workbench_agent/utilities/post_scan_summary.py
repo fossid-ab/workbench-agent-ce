@@ -320,7 +320,9 @@ def display_results(
                 comp_version = vuln.get("component_version", "Unknown")
                 unique_components.add(f"{comp_name}:{comp_version}")
                 severity = vuln.get("severity", "UNKNOWN").upper()
-                severity_counts[severity] = severity_counts.get(severity, 0) + 1
+                severity_counts[severity] = (
+                    severity_counts.get(severity, 0) + 1
+                )
 
             num_unique_components = len(unique_components)
             print(
@@ -589,7 +591,9 @@ def print_operation_summary(
                 if durations.get("dependency_analysis")
                 else "N/A"
             )
-            print(f"  - Dependency Analysis: Yes (Duration: {da_duration_str})")
+            print(
+                f"  - Dependency Analysis: Yes (Duration: {da_duration_str})"
+            )
         elif da_requested and not da_completed:
             print("  - Dependency Analysis: Requested but failed/incomplete")
         else:

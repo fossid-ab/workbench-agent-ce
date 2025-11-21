@@ -764,7 +764,8 @@ class ScansClient:
 
                 # Check if this is the specific "file not found" error
                 if (
-                    error_msg == "RequestData.Base.issues_while_parsing_request"
+                    error_msg
+                    == "RequestData.Base.issues_while_parsing_request"
                     and filename
                 ):
                     data = response.get("data", [])
@@ -777,7 +778,9 @@ class ScansClient:
                             logger.warning(
                                 f"File '{filename}' does not exist in scan '{scan_code}'."
                             )
-                            return True  # Non-fatal - file doesn't exist anyway
+                            return (
+                                True  # Non-fatal - file doesn't exist anyway
+                            )
 
                 # Handle other errors
                 if (

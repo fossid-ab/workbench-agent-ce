@@ -17,8 +17,12 @@ def create_dummy_directory(tmp_path, content="dummy content"):
 
     # Add some files to make it look like a real project
     (dummy_dir / "main.py").write_text("print('Hello, World!')")
-    (dummy_dir / "requirements.txt").write_text("requests==2.28.0\nflask==2.2.0")
-    (dummy_dir / "README.md").write_text("# Test Project\nThis is a test project.")
+    (dummy_dir / "requirements.txt").write_text(
+        "requests==2.28.0\nflask==2.2.0"
+    )
+    (dummy_dir / "README.md").write_text(
+        "# Test Project\nThis is a test project."
+    )
 
     # Create a subdirectory
     sub_dir = dummy_dir / "src"
@@ -39,7 +43,9 @@ class TestBlindScanIntegration:
             pytest.skip("fossid-toolbox not available on system PATH")
         return toolbox_path
 
-    def test_blind_scan_success_flow(self, mock_workbench_api, tmp_path, capsys, toolbox_available):
+    def test_blind_scan_success_flow(
+        self, mock_workbench_api, tmp_path, capsys, toolbox_available
+    ):
         """
         Integration test for a successful 'blind-scan' command flow.
         Tests the complete workflow from hash generation to scan completion.
@@ -54,7 +60,10 @@ class TestBlindScanIntegration:
         with (
             patch("os.path.exists", return_value=True),
             patch("os.path.isdir", return_value=True),
-            patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True),
+            patch(
+                "workbench_agent.handlers.blind_scan.cleanup_temp_file",
+                return_value=True,
+            ),
         ):
             args = [
                 "workbench-agent",
@@ -77,7 +86,9 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert return_code == 0, "Command should exit with success code"
+                assert (
+                    return_code == 0
+                ), "Command should exit with success code"
 
             # Verify we got success messages in the output
             captured = capsys.readouterr()
@@ -87,7 +98,9 @@ class TestBlindScanIntegration:
             assert "Generating file hashes" in combined_output
             assert "Hash generation completed" in combined_output
 
-    def test_blind_scan_with_dependency_analysis(self, mock_workbench_api, tmp_path, capsys):
+    def test_blind_scan_with_dependency_analysis(
+        self, mock_workbench_api, tmp_path, capsys
+    ):
         """
         Test blind-scan command with dependency analysis enabled.
         """
@@ -95,14 +108,24 @@ class TestBlindScanIntegration:
 
         # Mock ToolboxWrapper
         mock_toolbox = MagicMock()
-        mock_toolbox.get_version.return_value = "FossID Toolbox version 2023.2.1"
-        mock_toolbox.generate_hashes.return_value = "/tmp/blind_scan_result_TESTRAND.fossid"
+        mock_toolbox.get_version.return_value = (
+            "FossID Toolbox version 2023.2.1"
+        )
+        mock_toolbox.generate_hashes.return_value = (
+            "/tmp/blind_scan_result_TESTRAND.fossid"
+        )
 
         with (
-            patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox),
+            patch(
+                "workbench_agent.handlers.blind_scan.ToolboxWrapper",
+                return_value=mock_toolbox,
+            ),
             patch("os.path.exists", return_value=True),
             patch("os.path.isdir", return_value=True),
-            patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True),
+            patch(
+                "workbench_agent.handlers.blind_scan.cleanup_temp_file",
+                return_value=True,
+            ),
         ):
             args = [
                 "workbench-agent",
@@ -126,13 +149,17 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert return_code == 0, "Command should exit with success code"
+                assert (
+                    return_code == 0
+                ), "Command should exit with success code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
             assert "DEPENDENCY_ANALYSIS" in combined_output
 
-    def test_blind_scan_no_wait_mode(self, mock_workbench_api, tmp_path, capsys):
+    def test_blind_scan_no_wait_mode(
+        self, mock_workbench_api, tmp_path, capsys
+    ):
         """
         Test blind-scan command with --no-wait flag.
         """
@@ -140,14 +167,24 @@ class TestBlindScanIntegration:
 
         # Mock ToolboxWrapper
         mock_toolbox = MagicMock()
-        mock_toolbox.get_version.return_value = "FossID Toolbox version 2023.2.1"
-        mock_toolbox.generate_hashes.return_value = "/tmp/blind_scan_result_TESTRAND.fossid"
+        mock_toolbox.get_version.return_value = (
+            "FossID Toolbox version 2023.2.1"
+        )
+        mock_toolbox.generate_hashes.return_value = (
+            "/tmp/blind_scan_result_TESTRAND.fossid"
+        )
 
         with (
-            patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox),
+            patch(
+                "workbench_agent.handlers.blind_scan.ToolboxWrapper",
+                return_value=mock_toolbox,
+            ),
             patch("os.path.exists", return_value=True),
             patch("os.path.isdir", return_value=True),
-            patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True),
+            patch(
+                "workbench_agent.handlers.blind_scan.cleanup_temp_file",
+                return_value=True,
+            ),
         ):
             args = [
                 "workbench-agent",
@@ -171,13 +208,20 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert return_code == 0, "Command should exit with success code"
+                assert (
+                    return_code == 0
+                ), "Command should exit with success code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
-            assert "--no-wait" in combined_output or "no-wait" in combined_output.lower()
+            assert (
+                "--no-wait" in combined_output
+                or "no-wait" in combined_output.lower()
+            )
 
-    def test_blind_scan_invalid_path(self, mock_workbench_api, tmp_path, capsys):
+    def test_blind_scan_invalid_path(
+        self, mock_workbench_api, tmp_path, capsys
+    ):
         """
         Test blind-scan command with an invalid path.
         """
@@ -210,7 +254,9 @@ class TestBlindScanIntegration:
             combined_output = captured.out + captured.err
             assert "does not exist" in combined_output
 
-    def test_blind_scan_file_instead_of_directory(self, mock_workbench_api, tmp_path, capsys):
+    def test_blind_scan_file_instead_of_directory(
+        self, mock_workbench_api, tmp_path, capsys
+    ):
         """
         Test blind-scan command with a file path instead of directory.
         """
@@ -218,7 +264,10 @@ class TestBlindScanIntegration:
         dummy_file = tmp_path / "test_file.py"
         dummy_file.write_text("print('test')")
 
-        with patch("os.path.exists", return_value=True), patch("os.path.isdir", return_value=False):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=False),
+        ):
             args = [
                 "workbench-agent",
                 "blind-scan",
@@ -246,7 +295,9 @@ class TestBlindScanIntegration:
             combined_output = captured.out + captured.err
             assert "must be a directory" in combined_output
 
-    def test_blind_scan_cli_version_warning(self, mock_workbench_api, tmp_path, capsys):
+    def test_blind_scan_cli_version_warning(
+        self, mock_workbench_api, tmp_path, capsys
+    ):
         """
         Test blind-scan command when Toolbox version check fails (should fail with error).
         """
@@ -254,14 +305,24 @@ class TestBlindScanIntegration:
 
         # Mock ToolboxWrapper with version failure
         mock_toolbox = MagicMock()
-        mock_toolbox.get_version.side_effect = Exception("Version check failed")
-        mock_toolbox.generate_hashes.return_value = "/tmp/blind_scan_result_TESTRAND.fossid"
+        mock_toolbox.get_version.side_effect = Exception(
+            "Version check failed"
+        )
+        mock_toolbox.generate_hashes.return_value = (
+            "/tmp/blind_scan_result_TESTRAND.fossid"
+        )
 
         with (
-            patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox),
+            patch(
+                "workbench_agent.handlers.blind_scan.ToolboxWrapper",
+                return_value=mock_toolbox,
+            ),
             patch("os.path.exists", return_value=True),
             patch("os.path.isdir", return_value=True),
-            patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True),
+            patch(
+                "workbench_agent.handlers.blind_scan.cleanup_temp_file",
+                return_value=True,
+            ),
         ):
             args = [
                 "workbench-agent",
@@ -284,13 +345,20 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert return_code != 0, "Command should fail when version check fails"
+                assert (
+                    return_code != 0
+                ), "Command should fail when version check fails"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
-            assert "Version check failed" in combined_output or "Toolbox" in combined_output
+            assert (
+                "Version check failed" in combined_output
+                or "Toolbox" in combined_output
+            )
 
-    def test_blind_scan_dependency_analysis_only(self, mock_workbench_api, tmp_path, capsys):
+    def test_blind_scan_dependency_analysis_only(
+        self, mock_workbench_api, tmp_path, capsys
+    ):
         """
         Test blind-scan command with dependency analysis only (no KB scan).
         """
@@ -298,14 +366,24 @@ class TestBlindScanIntegration:
 
         # Mock ToolboxWrapper
         mock_toolbox = MagicMock()
-        mock_toolbox.get_version.return_value = "FossID Toolbox version 2023.2.1"
-        mock_toolbox.generate_hashes.return_value = "/tmp/blind_scan_result_TESTRAND.fossid"
+        mock_toolbox.get_version.return_value = (
+            "FossID Toolbox version 2023.2.1"
+        )
+        mock_toolbox.generate_hashes.return_value = (
+            "/tmp/blind_scan_result_TESTRAND.fossid"
+        )
 
         with (
-            patch("workbench_agent.handlers.blind_scan.ToolboxWrapper", return_value=mock_toolbox),
+            patch(
+                "workbench_agent.handlers.blind_scan.ToolboxWrapper",
+                return_value=mock_toolbox,
+            ),
             patch("os.path.exists", return_value=True),
             patch("os.path.isdir", return_value=True),
-            patch("workbench_agent.handlers.blind_scan.cleanup_temp_file", return_value=True),
+            patch(
+                "workbench_agent.handlers.blind_scan.cleanup_temp_file",
+                return_value=True,
+            ),
         ):
             args = [
                 "workbench-agent",
@@ -329,7 +407,9 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert return_code == 0, "Command should exit with success code"
+                assert (
+                    return_code == 0
+                ), "Command should exit with success code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err

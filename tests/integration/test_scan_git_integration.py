@@ -74,7 +74,9 @@ class TestScanGitIntegration:
         combined_output = captured.out + captured.err
         assert "SCAN-GIT" in combined_output
 
-    def test_scan_git_with_dependency_analysis(self, mock_workbench_api, capsys):
+    def test_scan_git_with_dependency_analysis(
+        self, mock_workbench_api, capsys
+    ):
         """
         Test scan-git command with dependency analysis enabled.
         """
@@ -106,7 +108,9 @@ class TestScanGitIntegration:
         combined_output = captured.out + captured.err
         assert "SCAN-GIT" in combined_output
 
-    def test_scan_git_dependency_analysis_only(self, mock_workbench_api, capsys):
+    def test_scan_git_dependency_analysis_only(
+        self, mock_workbench_api, capsys
+    ):
         """
         Test scan-git command with dependency analysis only (no KB scan).
         """
@@ -169,13 +173,15 @@ class TestScanGitIntegration:
             return_code = main()
             assert return_code == 0, "Scan-git with ID reuse should succeed"
 
-    def test_scan_git_failure_invalid_git_url(self, mock_workbench_api, capsys):
+    def test_scan_git_failure_invalid_git_url(
+        self, mock_workbench_api, capsys
+    ):
         """
         Test scan-git command with invalid git URL (should fail).
         """
         # Unified interface now: download_content_from_git raises the error
-        mock_workbench_api.scans.download_content_from_git.side_effect = ProcessError(
-            "Git clone failed: Repository not found"
+        mock_workbench_api.scans.download_content_from_git.side_effect = (
+            ProcessError("Git clone failed: Repository not found")
         )
 
         args = [
@@ -205,7 +211,9 @@ class TestScanGitIntegration:
         combined_output = captured.out + captured.err
         assert "failed" in combined_output.lower()
 
-    def test_scan_git_failure_conflicting_refs(self, mock_workbench_api, capsys):
+    def test_scan_git_failure_conflicting_refs(
+        self, mock_workbench_api, capsys
+    ):
         """
         Test scan-git command with conflicting git references (should fail validation).
         """
@@ -236,7 +244,9 @@ class TestScanGitIntegration:
         assert e.type == SystemExit
         assert e.value.code == 2
 
-    def test_scan_git_failure_missing_git_ref(self, mock_workbench_api, capsys):
+    def test_scan_git_failure_missing_git_ref(
+        self, mock_workbench_api, capsys
+    ):
         """
         Test scan-git command with missing git reference (should fail validation).
         """

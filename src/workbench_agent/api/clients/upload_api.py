@@ -218,7 +218,8 @@ class UploadsClient:
                     if (
                         show_progress
                         or progress
-                        >= last_printed_progress + self.PROGRESS_UPDATE_INTERVAL
+                        >= last_printed_progress
+                        + self.PROGRESS_UPDATE_INTERVAL
                     ):
                         print(f"Upload progress: {progress}%")
                         last_printed_progress = progress

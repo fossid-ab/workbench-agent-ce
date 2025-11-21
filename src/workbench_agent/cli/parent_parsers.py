@@ -44,7 +44,9 @@ def create_workbench_connection_parser():
 def create_cli_behaviors_parser():
     """Create parent parser for Workbench Agent behavior arguments."""
     cli_behaviors_parent = argparse.ArgumentParser(add_help=False)
-    cli_behaviors_args = cli_behaviors_parent.add_argument_group("CLI Behavior")
+    cli_behaviors_args = cli_behaviors_parent.add_argument_group(
+        "CLI Behavior"
+    )
     cli_behaviors_args.add_argument(
         "--log",
         help="Logging level (Default: WARNING)",
@@ -191,7 +193,9 @@ def create_archive_operations_parser():
 def create_scan_operations_parser():
     """Create parent parser for scan operation control arguments."""
     scan_operations_parent = argparse.ArgumentParser(add_help=False)
-    scan_ops_args = scan_operations_parent.add_argument_group("Scan Operations")
+    scan_ops_args = scan_operations_parent.add_argument_group(
+        "Scan Operations"
+    )
     scan_ops_args.add_argument(
         "--run-dependency-analysis",
         help="Run dependency analysis after KB scan.",

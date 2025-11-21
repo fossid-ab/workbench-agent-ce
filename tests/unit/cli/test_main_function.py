@@ -7,7 +7,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
+)
 
 from workbench_agent.api.exceptions import (
     ApiError,
@@ -35,13 +37,17 @@ class TestMainFunctionSuccess:
         mock_args = MagicMock(command="scan", log="INFO")
         mock_main_dependencies["handle_scan"].return_value = True
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 0
         mock_main_dependencies["handle_scan"].assert_called_once()
         mock_main_dependencies["workbench_client"].assert_called_once_with(
-            api_url=mock_args.api_url, api_user=mock_args.api_user, api_token=mock_args.api_token
+            api_url=mock_args.api_url,
+            api_user=mock_args.api_user,
+            api_token=mock_args.api_token,
         )
 
     def test_main_success_with_scan_git_handler(self, mock_main_dependencies):
@@ -49,7 +55,9 @@ class TestMainFunctionSuccess:
         mock_args = MagicMock(command="scan-git", log="INFO")
         mock_main_dependencies["handle_scan_git"].return_value = True
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 0
@@ -60,41 +68,55 @@ class TestMainFunctionSuccess:
         mock_args = MagicMock(command="import-da", log="INFO")
         mock_main_dependencies["handle_import_da"].return_value = True
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 0
         mock_main_dependencies["handle_import_da"].assert_called_once()
 
-    def test_main_success_with_import_sbom_handler(self, mock_main_dependencies):
+    def test_main_success_with_import_sbom_handler(
+        self, mock_main_dependencies
+    ):
         """Test successful main() execution with import-sbom handler."""
         mock_args = MagicMock(command="import-sbom", log="INFO")
         mock_main_dependencies["handle_import_sbom"].return_value = True
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 0
         mock_main_dependencies["handle_import_sbom"].assert_called_once()
 
-    def test_main_success_with_show_results_handler(self, mock_main_dependencies):
+    def test_main_success_with_show_results_handler(
+        self, mock_main_dependencies
+    ):
         """Test successful main() execution with show-results handler."""
         mock_args = MagicMock(command="show-results", log="INFO")
         mock_args.result_save_path = None  # Don't trigger save functionality
         mock_main_dependencies["handle_show_results"].return_value = True
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 0
         mock_main_dependencies["handle_show_results"].assert_called_once()
 
-    def test_main_success_with_download_reports_handler(self, mock_main_dependencies):
+    def test_main_success_with_download_reports_handler(
+        self, mock_main_dependencies
+    ):
         """Test successful main() execution with download-reports handler."""
         mock_args = MagicMock(command="download-reports", log="INFO")
         mock_main_dependencies["handle_download_reports"].return_value = True
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 0
@@ -118,7 +140,10 @@ class TestMainFunctionExceptionHandling:
         mock_args = MagicMock(command="scan", log="INFO")
 
         with (
-            patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args),
+            patch(
+                "workbench_agent.main.parse_cmdline_args",
+                return_value=mock_args,
+            ),
             patch("workbench_agent.main.WorkbenchClient") as mock_client,
         ):
             mock_client.side_effect = ConfigurationError("Test config error")
@@ -132,7 +157,10 @@ class TestMainFunctionExceptionHandling:
         mock_args = MagicMock(command="scan", log="INFO")
 
         with (
-            patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args),
+            patch(
+                "workbench_agent.main.parse_cmdline_args",
+                return_value=mock_args,
+            ),
             patch("workbench_agent.main.WorkbenchClient") as mock_client,
         ):
             mock_client.side_effect = AuthenticationError("Auth error")
@@ -159,9 +187,13 @@ class TestMainFunctionExceptionHandling:
     ):
         """Test main() handling specific exception types in handlers."""
         mock_args = MagicMock(command="scan", log="INFO")
-        mock_main_dependencies["handle_scan"].side_effect = exception_class(exception_msg)
+        mock_main_dependencies["handle_scan"].side_effect = exception_class(
+            exception_msg
+        )
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 1  # Handler error exit code
@@ -169,9 +201,13 @@ class TestMainFunctionExceptionHandling:
     def test_main_unexpected_exception_handling(self, mock_main_dependencies):
         """Test main() handling unexpected exceptions."""
         mock_args = MagicMock(command="scan", log="INFO")
-        mock_main_dependencies["handle_scan"].side_effect = ValueError("Unexpected error")
+        mock_main_dependencies["handle_scan"].side_effect = ValueError(
+            "Unexpected error"
+        )
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 1  # Unexpected error exit code
@@ -183,9 +219,13 @@ class TestEvaluateGatesSpecialHandling:
     def test_evaluate_gates_success_returns_0(self, mock_main_dependencies):
         """Test evaluate-gates command returns 0 on success (gates pass)."""
         mock_args = MagicMock(command="evaluate-gates", log="INFO")
-        mock_main_dependencies["handle_evaluate_gates"].return_value = True  # Gates pass
+        mock_main_dependencies["handle_evaluate_gates"].return_value = (
+            True  # Gates pass
+        )
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 0
@@ -193,9 +233,13 @@ class TestEvaluateGatesSpecialHandling:
     def test_evaluate_gates_failure_returns_1(self, mock_main_dependencies):
         """Test evaluate-gates command returns 1 on failure (gates fail)."""
         mock_args = MagicMock(command="evaluate-gates", log="INFO")
-        mock_main_dependencies["handle_evaluate_gates"].return_value = False  # Gates fail
+        mock_main_dependencies["handle_evaluate_gates"].return_value = (
+            False  # Gates fail
+        )
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 1
@@ -219,9 +263,13 @@ class TestHandlerReturnValues:
     ):
         """Test that non-evaluate-gates handlers return 0 regardless of return value."""
         mock_args = MagicMock(command=command, log="INFO")
-        mock_main_dependencies[handler_name].return_value = True  # Handler succeeds
+        mock_main_dependencies[handler_name].return_value = (
+            True  # Handler succeeds
+        )
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 0
@@ -235,7 +283,9 @@ class TestLoggingConfiguration:
         mock_args = MagicMock(command="scan", log="DEBUG")
         mock_main_dependencies["handle_scan"].return_value = True
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 0
@@ -256,7 +306,9 @@ class TestMainIntegration:
 
         mock_main_dependencies["handle_scan"].return_value = True
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         assert result == 0
@@ -273,12 +325,16 @@ class TestMainIntegration:
             ("evaluate-gates", "handle_evaluate_gates"),
         ],
     )
-    def test_main_command_dispatch_logic(self, command, handler_name, mock_main_dependencies):
+    def test_main_command_dispatch_logic(
+        self, command, handler_name, mock_main_dependencies
+    ):
         """Test that commands are properly dispatched to their handlers."""
         mock_args = MagicMock(command=command, log="INFO")
         mock_main_dependencies[handler_name].return_value = True
 
-        with patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args):
+        with patch(
+            "workbench_agent.main.parse_cmdline_args", return_value=mock_args
+        ):
             result = main()
 
         # All commands should succeed
@@ -332,10 +388,12 @@ class TestLegacyRouting:
             with (
                 patch("sys.argv", ["workbench-agent.py"] + legacy_args),
                 patch(
-                    "workbench_agent.main.uses_legacy_interface", return_value=True
+                    "workbench_agent.main.uses_legacy_interface",
+                    return_value=True,
                 ) as mock_legacy_check,
                 patch(
-                    "workbench_agent.main.handle_legacy_request", return_value=42
+                    "workbench_agent.main.handle_legacy_request",
+                    return_value=42,
                 ) as mock_legacy_handler,
             ):
 
@@ -361,9 +419,13 @@ class TestLegacyRouting:
         with (
             patch("sys.argv", modern_args),
             patch(
-                "workbench_agent.main.uses_legacy_interface", return_value=False
+                "workbench_agent.main.uses_legacy_interface",
+                return_value=False,
             ) as mock_legacy_check,
-            patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args) as mock_parse,
+            patch(
+                "workbench_agent.main.parse_cmdline_args",
+                return_value=mock_args,
+            ) as mock_parse,
         ):
 
             result = main()
@@ -380,9 +442,13 @@ class TestLegacyRouting:
         with (
             patch("sys.argv", ["workbench-agent.py"]),
             patch(
-                "workbench_agent.main.uses_legacy_interface", return_value=False
+                "workbench_agent.main.uses_legacy_interface",
+                return_value=False,
             ) as mock_legacy_check,
-            patch("workbench_agent.main.parse_cmdline_args", side_effect=SystemExit(2)),
+            patch(
+                "workbench_agent.main.parse_cmdline_args",
+                side_effect=SystemExit(2),
+            ),
         ):
 
             with pytest.raises(SystemExit):
@@ -396,7 +462,9 @@ class TestLegacyRouting:
 
         with (
             patch("sys.argv", legacy_args),
-            patch("workbench_agent.main.uses_legacy_interface", return_value=True),
+            patch(
+                "workbench_agent.main.uses_legacy_interface", return_value=True
+            ),
             patch(
                 "workbench_agent.main.handle_legacy_request",
                 side_effect=RuntimeError("Legacy error"),
@@ -445,8 +513,14 @@ class TestLegacyRouting:
 
             with (
                 patch("sys.argv", legacy_args),
-                patch("workbench_agent.main.uses_legacy_interface", return_value=True),
-                patch("workbench_agent.main.handle_legacy_request", return_value=expected_code),
+                patch(
+                    "workbench_agent.main.uses_legacy_interface",
+                    return_value=True,
+                ),
+                patch(
+                    "workbench_agent.main.handle_legacy_request",
+                    return_value=expected_code,
+                ),
             ):
 
                 result = main()
@@ -459,9 +533,12 @@ class TestLegacyRouting:
         with (
             patch("sys.argv", ["workbench-agent.py"] + args_list),
             patch(
-                "workbench_agent.cli.common.uses_legacy_interface", return_value=True
+                "workbench_agent.cli.common.uses_legacy_interface",
+                return_value=True,
             ) as mock_cli_common_check,
-            patch("workbench_agent.main.handle_legacy_request", return_value=0),
+            patch(
+                "workbench_agent.main.handle_legacy_request", return_value=0
+            ),
         ):
 
             result = main()
@@ -484,10 +561,18 @@ class TestLegacyRouting:
 
         with (
             patch("sys.argv", modern_args),
-            patch("workbench_agent.main.uses_legacy_interface", return_value=False),
-            patch("workbench_agent.main.parse_cmdline_args", return_value=mock_args),
+            patch(
+                "workbench_agent.main.uses_legacy_interface",
+                return_value=False,
+            ),
+            patch(
+                "workbench_agent.main.parse_cmdline_args",
+                return_value=mock_args,
+            ),
             patch("workbench_agent.main.WorkbenchClient") as mock_client,
-            patch("workbench_agent.main.handle_scan", return_value=True) as mock_handler,
+            patch(
+                "workbench_agent.main.handle_scan", return_value=True
+            ) as mock_handler,
         ):
 
             # Should not import legacy modules when using modern interface

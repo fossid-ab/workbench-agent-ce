@@ -148,7 +148,9 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
         except Exception as e:
             logger.debug(f"Dependency analysis check skipped: {e}")
     else:
-        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
+        logger.debug(
+            "Skipping idle checks - new scan is guaranteed to be idle"
+        )
 
     # Clear existing scan content (skip for new scans - they're empty)
     if not scan_is_new:
@@ -252,7 +254,9 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
         # Resolve ID reuse parameters (if any)
         id_reuse_type, id_reuse_specific_code = (
             client.resolver.resolve_id_reuse(
-                id_reuse_any=getattr(params, "reuse_any_identification", False),
+                id_reuse_any=getattr(
+                    params, "reuse_any_identification", False
+                ),
                 id_reuse_my=getattr(params, "reuse_my_identifications", False),
                 id_reuse_project_name=getattr(
                     params, "reuse_project_ids", None
@@ -321,10 +325,12 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
                 if scan_operations["run_dependency_analysis"]:
                     print("\nWaiting for Dependency Analysis to complete...")
                     try:
-                        dependency_analysis_status = client.waiting.wait_for_da(
-                            scan_code,
-                            max_tries=params.scan_number_of_tries,
-                            wait_interval=params.scan_wait_time,
+                        dependency_analysis_status = (
+                            client.waiting.wait_for_da(
+                                scan_code,
+                                max_tries=params.scan_number_of_tries,
+                                wait_interval=params.scan_wait_time,
+                            )
                         )
                         durations["dependency_analysis"] = (
                             dependency_analysis_status.duration or 0.0
@@ -344,7 +350,9 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
 
             except Exception as e:
                 logger.error(f"Error waiting for processes to complete: {e}")
-                print(f"\nError: Failed to wait for processes to complete: {e}")
+                print(
+                    f"\nError: Failed to wait for processes to complete: {e}"
+                )
                 da_completed = False
 
         # Show scan summary and operation details

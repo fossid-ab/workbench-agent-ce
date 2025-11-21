@@ -200,7 +200,9 @@ def format_and_print_error(
     elif isinstance(error, ConfigurationError):
         print("\n❌ Configuration error")
         print(f"   {error_message}")
-        print("\n💡 Please check your command-line arguments and configuration")
+        print(
+            "\n💡 Please check your command-line arguments and configuration"
+        )
 
     elif isinstance(error, CompatibilityError):
         print("\n❌ Compatibility issue")

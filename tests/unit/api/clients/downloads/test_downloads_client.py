@@ -71,7 +71,9 @@ class TestDownloadReport:
             "content-disposition": 'attachment; filename="scan_report.xlsx"',
         }
 
-        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
+        base_api._send_request = MagicMock(
+            return_value={"_raw_response": mock_response}
+        )
 
         result = downloads_client.download_report("scans", 12345)
 
@@ -102,7 +104,9 @@ class TestDownloadReport:
             "content-disposition": 'attachment; filename="project_report.xlsx"',
         }
 
-        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
+        base_api._send_request = MagicMock(
+            return_value={"_raw_response": mock_response}
+        )
 
         result = downloads_client.download_report("projects", 67890)
 
@@ -128,7 +132,9 @@ class TestDownloadReport:
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
 
-        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
+        base_api._send_request = MagicMock(
+            return_value={"_raw_response": mock_response}
+        )
 
         downloads_client.download_report("scans", 12345, timeout=3600)
 
@@ -138,13 +144,17 @@ class TestDownloadReport:
 
     def test_download_report_invalid_entity(self, downloads_client):
         """Test that invalid report_entity raises ValidationError."""
-        with pytest.raises(ValidationError, match="Invalid report_entity 'invalid'"):
+        with pytest.raises(
+            ValidationError, match="Invalid report_entity 'invalid'"
+        ):
             downloads_client.download_report("invalid", 12345)
 
     def test_download_report_api_error(self, downloads_client, base_api):
         """Test that API errors are propagated."""
         base_api._send_request = MagicMock(
-            side_effect=ApiError("Report not found", details={"error": "not_found"})
+            side_effect=ApiError(
+                "Report not found", details={"error": "not_found"}
+            )
         )
 
         with pytest.raises(ApiError, match="Report not found"):
@@ -166,7 +176,9 @@ class TestDownloadClientIntegration:
     def test_process_id_string_conversion(self, downloads_client, base_api):
         """Test that process_id is converted to string in payload."""
         mock_response = MagicMock(spec=requests.Response)
-        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
+        base_api._send_request = MagicMock(
+            return_value={"_raw_response": mock_response}
+        )
 
         # Pass integer process_id
         downloads_client.download_report("scans", 99999)
@@ -181,7 +193,9 @@ class TestDownloadClientIntegration:
     def test_payload_structure(self, downloads_client, base_api):
         """Test that the payload has the correct structure."""
         mock_response = MagicMock(spec=requests.Response)
-        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
+        base_api._send_request = MagicMock(
+            return_value={"_raw_response": mock_response}
+        )
 
         downloads_client.download_report("scans", 12345)
 
@@ -196,4 +210,3 @@ class TestDownloadClientIntegration:
         assert payload["action"] == "download_report"
         assert "report_entity" in payload["data"]
         assert "process_id" in payload["data"]
-

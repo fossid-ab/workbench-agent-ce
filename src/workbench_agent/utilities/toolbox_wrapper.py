@@ -179,7 +179,8 @@ class ToolboxWrapper:
             # Verify temporary file was created and has content
             if not os.path.exists(temporary_file_path):
                 raise ProcessError(
-                    f"Temporary file was not created: " f"{temporary_file_path}"
+                    f"Temporary file was not created: "
+                    f"{temporary_file_path}"
                 )
 
             file_size = os.path.getsize(temporary_file_path)

@@ -6,7 +6,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
+)
 
 from workbench_agent.cli import parse_cmdline_args
 
@@ -64,23 +66,42 @@ def mock_main_dependencies():
         # Set up common API methods that handlers might use
         # Note: These are now accessed via client composition (e.g., workbench.resolver, workbench.scans, etc.)
         mocks["workbench_instance"].resolver = MagicMock()
-        mocks["workbench_instance"].resolver.resolve_project_and_scan.return_value = (
+        mocks[
+            "workbench_instance"
+        ].resolver.resolve_project_and_scan.return_value = (
             "TEST_PROJECT_CODE",
             "TEST_SCAN_CODE",
             False,
         )
-        mocks["workbench_instance"].resolver.find_project.return_value = "TEST_PROJECT_CODE"
-        mocks["workbench_instance"].resolver.find_scan.return_value = ("TEST_SCAN_CODE", 123)
+        mocks["workbench_instance"].resolver.find_project.return_value = (
+            "TEST_PROJECT_CODE"
+        )
+        mocks["workbench_instance"].resolver.find_scan.return_value = (
+            "TEST_SCAN_CODE",
+            123,
+        )
 
         mocks["workbench_instance"].scans = MagicMock()
-        mocks["workbench_instance"].scans.get_scan_folder_metrics.return_value = {}
-        mocks["workbench_instance"].scans.get_dependency_analysis_results.return_value = []
-        mocks["workbench_instance"].scans.get_scan_identified_licenses.return_value = []
-        mocks["workbench_instance"].scans.get_scan_identified_components.return_value = []
-        mocks["workbench_instance"].scans.get_policy_warnings_counter.return_value = {}
+        mocks[
+            "workbench_instance"
+        ].scans.get_scan_folder_metrics.return_value = {}
+        mocks[
+            "workbench_instance"
+        ].scans.get_dependency_analysis_results.return_value = []
+        mocks[
+            "workbench_instance"
+        ].scans.get_scan_identified_licenses.return_value = []
+        mocks[
+            "workbench_instance"
+        ].scans.get_scan_identified_components.return_value = []
+        mocks[
+            "workbench_instance"
+        ].scans.get_policy_warnings_counter.return_value = {}
 
         mocks["workbench_instance"].vulnerabilities = MagicMock()
-        mocks["workbench_instance"].vulnerabilities.list_vulnerabilities.return_value = []
+        mocks[
+            "workbench_instance"
+        ].vulnerabilities.list_vulnerabilities.return_value = []
 
         # Mock all handlers - need to patch them at the main module level where they're imported
         with (
@@ -88,9 +109,13 @@ def mock_main_dependencies():
             patch("workbench_agent.main.handle_scan_git") as mock_scan_git,
             patch("workbench_agent.main.handle_blind_scan") as mock_blind_scan,
             patch("workbench_agent.main.handle_import_da") as mock_import,
-            patch("workbench_agent.main.handle_import_sbom") as mock_import_sbom,
+            patch(
+                "workbench_agent.main.handle_import_sbom"
+            ) as mock_import_sbom,
             patch("workbench_agent.main.handle_show_results") as mock_show,
-            patch("workbench_agent.main.handle_download_reports") as mock_download,
+            patch(
+                "workbench_agent.main.handle_download_reports"
+            ) as mock_download,
             patch("workbench_agent.main.handle_evaluate_gates") as mock_gates,
             patch("workbench_agent.main.handle_quick_scan") as mock_quick_scan,
         ):
@@ -125,13 +150,29 @@ class ArgBuilder:
     def scan(self, project="TestProject", scan="TestScan", path="."):
         self.args.extend(["scan"])
         self.args.extend(self.global_args)
-        self.args.extend(["--project-name", project, "--scan-name", scan, "--path", path])
+        self.args.extend(
+            ["--project-name", project, "--scan-name", scan, "--path", path]
+        )
         return self
 
-    def scan_git(self, project="TestProject", scan="TestScan", git_url="https://git.com/repo.git"):
+    def scan_git(
+        self,
+        project="TestProject",
+        scan="TestScan",
+        git_url="https://git.com/repo.git",
+    ):
         self.args.extend(["scan-git"])
         self.args.extend(self.global_args)
-        self.args.extend(["--project-name", project, "--scan-name", scan, "--git-url", git_url])
+        self.args.extend(
+            [
+                "--project-name",
+                project,
+                "--scan-name",
+                scan,
+                "--git-url",
+                git_url,
+            ]
+        )
         return self
 
     def git_branch(self, branch="main"):
@@ -146,16 +187,27 @@ class ArgBuilder:
         self.args.extend(["--git-commit", commit])
         return self
 
-    def import_da(self, project="TestProject", scan="TestScan", path="analyzer-result.json"):
+    def import_da(
+        self,
+        project="TestProject",
+        scan="TestScan",
+        path="analyzer-result.json",
+    ):
         self.args.extend(["import-da"])
         self.args.extend(self.global_args)
-        self.args.extend(["--project-name", project, "--scan-name", scan, "--path", path])
+        self.args.extend(
+            ["--project-name", project, "--scan-name", scan, "--path", path]
+        )
         return self
 
-    def import_sbom(self, project="TestProject", scan="TestScan", path="bom.json"):
+    def import_sbom(
+        self, project="TestProject", scan="TestScan", path="bom.json"
+    ):
         self.args.extend(["import-sbom"])
         self.args.extend(self.global_args)
-        self.args.extend(["--project-name", project, "--scan-name", scan, "--path", path])
+        self.args.extend(
+            ["--project-name", project, "--scan-name", scan, "--path", path]
+        )
         return self
 
     def download_reports(self, scope="scan"):

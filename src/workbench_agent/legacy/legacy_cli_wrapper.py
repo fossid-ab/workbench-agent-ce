@@ -82,9 +82,7 @@ class CliWrapper:
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
         except subprocess.CalledProcessError as e:
-            error_msg = (
-                f"CLI version check failed: {e.cmd} (exit code: {e.returncode})"
-            )
+            error_msg = f"CLI version check failed: {e.cmd} (exit code: {e.returncode})"
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
         except Exception as e:

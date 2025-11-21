@@ -266,7 +266,9 @@ class ResultsService:
         logger.debug(f"Retrieved {len(licenses)} licenses")
         return licenses
 
-    def get_identified_components(self, scan_code: str) -> List[Dict[str, Any]]:
+    def get_identified_components(
+        self, scan_code: str
+    ) -> List[Dict[str, Any]]:
         """
         Get identified components from KB scanning.
 
@@ -383,7 +385,9 @@ class ResultsService:
             >>> print(f"Pending: {metrics['pending_identification']}")
         """
         logger.debug(f"Fetching scan metrics for scan '{scan_code}'")
-        metrics: Dict[str, Any] = self._scans.get_scan_folder_metrics(scan_code)
+        metrics: Dict[str, Any] = self._scans.get_scan_folder_metrics(
+            scan_code
+        )
         logger.debug("Retrieved scan metrics")
         return metrics
 
@@ -412,7 +416,9 @@ class ResultsService:
             ...     f"{warnings['policy_warnings_total']}"
             ... )
         """
-        logger.debug(f"Fetching policy warnings counter for scan '{scan_code}'")
+        logger.debug(
+            f"Fetching policy warnings counter for scan '{scan_code}'"
+        )
         warnings: Dict[str, Any] = self._scans.get_policy_warnings_counter(
             scan_code
         )

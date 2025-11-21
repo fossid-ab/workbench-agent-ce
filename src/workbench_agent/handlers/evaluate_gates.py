@@ -60,7 +60,9 @@ def _extract_policy_count(policy_data: Any) -> int:
         int: The policy warning count
     """
     if not isinstance(policy_data, dict):
-        logger.warning(f"Unexpected policy warnings data format: {policy_data}")
+        logger.warning(
+            f"Unexpected policy warnings data format: {policy_data}"
+        )
         return 0
 
     # Handle nested data structure
@@ -240,7 +242,9 @@ def _check_vulnerabilities_gate(
     print("\nChecking for vulnerabilities...")
 
     try:
-        vulnerabilities = client.vulnerabilities.list_vulnerabilities(scan_code)
+        vulnerabilities = client.vulnerabilities.list_vulnerabilities(
+            scan_code
+        )
 
         # Count vulnerabilities by severity
         vuln_counts = {
@@ -474,7 +478,8 @@ def handle_evaluate_gates(
         scan_status = client.status_check.check_scan_status(scan_code)
         if scan_status.status == "RUNNING":
             print(
-                "KB Scan is still in progress, " "waiting for it to complete..."
+                "KB Scan is still in progress, "
+                "waiting for it to complete..."
             )
 
         client.waiting.wait_for_scan(

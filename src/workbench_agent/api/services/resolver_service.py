@@ -92,13 +92,15 @@ class ResolverService:
         logger.debug(f"Looking up project '{project_name}'...")
         projects = self.projects.list_projects()
         project = next(
-            (p for p in projects if p.get("project_name") == project_name), None
+            (p for p in projects if p.get("project_name") == project_name),
+            None,
         )
 
         if project:
             project_code = project["project_code"]
             logger.debug(
-                f"Found project '{project_name}' " f"with code '{project_code}'"
+                f"Found project '{project_name}' "
+                f"with code '{project_code}'"
             )
             return str(project_code)
 
@@ -679,7 +681,9 @@ class ResolverService:
             logger.info(
                 f"ID reuse: project '{project_name}' → '{project_code}'"
             )
-            print(f"✓ Successfully validated ID reuse project '{project_name}'")
+            print(
+                f"✓ Successfully validated ID reuse project '{project_name}'"
+            )
             return "specific_project", project_code
         except Exception as e:
             self._handle_reuse_failure("project", project_name, e)

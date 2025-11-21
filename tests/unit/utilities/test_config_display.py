@@ -349,7 +349,9 @@ def test_print_section_sorted_output(mock_print):
 
 
 @patch("builtins.print")
-def test_print_connection_info_success(mock_print, mock_params, mock_workbench_client):
+def test_print_connection_info_success(
+    mock_print, mock_params, mock_workbench_client
+):
     """Test printing connection info with successful server info retrieval."""
     mock_workbench_client.internal.get_config.return_value = {
         "server_name": "Test Server",
@@ -366,7 +368,9 @@ def test_print_connection_info_success(mock_print, mock_params, mock_workbench_c
     printed_lines = [call[0][0] for call in mock_print.call_args_list]
 
     # Check connection info header
-    assert any("🔗 Workbench Connection Info:" in line for line in printed_lines)
+    assert any(
+        "🔗 Workbench Connection Info:" in line for line in printed_lines
+    )
 
     # Check that URL is NOT displayed (security improvement)
     assert not any("https://api.example.com" in line for line in printed_lines)
@@ -388,7 +392,9 @@ def test_print_connection_info_success(mock_print, mock_params, mock_workbench_c
 
 
 @patch("builtins.print")
-def test_print_connection_info_empty_server_info(mock_print, mock_params, mock_workbench_client):
+def test_print_connection_info_empty_server_info(
+    mock_print, mock_params, mock_workbench_client
+):
     """Test connection info when server info is empty."""
     mock_workbench_client.internal.get_config.return_value = {}
 
@@ -397,28 +403,48 @@ def test_print_connection_info_empty_server_info(mock_print, mock_params, mock_w
     printed_lines = [call[0][0] for call in mock_print.call_args_list]
 
     # Should show Unknown for server info
-    assert any("Server Name" in line and "Unknown" in line for line in printed_lines)
-    assert any("Workbench Version" in line and "Unknown" in line for line in printed_lines)
-    assert any("⚠ Could not retrieve server info" in line for line in printed_lines)
+    assert any(
+        "Server Name" in line and "Unknown" in line for line in printed_lines
+    )
+    assert any(
+        "Workbench Version" in line and "Unknown" in line
+        for line in printed_lines
+    )
+    assert any(
+        "⚠ Could not retrieve server info" in line for line in printed_lines
+    )
 
 
 @patch("builtins.print")
-def test_print_connection_info_exception_handling(mock_print, mock_params, mock_workbench_client):
+def test_print_connection_info_exception_handling(
+    mock_print, mock_params, mock_workbench_client
+):
     """Test connection info when get_config raises an exception."""
-    mock_workbench_client.internal.get_config.side_effect = Exception("Connection failed")
+    mock_workbench_client.internal.get_config.side_effect = Exception(
+        "Connection failed"
+    )
 
     _print_connection_info(mock_params, mock_workbench_client)
 
     printed_lines = [call[0][0] for call in mock_print.call_args_list]
 
     # Should show Unknown and error status
-    assert any("Server Name" in line and "Unknown" in line for line in printed_lines)
-    assert any("Workbench Version" in line and "Unknown" in line for line in printed_lines)
-    assert any("⚠ Could not retrieve server info" in line for line in printed_lines)
+    assert any(
+        "Server Name" in line and "Unknown" in line for line in printed_lines
+    )
+    assert any(
+        "Workbench Version" in line and "Unknown" in line
+        for line in printed_lines
+    )
+    assert any(
+        "⚠ Could not retrieve server info" in line for line in printed_lines
+    )
 
 
 @patch("builtins.print")
-def test_print_connection_info_partial_server_info(mock_print, mock_params, mock_workbench_client):
+def test_print_connection_info_partial_server_info(
+    mock_print, mock_params, mock_workbench_client
+):
     """Test connection info with partial server info (missing some fields)."""
     mock_workbench_client.internal.get_config.return_value = {
         "version": "24.3.0",
@@ -430,7 +456,9 @@ def test_print_connection_info_partial_server_info(mock_print, mock_params, mock
     printed_lines = [call[0][0] for call in mock_print.call_args_list]
 
     # Should show Unknown for missing fields
-    assert any("Server Name" in line and "Unknown" in line for line in printed_lines)
+    assert any(
+        "Server Name" in line and "Unknown" in line for line in printed_lines
+    )
     assert any("24.3.0" in line for line in printed_lines)
 
 
@@ -438,7 +466,9 @@ def test_print_connection_info_partial_server_info(mock_print, mock_params, mock
 
 
 @patch("workbench_agent.utilities.config_display._print_section")
-def test_print_cli_parameters_calls_all_sections(mock_print_section, mock_params):
+def test_print_cli_parameters_calls_all_sections(
+    mock_print_section, mock_params
+):
     """Test that _print_cli_parameters calls all section print functions."""
     _print_cli_parameters(mock_params)
 
@@ -486,7 +516,11 @@ def test_print_cli_parameters_empty_params(mock_print_section, mocker):
 @patch("workbench_agent.utilities.config_display._print_connection_info")
 @patch("builtins.print")
 def test_print_configuration_full(
-    mock_print, mock_print_conn, mock_print_cli, mock_params, mock_workbench_client
+    mock_print,
+    mock_print_conn,
+    mock_print_cli,
+    mock_params,
+    mock_workbench_client,
 ):
     """Test print_configuration calls all sub-functions."""
     print_configuration(mock_params, mock_workbench_client)
@@ -494,7 +528,10 @@ def test_print_configuration_full(
     # Check header was printed
     assert mock_print.call_count >= 2
     printed_lines = [call[0][0] for call in mock_print.call_args_list]
-    assert any("--- Workbench Agent Configuration ---" in line for line in printed_lines)
+    assert any(
+        "--- Workbench Agent Configuration ---" in line
+        for line in printed_lines
+    )
     assert any("Command: scan" in line for line in printed_lines)
 
     # Check sub-functions were called
@@ -502,7 +539,10 @@ def test_print_configuration_full(
     mock_print_conn.assert_called_once_with(mock_params, mock_workbench_client)
 
     # Check footer
-    assert any("------------------------------------" in line for line in printed_lines)
+    assert any(
+        "------------------------------------" in line
+        for line in printed_lines
+    )
 
 
 @patch("workbench_agent.utilities.config_display._print_cli_parameters")
@@ -521,7 +561,9 @@ def test_print_configuration_different_command(
 
 
 @patch("builtins.print")
-def test_print_configuration_integration(mock_print, mock_params, mock_workbench_client):
+def test_print_configuration_integration(
+    mock_print, mock_params, mock_workbench_client
+):
     """Test print_configuration integration without mocking sub-functions."""
     mock_workbench_client.internal.get_config.return_value = {
         "server_name": "Integration Server",
@@ -532,12 +574,20 @@ def test_print_configuration_integration(mock_print, mock_params, mock_workbench
 
     # Verify header and footer
     printed_lines = [call[0][0] for call in mock_print.call_args_list]
-    assert any("--- Workbench Agent Configuration ---" in line for line in printed_lines)
+    assert any(
+        "--- Workbench Agent Configuration ---" in line
+        for line in printed_lines
+    )
     assert any("Command: scan" in line for line in printed_lines)
-    assert any("------------------------------------" in line for line in printed_lines)
+    assert any(
+        "------------------------------------" in line
+        for line in printed_lines
+    )
 
     # Verify connection info was printed
-    assert any("🔗 Workbench Connection Info:" in line for line in printed_lines)
+    assert any(
+        "🔗 Workbench Connection Info:" in line for line in printed_lines
+    )
 
     # Verify sections were printed
     assert any("⚙️  Agent Configuration:" in line for line in printed_lines)

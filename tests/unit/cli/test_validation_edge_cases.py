@@ -22,28 +22,40 @@ class TestValidationEdgeCases:
         # Test case for line 39 in validators.py
         args = Namespace(api_url=None, api_user="test", api_token="token")
 
-        with pytest.raises(ValidationError, match="API URL, user, and token must be provided"):
+        with pytest.raises(
+            ValidationError, match="API URL, user, and token must be provided"
+        ):
             _validate_api_credentials(args)
 
     def test_missing_api_user_raises_error(self):
         """Test that missing API user raises ValidationError."""
-        args = Namespace(api_url="https://test.com", api_user=None, api_token="token")
+        args = Namespace(
+            api_url="https://test.com", api_user=None, api_token="token"
+        )
 
-        with pytest.raises(ValidationError, match="API URL, user, and token must be provided"):
+        with pytest.raises(
+            ValidationError, match="API URL, user, and token must be provided"
+        ):
             _validate_api_credentials(args)
 
     def test_missing_api_token_raises_error(self):
         """Test that missing API token raises ValidationError."""
-        args = Namespace(api_url="https://test.com", api_user="test", api_token=None)
+        args = Namespace(
+            api_url="https://test.com", api_user="test", api_token=None
+        )
 
-        with pytest.raises(ValidationError, match="API URL, user, and token must be provided"):
+        with pytest.raises(
+            ValidationError, match="API URL, user, and token must be provided"
+        ):
             _validate_api_credentials(args)
 
     def test_missing_all_api_credentials_raises_error(self):
         """Test that missing all API credentials raises ValidationError."""
         args = Namespace(api_url=None, api_user=None, api_token=None)
 
-        with pytest.raises(ValidationError, match="API URL, user, and token must be provided"):
+        with pytest.raises(
+            ValidationError, match="API URL, user, and token must be provided"
+        ):
             _validate_api_credentials(args)
 
     def test_scan_command_missing_path_raises_error(self):
@@ -51,14 +63,18 @@ class TestValidationEdgeCases:
         # Test case for line 76 in validators.py
         args = Namespace(command="scan", path=None)
 
-        with pytest.raises(ValidationError, match="Path is required for scan command"):
+        with pytest.raises(
+            ValidationError, match="Path is required for scan command"
+        ):
             _validate_scan_commands(args)
 
     def test_blind_scan_command_missing_path_raises_error(self):
         """Test that blind-scan command without path raises ValidationError."""
         args = Namespace(command="blind-scan", path=None)
 
-        with pytest.raises(ValidationError, match="Path is required for blind-scan command"):
+        with pytest.raises(
+            ValidationError, match="Path is required for blind-scan command"
+        ):
             _validate_scan_commands(args)
 
     @patch("os.path.exists", return_value=False)
@@ -66,20 +82,28 @@ class TestValidationEdgeCases:
         """Test that scan command with non-existent path raises ValidationError."""
         args = Namespace(command="scan", path="/non/existent/path")
 
-        with pytest.raises(ValidationError, match="Path does not exist: /non/existent/path"):
+        with pytest.raises(
+            ValidationError, match="Path does not exist: /non/existent/path"
+        ):
             _validate_scan_commands(args)
 
     @patch("os.path.exists", return_value=False)
-    def test_blind_scan_command_nonexistent_path_raises_error(self, mock_exists):
+    def test_blind_scan_command_nonexistent_path_raises_error(
+        self, mock_exists
+    ):
         """Test that blind-scan command with non-existent path raises ValidationError."""
         args = Namespace(command="blind-scan", path="/non/existent/path")
 
-        with pytest.raises(ValidationError, match="Path does not exist: /non/existent/path"):
+        with pytest.raises(
+            ValidationError, match="Path does not exist: /non/existent/path"
+        ):
             _validate_scan_commands(args)
 
     def test_scan_git_command_no_path_validation(self):
         """Test that scan-git command doesn't require path validation."""
-        args = Namespace(command="scan-git", git_url="https://github.com/user/repo.git")
+        args = Namespace(
+            command="scan-git", git_url="https://github.com/user/repo.git"
+        )
 
         # Should not raise an exception
         _validate_scan_commands(args)
@@ -103,10 +127,16 @@ class TestValidationEdgeCases:
     def test_full_validation_with_missing_credentials(self):
         """Test full validation flow with missing credentials."""
         args = Namespace(
-            command="scan", api_url=None, api_user=None, api_token=None, path="/some/path"
+            command="scan",
+            api_url=None,
+            api_user=None,
+            api_token=None,
+            path="/some/path",
         )
 
-        with pytest.raises(ValidationError, match="API URL, user, and token must be provided"):
+        with pytest.raises(
+            ValidationError, match="API URL, user, and token must be provided"
+        ):
             validate_parsed_args(args)
 
     @patch("os.path.exists", return_value=False)
@@ -159,7 +189,10 @@ class TestValidationSpecialCases:
 
     def test_import_commands_validation_coverage(self):
         """Test that import commands go through validation."""
-        with patch("os.path.exists", return_value=True), patch("os.path.isfile", return_value=True):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isfile", return_value=True),
+        ):
             args = Namespace(
                 command="import-da",
                 api_url="https://test.com",

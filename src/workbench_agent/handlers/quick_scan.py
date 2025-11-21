@@ -24,7 +24,9 @@ def _format_scan_result(result: dict) -> str:
             return msg
         if match_type == "partial":
             remote_size = result.get("snippet", {}).get("remote_size")
-            msg = f"This file has {remote_size} hits to {artifact} by {author}."
+            msg = (
+                f"This file has {remote_size} hits to {artifact} by {author}."
+            )
 
             return msg
         return "Unknown match type."

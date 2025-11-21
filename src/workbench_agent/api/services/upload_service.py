@@ -126,7 +126,9 @@ class UploadService:
             name_b64 = base64.b64encode(upload_basename.encode()).decode(
                 "utf-8"
             )
-            scan_code_b64 = base64.b64encode(scan_code.encode()).decode("utf-8")
+            scan_code_b64 = base64.b64encode(scan_code.encode()).decode(
+                "utf-8"
+            )
 
             headers = {
                 "FOSSID-SCAN-CODE": scan_code_b64,

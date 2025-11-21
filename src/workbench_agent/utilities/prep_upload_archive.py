@@ -132,7 +132,9 @@ class UploadArchivePrep:
 
             # Generate archive name if not provided
             if archive_name is None:
-                source_basename = os.path.basename(os.path.abspath(source_path))
+                source_basename = os.path.basename(
+                    os.path.abspath(source_path)
+                )
                 archive_name = f"{source_basename}_upload.zip"
             elif not archive_name.endswith(".zip"):
                 archive_name = f"{archive_name}.zip"
@@ -143,7 +145,9 @@ class UploadArchivePrep:
             logger.debug(f"Source directory: {source_path}")
 
             # Parse gitignore patterns for intelligent exclusions
-            gitignore_patterns = UploadArchivePrep._parse_gitignore(source_path)
+            gitignore_patterns = UploadArchivePrep._parse_gitignore(
+                source_path
+            )
             has_gitignore = len(gitignore_patterns) > 0
 
             files_added = 0
@@ -238,7 +242,9 @@ class UploadArchivePrep:
                             files_added += 1
 
                             if files_added % 100 == 0:  # Progress logging
-                                logger.debug(f"Archived {files_added} files...")
+                                logger.debug(
+                                    f"Archived {files_added} files..."
+                                )
 
                         except Exception as e:
                             files_excluded += 1

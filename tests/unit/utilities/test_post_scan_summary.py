@@ -218,15 +218,23 @@ class TestFetchResults:
     def test_fetch_license_results(self, mock_workbench, mock_params):
         """Test fetching license results."""
         mock_params.show_licenses = True
-        mock_workbench.results.get_dependencies.return_value = [SAMPLE_DEPENDENCY_DATA]
-        mock_workbench.results.get_identified_licenses.return_value = [SAMPLE_LICENSE_DATA]
+        mock_workbench.results.get_dependencies.return_value = [
+            SAMPLE_DEPENDENCY_DATA
+        ]
+        mock_workbench.results.get_identified_licenses.return_value = [
+            SAMPLE_LICENSE_DATA
+        ]
 
         result = fetch_results(mock_workbench, mock_params, TEST_SCAN_CODE)
 
         assert "dependency_analysis" in result
         assert "kb_licenses" in result
-        mock_workbench.results.get_dependencies.assert_called_once_with(TEST_SCAN_CODE)
-        mock_workbench.results.get_identified_licenses.assert_called_once_with(TEST_SCAN_CODE)
+        mock_workbench.results.get_dependencies.assert_called_once_with(
+            TEST_SCAN_CODE
+        )
+        mock_workbench.results.get_identified_licenses.assert_called_once_with(
+            TEST_SCAN_CODE
+        )
 
     def test_fetch_vulnerabilities(self, mock_workbench, mock_params):
         """Test fetching vulnerability results."""
@@ -238,7 +246,9 @@ class TestFetchResults:
         result = fetch_results(mock_workbench, mock_params, TEST_SCAN_CODE)
 
         assert "vulnerabilities" in result
-        mock_workbench.results.get_vulnerabilities.assert_called_once_with(TEST_SCAN_CODE)
+        mock_workbench.results.get_vulnerabilities.assert_called_once_with(
+            TEST_SCAN_CODE
+        )
 
     def test_api_error_handling(self, mock_workbench, mock_params):
         """Test graceful handling of API errors during result fetching."""
@@ -246,7 +256,9 @@ class TestFetchResults:
         mock_workbench.results.get_dependencies.side_effect = ApiError(
             "Service unavailable"
         )
-        mock_workbench.results.get_identified_licenses.return_value = [SAMPLE_LICENSE_DATA]
+        mock_workbench.results.get_identified_licenses.return_value = [
+            SAMPLE_LICENSE_DATA
+        ]
 
         # Should not raise, should return partial results
         result = fetch_results(mock_workbench, mock_params, TEST_SCAN_CODE)
@@ -289,13 +301,17 @@ class TestFetchDisplaySaveResults:
 
         fetch_display_save_results(mock_workbench, mock_params, TEST_SCAN_CODE)
 
-        mock_fetch.assert_called_once_with(mock_workbench, mock_params, TEST_SCAN_CODE)
+        mock_fetch.assert_called_once_with(
+            mock_workbench, mock_params, TEST_SCAN_CODE
+        )
         mock_display.assert_called_once_with({"test": "data"}, mock_params)
         mock_save.assert_called_once_with("output.json", {"test": "data"})
 
     @patch("workbench_agent.utilities.post_scan_summary.fetch_results")
     @patch("workbench_agent.utilities.post_scan_summary.display_results")
-    def test_no_save_specified(self, mock_display, mock_fetch, mock_workbench, mock_params):
+    def test_no_save_specified(
+        self, mock_display, mock_fetch, mock_workbench, mock_params
+    ):
         """Test fetch and display without saving."""
         mock_params.result_save_path = None
         mock_params.show_licenses = True
@@ -304,7 +320,9 @@ class TestFetchDisplaySaveResults:
 
         fetch_display_save_results(mock_workbench, mock_params, TEST_SCAN_CODE)
 
-        mock_fetch.assert_called_once_with(mock_workbench, mock_params, TEST_SCAN_CODE)
+        mock_fetch.assert_called_once_with(
+            mock_workbench, mock_params, TEST_SCAN_CODE
+        )
         mock_display.assert_called_once_with({"test": "data"}, mock_params)
 
 
@@ -341,4 +359,3 @@ class TestPrintOperationSummary:
 
         # Should complete without errors
         print_operation_summary(mock_params, False)
-
