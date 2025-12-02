@@ -630,3 +630,382 @@ def print_operation_summary(
             print("  - Dependency Analysis: No")
 
     print("------------------------------------")
+
+
+def print_scan_summary(
+    workbench: "WorkbenchClient",
+    params: argparse.Namespace,
+    scan_code: str,
+    da_completed: bool,
+    durations: Optional[Dict[str, float]] = None,
+):
+    """
+    New comprehensive post-scan summary for scan operations (scan, scan-git, blind-scan).
+    
+    Shows operation details, identification metrics, components/licenses, and security risks.
+    This function fetches all required data from the API and displays it in a structured format.
+    
+    Args:
+        workbench: WorkbenchClient instance
+        params: Command line parameters
+        scan_code: Scan code to fetch results from
+        da_completed: Whether dependency analysis completed successfully
+        durations: Dictionary containing operation durations in seconds
+    """
+    from workbench_agent.api.exceptions import ApiError, NetworkError
+    
+    durations = durations or {}
+    
+    print("\n--- Post-Scan Summary ---")
+    
+    # Fetch all required data (with error handling)
+    scan_metrics = None
+    kb_components = None
+    kb_licenses = None
+    dependencies = None
+    policy_warnings = None
+    vulnerabilities = None
+    
+    # Fetch scan metrics
+    try:
+        scan_metrics = workbench.results.get_scan_metrics(scan_code)
+    except (ApiError, NetworkError) as e:
+        logger.debug(f"Could not fetch scan metrics: {e}")
+    
+    # Fetch KB components
+    try:
+        kb_components = workbench.results.get_identified_components(scan_code)
+    except (ApiError, NetworkError) as e:
+        logger.debug(f"Could not fetch KB components: {e}")
+    
+    # Fetch KB licenses
+    try:
+        kb_licenses = workbench.results.get_identified_licenses(scan_code)
+    except (ApiError, NetworkError) as e:
+        logger.debug(f"Could not fetch KB licenses: {e}")
+    
+    # Fetch dependencies (if DA was performed)
+    if da_completed:
+        try:
+            dependencies = workbench.results.get_dependencies(scan_code)
+        except (ApiError, NetworkError) as e:
+            logger.debug(f"Could not fetch dependencies: {e}")
+    
+    # Fetch policy warnings
+    try:
+        policy_warnings = workbench.results.get_policy_warnings(scan_code)
+    except (ApiError, NetworkError) as e:
+        logger.debug(f"Could not fetch policy warnings: {e}")
+    
+    # Fetch vulnerabilities
+    try:
+        vulnerabilities = workbench.results.get_vulnerabilities(scan_code)
+    except (ApiError, NetworkError) as e:
+        logger.debug(f"Could not fetch vulnerabilities: {e}")
+    
+    # --- Operation Summary ---
+    print("\nOperation Summary:")
+    
+    # Determine what scans were actually performed
+    scan_operations = determine_scans_to_run(params)
+    kb_scan_performed = scan_operations.get("run_kb_scan", False)
+    da_requested = scan_operations.get("run_dependency_analysis", False)
+    
+    print(f"  - Signature Scanning: {'Yes' if kb_scan_performed else 'No'}")
+    print(
+        f"  - License Extraction: {'Yes' if getattr(params, 'autoid_file_licenses', False) else 'No'}"
+    )
+    print(
+        f"  - Copyright Extraction: {'Yes' if getattr(params, 'autoid_file_copyrights', False) else 'No'}"
+    )
+    
+    if da_completed:
+        print("  - Dependency Analysis: Yes")
+    elif da_requested and not da_completed:
+        print("  - Dependency Analysis: Requested but failed/incomplete")
+    else:
+        print("  - Dependency Analysis: No")
+    
+    # --- Identification Summary ---
+    print("\nIdentification Summary:")
+    
+    if scan_metrics:
+        total_files = scan_metrics.get("total", "N/A")
+        identified_files = scan_metrics.get("identified_files", "N/A")
+        pending_files = scan_metrics.get("pending_identification", "N/A")
+        no_match_files = scan_metrics.get("without_matches", "N/A")
+        
+        print(f"  - Files Scanned: {total_files}")
+        print(f"  - Files Identified: {identified_files}")
+        
+        # Identification Reuse details
+        id_reuse_enabled = any(
+            [
+                getattr(params, "reuse_any_identification", False),
+                getattr(params, "reuse_my_identifications", False),
+                getattr(params, "reuse_project_ids", None) is not None,
+                getattr(params, "reuse_scan_ids", None) is not None,
+            ]
+        )
+        
+        if id_reuse_enabled:
+            reuse_type = "N/A"
+            if getattr(params, "reuse_any_identification", False):
+                reuse_type = "any"
+            elif getattr(params, "reuse_my_identifications", False):
+                reuse_type = "my"
+            elif getattr(params, "reuse_project_ids", None):
+                reuse_type = f"project '{params.reuse_project_ids}'"
+            elif getattr(params, "reuse_scan_ids", None):
+                reuse_type = f"scan '{params.reuse_scan_ids}'"
+            print(f"    - Identification Reuse: {reuse_type}")
+        else:
+            print("    - Identification Reuse: No")
+        
+        print(
+            f"    - Auto-Resolve Pending IDs: {'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
+        )
+        print(f"  - Files Pending ID: {pending_files}")
+        print(f"  - Files with No Matches: {no_match_files}")
+    else:
+        print("  - Files Scanned: N/A (could not fetch metrics)")
+        print("  - Files Identified: N/A")
+        print("  - Files Pending ID: N/A")
+        print("  - Files with No Matches: N/A")
+    
+    # --- Summary of Components and Licenses ---
+    print("\nSummary of Components and Licenses:")
+    
+    # Count components identified
+    num_components = len(kb_components) if kb_components else 0
+    print(f"  - Number of Components Identified: {num_components}")
+    
+    # Count unique licenses in identified components
+    unique_kb_licenses = set()
+    if kb_licenses:
+        for lic in kb_licenses:
+            identifier = lic.get("identifier")
+            if identifier:
+                unique_kb_licenses.add(identifier)
+    print(f"  - Unique Licenses in Identified Components: {len(unique_kb_licenses)}")
+    
+    # Count dependencies
+    num_dependencies = len(dependencies) if dependencies else 0
+    print(f"  - Number of Dependencies: {num_dependencies}")
+    
+    # Count unique licenses in dependencies
+    unique_da_licenses = set()
+    if dependencies:
+        for dep in dependencies:
+            license_id = dep.get("license_identifier")
+            if license_id and license_id != "N/A":
+                unique_da_licenses.add(license_id)
+    print(f"  - Unique Licenses in Dependencies: {len(unique_da_licenses)}")
+    
+    # --- Summary of Security and License Risk ---
+    print("\nSummary of Security and License Risk:")
+    
+    # Policy warnings count
+    if policy_warnings is not None:
+        total_warnings = int(policy_warnings.get("policy_warnings_total", 0))
+        print(f"  - Number of Policy Warnings: {total_warnings}")
+    else:
+        print("  - Number of Policy Warnings: N/A (could not fetch)")
+    
+    # Vulnerable components count
+    if vulnerabilities:
+        unique_vulnerable_components = set()
+        for vuln in vulnerabilities:
+            comp_name = vuln.get("component_name", "Unknown")
+            comp_version = vuln.get("component_version", "Unknown")
+            unique_vulnerable_components.add(f"{comp_name}:{comp_version}")
+        num_vulnerable_components = len(unique_vulnerable_components)
+        print(f"  - Number of Vulnerable Components: {num_vulnerable_components}")
+    else:
+        print("  - Number of Vulnerable Components: 0")
+    
+    print("------------------------------------")
+
+
+def print_import_summary(
+    params: argparse.Namespace,
+    import_completed: bool,
+    durations: Optional[Dict[str, float]] = None,
+):
+    """
+    Summary for import operations (import-da, import-sbom).
+    
+    Keeps the old summary format as requested. This function displays
+    operation details for import commands without fetching additional scan data.
+    
+    Args:
+        params: Command line parameters
+        import_completed: Whether the import completed successfully
+        durations: Dictionary containing operation durations in seconds
+    """
+    durations = durations or {}
+    
+    print("\n--- Operation Summary ---")
+    
+    print("Workbench Agent Operation Details:")
+    if params.command == "import-da":
+        print("  - Method: Dependency Analysis Import")
+        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
+    elif params.command == "import-sbom":
+        print("  - Method: SBOM Import")
+        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
+    else:
+        print(f"  - Method: Unknown ({params.command})")
+    
+    # Show import completion status
+    if params.command == "import-da":
+        if import_completed:
+            da_duration_str = (
+                format_duration(durations.get("dependency_analysis", 0))
+                if durations.get("dependency_analysis")
+                else "N/A"
+            )
+            print(f"\nImport Status: Completed (Duration: {da_duration_str})")
+        else:
+            print("\nImport Status: Failed or incomplete")
+    elif params.command == "import-sbom":
+        if import_completed:
+            sbom_duration_str = (
+                format_duration(durations.get("sbom_import", 0))
+                if durations.get("sbom_import")
+                else "N/A"
+            )
+            print(f"\nImport Status: Completed (Duration: {sbom_duration_str})")
+        else:
+            print("\nImport Status: Failed or incomplete")
+    
+    print("------------------------------------")
+
+
+def print_scan_summary_legacy(
+    params: argparse.Namespace,
+    da_completed: bool,
+    durations: Optional[Dict[str, float]] = None,
+):
+    """
+    Legacy summary format for scan operations (current behavior).
+    
+    This function contains the current print_operation_summary logic
+    for scan commands. Used when --show-summary is NOT provided.
+    
+    Args:
+        params: Command line parameters
+        da_completed: Whether dependency analysis completed successfully
+        durations: Dictionary containing operation durations in seconds
+    """
+    durations = durations or {}
+    
+    print("\n--- Operation Summary ---")
+    
+    print("Workbench Agent Operation Details:")
+    if params.command == "scan":
+        print("  - Method: Code Upload (using --path)")
+        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
+        print(
+            f"  - Recursive Archive Extraction: {getattr(params, 'recursively_extract_archives', 'N/A')}"
+        )
+        print(
+            f"  - JAR File Extraction: {getattr(params, 'jar_file_extraction', 'N/A')}"
+        )
+    elif params.command == "scan-git":
+        print("  - Method: Git Scan")
+        print(
+            f"  - Git Repository URL: {getattr(params, 'git_url', 'N/A')}"
+        )
+        if getattr(params, "git_tag", None):
+            print(f"  - Git Tag: {params.git_tag}")
+        elif getattr(params, "git_branch", None):
+            print(f"  - Git Branch: {params.git_branch}")
+        elif getattr(params, "git_commit", None):
+            print(f"  - Git Commit: {params.git_commit}")
+        else:
+            print("  - Git Branch/Tag/Commit: Not Specified")
+        if getattr(params, "git_depth", None) is not None:
+            print(f"  - Git Clone Depth: {params.git_depth}")
+    elif params.command == "blind-scan":
+        print("  - Method: Blind Scan (hash-based scanning)")
+        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
+    
+    print("\nScan Parameters:")
+    print(
+        f"  - Auto-ID File Licenses: {'Yes' if getattr(params, 'autoid_file_licenses', False) else 'No'}"
+    )
+    print(
+        f"  - Auto-ID File Copyrights: {'Yes' if getattr(params, 'autoid_file_copyrights', False) else 'No'}"
+    )
+    print(
+        f"  - Auto-ID Pending IDs: {'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
+    )
+    print(
+        f"  - Delta Scan: {'Yes' if getattr(params, 'delta_scan', False) else 'No'}"
+    )
+    
+    # Check if any ID reuse option is enabled
+    id_reuse_enabled = any(
+        [
+            getattr(params, "reuse_any_identification", False),
+            getattr(params, "reuse_my_identifications", False),
+            getattr(params, "reuse_project_ids", None) is not None,
+            getattr(params, "reuse_scan_ids", None) is not None,
+        ]
+    )
+    print(
+        f"  - Identification Reuse: {'Yes' if id_reuse_enabled else 'No'}"
+    )
+    
+    # Show ID reuse details if enabled
+    if id_reuse_enabled:
+        if getattr(params, "reuse_any_identification", False):
+            print("    - Reuse Type: Any identification")
+        elif getattr(params, "reuse_my_identifications", False):
+            print("    - Reuse Type: My identifications only")
+        elif getattr(params, "reuse_project_ids", None):
+            print(
+                f"    - Reuse Type: Project "
+                f"'{params.reuse_project_ids}'"
+            )
+        elif getattr(params, "reuse_scan_ids", None):
+            print(f"    - Reuse Type: Scan '{params.reuse_scan_ids}'")
+    
+    print("\nAnalysis Performed:")
+    
+    # Determine what scans were actually performed
+    scan_operations = determine_scans_to_run(params)
+    kb_scan_performed = scan_operations.get("run_kb_scan", False)
+    da_requested = scan_operations.get(
+        "run_dependency_analysis", False
+    )
+    
+    # Add durations to output only for KB scan and Dependency Analysis
+    if kb_scan_performed:
+        kb_duration_str = (
+            format_duration(durations.get("kb_scan", 0))
+            if durations.get("kb_scan")
+            else "N/A"
+        )
+        print(f"  - Signature Scan: Yes (Duration: {kb_duration_str})")
+    else:
+        print("  - Signature Scan: No")
+    
+    if da_completed:
+        da_duration_str = (
+            format_duration(durations.get("dependency_analysis", 0))
+            if durations.get("dependency_analysis")
+            else "N/A"
+        )
+        print(
+            f"  - Dependency Analysis: Yes (Duration: {da_duration_str})"
+        )
+    elif da_requested and not da_completed:
+        print(
+            "  - Dependency Analysis: Requested but failed/incomplete"
+        )
+    else:
+        print("  - Dependency Analysis: No")
+    
+    print("------------------------------------")

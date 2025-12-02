@@ -317,7 +317,7 @@ def handle_import_sbom(
                 scan_info = client.scans.get_information(scan_code)
                 scan_id = scan_info.get("id")
                 if scan_id:
-                    link = client.results.link_to_scan(int(scan_id))
+                    link = client.results.workbench_links(int(scan_id)).scan
                     if link.get("url"):
                         print(f"\n🔗 {link['message']}: " f"{link['url']}")
             except Exception as e:

@@ -23,11 +23,11 @@ class WorkbenchLinks:
     """
     Helper class providing property-based access to Workbench UI links.
 
-    This class is returned by ResultsService.links() and provides
+    This class is returned by ResultsService.workbench_links() and provides
     convenient property access to different Workbench views.
 
     Example:
-        >>> links = results_service.links(scan_id=123)
+        >>> links = results_service.workbench_links(scan_id=123)
         >>> print(links.pending['url'])
         >>> print(links.scan['message'])
     """
@@ -139,7 +139,7 @@ class ResultsService:
 
     # ===== WORKBENCH UI LINKS =====
 
-    def links(self, scan_id: int) -> WorkbenchLinks:
+    def workbench_links(self, scan_id: int) -> WorkbenchLinks:
         """
         Get a WorkbenchLinks object for property-based link access.
 
@@ -150,84 +150,12 @@ class ResultsService:
             WorkbenchLinks instance with properties for different views
 
         Example:
-            >>> links = results_service.links(scan_id=123)
+            >>> links = results_service.workbench_links(scan_id=123)
             >>> print(links.pending['url'])
             >>> print(links.scan['message'])
         """
         api_url = self._scans._api.api_url
         return WorkbenchLinks(api_url, scan_id)
-
-    def link_to_scan(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to the main scan view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).scan
-
-    def link_to_pending(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to pending items view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).pending
-
-    def link_to_identified(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to identified components view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).identified
-
-    def link_to_dependencies(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to dependencies view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).dependencies
-
-    def link_to_policy(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to policy warnings view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).policy
-
-    def link_to_vulnerabilities(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to vulnerable components view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).vulnerabilities
 
     # ===== PUBLIC API - INDIVIDUAL RESULT FETCHERS =====
 

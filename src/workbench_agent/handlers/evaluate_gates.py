@@ -530,7 +530,7 @@ def handle_evaluate_gates(
     # Generate all Workbench links once for use throughout the handler
     workbench_links = None
     try:
-        workbench_links = client.results.links(scan_id)
+        workbench_links = client.results.workbench_links(scan_id)
     except Exception as e:
         logger.debug(f"Failed to generate Workbench links: {e}")
 
