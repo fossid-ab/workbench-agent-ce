@@ -11,8 +11,8 @@ from workbench_agent.api.exceptions import (
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
-    fetch_display_save_results,
-    print_operation_summary,
+    print_scan_summary,
+    print_scan_summary_legacy,
 )
 from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 
@@ -217,7 +217,10 @@ def handle_scan_git(
                     "You can check the status later using the "
                     "'show-results' command."
                 )
-                print_operation_summary(params, True, durations)
+                if getattr(params, "show_summary", False):
+                    print_scan_summary(client, params, scan_code, True, durations)
+                else:
+                    print_scan_summary_legacy(params, True, durations)
                 return True
 
             # Wait for dependency analysis to complete
@@ -239,10 +242,10 @@ def handle_scan_git(
                 scan_completed = True
 
                 # Print operation summary
-                print_operation_summary(params, da_completed, durations)
-
-                # Show results
-                fetch_display_save_results(client, params, scan_code)
+                if getattr(params, "show_summary", False):
+                    print_scan_summary(client, params, scan_code, da_completed, durations)
+                else:
+                    print_scan_summary_legacy(params, da_completed, durations)
 
                 return True
 
@@ -320,7 +323,10 @@ def handle_scan_git(
                     "\nExiting without waiting for completion "
                     "(--no-wait mode)."
                 )
-                print_operation_summary(params, True, durations)
+                if getattr(params, "show_summary", False):
+                    print_scan_summary(client, params, scan_code, True, durations)
+                else:
+                    print_scan_summary_legacy(params, True, durations)
                 return True
             else:
                 # Determine which processes to wait for
@@ -399,7 +405,10 @@ def handle_scan_git(
     # Process completed operations
     if scan_completed:
         # Print operation summary
-        print_operation_summary(params, da_completed, durations)
+        if getattr(params, "show_summary", False):
+            print_scan_summary(client, params, scan_code, da_completed, durations)
+        else:
+            print_scan_summary_legacy(params, da_completed, durations)
 
         # Check for pending files (informational)
         try:
@@ -414,14 +423,5 @@ def handle_scan_git(
         except Exception as e:
             logger.warning(f"Could not retrieve pending file count: {e}")
             print(f"\nWarning: Could not retrieve pending file count: {e}")
-
-    # Fetch and display results if scan completed successfully
-    if scan_completed or da_completed:
-        fetch_display_save_results(client, params, scan_code)
-    else:
-        print(
-            "\nSkipping result fetching since scan did not "
-            "complete successfully."
-        )
 
     return scan_completed or da_completed

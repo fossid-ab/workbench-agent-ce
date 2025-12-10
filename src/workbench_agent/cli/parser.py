@@ -77,7 +77,6 @@ For more information on a specific command, use:
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],
             parent_parsers["monitoring"],
-            parent_parsers["result_options"],
         ],
         epilog="""
 Examples:
@@ -116,7 +115,6 @@ Examples:
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],
             parent_parsers["monitoring"],
-            parent_parsers["result_options"],
         ],
         epilog="""
 Examples:
@@ -419,7 +417,6 @@ Examples:
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],
             parent_parsers["monitoring"],
-            parent_parsers["result_options"],
         ],
         epilog="""
 Examples:
@@ -436,10 +433,10 @@ Examples:
       --git-url https://github.com/owner/repo.git \\
       --git-commit ffac537e6cbbf934b08745a378932722df287a53
 
-  # Scan with dependency analysis
+  # Scan with dependency analysis and summary
   workbench-agent scan-git --project-name "GitProject" --scan-name "main-branch" \\
       --git-url https://github.com/owner/repo.git --git-branch main \\
-      --run-dependency-analysis --show-dependencies
+      --run-dependency-analysis --show-summary
 """,
     )
 

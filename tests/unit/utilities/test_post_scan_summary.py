@@ -78,7 +78,7 @@ def mock_workbench(mocker):
 
     # Data retrieval used by fetch_results (via results service)
     workbench.results.get_dependencies = mocker.MagicMock()
-    workbench.results.get_identified_licenses = mocker.MagicMock()
+    workbench.results.get_unique_identified_licenses = mocker.MagicMock()
     workbench.results.get_identified_components = mocker.MagicMock()
     workbench.results.get_scan_metrics = mocker.MagicMock()
     workbench.results.get_policy_warnings = mocker.MagicMock()
@@ -221,7 +221,7 @@ class TestFetchResults:
         mock_workbench.results.get_dependencies.return_value = [
             SAMPLE_DEPENDENCY_DATA
         ]
-        mock_workbench.results.get_identified_licenses.return_value = [
+        mock_workbench.results.get_unique_identified_licenses.return_value = [
             SAMPLE_LICENSE_DATA
         ]
 
@@ -232,7 +232,7 @@ class TestFetchResults:
         mock_workbench.results.get_dependencies.assert_called_once_with(
             TEST_SCAN_CODE
         )
-        mock_workbench.results.get_identified_licenses.assert_called_once_with(
+        mock_workbench.results.get_unique_identified_licenses.assert_called_once_with(
             TEST_SCAN_CODE
         )
 
@@ -256,7 +256,7 @@ class TestFetchResults:
         mock_workbench.results.get_dependencies.side_effect = ApiError(
             "Service unavailable"
         )
-        mock_workbench.results.get_identified_licenses.return_value = [
+        mock_workbench.results.get_unique_identified_licenses.return_value = [
             SAMPLE_LICENSE_DATA
         ]
 

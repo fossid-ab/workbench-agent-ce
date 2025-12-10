@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
-    fetch_display_save_results,
-    print_operation_summary,
+    print_scan_summary,
+    print_scan_summary_legacy,
 )
 from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 
@@ -229,21 +229,11 @@ def handle_scan(
             )
             da_completed = True
 
-            # Show scan summary and operation details
-            print_operation_summary(params, da_completed, durations)
-
-            # Show scan results if any were requested
-            if any(
-                [
-                    params.show_licenses,
-                    params.show_components,
-                    params.show_dependencies,
-                    params.show_scan_metrics,
-                    params.show_policy_warnings,
-                    params.show_vulnerabilities,
-                ]
-            ):
-                fetch_display_save_results(client, params, scan_code)
+            # Show scan summary
+            if getattr(params, "show_summary", False):
+                print_scan_summary(client, params, scan_code, da_completed, durations)
+            else:
+                print_scan_summary_legacy(params, da_completed, durations)
 
             return True
 
@@ -373,21 +363,11 @@ def handle_scan(
                 )
                 da_completed = False
 
-        # Show scan summary and operation details
-        print_operation_summary(params, da_completed, durations)
-
-        # Show scan results if any were requested
-        if any(
-            [
-                params.show_licenses,
-                params.show_components,
-                params.show_dependencies,
-                params.show_scan_metrics,
-                params.show_policy_warnings,
-                params.show_vulnerabilities,
-            ]
-        ):
-            fetch_display_save_results(client, params, scan_code)
+        # Show scan summary
+        if getattr(params, "show_summary", False):
+            print_scan_summary(client, params, scan_code, da_completed, durations)
+        else:
+            print_scan_summary_legacy(params, da_completed, durations)
 
         return True
 

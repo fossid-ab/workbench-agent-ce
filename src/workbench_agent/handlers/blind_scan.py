@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
-    fetch_display_save_results,
     format_duration,
-    print_operation_summary,
+    print_scan_summary,
+    print_scan_summary_legacy,
 )
 from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 from workbench_agent.utilities.toolbox_wrapper import ToolboxWrapper
@@ -387,20 +387,10 @@ def handle_blind_scan(
                     da_completed = False
 
         # Print standardized operation summary
-        print_operation_summary(params, da_completed, durations)
-
-        # ===== STEP 7: Show results if requested =====
-        if any(
-            [
-                params.show_licenses,
-                params.show_components,
-                params.show_dependencies,
-                params.show_scan_metrics,
-                params.show_policy_warnings,
-                params.show_vulnerabilities,
-            ]
-        ):
-            fetch_display_save_results(client, params, scan_code)
+        if getattr(params, "show_summary", False):
+            print_scan_summary(client, params, scan_code, da_completed, durations)
+        else:
+            print_scan_summary_legacy(params, da_completed, durations)
 
         print("\n✅ Blind Scan completed successfully!")
 

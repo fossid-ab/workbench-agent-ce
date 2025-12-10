@@ -117,7 +117,7 @@ class ResultsService:
         >>> results_service = ResultsService(scans_client, vulns_client)
         >>>
         >>> # Fetch specific result types
-        >>> licenses = results_service.get_identified_licenses(scan_code)
+        >>> licenses = results_service.get_unique_identified_licenses(scan_code)
         >>> vulns = results_service.get_vulnerabilities(scan_code)
         >>>
         >>> # Fetch all results based on params
@@ -159,11 +159,97 @@ class ResultsService:
 
     # ===== PUBLIC API - INDIVIDUAL RESULT FETCHERS =====
 
+    def get_unique_identified_licenses(
+        self, scan_code: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Get unique identified licenses from KB scanning.
+
+        Returns only unique license identifiers and names, without file paths.
+        This is the recommended method for most use cases where you need a
+        summary of licenses found in the scan.
+
+        Args:
+            scan_code: Code of the scan to fetch licenses from
+
+        Returns:
+            List of unique license dictionaries with identifier and name:
+            [{"identifier": str, "name": str}, ...]
+
+        Raises:
+            ApiError: If there are API issues
+            NetworkError: If there are network issues
+            ScanNotFoundError: If the scan doesn't exist
+
+        Example:
+            >>> licenses = results_service.get_unique_identified_licenses(
+            ...     "SCAN123"
+            ... )
+            >>> for lic in licenses:
+            ...     print(f"{lic['identifier']}: {lic['name']}")
+        """
+        logger.debug(
+            f"Fetching unique identified licenses for scan '{scan_code}'"
+        )
+        licenses: List[Dict[str, Any]] = (
+            self._scans.get_scan_identified_licenses(
+                scan_code, unique=True
+            )
+        )
+        logger.debug(f"Retrieved {len(licenses)} unique licenses")
+        return licenses
+
+    def get_all_identified_licenses(
+        self, scan_code: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all identified licenses from KB scanning with file paths.
+
+        Returns all license occurrences including file paths where each license
+        was found. This is useful when you need to know which files contain
+        specific licenses.
+
+        Args:
+            scan_code: Code of the scan to fetch licenses from
+
+        Returns:
+            List of license dictionaries with identifier, name, and local_path:
+            [{"identifier": str, "name": str, "local_path": str}, ...]
+
+        Raises:
+            ApiError: If there are API issues
+            NetworkError: If there are network issues
+            ScanNotFoundError: If the scan doesn't exist
+
+        Example:
+            >>> licenses = results_service.get_all_identified_licenses(
+            ...     "SCAN123"
+            ... )
+            >>> for lic in licenses:
+            ...     print(f"{lic['identifier']} in {lic['local_path']}")
+        """
+        logger.debug(
+            f"Fetching all identified licenses for scan '{scan_code}'"
+        )
+        licenses: List[Dict[str, Any]] = (
+            self._scans.get_scan_identified_licenses(
+                scan_code, unique=False
+            )
+        )
+        logger.debug(f"Retrieved {len(licenses)} license occurrences")
+        return licenses
+
     def get_identified_licenses(
         self, scan_code: str, unique: bool = True
     ) -> List[Dict[str, Any]]:
         """
         Get identified licenses from KB scanning.
+
+        .. deprecated:: Use get_unique_identified_licenses() or
+                        get_all_identified_licenses() instead.
+
+        This method is kept for backward compatibility but will be removed
+        in a future version. Use the more explicit method names instead.
 
         Args:
             scan_code: Code of the scan to fetch licenses from
@@ -176,25 +262,11 @@ class ResultsService:
             ApiError: If there are API issues
             NetworkError: If there are network issues
             ScanNotFoundError: If the scan doesn't exist
-
-        Example:
-            >>> licenses = results_service.get_identified_licenses(
-            ...     "SCAN123"
-            ... )
-            >>> for lic in licenses:
-            ...     print(f"{lic['identifier']}: {lic['name']}")
         """
-        logger.debug(
-            f"Fetching identified licenses for scan '{scan_code}' "
-            f"(unique={unique})"
-        )
-        licenses: List[Dict[str, Any]] = (
-            self._scans.get_scan_identified_licenses(
-                scan_code, unique=unique
-            )
-        )
-        logger.debug(f"Retrieved {len(licenses)} licenses")
-        return licenses
+        if unique:
+            return self.get_unique_identified_licenses(scan_code)
+        else:
+            return self.get_all_identified_licenses(scan_code)
 
     def get_identified_components(
         self, scan_code: str
@@ -462,7 +534,7 @@ class ResultsService:
         # Fetch KB licenses
         if should_fetch_licenses:
             try:
-                kb_licenses = self.get_identified_licenses(scan_code)
+                kb_licenses = self.get_unique_identified_licenses(scan_code)
                 if kb_licenses:
                     # Sort by identifier for consistent display
                     collected_results["kb_licenses"] = sorted(

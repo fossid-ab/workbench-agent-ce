@@ -236,6 +236,15 @@ def create_scan_operations_parser():
         action="store_true",
         default=False,
     )
+    scan_ops_args.add_argument(
+        "--show-summary",
+        help=(
+            "Show post-scan summary with operation details, identification "
+            "metrics, components/licenses, and security risks."
+        ),
+        action="store_true",
+        default=False,
+    )
     return scan_operations_parent
 
 

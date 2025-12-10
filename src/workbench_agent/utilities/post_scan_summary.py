@@ -84,7 +84,7 @@ def fetch_results(
     # Fetch KB licenses
     if should_fetch_licenses:
         try:
-            kb_licenses = workbench.results.get_identified_licenses(
+            kb_licenses = workbench.results.get_unique_identified_licenses(
                 scan_code
             )
             if kb_licenses:
@@ -680,7 +680,7 @@ def print_scan_summary(
     
     # Fetch KB licenses
     try:
-        kb_licenses = workbench.results.get_identified_licenses(scan_code)
+        kb_licenses = workbench.results.get_unique_identified_licenses(scan_code)
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch KB licenses: {e}")
     
@@ -735,8 +735,8 @@ def print_scan_summary(
         pending_files = scan_metrics.get("pending_identification", "N/A")
         no_match_files = scan_metrics.get("without_matches", "N/A")
         
-        print(f"  - Files Scanned: {total_files}")
-        print(f"  - Files Identified: {identified_files}")
+        print(f"  - TotalFiles Scanned: {total_files}")
+        print(f"  - Files with Identifications: {identified_files}")
         
         # Identification Reuse details
         id_reuse_enabled = any(
@@ -751,19 +751,19 @@ def print_scan_summary(
         if id_reuse_enabled:
             reuse_type = "N/A"
             if getattr(params, "reuse_any_identification", False):
-                reuse_type = "any"
+                reuse_type = "Any Identification"
             elif getattr(params, "reuse_my_identifications", False):
-                reuse_type = "my"
+                reuse_type = "My Identifications"
             elif getattr(params, "reuse_project_ids", None):
-                reuse_type = f"project '{params.reuse_project_ids}'"
+                reuse_type = f"From Project '{params.reuse_project_ids}'"
             elif getattr(params, "reuse_scan_ids", None):
-                reuse_type = f"scan '{params.reuse_scan_ids}'"
-            print(f"    - Identification Reuse: {reuse_type}")
+                reuse_type = f"From Scan '{params.reuse_scan_ids}'"
+            print(f"    - ID Reuse: {reuse_type}")
         else:
-            print("    - Identification Reuse: No")
+            print("    - ID Reuse: Disabled")
         
         print(
-            f"    - Auto-Resolve Pending IDs: {'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
+            f"    - AutoID Pending IDs: {'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
         )
         print(f"  - Files Pending ID: {pending_files}")
         print(f"  - Files with No Matches: {no_match_files}")
@@ -774,11 +774,11 @@ def print_scan_summary(
         print("  - Files with No Matches: N/A")
     
     # --- Summary of Components and Licenses ---
-    print("\nSummary of Components and Licenses:")
+    print("\nComponents and Licenses:")
     
     # Count components identified
     num_components = len(kb_components) if kb_components else 0
-    print(f"  - Number of Components Identified: {num_components}")
+    print(f"  - Components Identified: {num_components}")
     
     # Count unique licenses in identified components
     unique_kb_licenses = set()
@@ -787,11 +787,11 @@ def print_scan_summary(
             identifier = lic.get("identifier")
             if identifier:
                 unique_kb_licenses.add(identifier)
-    print(f"  - Unique Licenses in Identified Components: {len(unique_kb_licenses)}")
+    print(f"  - Unique Licenses Identified: {len(unique_kb_licenses)}")
     
     # Count dependencies
     num_dependencies = len(dependencies) if dependencies else 0
-    print(f"  - Number of Dependencies: {num_dependencies}")
+    print(f"  - Dependencies Analyzed: {num_dependencies}")
     
     # Count unique licenses in dependencies
     unique_da_licenses = set()
@@ -803,14 +803,14 @@ def print_scan_summary(
     print(f"  - Unique Licenses in Dependencies: {len(unique_da_licenses)}")
     
     # --- Summary of Security and License Risk ---
-    print("\nSummary of Security and License Risk:")
+    print("\nSecurity and License Risk Summary:")
     
     # Policy warnings count
     if policy_warnings is not None:
         total_warnings = int(policy_warnings.get("policy_warnings_total", 0))
-        print(f"  - Number of Policy Warnings: {total_warnings}")
+        print(f"  - Policy Warnings: {total_warnings}")
     else:
-        print("  - Number of Policy Warnings: N/A (could not fetch)")
+        print("  - Could not check Policy Warnings - does the Project have Policies set?")
     
     # Vulnerable components count
     if vulnerabilities:
@@ -820,11 +820,24 @@ def print_scan_summary(
             comp_version = vuln.get("component_version", "Unknown")
             unique_vulnerable_components.add(f"{comp_name}:{comp_version}")
         num_vulnerable_components = len(unique_vulnerable_components)
-        print(f"  - Number of Vulnerable Components: {num_vulnerable_components}")
+        print(f"  - Components with CVEs: {num_vulnerable_components}")
     else:
-        print("  - Number of Vulnerable Components: 0")
+        print("  - No CVEs found in Scanned Components.")
     
     print("------------------------------------")
+    
+    # Add Workbench links for easy navigation
+    try:
+        scan_info = workbench.scans.get_information(scan_code)
+        scan_id = scan_info.get("id")
+        if scan_id:
+            links = workbench.results.workbench_links(int(scan_id))
+            print("\n🔗 View this Scan in Workbench:\n")
+            print(f"{links.scan['url']}")
+
+    except Exception as e:
+        logger.debug(f"Could not create link to Workbench: {e}")
+        # Don't fail the summary if link generation fails
 
 
 def print_import_summary(
