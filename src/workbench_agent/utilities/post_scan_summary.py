@@ -632,13 +632,23 @@ def print_operation_summary(
     print("------------------------------------")
 
 
+def _print_workbench_link(workbench: "WorkbenchClient", scan_code: str):
+    """Helper to display Workbench link."""
+    try:
+        links = workbench.results.get_workbench_links(scan_code)
+        print("\n🔗 View this Scan in Workbench:\n")
+        print(f"{links.scan['url']}")
+    except Exception as e:
+        logger.debug(f"Could not create link to Workbench: {e}")
+
+
 def print_scan_summary(
     workbench: "WorkbenchClient",
     params: argparse.Namespace,
     scan_code: str,
-    da_completed: bool,
     durations: Optional[Dict[str, float]] = None,
     show_summary: bool = False,
+    scan_operations: Optional[Dict[str, bool]] = None,
 ):
     """
     Post-scan summary for scan operations (scan, scan-git, blind-scan).
@@ -651,9 +661,12 @@ def print_scan_summary(
         workbench: WorkbenchClient instance
         params: Command line parameters
         scan_code: Scan code to fetch results from
-        da_completed: Whether dependency analysis completed successfully
         durations: Dictionary containing operation durations in seconds
         show_summary: Whether to show the full summary (True) or just the link (False)
+        scan_operations: Optional dict with 'run_kb_scan', 'run_dependency_analysis',
+            and 'da_completed' keys. If not provided, will be determined from params.
+            'da_completed' indicates whether dependency analysis actually completed
+            successfully (not just requested).
     """
     from workbench_agent.api.exceptions import ApiError, NetworkError
     
@@ -661,16 +674,21 @@ def print_scan_summary(
     
     # Only show detailed summary if requested
     if not show_summary:
-        # Just show the link and return
-        try:
-            links = workbench.results.get_workbench_links(scan_code)
-            print("\n🔗 View this Scan in Workbench:\n")
-            print(f"{links.scan['url']}")
-        except Exception as e:
-            logger.debug(f"Could not create link to Workbench: {e}")
+        _print_workbench_link(workbench, scan_code)
         return
     
     print("\n--- Post-Scan Summary ---")
+    
+    # Determine what scans were actually performed
+    if scan_operations is None:
+        scan_operations = determine_scans_to_run(params)
+        # Default da_completed to False if not provided
+        scan_operations.setdefault("da_completed", False)
+    
+    kb_scan_performed = scan_operations.get("run_kb_scan", False)
+    da_requested = scan_operations.get("run_dependency_analysis", False)
+    da_completed = scan_operations.get("da_completed", False)
+    dependency_analysis_only = getattr(params, "dependency_analysis_only", False)
     
     # Fetch all required data (with error handling)
     scan_metrics = None
@@ -680,11 +698,12 @@ def print_scan_summary(
     policy_warnings = None
     vulnerabilities = None
     
-    # Fetch scan metrics
-    try:
-        scan_metrics = workbench.results.get_scan_metrics(scan_code)
-    except (ApiError, NetworkError) as e:
-        logger.debug(f"Could not fetch scan metrics: {e}")
+    # Fetch scan metrics (only if KB scan was performed)
+    if kb_scan_performed:
+        try:
+            scan_metrics = workbench.results.get_scan_metrics(scan_code)
+        except (ApiError, NetworkError) as e:
+            logger.debug(f"Could not fetch scan metrics: {e}")
     
     # Fetch dependencies (if DA was performed)
     if da_completed:
@@ -708,12 +727,6 @@ def print_scan_summary(
     # --- Requested Scan Operations ---
     print("\nScan Operation Summary:")
     
-    # Determine what scans were actually performed
-    scan_operations = determine_scans_to_run(params)
-    kb_scan_performed = scan_operations.get("run_kb_scan", False)
-    da_requested = scan_operations.get("run_dependency_analysis", False)
-    dependency_analysis_only = getattr(params, "dependency_analysis_only", False)
-    
     # Only fetch KB data if KB scanning was performed
     if kb_scan_performed:
         # Fetch KB components
@@ -732,7 +745,10 @@ def print_scan_summary(
     if dependency_analysis_only or (not kb_scan_performed and da_requested):
         print("  - Signature Scanning: Skipped")
     else:
-        print(f"  - Signature Scanning: {'Yes' if kb_scan_performed else 'No'}")
+        kb_scan_status = "Yes" if kb_scan_performed else "No"
+        if kb_scan_performed and durations.get("kb_scan"):
+            kb_scan_status += f" ({format_duration(durations.get('kb_scan'))})"
+        print(f"  - Signature Scanning: {kb_scan_status}")
     
     # Show sub-items only if KB scanning was performed
     if kb_scan_performed:
@@ -772,7 +788,10 @@ def print_scan_summary(
         )
     
     if da_completed:
-        print("  - Dependency Analysis: Yes")
+        da_status = "Yes"
+        if durations.get("dependency_analysis"):
+            da_status += f" ({format_duration(durations.get('dependency_analysis'))})"
+        print(f"  - Dependency Analysis: {da_status}")
     elif da_requested and not da_completed:
         print("  - Dependency Analysis: Requested but failed/incomplete")
     else:
@@ -876,22 +895,7 @@ def print_scan_summary(
     print("------------------------------------")
     
     # Always show Workbench link
-    try:
-        links = workbench.results.get_workbench_links(scan_code)
-        print("\n🔗 View this Scan in Workbench:\n")
-        print(f"{links.scan['url']}")
-    except Exception as e:
-        logger.debug(f"Could not create link to Workbench: {e}")
-        # Don't fail if link generation fails
-    
-    # Always show Workbench link
-    try:
-        links = workbench.results.get_workbench_links(scan_code)
-        print("\n🔗 View this Scan in Workbench:\n")
-        print(f"{links.scan['url']}")
-    except Exception as e:
-        logger.debug(f"Could not create link to Workbench: {e}")
-        # Don't fail if link generation fails
+    _print_workbench_link(workbench, scan_code)
 
 
 def print_scan_summary_legacy(

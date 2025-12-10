@@ -211,13 +211,14 @@ def handle_scan(
                 "\nExiting without waiting for completion (--no-wait mode)."
             )
             # Always show only link in no-wait mode (avoid stale data)
+            scan_operations["da_completed"] = False
             print_scan_summary(
                 client,
                 params,
                 scan_code,
-                False,
                 durations,
                 show_summary=False,
+                scan_operations=scan_operations,
             )
             return True
 
@@ -236,13 +237,14 @@ def handle_scan(
             da_completed = True
 
             # Show scan summary (includes Workbench link)
+            scan_operations["da_completed"] = da_completed
             print_scan_summary(
                 client,
                 params,
                 scan_code,
-                da_completed,
                 durations,
                 show_summary=getattr(params, "show_summary", False),
+                scan_operations=scan_operations,
             )
 
             return True
@@ -315,13 +317,14 @@ def handle_scan(
                 "\nExiting without waiting for completion (--no-wait mode)."
             )
             # Always show only link in no-wait mode (avoid stale data)
+            scan_operations["da_completed"] = False
             print_scan_summary(
                 client,
                 params,
                 scan_code,
-                False,
                 durations,
                 show_summary=False,
+                scan_operations=scan_operations,
             )
             return True
         else:
@@ -383,13 +386,14 @@ def handle_scan(
                 da_completed = False
 
         # Show scan summary (includes Workbench link)
+        scan_operations["da_completed"] = da_completed
         print_scan_summary(
             client,
             params,
             scan_code,
-            da_completed,
             durations,
             show_summary=getattr(params, "show_summary", False),
+            scan_operations=scan_operations,
         )
 
         return True

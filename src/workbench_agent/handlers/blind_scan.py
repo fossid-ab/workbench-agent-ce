@@ -254,13 +254,14 @@ def handle_blind_scan(
                     "'show-results' command."
                 )
                 # Always show only link in no-wait mode (avoid stale data)
+                scan_operations["da_completed"] = False
                 print_scan_summary(
                     client,
                     params,
                     scan_code,
-                    False,
                     durations,
                     show_summary=False,
+                    scan_operations=scan_operations,
                 )
                 return True
 
@@ -340,13 +341,14 @@ def handle_blind_scan(
                     "(--no-wait mode)."
                 )
                 # Always show only link in no-wait mode (avoid stale data)
+                scan_operations["da_completed"] = False
                 print_scan_summary(
                     client,
                     params,
                     scan_code,
-                    False,
                     durations,
                     show_summary=False,
+                    scan_operations=scan_operations,
                 )
                 return True
             else:
@@ -404,16 +406,15 @@ def handle_blind_scan(
                     da_completed = False
 
         # Print standardized operation summary
+        scan_operations["da_completed"] = da_completed
         print_scan_summary(
             client,
             params,
             scan_code,
-            da_completed,
             durations,
             show_summary=getattr(params, "show_summary", False),
+            scan_operations=scan_operations,
         )
-
-        print("\n✅ Blind Scan completed successfully!")
 
         return True
 
