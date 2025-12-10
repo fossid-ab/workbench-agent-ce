@@ -6,9 +6,21 @@ This is the Community Edition (CE) of the Workbench Agent. The official Workbenc
 This version of the Workbench Agent is maintained by FossID's Customer Success Team. We will do our best to stay on top of any GitHub Issues opened and review any Pull Requests with fixes and improvements (thank you in advance!) but please use the official Workbench Agent if you prefer a solution with a contracted SLA. Reach out if you have any questions!
 
 ## General Usage
-The [Workbench Agent Wiki](https://github.com/fossid-ab/workbench-agent-ce/wiki) provides more information on available commands. 
+This repo publishes a public container image you can pull and verify with:
 
-Of course, you can also use the Help inside the tool:
+```bash
+docker run ghcr.io/fossid-ab/workbench-agent-ce:latest --help
+```
+
+This shows the general Help message and lets you know the container is ready! Each command has its own help:
+
+```bash
+docker run ghcr.io/fossid-ab/workbench-agent-ce:latest scan --help
+docker run ghcr.io/fossid-ab/workbench-agent-ce:latest evaluate-gates --help
+docker run ghcr.io/fossid-ab/workbench-agent-ce:latest download-reports --help
+```
+
+The [Workbench Agent Wiki](https://github.com/fossid-ab/workbench-agent-ce/wiki) also has information on available commands. 
 
 ```bash
 workbench-agent --help
