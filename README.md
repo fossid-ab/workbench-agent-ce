@@ -12,11 +12,15 @@ This repo publishes a public container image you can pull and verify with:
 docker run ghcr.io/fossid-ab/workbench-agent-ce:latest --help
 ```
 
-Running with --help shows the Help message and lets you know the container is ready!
+This shows the general Help message and lets you know the container is ready! Each command has its own help:
 
-The [Workbench Agent Wiki](https://github.com/fossid-ab/workbench-agent-ce/wiki) provides more information on available commands. 
+```bash
+docker run ghcr.io/fossid-ab/workbench-agent-ce:latest scan --help
+docker run ghcr.io/fossid-ab/workbench-agent-ce:latest evaluate-gates --help
+docker run ghcr.io/fossid-ab/workbench-agent-ce:latest download-reports --help
+```
 
-Of course, you can also use the Help inside the tool:
+The [Workbench Agent Wiki](https://github.com/fossid-ab/workbench-agent-ce/wiki) also has information on available commands. 
 
 ## Quick Start
 Visit the [Getting Started Guide](https://github.com/fossid-ab/workbench-agent-ce/wiki/Getting-Started) in the Project Wiki to run your first scan!
