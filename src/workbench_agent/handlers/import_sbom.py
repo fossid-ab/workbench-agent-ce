@@ -11,10 +11,7 @@ from workbench_agent.api.exceptions import (
 )
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
-from workbench_agent.utilities.post_scan_summary import (
-    fetch_display_save_results,
-    print_operation_summary,
-)
+from workbench_agent.utilities.post_import_summary import print_import_summary
 from workbench_agent.utilities.sbom_validator import SBOMValidator
 
 if TYPE_CHECKING:
@@ -282,47 +279,26 @@ def handle_import_sbom(
                 details={"error": str(e)},
             ) from e
 
-        # Print operation summary
-        print_operation_summary(params, sbom_completed, durations)
-
-        # Fetch and display results if requested
+        # Show import summary (includes Workbench link)
         if sbom_completed:
-            # Check if any results were requested
-            any_results_requested = any(
-                getattr(params, flag, False)
-                for flag in [
-                    "show_licenses",
-                    "show_components",
-                    "show_dependencies",
-                    "show_scan_metrics",
-                    "show_policy_warnings",
-                    "show_vulnerabilities",
-                ]
+            print_import_summary(
+                client,
+                params,
+                scan_code,
+                sbom_completed,
+                durations,
+                show_summary=getattr(params, "show_summary", False),
             )
-
-            if any_results_requested:
-                print("\n--- Fetching Results ---")
-                try:
-                    fetch_display_save_results(client, params, scan_code)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to fetch and display results: {e}"
-                    )
-                    print(
-                        f"Warning: Failed to fetch and display results: {e}"
-                    )
-
-            # Add Workbench link for easy navigation to view SBOM results
-            try:
-                scan_info = client.scans.get_information(scan_code)
-                scan_id = scan_info.get("id")
-                if scan_id:
-                    link = client.results.workbench_links(int(scan_id)).scan
-                    if link.get("url"):
-                        print(f"\n🔗 {link['message']}: " f"{link['url']}")
-            except Exception as e:
-                logger.debug(f"Could not generate Workbench link: {e}")
-                # Don't fail the whole operation if link generation fails
+        else:
+            # Import didn't complete, just show link
+            print_import_summary(
+                client,
+                params,
+                scan_code,
+                False,
+                durations,
+                show_summary=False,
+            )
 
         return sbom_completed
 

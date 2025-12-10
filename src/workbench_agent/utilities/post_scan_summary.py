@@ -475,29 +475,6 @@ def fetch_display_save_results(
 # --- Formatting and Summaries ---
 
 
-def print_workbench_link(
-    workbench: "WorkbenchClient",
-    scan_code: str,
-):
-    """
-    Display a link to view the scan in Workbench.
-    
-    Args:
-        workbench: WorkbenchClient instance
-        scan_code: Scan code to generate link for
-    """
-    try:
-        scan_info = workbench.scans.get_information(scan_code)
-        scan_id = scan_info.get("id")
-        if scan_id:
-            links = workbench.results.workbench_links(int(scan_id))
-            print("\n🔗 View this Scan in Workbench:\n")
-            print(f"{links.scan['url']}")
-    except Exception as e:
-        logger.debug(f"Could not create link to Workbench: {e}")
-        # Don't fail if link generation fails
-
-
 def format_duration(duration_seconds: Optional[Union[int, float]]) -> str:
     """Formats a duration in seconds into a 'X minutes, Y seconds' string."""
     if duration_seconds is None:
@@ -661,12 +638,14 @@ def print_scan_summary(
     scan_code: str,
     da_completed: bool,
     durations: Optional[Dict[str, float]] = None,
+    show_summary: bool = False,
 ):
     """
-    New comprehensive post-scan summary for scan operations (scan, scan-git, blind-scan).
+    Post-scan summary for scan operations (scan, scan-git, blind-scan).
     
-    Shows operation details, identification metrics, components/licenses, and security risks.
-    This function fetches all required data from the API and displays it in a structured format.
+    When show_summary is True, shows comprehensive operation details, identification
+    metrics, components/licenses, and security risks. When False, only shows the
+    Workbench link. The link is always displayed.
     
     Args:
         workbench: WorkbenchClient instance
@@ -674,10 +653,22 @@ def print_scan_summary(
         scan_code: Scan code to fetch results from
         da_completed: Whether dependency analysis completed successfully
         durations: Dictionary containing operation durations in seconds
+        show_summary: Whether to show the full summary (True) or just the link (False)
     """
     from workbench_agent.api.exceptions import ApiError, NetworkError
     
     durations = durations or {}
+    
+    # Only show detailed summary if requested
+    if not show_summary:
+        # Just show the link and return
+        try:
+            links = workbench.results.get_workbench_links(scan_code)
+            print("\n🔗 View this Scan in Workbench:\n")
+            print(f"{links.scan['url']}")
+        except Exception as e:
+            logger.debug(f"Could not create link to Workbench: {e}")
+        return
     
     print("\n--- Post-Scan Summary ---")
     
@@ -883,61 +874,24 @@ def print_scan_summary(
         print("  - No CVEs found for Identified Components or Dependencies.")
     
     print("------------------------------------")
-
-
-def print_import_summary(
-    params: argparse.Namespace,
-    import_completed: bool,
-    durations: Optional[Dict[str, float]] = None,
-):
-    """
-    Summary for import operations (import-da, import-sbom).
     
-    Keeps the old summary format as requested. This function displays
-    operation details for import commands without fetching additional scan data.
+    # Always show Workbench link
+    try:
+        links = workbench.results.get_workbench_links(scan_code)
+        print("\n🔗 View this Scan in Workbench:\n")
+        print(f"{links.scan['url']}")
+    except Exception as e:
+        logger.debug(f"Could not create link to Workbench: {e}")
+        # Don't fail if link generation fails
     
-    Args:
-        params: Command line parameters
-        import_completed: Whether the import completed successfully
-        durations: Dictionary containing operation durations in seconds
-    """
-    durations = durations or {}
-    
-    print("\n--- Operation Summary ---")
-    
-    print("Workbench Agent Operation Details:")
-    if params.command == "import-da":
-        print("  - Method: Dependency Analysis Import")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-    elif params.command == "import-sbom":
-        print("  - Method: SBOM Import")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-    else:
-        print(f"  - Method: Unknown ({params.command})")
-    
-    # Show import completion status
-    if params.command == "import-da":
-        if import_completed:
-            da_duration_str = (
-                format_duration(durations.get("dependency_analysis", 0))
-                if durations.get("dependency_analysis")
-                else "N/A"
-            )
-            print(f"\nImport Status: Completed (Duration: {da_duration_str})")
-        else:
-            print("\nImport Status: Failed or incomplete")
-    elif params.command == "import-sbom":
-        if import_completed:
-            sbom_duration_str = (
-                format_duration(durations.get("sbom_import", 0))
-                if durations.get("sbom_import")
-                else "N/A"
-            )
-            print(f"\nImport Status: Completed (Duration: {sbom_duration_str})")
-        else:
-            print("\nImport Status: Failed or incomplete")
-    
-    print("------------------------------------")
+    # Always show Workbench link
+    try:
+        links = workbench.results.get_workbench_links(scan_code)
+        print("\n🔗 View this Scan in Workbench:\n")
+        print(f"{links.scan['url']}")
+    except Exception as e:
+        logger.debug(f"Could not create link to Workbench: {e}")
+        # Don't fail if link generation fails
 
 
 def print_scan_summary_legacy(

@@ -9,7 +9,6 @@ from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
     format_duration,
     print_scan_summary,
-    print_workbench_link,
 )
 from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 from workbench_agent.utilities.toolbox_wrapper import ToolboxWrapper
@@ -254,6 +253,15 @@ def handle_blind_scan(
                     "You can check the status later using the "
                     "'show-results' command."
                 )
+                # Always show only link in no-wait mode (avoid stale data)
+                print_scan_summary(
+                    client,
+                    params,
+                    scan_code,
+                    False,
+                    durations,
+                    show_summary=False,
+                )
                 return True
 
             # Wait for dependency analysis to complete
@@ -331,6 +339,15 @@ def handle_blind_scan(
                     "\nExiting without waiting for completion "
                     "(--no-wait mode)."
                 )
+                # Always show only link in no-wait mode (avoid stale data)
+                print_scan_summary(
+                    client,
+                    params,
+                    scan_code,
+                    False,
+                    durations,
+                    show_summary=False,
+                )
                 return True
             else:
                 # Determine which processes to wait for
@@ -387,11 +404,14 @@ def handle_blind_scan(
                     da_completed = False
 
         # Print standardized operation summary
-        if getattr(params, "show_summary", False):
-            print_scan_summary(client, params, scan_code, da_completed, durations)
-        
-        # Always show Workbench link
-        print_workbench_link(client, scan_code)
+        print_scan_summary(
+            client,
+            params,
+            scan_code,
+            da_completed,
+            durations,
+            show_summary=getattr(params, "show_summary", False),
+        )
 
         print("\n✅ Blind Scan completed successfully!")
 

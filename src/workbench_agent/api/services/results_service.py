@@ -157,6 +157,33 @@ class ResultsService:
         api_url = self._scans._api.api_url
         return WorkbenchLinks(api_url, scan_id)
 
+    def get_workbench_links(self, scan_code: str) -> WorkbenchLinks:
+        """
+        Get a WorkbenchLinks object from scan_code.
+
+        This is a convenience method that converts scan_code to scan_id
+        and returns the WorkbenchLinks object.
+
+        Args:
+            scan_code: Code of the scan
+
+        Returns:
+            WorkbenchLinks instance with properties for different views
+
+        Raises:
+            ScanNotFoundError: If scan doesn't exist
+            ApiError: If there are API issues
+
+        Example:
+            >>> links = results_service.get_workbench_links("SCAN123")
+            >>> print(links.scan['url'])
+        """
+        scan_info = self._scans.get_information(scan_code)
+        scan_id = scan_info.get("id")
+        if not scan_id:
+            raise ApiError(f"Scan '{scan_code}' has no ID")
+        return self.workbench_links(int(scan_id))
+
     # ===== PUBLIC API - INDIVIDUAL RESULT FETCHERS =====
 
     def get_unique_identified_licenses(

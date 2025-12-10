@@ -163,21 +163,12 @@ Examples:
             parent_parsers["workbench_connection"],
             parent_parsers["project_scan_target"],
             parent_parsers["monitoring"],
-            parent_parsers["result_options"],
         ],
         epilog="""
 Examples:
   # Import analyzer-result.json from ORT
   workbench-agent import-da --project-name "MyProject" --scan-name "imported-deps" \\
       --path ./ort-output/analyzer-result.json
-
-  # Import and display dependencies
-  workbench-agent import-da --project-name "MyProject" --scan-name "imported-deps" \\
-      --path ./analyzer-result.json --show-dependencies
-
-  # Import and save results to file
-  workbench-agent import-da --project-name "MyProject" --scan-name "imported-deps" \\
-      --path ./analyzer-result.json --show-dependencies --result-save-path ./results.json
 """,
     )
     import_da_parser.add_argument(
@@ -199,7 +190,6 @@ Examples:
             parent_parsers["workbench_connection"],
             parent_parsers["project_scan_target"],
             parent_parsers["monitoring"],
-            parent_parsers["result_options"],
         ],
         epilog="""
 Examples:
@@ -210,10 +200,6 @@ Examples:
   # Import SPDX SBOM (RDF format)
   workbench-agent import-sbom --project-name "MyProject" --scan-name "sbom-import" \\
       --path ./spdx-document.rdf
-
-  # Import SPDX SBOM (JSON format) and display dependencies
-  workbench-agent import-sbom --project-name "MyProject" --scan-name "sbom-import" \\
-      --path ./spdx-document.json --show-dependencies
 """,
     )
     import_sbom_parser.add_argument(

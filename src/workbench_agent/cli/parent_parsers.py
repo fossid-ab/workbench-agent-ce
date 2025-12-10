@@ -61,6 +61,15 @@ def create_cli_behaviors_parser():
         action="store_true",
         default=False,
     )
+    cli_behaviors_args.add_argument(
+        "--show-summary",
+        help=(
+            "Show post-operation summary with operation details, identification "
+            "metrics, components/licenses, and security risks."
+        ),
+        action="store_true",
+        default=False,
+    )
     return cli_behaviors_parent
 
 
@@ -233,15 +242,6 @@ def create_scan_operations_parser():
     scan_ops_args.add_argument(
         "--full-file-only",
         help="Return only full file matches regardless of sensitivity setting.",
-        action="store_true",
-        default=False,
-    )
-    scan_ops_args.add_argument(
-        "--show-summary",
-        help=(
-            "Show post-scan summary with operation details, identification "
-            "metrics, components/licenses, and security risks."
-        ),
         action="store_true",
         default=False,
     )
