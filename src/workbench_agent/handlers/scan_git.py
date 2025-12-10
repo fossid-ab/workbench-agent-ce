@@ -12,7 +12,7 @@ from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
     print_scan_summary,
-    print_scan_summary_legacy,
+    print_workbench_link,
 )
 from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 
@@ -219,8 +219,9 @@ def handle_scan_git(
                 )
                 if getattr(params, "show_summary", False):
                     print_scan_summary(client, params, scan_code, True, durations)
-                else:
-                    print_scan_summary_legacy(params, True, durations)
+                
+                # Always show Workbench link
+                print_workbench_link(client, scan_code)
                 return True
 
             # Wait for dependency analysis to complete
@@ -244,8 +245,9 @@ def handle_scan_git(
                 # Print operation summary
                 if getattr(params, "show_summary", False):
                     print_scan_summary(client, params, scan_code, da_completed, durations)
-                else:
-                    print_scan_summary_legacy(params, da_completed, durations)
+                
+                # Always show Workbench link
+                print_workbench_link(client, scan_code)
 
                 return True
 
@@ -325,8 +327,9 @@ def handle_scan_git(
                 )
                 if getattr(params, "show_summary", False):
                     print_scan_summary(client, params, scan_code, True, durations)
-                else:
-                    print_scan_summary_legacy(params, True, durations)
+                
+                # Always show Workbench link
+                print_workbench_link(client, scan_code)
                 return True
             else:
                 # Determine which processes to wait for
@@ -407,21 +410,8 @@ def handle_scan_git(
         # Print operation summary
         if getattr(params, "show_summary", False):
             print_scan_summary(client, params, scan_code, da_completed, durations)
-        else:
-            print_scan_summary_legacy(params, da_completed, durations)
-
-        # Check for pending files (informational)
-        try:
-            pending_files = client.scans.get_pending_files(scan_code)
-            if pending_files:
-                print(
-                    f"\nNote: {len(pending_files)} files are "
-                    f"Pending Identification."
-                )
-            else:
-                print("\nNote: No files are Pending Identification.")
-        except Exception as e:
-            logger.warning(f"Could not retrieve pending file count: {e}")
-            print(f"\nWarning: Could not retrieve pending file count: {e}")
+        
+        # Always show Workbench link
+        print_workbench_link(client, scan_code)
 
     return scan_completed or da_completed

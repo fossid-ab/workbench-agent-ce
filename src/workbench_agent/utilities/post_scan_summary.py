@@ -475,6 +475,29 @@ def fetch_display_save_results(
 # --- Formatting and Summaries ---
 
 
+def print_workbench_link(
+    workbench: "WorkbenchClient",
+    scan_code: str,
+):
+    """
+    Display a link to view the scan in Workbench.
+    
+    Args:
+        workbench: WorkbenchClient instance
+        scan_code: Scan code to generate link for
+    """
+    try:
+        scan_info = workbench.scans.get_information(scan_code)
+        scan_id = scan_info.get("id")
+        if scan_id:
+            links = workbench.results.workbench_links(int(scan_id))
+            print("\n🔗 View this Scan in Workbench:\n")
+            print(f"{links.scan['url']}")
+    except Exception as e:
+        logger.debug(f"Could not create link to Workbench: {e}")
+        # Don't fail if link generation fails
+
+
 def format_duration(duration_seconds: Optional[Union[int, float]]) -> str:
     """Formats a duration in seconds into a 'X minutes, Y seconds' string."""
     if duration_seconds is None:
@@ -672,18 +695,6 @@ def print_scan_summary(
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch scan metrics: {e}")
     
-    # Fetch KB components
-    try:
-        kb_components = workbench.results.get_identified_components(scan_code)
-    except (ApiError, NetworkError) as e:
-        logger.debug(f"Could not fetch KB components: {e}")
-    
-    # Fetch KB licenses
-    try:
-        kb_licenses = workbench.results.get_unique_identified_licenses(scan_code)
-    except (ApiError, NetworkError) as e:
-        logger.debug(f"Could not fetch KB licenses: {e}")
-    
     # Fetch dependencies (if DA was performed)
     if da_completed:
         try:
@@ -703,41 +714,37 @@ def print_scan_summary(
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch vulnerabilities: {e}")
     
-    # --- Operation Summary ---
-    print("\nOperation Summary:")
+    # --- Requested Scan Operations ---
+    print("\nScan Operation Summary:")
     
     # Determine what scans were actually performed
     scan_operations = determine_scans_to_run(params)
     kb_scan_performed = scan_operations.get("run_kb_scan", False)
     da_requested = scan_operations.get("run_dependency_analysis", False)
+    dependency_analysis_only = getattr(params, "dependency_analysis_only", False)
     
-    print(f"  - Signature Scanning: {'Yes' if kb_scan_performed else 'No'}")
-    print(
-        f"  - License Extraction: {'Yes' if getattr(params, 'autoid_file_licenses', False) else 'No'}"
-    )
-    print(
-        f"  - Copyright Extraction: {'Yes' if getattr(params, 'autoid_file_copyrights', False) else 'No'}"
-    )
+    # Only fetch KB data if KB scanning was performed
+    if kb_scan_performed:
+        # Fetch KB components
+        try:
+            kb_components = workbench.results.get_identified_components(scan_code)
+        except (ApiError, NetworkError) as e:
+            logger.debug(f"Could not fetch KB components: {e}")
+        
+        # Fetch KB licenses
+        try:
+            kb_licenses = workbench.results.get_unique_identified_licenses(scan_code)
+        except (ApiError, NetworkError) as e:
+            logger.debug(f"Could not fetch KB licenses: {e}")
     
-    if da_completed:
-        print("  - Dependency Analysis: Yes")
-    elif da_requested and not da_completed:
-        print("  - Dependency Analysis: Requested but failed/incomplete")
+    # Show "Skipped" if dependency-analysis-only was used, otherwise Yes/No
+    if dependency_analysis_only or (not kb_scan_performed and da_requested):
+        print("  - Signature Scanning: Skipped")
     else:
-        print("  - Dependency Analysis: No")
+        print(f"  - Signature Scanning: {'Yes' if kb_scan_performed else 'No'}")
     
-    # --- Identification Summary ---
-    print("\nIdentification Summary:")
-    
-    if scan_metrics:
-        total_files = scan_metrics.get("total", "N/A")
-        identified_files = scan_metrics.get("identified_files", "N/A")
-        pending_files = scan_metrics.get("pending_identification", "N/A")
-        no_match_files = scan_metrics.get("without_matches", "N/A")
-        
-        print(f"  - TotalFiles Scanned: {total_files}")
-        print(f"  - Files with Identifications: {identified_files}")
-        
+    # Show sub-items only if KB scanning was performed
+    if kb_scan_performed:
         # Identification Reuse details
         id_reuse_enabled = any(
             [
@@ -765,50 +772,101 @@ def print_scan_summary(
         print(
             f"    - AutoID Pending IDs: {'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
         )
-        print(f"  - Files Pending ID: {pending_files}")
-        print(f"  - Files with No Matches: {no_match_files}")
+        
+        print(
+            f"    - License Extraction: {'Yes' if getattr(params, 'autoid_file_licenses', False) else 'No'}"
+        )
+        print(
+            f"    - Copyright Extraction: {'Yes' if getattr(params, 'autoid_file_copyrights', False) else 'No'}"
+        )
+    
+    if da_completed:
+        print("  - Dependency Analysis: Yes")
+    elif da_requested and not da_completed:
+        print("  - Dependency Analysis: Requested but failed/incomplete")
     else:
-        print("  - Files Scanned: N/A (could not fetch metrics)")
-        print("  - Files Identified: N/A")
-        print("  - Files Pending ID: N/A")
-        print("  - Files with No Matches: N/A")
+        print("  - Dependency Analysis: Skipped")
     
-    # --- Summary of Components and Licenses ---
-    print("\nComponents and Licenses:")
+    # --- Signature Scan (Identification) Summary ---
+    # Only show this section if KB scanning was performed
+    if kb_scan_performed:
+        print("\nSignature Scan (Identification) Summary:")
+        
+        if scan_metrics:
+            total_files = scan_metrics.get("total", "N/A")
+            identified_files = scan_metrics.get("identified_files", "N/A")
+            pending_files = scan_metrics.get("pending_identification", "N/A")
+            no_match_files = scan_metrics.get("without_matches", "N/A")
+            
+            print(f"  - Total Files Scanned: {total_files}")
+            print(f"  - Files with Identifications: {identified_files}")
+            
+            # Show components and licenses under Files with Identifications
+            # Only show if there are files with identifications
+            if identified_files != "N/A" and identified_files != 0 and (
+                not isinstance(identified_files, str) or identified_files != "0"
+            ):
+                # Count components identified
+                num_components = len(kb_components) if kb_components else 0
+                print(f"    - Components Identified: {num_components}")
+                
+                # Count unique licenses in identified components
+                unique_kb_licenses = set()
+                if kb_licenses:
+                    for lic in kb_licenses:
+                        identifier = lic.get("identifier")
+                        if identifier:
+                            unique_kb_licenses.add(identifier)
+                print(f"    - Unique Licenses Identified: {len(unique_kb_licenses)}")
+            
+            print(f"  - Files Pending ID: {pending_files}")
+            print(f"  - Files with No Matches: {no_match_files}")
+            
+            # Check if signature scanning scanned 0 files
+            if total_files == 0 or (isinstance(total_files, str) and total_files == "0"):
+                print(
+                    "\n  Note: There were no files to scan."
+                )
+        else:
+            print("  - Files Scanned: N/A (could not fetch metrics)")
+            print("  - Files Identified: N/A")
+            print("  - Files Pending ID: N/A")
+            print("  - Files with No Matches: N/A")
     
-    # Count components identified
-    num_components = len(kb_components) if kb_components else 0
-    print(f"  - Components Identified: {num_components}")
-    
-    # Count unique licenses in identified components
-    unique_kb_licenses = set()
-    if kb_licenses:
-        for lic in kb_licenses:
-            identifier = lic.get("identifier")
-            if identifier:
-                unique_kb_licenses.add(identifier)
-    print(f"  - Unique Licenses Identified: {len(unique_kb_licenses)}")
-    
-    # Count dependencies
-    num_dependencies = len(dependencies) if dependencies else 0
-    print(f"  - Dependencies Analyzed: {num_dependencies}")
-    
-    # Count unique licenses in dependencies
-    unique_da_licenses = set()
-    if dependencies:
-        for dep in dependencies:
-            license_id = dep.get("license_identifier")
-            if license_id and license_id != "N/A":
-                unique_da_licenses.add(license_id)
-    print(f"  - Unique Licenses in Dependencies: {len(unique_da_licenses)}")
+    # --- Dependency Analysis Summary ---
+    # Only show this section if dependency analysis was performed
+    if da_completed:
+        print("\nDependency Analysis Summary:")
+        
+        # Count dependencies
+        num_dependencies = len(dependencies) if dependencies else 0
+        print(f"  - Dependencies Analyzed: {num_dependencies}")
+        
+        # Count unique licenses in dependencies
+        unique_da_licenses = set()
+        if dependencies:
+            for dep in dependencies:
+                license_id = dep.get("license_identifier")
+                if license_id and license_id != "N/A":
+                    unique_da_licenses.add(license_id)
+        print(f"  - Unique Licenses in Dependencies: {len(unique_da_licenses)}")
     
     # --- Summary of Security and License Risk ---
-    print("\nSecurity and License Risk Summary:")
+    print("\nSecurity and License Risk:")
     
     # Policy warnings count
     if policy_warnings is not None:
         total_warnings = int(policy_warnings.get("policy_warnings_total", 0))
+        files_with_warnings = int(
+            policy_warnings.get("identified_files_with_warnings", 0)
+        )
+        deps_with_warnings = int(
+            policy_warnings.get("dependencies_with_warnings", 0)
+        )
         print(f"  - Policy Warnings: {total_warnings}")
+        if total_warnings > 0:
+            print(f"    - In Identified Files: {files_with_warnings}")
+            print(f"    - In Dependencies: {deps_with_warnings}")
     else:
         print("  - Could not check Policy Warnings - does the Project have Policies set?")
     
@@ -822,22 +880,9 @@ def print_scan_summary(
         num_vulnerable_components = len(unique_vulnerable_components)
         print(f"  - Components with CVEs: {num_vulnerable_components}")
     else:
-        print("  - No CVEs found in Scanned Components.")
+        print("  - No CVEs found for Identified Components or Dependencies.")
     
     print("------------------------------------")
-    
-    # Add Workbench links for easy navigation
-    try:
-        scan_info = workbench.scans.get_information(scan_code)
-        scan_id = scan_info.get("id")
-        if scan_id:
-            links = workbench.results.workbench_links(int(scan_id))
-            print("\n🔗 View this Scan in Workbench:\n")
-            print(f"{links.scan['url']}")
-
-    except Exception as e:
-        logger.debug(f"Could not create link to Workbench: {e}")
-        # Don't fail the summary if link generation fails
 
 
 def print_import_summary(

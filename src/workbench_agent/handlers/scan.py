@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
     print_scan_summary,
-    print_scan_summary_legacy,
+    print_workbench_link,
 )
 from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 
@@ -232,8 +232,9 @@ def handle_scan(
             # Show scan summary
             if getattr(params, "show_summary", False):
                 print_scan_summary(client, params, scan_code, da_completed, durations)
-            else:
-                print_scan_summary_legacy(params, da_completed, durations)
+            
+            # Always show Workbench link
+            print_workbench_link(client, scan_code)
 
             return True
 
@@ -366,8 +367,9 @@ def handle_scan(
         # Show scan summary
         if getattr(params, "show_summary", False):
             print_scan_summary(client, params, scan_code, da_completed, durations)
-        else:
-            print_scan_summary_legacy(params, da_completed, durations)
+        
+        # Always show Workbench link
+        print_workbench_link(client, scan_code)
 
         return True
 
