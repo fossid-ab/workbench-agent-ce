@@ -12,6 +12,7 @@ from workbench_agent.api.exceptions import (
 )
 from workbench_agent.exceptions import FileSystemError, ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.post_report_summary import print_report_summary
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -364,17 +365,18 @@ def handle_download_reports(
             error_count += 1
             error_types.append(report_type)
 
-    # Print summary
-    print("\n" + "=" * 50)
-    print("Report Download Summary")
-    print("=" * 50)
-    print(f"Total reports requested: {len(report_types)}")
-    print(f"Successfully downloaded: {success_count}")
-    if error_count > 0:
-        print(
-            f"Failed to download: {error_count} ({', '.join(error_types)})"
-        )
-    print("=" * 50)
+    # Show report summary (includes Workbench link for scan-scope reports)
+    print_report_summary(
+        client,
+        params,
+        report_types,
+        success_count,
+        error_count,
+        error_types,
+        scan_code=scan_code,
+        project_code=project_code,
+        show_summary=getattr(params, "show_summary", False),
+    )
 
     # Return True if at least one report was successfully downloaded
     return success_count > 0
