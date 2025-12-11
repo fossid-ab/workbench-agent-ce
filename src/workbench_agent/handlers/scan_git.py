@@ -10,10 +10,7 @@ from workbench_agent.api.exceptions import (
 )
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
-from workbench_agent.utilities.post_scan_summary import (
-    fetch_display_save_results,
-    print_operation_summary,
-)
+from workbench_agent.utilities.post_scan_summary import print_scan_summary
 from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 
 if TYPE_CHECKING:
@@ -217,7 +214,16 @@ def handle_scan_git(
                     "You can check the status later using the "
                     "'show-results' command."
                 )
-                print_operation_summary(params, True, durations)
+                # Always show only link in no-wait mode (avoid stale data)
+                scan_operations["da_completed"] = False
+                print_scan_summary(
+                    client,
+                    params,
+                    scan_code,
+                    durations,
+                    show_summary=False,
+                    scan_operations=scan_operations,
+                )
                 return True
 
             # Wait for dependency analysis to complete
@@ -239,10 +245,15 @@ def handle_scan_git(
                 scan_completed = True
 
                 # Print operation summary
-                print_operation_summary(params, da_completed, durations)
-
-                # Show results
-                fetch_display_save_results(client, params, scan_code)
+                scan_operations["da_completed"] = da_completed
+                print_scan_summary(
+                    client,
+                    params,
+                    scan_code,
+                    durations,
+                    show_summary=getattr(params, "show_summary", False),
+                    scan_operations=scan_operations,
+                )
 
                 return True
 
@@ -320,7 +331,16 @@ def handle_scan_git(
                     "\nExiting without waiting for completion "
                     "(--no-wait mode)."
                 )
-                print_operation_summary(params, True, durations)
+                # Always show only link in no-wait mode (avoid stale data)
+                scan_operations["da_completed"] = False
+                print_scan_summary(
+                    client,
+                    params,
+                    scan_code,
+                    durations,
+                    show_summary=False,
+                    scan_operations=scan_operations,
+                )
                 return True
             else:
                 # Determine which processes to wait for
@@ -399,29 +419,14 @@ def handle_scan_git(
     # Process completed operations
     if scan_completed:
         # Print operation summary
-        print_operation_summary(params, da_completed, durations)
-
-        # Check for pending files (informational)
-        try:
-            pending_files = client.scans.get_pending_files(scan_code)
-            if pending_files:
-                print(
-                    f"\nNote: {len(pending_files)} files are "
-                    f"Pending Identification."
-                )
-            else:
-                print("\nNote: No files are Pending Identification.")
-        except Exception as e:
-            logger.warning(f"Could not retrieve pending file count: {e}")
-            print(f"\nWarning: Could not retrieve pending file count: {e}")
-
-    # Fetch and display results if scan completed successfully
-    if scan_completed or da_completed:
-        fetch_display_save_results(client, params, scan_code)
-    else:
-        print(
-            "\nSkipping result fetching since scan did not "
-            "complete successfully."
+        scan_operations["da_completed"] = da_completed
+        print_scan_summary(
+            client,
+            params,
+            scan_code,
+            durations,
+            show_summary=getattr(params, "show_summary", False),
+            scan_operations=scan_operations,
         )
 
     return scan_completed or da_completed

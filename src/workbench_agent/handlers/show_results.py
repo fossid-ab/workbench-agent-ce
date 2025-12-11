@@ -13,7 +13,7 @@ from workbench_agent.api.exceptions import (
 )
 from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
-from workbench_agent.utilities.post_scan_summary import (
+from workbench_agent.utilities.result_utilities import (
     fetch_display_save_results,
 )
 

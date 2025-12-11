@@ -5,10 +5,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from workbench_agent.utilities.error_handling import handler_error_wrapper
-from workbench_agent.utilities.post_scan_summary import (
-    fetch_display_save_results,
-    print_operation_summary,
-)
+from workbench_agent.utilities.post_scan_summary import print_scan_summary
 from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 
 if TYPE_CHECKING:
@@ -213,6 +210,16 @@ def handle_scan(
             print(
                 "\nExiting without waiting for completion (--no-wait mode)."
             )
+            # Always show only link in no-wait mode (avoid stale data)
+            scan_operations["da_completed"] = False
+            print_scan_summary(
+                client,
+                params,
+                scan_code,
+                durations,
+                show_summary=False,
+                scan_operations=scan_operations,
+            )
             return True
 
         # Wait for dependency analysis to complete
@@ -229,21 +236,16 @@ def handle_scan(
             )
             da_completed = True
 
-            # Show scan summary and operation details
-            print_operation_summary(params, da_completed, durations)
-
-            # Show scan results if any were requested
-            if any(
-                [
-                    params.show_licenses,
-                    params.show_components,
-                    params.show_dependencies,
-                    params.show_scan_metrics,
-                    params.show_policy_warnings,
-                    params.show_vulnerabilities,
-                ]
-            ):
-                fetch_display_save_results(client, params, scan_code)
+            # Show scan summary (includes Workbench link)
+            scan_operations["da_completed"] = da_completed
+            print_scan_summary(
+                client,
+                params,
+                scan_code,
+                durations,
+                show_summary=getattr(params, "show_summary", False),
+                scan_operations=scan_operations,
+            )
 
             return True
 
@@ -314,6 +316,16 @@ def handle_scan(
             print(
                 "\nExiting without waiting for completion (--no-wait mode)."
             )
+            # Always show only link in no-wait mode (avoid stale data)
+            scan_operations["da_completed"] = False
+            print_scan_summary(
+                client,
+                params,
+                scan_code,
+                durations,
+                show_summary=False,
+                scan_operations=scan_operations,
+            )
             return True
         else:
             # Determine which processes to wait for
@@ -373,21 +385,16 @@ def handle_scan(
                 )
                 da_completed = False
 
-        # Show scan summary and operation details
-        print_operation_summary(params, da_completed, durations)
-
-        # Show scan results if any were requested
-        if any(
-            [
-                params.show_licenses,
-                params.show_components,
-                params.show_dependencies,
-                params.show_scan_metrics,
-                params.show_policy_warnings,
-                params.show_vulnerabilities,
-            ]
-        ):
-            fetch_display_save_results(client, params, scan_code)
+        # Show scan summary (includes Workbench link)
+        scan_operations["da_completed"] = da_completed
+        print_scan_summary(
+            client,
+            params,
+            scan_code,
+            durations,
+            show_summary=getattr(params, "show_summary", False),
+            scan_operations=scan_operations,
+        )
 
         return True
 

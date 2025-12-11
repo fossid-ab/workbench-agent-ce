@@ -10,10 +10,7 @@ from workbench_agent.api.exceptions import (
 )
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
-from workbench_agent.utilities.post_scan_summary import (
-    fetch_display_save_results,
-    print_operation_summary,
-)
+from workbench_agent.utilities.post_import_summary import print_import_summary
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -38,7 +35,7 @@ def handle_import_da(
     3. Ensures scan is idle
     4. Uploads dependency analysis file
     5. Triggers import process
-    6. Waits for completion (unless --no-wait)
+    6. Waits for completion
     7. Displays results
 
     Args:
@@ -57,9 +54,6 @@ def handle_import_da(
         WorkbenchAgentError: If import fails
     """
     print(f"\n--- Running {params.command.upper()} Command ---")
-
-    # Initialize timing dictionary
-    durations = {"dependency_analysis": 0.0}
 
     # Note: Path existence, file type, and filename validation
     # are handled at CLI layer (cli/validators.py)
@@ -125,15 +119,6 @@ def handle_import_da(
             details={"error": str(e)},
         ) from e
 
-    # Handle no-wait mode
-    if getattr(params, "no_wait", False):
-        print("\nDependency Analysis import started successfully.")
-        print("\nExiting without waiting for completion (--no-wait mode).")
-
-        # Print operation summary for no-wait mode
-        print_operation_summary(params, True, durations)
-        return True
-
     # Wait for dependency analysis to complete
     da_completed = False
     try:
@@ -145,10 +130,6 @@ def handle_import_da(
             wait_interval=3,  # Faster for import-only mode
         )
 
-        # Store the DA import duration
-        durations["dependency_analysis"] = (
-            dependency_analysis_status.duration or 0.0
-        )
         da_completed = True
 
         print("Dependency Analysis import completed successfully.")
@@ -178,30 +159,23 @@ def handle_import_da(
             details={"error": str(e)},
         ) from e
 
-    # Print operation summary
-    print_operation_summary(params, da_completed, durations)
-
-    # Fetch and display results if requested
+    # Show import summary (includes Workbench link)
     if da_completed:
-        # Check if any results were requested
-        any_results_requested = any(
-            getattr(params, flag, False)
-            for flag in [
-                "show_licenses",
-                "show_components",
-                "show_dependencies",
-                "show_scan_metrics",
-                "show_policy_warnings",
-                "show_vulnerabilities",
-            ]
+        print_import_summary(
+            client,
+            params,
+            scan_code,
+            da_completed,
+            show_summary=getattr(params, "show_summary", False),
         )
-
-        if any_results_requested:
-            print("\n--- Fetching Results ---")
-            try:
-                fetch_display_save_results(client, params, scan_code)
-            except Exception as e:
-                logger.warning(f"Failed to fetch and display results: {e}")
-                print(f"Warning: Failed to fetch and display results: {e}")
+    else:
+        # Import didn't complete, just show link
+        print_import_summary(
+            client,
+            params,
+            scan_code,
+            False,
+            show_summary=False,
+        )
 
     return da_completed

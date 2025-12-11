@@ -7,9 +7,8 @@ from typing import TYPE_CHECKING
 from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.post_scan_summary import (
-    fetch_display_save_results,
     format_duration,
-    print_operation_summary,
+    print_scan_summary,
 )
 from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 from workbench_agent.utilities.toolbox_wrapper import ToolboxWrapper
@@ -254,6 +253,16 @@ def handle_blind_scan(
                     "You can check the status later using the "
                     "'show-results' command."
                 )
+                # Always show only link in no-wait mode (avoid stale data)
+                scan_operations["da_completed"] = False
+                print_scan_summary(
+                    client,
+                    params,
+                    scan_code,
+                    durations,
+                    show_summary=False,
+                    scan_operations=scan_operations,
+                )
                 return True
 
             # Wait for dependency analysis to complete
@@ -331,6 +340,16 @@ def handle_blind_scan(
                     "\nExiting without waiting for completion "
                     "(--no-wait mode)."
                 )
+                # Always show only link in no-wait mode (avoid stale data)
+                scan_operations["da_completed"] = False
+                print_scan_summary(
+                    client,
+                    params,
+                    scan_code,
+                    durations,
+                    show_summary=False,
+                    scan_operations=scan_operations,
+                )
                 return True
             else:
                 # Determine which processes to wait for
@@ -387,22 +406,15 @@ def handle_blind_scan(
                     da_completed = False
 
         # Print standardized operation summary
-        print_operation_summary(params, da_completed, durations)
-
-        # ===== STEP 7: Show results if requested =====
-        if any(
-            [
-                params.show_licenses,
-                params.show_components,
-                params.show_dependencies,
-                params.show_scan_metrics,
-                params.show_policy_warnings,
-                params.show_vulnerabilities,
-            ]
-        ):
-            fetch_display_save_results(client, params, scan_code)
-
-        print("\n✅ Blind Scan completed successfully!")
+        scan_operations["da_completed"] = da_completed
+        print_scan_summary(
+            client,
+            params,
+            scan_code,
+            durations,
+            show_summary=getattr(params, "show_summary", False),
+            scan_operations=scan_operations,
+        )
 
         return True
 

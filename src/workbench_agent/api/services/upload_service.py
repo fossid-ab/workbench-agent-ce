@@ -39,7 +39,7 @@ class UploadService:
     - Managing temporary files and cleanup
 
     Architecture:
-    - Service layer: File preparation, header building, upload strategy decision
+    - Service layer: Prepare Files, Build Headers, Decide Upload Strategy
     - Client layer: Raw HTTP API calls (standard and chunked implementations)
 
     Example:
@@ -115,7 +115,7 @@ class UploadService:
             upload_path = path
             if os.path.isdir(path):
                 print(
-                    "The path provided is a directory. Compressing for upload..."
+                    "The path provided is a directory. Compressing..."
                 )
                 archive_path = UploadArchivePrep.create_zip_archive(path)
                 upload_path = archive_path

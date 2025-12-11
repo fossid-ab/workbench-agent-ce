@@ -9,18 +9,15 @@ including result fetching, display, formatting, and file operations.
 
 import argparse
 import json
-from typing import Dict, Optional
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import mock_open, patch
 
 import pytest
 
-from workbench_agent.api.exceptions import ApiError
-from workbench_agent.utilities.post_scan_summary import (
+from workbench_agent.utilities.post_scan_summary import format_duration
+from workbench_agent.utilities.result_utilities import (
     display_results,
     fetch_display_save_results,
     fetch_results,
-    format_duration,
-    print_operation_summary,
     save_results_to_file,
 )
 
@@ -76,9 +73,12 @@ def mock_workbench(mocker):
     """Create a mock WorkbenchClient instance."""
     workbench = mocker.MagicMock()
 
-    # Data retrieval used by fetch_results (via results service)
+    # ResultsService.fetch_results() is now called by result_utilities.fetch_results()
+    workbench.results.fetch_results = mocker.MagicMock(return_value={})
+
+    # Individual methods may still be used by other code
     workbench.results.get_dependencies = mocker.MagicMock()
-    workbench.results.get_identified_licenses = mocker.MagicMock()
+    workbench.results.get_unique_identified_licenses = mocker.MagicMock()
     workbench.results.get_identified_components = mocker.MagicMock()
     workbench.results.get_scan_metrics = mocker.MagicMock()
     workbench.results.get_policy_warnings = mocker.MagicMock()
@@ -218,53 +218,53 @@ class TestFetchResults:
     def test_fetch_license_results(self, mock_workbench, mock_params):
         """Test fetching license results."""
         mock_params.show_licenses = True
-        mock_workbench.results.get_dependencies.return_value = [
-            SAMPLE_DEPENDENCY_DATA
-        ]
-        mock_workbench.results.get_identified_licenses.return_value = [
-            SAMPLE_LICENSE_DATA
-        ]
+        # Mock ResultsService.fetch_results() which is now called by fetch_results
+        mock_workbench.results.fetch_results.return_value = {
+            "dependency_analysis": [SAMPLE_DEPENDENCY_DATA],
+            "kb_licenses": [SAMPLE_LICENSE_DATA],
+        }
 
         result = fetch_results(mock_workbench, mock_params, TEST_SCAN_CODE)
 
         assert "dependency_analysis" in result
         assert "kb_licenses" in result
-        mock_workbench.results.get_dependencies.assert_called_once_with(
-            TEST_SCAN_CODE
-        )
-        mock_workbench.results.get_identified_licenses.assert_called_once_with(
-            TEST_SCAN_CODE
+        mock_workbench.results.fetch_results.assert_called_once_with(
+            TEST_SCAN_CODE, mock_params
         )
 
     def test_fetch_vulnerabilities(self, mock_workbench, mock_params):
         """Test fetching vulnerability results."""
         mock_params.show_vulnerabilities = True
-        mock_workbench.results.get_vulnerabilities.return_value = [
-            SAMPLE_VULNERABILITY_DATA
-        ]
+        # Mock ResultsService.fetch_results() which is now called by fetch_results
+        mock_workbench.results.fetch_results.return_value = {
+            "vulnerabilities": [SAMPLE_VULNERABILITY_DATA],
+        }
 
         result = fetch_results(mock_workbench, mock_params, TEST_SCAN_CODE)
 
         assert "vulnerabilities" in result
-        mock_workbench.results.get_vulnerabilities.assert_called_once_with(
-            TEST_SCAN_CODE
+        mock_workbench.results.fetch_results.assert_called_once_with(
+            TEST_SCAN_CODE, mock_params
         )
 
     def test_api_error_handling(self, mock_workbench, mock_params):
         """Test graceful handling of API errors during result fetching."""
         mock_params.show_licenses = True
-        mock_workbench.results.get_dependencies.side_effect = ApiError(
-            "Service unavailable"
-        )
-        mock_workbench.results.get_identified_licenses.return_value = [
-            SAMPLE_LICENSE_DATA
-        ]
+        # Mock ResultsService.fetch_results() to return partial results
+        # (simulating that some calls succeeded, some failed)
+        mock_workbench.results.fetch_results.return_value = {
+            "kb_licenses": [SAMPLE_LICENSE_DATA],
+            # dependency_analysis missing due to API error
+        }
 
         # Should not raise, should return partial results
         result = fetch_results(mock_workbench, mock_params, TEST_SCAN_CODE)
 
         # Should return kb_licenses since that call succeeded
         assert "kb_licenses" in result
+        mock_workbench.results.fetch_results.assert_called_once_with(
+            TEST_SCAN_CODE, mock_params
+        )
 
 
 class TestDisplayResults:
@@ -287,10 +287,10 @@ class TestDisplayResults:
 class TestFetchDisplaySaveResults:
     """Test cases for the fetch_display_save_results orchestration function."""
 
-    @patch("workbench_agent.utilities.post_scan_summary.fetch_results")
-    @patch("workbench_agent.utilities.post_scan_summary.display_results")
+    @patch("workbench_agent.utilities.result_utilities.fetch_results")
+    @patch("workbench_agent.utilities.result_utilities.display_results")
     @patch(
-        "workbench_agent.utilities.post_scan_summary.save_results_to_file"
+        "workbench_agent.utilities.result_utilities.save_results_to_file"
     )
     def test_complete_workflow(
         self,
@@ -316,8 +316,8 @@ class TestFetchDisplaySaveResults:
         mock_display.assert_called_once_with({"test": "data"}, mock_params)
         mock_save.assert_called_once_with("output.json", {"test": "data"})
 
-    @patch("workbench_agent.utilities.post_scan_summary.fetch_results")
-    @patch("workbench_agent.utilities.post_scan_summary.display_results")
+    @patch("workbench_agent.utilities.result_utilities.fetch_results")
+    @patch("workbench_agent.utilities.result_utilities.display_results")
     def test_no_save_specified(
         self, mock_display, mock_fetch, mock_workbench, mock_params
     ):
@@ -337,36 +337,3 @@ class TestFetchDisplaySaveResults:
         mock_display.assert_called_once_with({"test": "data"}, mock_params)
 
 
-# ============================================================================
-# OPERATION SUMMARY TESTS
-# ============================================================================
-
-
-class TestPrintOperationSummary:
-    """Test cases for the print_operation_summary function."""
-
-    def test_basic_summary(self, mock_params):
-        """Test basic operation summary."""
-        mock_params.command = "scan"
-
-        # Should complete without errors
-        print_operation_summary(mock_params, True)
-
-    def test_summary_with_durations(self, mock_params):
-        """Test operation summary with timing information."""
-        mock_params.command = "scan"
-        durations = {"kb_scan": 120.5, "dependency_analysis": 60.0}
-
-        # Should complete without errors
-        print_operation_summary(
-            mock_params,
-            True,
-            durations,
-        )
-
-    def test_summary_when_da_failed(self, mock_params):
-        """Test operation summary when dependency analysis failed."""
-        mock_params.command = "scan"
-
-        # Should complete without errors
-        print_operation_summary(mock_params, False)

@@ -23,11 +23,11 @@ class WorkbenchLinks:
     """
     Helper class providing property-based access to Workbench UI links.
 
-    This class is returned by ResultsService.links() and provides
+    This class is returned by ResultsService.workbench_links() and provides
     convenient property access to different Workbench views.
 
     Example:
-        >>> links = results_service.links(scan_id=123)
+        >>> links = results_service.workbench_links(scan_id=123)
         >>> print(links.pending['url'])
         >>> print(links.scan['message'])
     """
@@ -117,7 +117,7 @@ class ResultsService:
         >>> results_service = ResultsService(scans_client, vulns_client)
         >>>
         >>> # Fetch specific result types
-        >>> licenses = results_service.get_identified_licenses(scan_code)
+        >>> licenses = results_service.get_unique_identified_licenses(scan_code)
         >>> vulns = results_service.get_vulnerabilities(scan_code)
         >>>
         >>> # Fetch all results based on params
@@ -139,7 +139,7 @@ class ResultsService:
 
     # ===== WORKBENCH UI LINKS =====
 
-    def links(self, scan_id: int) -> WorkbenchLinks:
+    def workbench_links(self, scan_id: int) -> WorkbenchLinks:
         """
         Get a WorkbenchLinks object for property-based link access.
 
@@ -150,92 +150,133 @@ class ResultsService:
             WorkbenchLinks instance with properties for different views
 
         Example:
-            >>> links = results_service.links(scan_id=123)
+            >>> links = results_service.workbench_links(scan_id=123)
             >>> print(links.pending['url'])
             >>> print(links.scan['message'])
         """
         api_url = self._scans._api.api_url
         return WorkbenchLinks(api_url, scan_id)
 
-    def link_to_scan(self, scan_id: int) -> Dict[str, str]:
+    def get_workbench_links(self, scan_code: str) -> WorkbenchLinks:
         """
-        Get link to the main scan view.
+        Get a WorkbenchLinks object from scan_code.
+
+        This is a convenience method that converts scan_code to scan_id
+        and returns the WorkbenchLinks object.
 
         Args:
-            scan_id: The scan ID
+            scan_code: Code of the scan
 
         Returns:
-            Dictionary with 'url' and 'message' keys
+            WorkbenchLinks instance with properties for different views
+
+        Raises:
+            ScanNotFoundError: If scan doesn't exist
+            ApiError: If there are API issues
+
+        Example:
+            >>> links = results_service.get_workbench_links("SCAN123")
+            >>> print(links.scan['url'])
         """
-        return self.links(scan_id).scan
-
-    def link_to_pending(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to pending items view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).pending
-
-    def link_to_identified(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to identified components view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).identified
-
-    def link_to_dependencies(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to dependencies view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).dependencies
-
-    def link_to_policy(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to policy warnings view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).policy
-
-    def link_to_vulnerabilities(self, scan_id: int) -> Dict[str, str]:
-        """
-        Get link to vulnerable components view.
-
-        Args:
-            scan_id: The scan ID
-
-        Returns:
-            Dictionary with 'url' and 'message' keys
-        """
-        return self.links(scan_id).vulnerabilities
+        scan_info = self._scans.get_information(scan_code)
+        scan_id = scan_info.get("id")
+        if not scan_id:
+            raise ApiError(f"Scan '{scan_code}' has no ID")
+        return self.workbench_links(int(scan_id))
 
     # ===== PUBLIC API - INDIVIDUAL RESULT FETCHERS =====
+
+    def get_unique_identified_licenses(
+        self, scan_code: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Get unique identified licenses from KB scanning.
+
+        Returns only unique license identifiers and names, without file paths.
+        This is the recommended method for most use cases where you need a
+        summary of licenses found in the scan.
+
+        Args:
+            scan_code: Code of the scan to fetch licenses from
+
+        Returns:
+            List of unique license dictionaries with identifier and name:
+            [{"identifier": str, "name": str}, ...]
+
+        Raises:
+            ApiError: If there are API issues
+            NetworkError: If there are network issues
+            ScanNotFoundError: If the scan doesn't exist
+
+        Example:
+            >>> licenses = results_service.get_unique_identified_licenses(
+            ...     "SCAN123"
+            ... )
+            >>> for lic in licenses:
+            ...     print(f"{lic['identifier']}: {lic['name']}")
+        """
+        logger.debug(
+            f"Fetching unique identified licenses for scan '{scan_code}'"
+        )
+        licenses: List[Dict[str, Any]] = (
+            self._scans.get_scan_identified_licenses(
+                scan_code, unique=True
+            )
+        )
+        logger.debug(f"Retrieved {len(licenses)} unique licenses")
+        return licenses
+
+    def get_all_identified_licenses(
+        self, scan_code: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all identified licenses from KB scanning with file paths.
+
+        Returns all license occurrences including file paths where each license
+        was found. This is useful when you need to know which files contain
+        specific licenses.
+
+        Args:
+            scan_code: Code of the scan to fetch licenses from
+
+        Returns:
+            List of license dictionaries with identifier, name, and local_path:
+            [{"identifier": str, "name": str, "local_path": str}, ...]
+
+        Raises:
+            ApiError: If there are API issues
+            NetworkError: If there are network issues
+            ScanNotFoundError: If the scan doesn't exist
+
+        Example:
+            >>> licenses = results_service.get_all_identified_licenses(
+            ...     "SCAN123"
+            ... )
+            >>> for lic in licenses:
+            ...     print(f"{lic['identifier']} in {lic['local_path']}")
+        """
+        logger.debug(
+            f"Fetching all identified licenses for scan '{scan_code}'"
+        )
+        licenses: List[Dict[str, Any]] = (
+            self._scans.get_scan_identified_licenses(
+                scan_code, unique=False
+            )
+        )
+        logger.debug(f"Retrieved {len(licenses)} license occurrences")
+        return licenses
 
     def get_identified_licenses(
         self, scan_code: str, unique: bool = True
     ) -> List[Dict[str, Any]]:
         """
         Get identified licenses from KB scanning.
+
+        .. deprecated:: Use get_unique_identified_licenses() or
+                        get_all_identified_licenses() instead.
+
+        This method is kept for backward compatibility but will be removed
+        in a future version. Use the more explicit method names instead.
 
         Args:
             scan_code: Code of the scan to fetch licenses from
@@ -248,25 +289,11 @@ class ResultsService:
             ApiError: If there are API issues
             NetworkError: If there are network issues
             ScanNotFoundError: If the scan doesn't exist
-
-        Example:
-            >>> licenses = results_service.get_identified_licenses(
-            ...     "SCAN123"
-            ... )
-            >>> for lic in licenses:
-            ...     print(f"{lic['identifier']}: {lic['name']}")
         """
-        logger.debug(
-            f"Fetching identified licenses for scan '{scan_code}' "
-            f"(unique={unique})"
-        )
-        licenses: List[Dict[str, Any]] = (
-            self._scans.get_scan_identified_licenses(
-                scan_code, unique=unique
-            )
-        )
-        logger.debug(f"Retrieved {len(licenses)} licenses")
-        return licenses
+        if unique:
+            return self.get_unique_identified_licenses(scan_code)
+        else:
+            return self.get_all_identified_licenses(scan_code)
 
     def get_identified_components(
         self, scan_code: str
@@ -534,7 +561,7 @@ class ResultsService:
         # Fetch KB licenses
         if should_fetch_licenses:
             try:
-                kb_licenses = self.get_identified_licenses(scan_code)
+                kb_licenses = self.get_unique_identified_licenses(scan_code)
                 if kb_licenses:
                     # Sort by identifier for consistent display
                     collected_results["kb_licenses"] = sorted(

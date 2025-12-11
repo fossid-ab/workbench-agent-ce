@@ -105,7 +105,7 @@ class TestWorkbenchLinks:
 
     def test_basic_link_generation(self, mock_results_service):
         """Test basic link generation with standard API URL."""
-        links = mock_results_service.links(TEST_SCAN_ID)
+        links = mock_results_service.workbench_links(TEST_SCAN_ID)
 
         # Should have all expected link properties
         assert hasattr(links, "scan")
@@ -122,7 +122,7 @@ class TestWorkbenchLinks:
 
     def test_url_structure_correctness(self, mock_results_service):
         """Test that generated URLs have correct structure."""
-        links = mock_results_service.links(TEST_SCAN_ID)
+        links = mock_results_service.workbench_links(TEST_SCAN_ID)
 
         # Test scan link (with current_view=all_items)
         scan_url = links.scan["url"]
@@ -150,7 +150,7 @@ class TestWorkbenchLinks:
 
     def test_message_correctness(self, mock_results_service):
         """Test that generated messages match expectations."""
-        links = mock_results_service.links(TEST_SCAN_ID)
+        links = mock_results_service.workbench_links(TEST_SCAN_ID)
 
         assert links.scan["message"] == EXPECTED_MESSAGES["scan"]
         assert links.pending["message"] == EXPECTED_MESSAGES["pending"]
@@ -179,7 +179,7 @@ class TestWorkbenchLinks:
         results_service = ResultsService(
             mock_scans_client, mock_vulns_client
         )
-        links = results_service.links(TEST_SCAN_ID)
+        links = results_service.workbench_links(TEST_SCAN_ID)
 
         # All URLs should be properly formatted regardless of input
         for prop_name in ["scan", "pending", "policy"]:
@@ -190,17 +190,17 @@ class TestWorkbenchLinks:
     def test_scan_id_type_handling(self, mock_results_service):
         """Test that function handles different scan_id types."""
         # Test with integer
-        links_int = mock_results_service.links(123)
+        links_int = mock_results_service.workbench_links(123)
         assert "sid=123" in links_int.scan["url"]
 
         # Test with string (should work, gets converted in URL)
-        links_str = mock_results_service.links(456)
+        links_str = mock_results_service.workbench_links(456)
         assert "sid=456" in links_str.scan["url"]
 
     def test_result_consistency(self, mock_results_service):
         """Test that multiple calls return consistent results."""
-        links1 = mock_results_service.links(TEST_SCAN_ID)
-        links2 = mock_results_service.links(TEST_SCAN_ID)
+        links1 = mock_results_service.workbench_links(TEST_SCAN_ID)
+        links2 = mock_results_service.workbench_links(TEST_SCAN_ID)
 
         # Compare URLs and messages
         assert links1.scan["url"] == links2.scan["url"]
@@ -232,13 +232,13 @@ class TestWorkbenchLinks:
             results_service = ResultsService(
                 mock_scans_client, mock_vulns_client
             )
-            links = results_service.links(TEST_SCAN_ID)
+            links = results_service.workbench_links(TEST_SCAN_ID)
             scan_url = links.scan["url"]
             assert scan_url.startswith(f"{expected_base}/index.html")
 
     def test_required_url_elements_present(self, mock_results_service):
         """Test that all links contain required URL elements."""
-        links = mock_results_service.links(TEST_SCAN_ID)
+        links = mock_results_service.workbench_links(TEST_SCAN_ID)
 
         required_params = [
             "form=main_interface",
@@ -264,7 +264,7 @@ class TestWorkbenchLinks:
 
     def test_view_parameters_correctness(self, mock_results_service):
         """Test that view parameters are correctly added to URLs."""
-        links = mock_results_service.links(TEST_SCAN_ID)
+        links = mock_results_service.workbench_links(TEST_SCAN_ID)
 
         # Scan link should have current_view=all_items
         assert "current_view=all_items" in links.scan["url"]
@@ -279,17 +279,3 @@ class TestWorkbenchLinks:
         assert (
             "current_view=dependency_analysis" in links.dependencies["url"]
         )
-
-    def test_direct_method_access(self, mock_results_service):
-        """Test direct method access like link_to_pending."""
-        pending_link = mock_results_service.link_to_pending(TEST_SCAN_ID)
-        assert_link_data_structure(pending_link)
-        assert "current_view=pending_items" in pending_link["url"]
-
-        scan_link = mock_results_service.link_to_scan(TEST_SCAN_ID)
-        assert_link_data_structure(scan_link)
-        assert "current_view=all_items" in scan_link["url"]
-
-        policy_link = mock_results_service.link_to_policy(TEST_SCAN_ID)
-        assert_link_data_structure(policy_link)
-        assert "current_view=mark_as_identified" in policy_link["url"]
