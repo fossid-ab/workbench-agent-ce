@@ -143,9 +143,6 @@ def handle_import_sbom(
     """
     print(f"\n--- Running {params.command.upper()} Command ---")
 
-    # Initialize timing dictionary
-    durations = {"sbom_import": 0.0}
-
     # Track upload path for cleanup
     upload_path = None
     temp_file_created = False
@@ -250,8 +247,6 @@ def handle_import_sbom(
                 wait_interval=3,  # Faster for import mode
             )
 
-            # Store the SBOM import duration
-            durations["sbom_import"] = report_import_status.duration or 0.0
             sbom_completed = True
 
             print("SBOM import completed successfully.")
@@ -286,7 +281,6 @@ def handle_import_sbom(
                 params,
                 scan_code,
                 sbom_completed,
-                durations,
                 show_summary=getattr(params, "show_summary", False),
             )
         else:
@@ -296,7 +290,6 @@ def handle_import_sbom(
                 params,
                 scan_code,
                 False,
-                durations,
                 show_summary=False,
             )
 

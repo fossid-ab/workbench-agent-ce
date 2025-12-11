@@ -1,6 +1,6 @@
 import argparse
 import logging
-from typing import TYPE_CHECKING, Dict, Optional, Set
+from typing import TYPE_CHECKING, Optional, Set
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -83,7 +83,6 @@ def print_report_summary(
     error_types: list,
     scan_code: Optional[str] = None,
     project_code: Optional[str] = None,
-    durations: Optional[Dict[str, float]] = None,
     show_summary: bool = False,
 ):
     """
@@ -103,10 +102,8 @@ def print_report_summary(
         error_types: List of report types that failed
         scan_code: Scan code (for scan-scope reports)
         project_code: Project code (for project-scope reports)
-        durations: Dictionary containing operation durations in seconds
         show_summary: Whether to show the full summary (True) or just the link (False)
     """
-    durations = durations or {}
     
     # Only show detailed summary if requested
     if not show_summary:

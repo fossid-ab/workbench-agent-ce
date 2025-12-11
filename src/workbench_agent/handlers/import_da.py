@@ -55,9 +55,6 @@ def handle_import_da(
     """
     print(f"\n--- Running {params.command.upper()} Command ---")
 
-    # Initialize timing dictionary
-    durations = {"dependency_analysis": 0.0}
-
     # Note: Path existence, file type, and filename validation
     # are handled at CLI layer (cli/validators.py)
 
@@ -133,10 +130,6 @@ def handle_import_da(
             wait_interval=3,  # Faster for import-only mode
         )
 
-        # Store the DA import duration
-        durations["dependency_analysis"] = (
-            dependency_analysis_status.duration or 0.0
-        )
         da_completed = True
 
         print("Dependency Analysis import completed successfully.")
@@ -173,7 +166,6 @@ def handle_import_da(
             params,
             scan_code,
             da_completed,
-            durations,
             show_summary=getattr(params, "show_summary", False),
         )
     else:
@@ -183,7 +175,6 @@ def handle_import_da(
             params,
             scan_code,
             False,
-            durations,
             show_summary=False,
         )
 

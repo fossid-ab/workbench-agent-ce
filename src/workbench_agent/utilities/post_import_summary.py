@@ -1,6 +1,6 @@
 import argparse
 import logging
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -13,7 +13,6 @@ def print_import_summary(
     params: argparse.Namespace,
     scan_code: str,
     import_completed: bool,
-    durations: Optional[Dict[str, float]] = None,
     show_summary: bool = False,
 ):
     """
@@ -29,12 +28,9 @@ def print_import_summary(
         params: Command line parameters
         scan_code: Scan code to fetch results from
         import_completed: Whether the import completed successfully
-        durations: Dictionary containing operation durations in seconds
         show_summary: Whether to show the full summary (True) or just the link (False)
     """
     from workbench_agent.api.exceptions import ApiError, NetworkError
-    
-    durations = durations or {}
     
     # Only show detailed summary if requested
     if not show_summary:
