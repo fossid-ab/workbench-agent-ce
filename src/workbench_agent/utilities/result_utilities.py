@@ -25,8 +25,8 @@ def fetch_results(
     """
     Fetches requested scan results based on --show-* flags.
 
-    This function orchestrates fetching multiple result types using individual
-    ResultsService methods. It handles errors gracefully, allowing partial
+    This function delegates to ResultsService.fetch_results() which orchestrates
+    fetching multiple result types. It handles errors gracefully, allowing partial
     results to be returned even if some fetches fail.
 
     Args:
@@ -43,8 +43,7 @@ def fetch_results(
         - policy_warnings: Warnings dictionary (if requested)
         - vulnerabilities: List of vulnerabilities (if requested)
     """
-    from workbench_agent.api.exceptions import ApiError, NetworkError
-
+    # Check if any results are requested
     should_fetch_licenses = getattr(params, "show_licenses", False)
     should_fetch_components = getattr(params, "show_components", False)
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
@@ -70,83 +69,8 @@ def fetch_results(
         )
         return {}
 
-    logger.debug("\n=== Fetching Requested Results ===")
-    collected_results: Dict[str, Any] = {}
-
-    # Fetch dependency analysis (needed for licenses and dependencies)
-    if should_fetch_licenses or should_fetch_dependencies:
-        try:
-            da_results = workbench.results.get_dependencies(scan_code)
-            if da_results:
-                collected_results["dependency_analysis"] = da_results
-        except (ApiError, NetworkError) as e:
-            print(
-                f"Warning: Could not fetch Dependency Analysis results: {e}"
-            )
-
-    # Fetch KB licenses
-    if should_fetch_licenses:
-        try:
-            kb_licenses = workbench.results.get_unique_identified_licenses(
-                scan_code
-            )
-            if kb_licenses:
-                collected_results["kb_licenses"] = sorted(
-                    kb_licenses,
-                    key=lambda x: x.get("identifier", "").lower(),
-                )
-        except (ApiError, NetworkError) as e:
-            print(f"Warning: Could not fetch KB Identified Licenses: {e}")
-
-    # Fetch KB components
-    if should_fetch_components:
-        try:
-            kb_components = workbench.results.get_identified_components(
-                scan_code
-            )
-            if kb_components:
-                collected_results["kb_components"] = sorted(
-                    kb_components,
-                    key=lambda x: (
-                        x.get("name", "").lower(),
-                        x.get("version", ""),
-                    ),
-                )
-        except (ApiError, NetworkError) as e:
-            print(
-                f"Warning: Could not fetch KB Identified Scan Components: {e}"
-            )
-
-    # Fetch scan metrics
-    if should_fetch_metrics:
-        try:
-            collected_results["scan_metrics"] = (
-                workbench.results.get_scan_metrics(scan_code)
-            )
-        except (ApiError, NetworkError) as e:
-            print(f"Warning: Could not fetch Scan File Metrics: {e}")
-
-    # Fetch policy warnings
-    if should_fetch_policy:
-        try:
-            collected_results["policy_warnings"] = (
-                workbench.results.get_policy_warnings(scan_code)
-            )
-        except (ApiError, NetworkError) as e:
-            print(f"Warning: Could not fetch Scan Policy Warnings: {e}")
-
-    # Fetch vulnerabilities
-    if should_fetch_vulnerabilities:
-        try:
-            vulnerabilities = workbench.results.get_vulnerabilities(
-                scan_code
-            )
-            if vulnerabilities:
-                collected_results["vulnerabilities"] = vulnerabilities
-        except (ApiError, NetworkError) as e:
-            print(f"Warning: Could not fetch Vulnerabilities: {e}")
-
-    return collected_results
+    # Delegate to ResultsService.fetch_results() which handles all the fetching logic
+    return workbench.results.fetch_results(scan_code, params)
 
 
 def display_results(

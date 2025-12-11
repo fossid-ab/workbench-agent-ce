@@ -1,8 +1,14 @@
+"""
+Post-scan summary utilities for displaying scan operation results.
+
+This module provides functions for formatting and displaying comprehensive
+post-scan summaries including operation details, identification metrics,
+components/licenses, and security risks.
+"""
+
 import argparse
-import json
 import logging
-import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 
 from workbench_agent.utilities.scan_workflows import determine_scans_to_run
 
@@ -11,21 +17,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("workbench-agent")
 
-# --- Result Fetching, Display, and Saving ---
-
-
-# Result utilities have been moved to result_utilities.py
-# Import them from there if needed for backward compatibility
-from workbench_agent.utilities.result_utilities import (
-    fetch_display_save_results,
-    fetch_results,
-    display_results,
-    save_results_to_file,
-)
-
 
 # --- Formatting and Summaries ---
-
 
 def format_duration(duration_seconds: Optional[Union[int, float]]) -> str:
     """Formats a duration in seconds into a 'X minutes, Y seconds' string."""
@@ -45,143 +38,6 @@ def format_duration(duration_seconds: Optional[Union[int, float]]) -> str:
         return "1 second"
     else:
         return f"{seconds} seconds"
-
-
-def print_operation_summary(
-    params: argparse.Namespace,
-    da_completed: bool,
-    durations: Optional[Dict[str, float]] = None,
-):
-    """
-    Prints a standardized summary of the scan operations performed and settings used.
-
-    Args:
-        params: Command line parameters
-        da_completed: Whether dependency analysis completed successfully
-        durations: Dictionary containing operation durations in seconds
-    """
-    durations = durations or {}  # Initialize to empty dict if None
-
-    print("\n--- Operation Summary ---")
-
-    print("Workbench Agent Operation Details:")
-    if params.command == "scan":
-        print("  - Method: Code Upload (using --path)")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-        print(
-            f"  - Recursive Archive Extraction: {getattr(params, 'recursively_extract_archives', 'N/A')}"
-        )
-        print(
-            f"  - JAR File Extraction: {getattr(params, 'jar_file_extraction', 'N/A')}"
-        )
-    elif params.command == "scan-git":
-        print("  - Method: Git Scan")
-        print(
-            f"  - Git Repository URL: {getattr(params, 'git_url', 'N/A')}"
-        )
-        if getattr(params, "git_tag", None):
-            print(f"  - Git Tag: {params.git_tag}")
-        elif getattr(params, "git_branch", None):
-            print(f"  - Git Branch: {params.git_branch}")
-        elif getattr(params, "git_commit", None):
-            print(f"  - Git Commit: {params.git_commit}")
-        else:
-            print("  - Git Branch/Tag/Commit: Not Specified")
-        if getattr(params, "git_depth", None) is not None:
-            print(f"  - Git Clone Depth: {params.git_depth}")
-    elif params.command == "blind-scan":
-        print("  - Method: Blind Scan (hash-based scanning)")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-    elif params.command == "import-da":
-        print("  - Method: Dependency Analysis Import")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-    elif params.command == "import-sbom":
-        print("  - Method: SBOM Import")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-    else:
-        print(f"  - Method: Unknown ({params.command})")
-
-    if params.command in ["scan", "scan-git", "blind-scan"]:
-        print("\nScan Parameters:")
-        print(
-            f"  - Auto-ID File Licenses: {'Yes' if getattr(params, 'autoid_file_licenses', False) else 'No'}"
-        )
-        print(
-            f"  - Auto-ID File Copyrights: {'Yes' if getattr(params, 'autoid_file_copyrights', False) else 'No'}"
-        )
-        print(
-            f"  - Auto-ID Pending IDs: {'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
-        )
-        print(
-            f"  - Delta Scan: {'Yes' if getattr(params, 'delta_scan', False) else 'No'}"
-        )
-
-        # Check if any ID reuse option is enabled
-        id_reuse_enabled = any(
-            [
-                getattr(params, "reuse_any_identification", False),
-                getattr(params, "reuse_my_identifications", False),
-                getattr(params, "reuse_project_ids", None) is not None,
-                getattr(params, "reuse_scan_ids", None) is not None,
-            ]
-        )
-        print(
-            f"  - Identification Reuse: {'Yes' if id_reuse_enabled else 'No'}"
-        )
-
-        # Show ID reuse details if enabled
-        if id_reuse_enabled:
-            if getattr(params, "reuse_any_identification", False):
-                print("    - Reuse Type: Any identification")
-            elif getattr(params, "reuse_my_identifications", False):
-                print("    - Reuse Type: My identifications only")
-            elif getattr(params, "reuse_project_ids", None):
-                print(
-                    f"    - Reuse Type: Project "
-                    f"'{params.reuse_project_ids}'"
-                )
-            elif getattr(params, "reuse_scan_ids", None):
-                print(f"    - Reuse Type: Scan '{params.reuse_scan_ids}'")
-
-    # Skip "Analysis Performed" section for import operations
-    if params.command not in ["import-sbom", "import-da"]:
-        print("\nAnalysis Performed:")
-
-        # Determine what scans were actually performed
-        scan_operations = determine_scans_to_run(params)
-        kb_scan_performed = scan_operations.get("run_kb_scan", False)
-        da_requested = scan_operations.get(
-            "run_dependency_analysis", False
-        )
-
-        # Add durations to output only for KB scan and Dependency Analysis
-        if kb_scan_performed:
-            kb_duration_str = (
-                format_duration(durations.get("kb_scan", 0))
-                if durations.get("kb_scan")
-                else "N/A"
-            )
-            print(f"  - Signature Scan: Yes (Duration: {kb_duration_str})")
-        else:
-            print("  - Signature Scan: No")
-
-        if da_completed:
-            da_duration_str = (
-                format_duration(durations.get("dependency_analysis", 0))
-                if durations.get("dependency_analysis")
-                else "N/A"
-            )
-            print(
-                f"  - Dependency Analysis: Yes (Duration: {da_duration_str})"
-            )
-        elif da_requested and not da_completed:
-            print(
-                "  - Dependency Analysis: Requested but failed/incomplete"
-            )
-        else:
-            print("  - Dependency Analysis: No")
-
-    print("------------------------------------")
 
 
 def _print_workbench_link(workbench: "WorkbenchClient", scan_code: str):
@@ -448,132 +304,3 @@ def print_scan_summary(
     
     # Always show Workbench link
     _print_workbench_link(workbench, scan_code)
-
-
-def print_scan_summary_legacy(
-    params: argparse.Namespace,
-    da_completed: bool,
-    durations: Optional[Dict[str, float]] = None,
-):
-    """
-    Legacy summary format for scan operations (current behavior).
-    
-    This function contains the current print_operation_summary logic
-    for scan commands. Used when --show-summary is NOT provided.
-    
-    Args:
-        params: Command line parameters
-        da_completed: Whether dependency analysis completed successfully
-        durations: Dictionary containing operation durations in seconds
-    """
-    durations = durations or {}
-    
-    print("\n--- Operation Summary ---")
-    
-    print("Workbench Agent Operation Details:")
-    if params.command == "scan":
-        print("  - Method: Code Upload (using --path)")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-        print(
-            f"  - Recursive Archive Extraction: {getattr(params, 'recursively_extract_archives', 'N/A')}"
-        )
-        print(
-            f"  - JAR File Extraction: {getattr(params, 'jar_file_extraction', 'N/A')}"
-        )
-    elif params.command == "scan-git":
-        print("  - Method: Git Scan")
-        print(
-            f"  - Git Repository URL: {getattr(params, 'git_url', 'N/A')}"
-        )
-        if getattr(params, "git_tag", None):
-            print(f"  - Git Tag: {params.git_tag}")
-        elif getattr(params, "git_branch", None):
-            print(f"  - Git Branch: {params.git_branch}")
-        elif getattr(params, "git_commit", None):
-            print(f"  - Git Commit: {params.git_commit}")
-        else:
-            print("  - Git Branch/Tag/Commit: Not Specified")
-        if getattr(params, "git_depth", None) is not None:
-            print(f"  - Git Clone Depth: {params.git_depth}")
-    elif params.command == "blind-scan":
-        print("  - Method: Blind Scan (hash-based scanning)")
-        print(f"  - Source Path: {getattr(params, 'path', 'N/A')}")
-    
-    print("\nScan Parameters:")
-    print(
-        f"  - Auto-ID File Licenses: {'Yes' if getattr(params, 'autoid_file_licenses', False) else 'No'}"
-    )
-    print(
-        f"  - Auto-ID File Copyrights: {'Yes' if getattr(params, 'autoid_file_copyrights', False) else 'No'}"
-    )
-    print(
-        f"  - Auto-ID Pending IDs: {'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
-    )
-    print(
-        f"  - Delta Scan: {'Yes' if getattr(params, 'delta_scan', False) else 'No'}"
-    )
-    
-    # Check if any ID reuse option is enabled
-    id_reuse_enabled = any(
-        [
-            getattr(params, "reuse_any_identification", False),
-            getattr(params, "reuse_my_identifications", False),
-            getattr(params, "reuse_project_ids", None) is not None,
-            getattr(params, "reuse_scan_ids", None) is not None,
-        ]
-    )
-    print(
-        f"  - Identification Reuse: {'Yes' if id_reuse_enabled else 'No'}"
-    )
-    
-    # Show ID reuse details if enabled
-    if id_reuse_enabled:
-        if getattr(params, "reuse_any_identification", False):
-            print("    - Reuse Type: Any identification")
-        elif getattr(params, "reuse_my_identifications", False):
-            print("    - Reuse Type: My identifications only")
-        elif getattr(params, "reuse_project_ids", None):
-            print(
-                f"    - Reuse Type: Project "
-                f"'{params.reuse_project_ids}'"
-            )
-        elif getattr(params, "reuse_scan_ids", None):
-            print(f"    - Reuse Type: Scan '{params.reuse_scan_ids}'")
-    
-    print("\nAnalysis Performed:")
-    
-    # Determine what scans were actually performed
-    scan_operations = determine_scans_to_run(params)
-    kb_scan_performed = scan_operations.get("run_kb_scan", False)
-    da_requested = scan_operations.get(
-        "run_dependency_analysis", False
-    )
-    
-    # Add durations to output only for KB scan and Dependency Analysis
-    if kb_scan_performed:
-        kb_duration_str = (
-            format_duration(durations.get("kb_scan", 0))
-            if durations.get("kb_scan")
-            else "N/A"
-        )
-        print(f"  - Signature Scan: Yes (Duration: {kb_duration_str})")
-    else:
-        print("  - Signature Scan: No")
-    
-    if da_completed:
-        da_duration_str = (
-            format_duration(durations.get("dependency_analysis", 0))
-            if durations.get("dependency_analysis")
-            else "N/A"
-        )
-        print(
-            f"  - Dependency Analysis: Yes (Duration: {da_duration_str})"
-        )
-    elif da_requested and not da_completed:
-        print(
-            "  - Dependency Analysis: Requested but failed/incomplete"
-        )
-    else:
-        print("  - Dependency Analysis: No")
-    
-    print("------------------------------------")
