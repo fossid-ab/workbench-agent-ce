@@ -22,10 +22,6 @@ docker run ghcr.io/fossid-ab/workbench-agent-ce:latest download-reports --help
 
 The [Workbench Agent Wiki](https://github.com/fossid-ab/workbench-agent-ce/wiki) also has information on available commands. 
 
-```bash
-workbench-agent --help
-```
-
 ## Quick Start
 Visit the [Getting Started Guide](https://github.com/fossid-ab/workbench-agent-ce/wiki/Getting-Started) in the Project Wiki to run your first scan!
 
