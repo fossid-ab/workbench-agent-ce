@@ -1,5 +1,6 @@
-# This workflow can be triggered to scan a branch and evaluate gates.
-# The workflow will fail if Pending IDs or Policy Violations are found.
+# This workflow is triggered when code changes are pushed to main.
+# The first step uses scan-git to clone and delta scan main.
+# The second uses evaluate-gates to fail if Pending IDs or Policy Violations exist.
 
 name: Test Scan-Git and Evaluate Gates
 on: 
@@ -15,18 +16,7 @@ jobs:
       WORKBENCH_URL: ${{ secrets.WORKBENCH_URL }}
       WORKBENCH_USER: ${{ secrets.WORKBENCH_USER }}
       WORKBENCH_TOKEN: ${{ secrets.WORKBENCH_TOKEN }}
-    steps: #running with Python until we fix the GHCR Image 
-    - name: Checkout Workbench Agent
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install Workbench Agent Dependencies
-      run: pip install .
-
+    steps:
     - name: Clone from Git and Scan
       run: |
         docker run ghcr.io/fossid-ab/workbench-agent:latest \
