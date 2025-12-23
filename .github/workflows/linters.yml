@@ -1,5 +1,12 @@
 name: lint
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/**'
 
 jobs:
   code_linting:
