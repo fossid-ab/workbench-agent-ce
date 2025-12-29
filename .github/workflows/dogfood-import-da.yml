@@ -1,0 +1,58 @@
+# This workflow will run ORT's Analyzer then upload the analyzer-result.json it produces into Workbench.
+name: Test Import-DA with ORT 
+
+on: 
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/**'
+
+jobs:
+  workbench-scan-gate:
+    runs-on: ubuntu-latest
+    env:
+      WORKBENCH_URL: ${{ secrets.WORKBENCH_URL }}
+      WORKBENCH_USER: ${{ secrets.WORKBENCH_USER }}
+      WORKBENCH_TOKEN: ${{ secrets.WORKBENCH_TOKEN }}
+    steps: #running with Python until we fix the GHCR Image 
+    - name: Checkout Workbench Agent
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Workbench Agent Dependencies
+      run: pip install .
+
+    - name: Run ORT Analyzer
+      uses: oss-review-toolkit/ort-ci-github-action@v1
+      with:
+        allow-dynamic-versions: 'true'
+        run: >
+          analyzer
+
+    - name: Confirm the Analyzer JSON was created
+      run: ls -la /home/runner/.ort/ort-results
+
+    - name: Import DA Results
+      run: |
+        workbench-agent import-da \
+        --api-url ${{ env.WORKBENCH_URL }} \
+        --api-user ${{ env.WORKBENCH_USER }} \
+        --api-token ${{ env.WORKBENCH_TOKEN }} \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ImportDA-$GITHUB_REF_NAME \
+        --path /home/runner/.ort/ort-results/analyzer-result.json
+
+    - name: Evaluate Gates; Fail on Issues
+      run: |
+        workbench-agent evaluate-gates \
+        --api-url ${{ env.WORKBENCH_URL }} \
+        --api-user ${{ env.WORKBENCH_USER }} \
+        --api-token ${{ env.WORKBENCH_TOKEN }} \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ImportDA-$GITHUB_REF_NAME \
+        --fail-on-policy
