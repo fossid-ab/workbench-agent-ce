@@ -1,0 +1,72 @@
+name: Diff Scanning and Gating
+
+on: [pull_request]
+
+jobs:
+  run_differential_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Target Repo
+        uses: actions/checkout@v4
+        with:
+          path: target-repo
+          fetch-depth: 0 # Fetch all history for all branches and tags
+
+      - name: Fetch Base and Head Branches
+        working-directory: target-repo
+        run: |
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+          git fetch origin ${{ github.head_ref }}:${{ github.head_ref }}
+          git branch -a
+
+      - name: Create Archive of Changed Files
+        working-directory: target-repo
+        id: create-diff-archive
+        run: |
+          # Get the list of changed files
+          CHANGED_FILES=$(git diff --name-only --diff-filter=d ${{ github.base_ref }} ${{ github.head_ref }})
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No changed files found."
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "$CHANGED_FILES" | zip -@ ../diff-archive.zip
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Scan with Workbench Agent CE
+        if: steps.create-diff-archive.outputs.has_changes == 'true'
+        run: |
+          docker run --rm \
+          -v $GITHUB_WORKSPACE:/code \
+          ghcr.io/fossid-ab/workbench-agent-ce:latest \
+          scan \
+          --api-url ${{ secrets.WORKBENCH_URL }} \
+          --api-user ${{ secrets.WORKBENCH_USER }} \
+          --api-token ${{ secrets.WORKBENCH_TOKEN }} \
+          --project-name $GITHUB_REPOSITORY \
+          --scan-name Diff-$GITHUB_HEAD_REF \
+          --path /scan_target/diff-archive.zip
+          --autoid-file-licenses \
+          --autoid-file-copyrights
+
+      - name: No changes to scan
+        if: steps.create-diff-archive.outputs.has_changes == 'false'
+        run: echo "No file changes detected in this pull request. Skipping scan." 
+
+  evaluate_gates:
+    needs: run_differential_scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate Post Scan Gates
+        run: |
+          docker run --rm \
+          ghcr.io/fossid-ab/workbench-agent-ce:latest \
+          evaluate-gates \
+          --api-url ${{ secrets.WORKBENCH_URL }} \
+          --api-user ${{ secrets.WORKBENCH_USER }} \
+          --api-token ${{ secrets.WORKBENCH_TOKEN }} \
+          --project-name $GITHUB_REPOSITORY \
+          --scan-name Diff-$GITHUB_HEAD_REF \
+          --fail-on-pending \
+          --fail-on-policy
