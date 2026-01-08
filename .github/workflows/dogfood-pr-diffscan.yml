@@ -46,7 +46,7 @@ jobs:
           --api-token ${{ secrets.WORKBENCH_TOKEN }} \
           --project-name $GITHUB_REPOSITORY \
           --scan-name Diff-$GITHUB_HEAD_REF \
-          --path /scan_target/diff-archive.zip \
+          --path /code/diff-archive.zip \
           --autoid-file-licenses \
           --autoid-file-copyrights
 
