@@ -1,4 +1,6 @@
-# This workflow will run ORT's Analyzer then upload the analyzer-result.json it produces into Workbench.
+# This workflow demonstrates how to run ORT's Analyzer.
+# Afterwards, the analyzer-result.json is imported into Workbench.
+
 name: Test Import-DA with ORT 
 
 on: 
@@ -11,21 +13,14 @@ on:
 jobs:
   workbench-scan-gate:
     runs-on: ubuntu-latest
-    env:
+    env: # We recommend using Secrets for these values.
       WORKBENCH_URL: ${{ secrets.WORKBENCH_URL }}
       WORKBENCH_USER: ${{ secrets.WORKBENCH_USER }}
       WORKBENCH_TOKEN: ${{ secrets.WORKBENCH_TOKEN }}
-    steps: #running with Python until we fix the GHCR Image 
-    - name: Checkout Workbench Agent
+
+    steps: 
+    - name: Checkout the Code
       uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install Workbench Agent Dependencies
-      run: pip install .
 
     - name: Run ORT Analyzer
       uses: oss-review-toolkit/ort-ci-github-action@v1
@@ -34,25 +29,18 @@ jobs:
         run: >
           analyzer
 
-    - name: Confirm the Analyzer JSON was created
+    - name: Confirm the Analyzer JSON was created # Optional but informative
       run: ls -la /home/runner/.ort/ort-results
 
     - name: Import DA Results
       run: |
-        workbench-agent import-da \
+        docker run --rm \
+        -v /home/runner/.ort/ort-results:/ort-results \
+        ghcr.io/fossid-ab/workbench-agent-ce:latest \
         --api-url ${{ env.WORKBENCH_URL }} \
         --api-user ${{ env.WORKBENCH_USER }} \
         --api-token ${{ env.WORKBENCH_TOKEN }} \
-        --project-name DogFood-$GITHUB_REPOSITORY \
-        --scan-name ImportDA-$GITHUB_REF_NAME \
-        --path /home/runner/.ort/ort-results/analyzer-result.json
-
-    - name: Evaluate Gates; Fail on Issues
-      run: |
-        workbench-agent evaluate-gates \
-        --api-url ${{ env.WORKBENCH_URL }} \
-        --api-user ${{ env.WORKBENCH_USER }} \
-        --api-token ${{ env.WORKBENCH_TOKEN }} \
-        --project-name DogFood-$GITHUB_REPOSITORY \
-        --scan-name ImportDA-$GITHUB_REF_NAME \
-        --fail-on-policy
+        import-da \
+        --project-name $GITHUB_REPOSITORY \
+        --scan-name DA-$GITHUB_HEAD_REF \
+        --path /ort-results/analyzer-result.json
