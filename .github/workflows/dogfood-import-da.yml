@@ -13,10 +13,6 @@ on:
 jobs:
   workbench-scan-gate:
     runs-on: ubuntu-latest
-    env: # We recommend using Secrets for these values.
-      WORKBENCH_URL: ${{ secrets.WORKBENCH_URL }}
-      WORKBENCH_USER: ${{ secrets.WORKBENCH_USER }}
-      WORKBENCH_TOKEN: ${{ secrets.WORKBENCH_TOKEN }}
 
     steps: 
     - name: Checkout the Code
@@ -37,10 +33,10 @@ jobs:
         docker run --rm \
         -v /home/runner/.ort/ort-results:/ort-results \
         ghcr.io/fossid-ab/workbench-agent-ce:latest \
-        --api-url ${{ env.WORKBENCH_URL }} \
-        --api-user ${{ env.WORKBENCH_USER }} \
-        --api-token ${{ env.WORKBENCH_TOKEN }} \
+        --api-url ${{ secrets.WORKBENCH_URL }} \
+        --api-user ${{ secrets.WORKBENCH_USER }} \
+        --api-token ${{ secrets.WORKBENCH_TOKEN }} \
         import-da \
-        --project-name DogFood-$GITHUB_REPOSITORY \
+        --project-name $GITHUB_REPOSITORY \
         --scan-name DA-$GITHUB_HEAD_REF \
         --path /ort-results/analyzer-result.json
