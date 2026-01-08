@@ -1,6 +1,6 @@
 name: Diff Scanning and Gating
 
-on: [pull_request]
+on: pull_request
 
 jobs:
   run_differential_scan:
