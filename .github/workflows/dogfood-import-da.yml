@@ -37,6 +37,6 @@ jobs:
         --api-user ${{ secrets.WORKBENCH_USER }} \
         --api-token ${{ secrets.WORKBENCH_TOKEN }} \
         import-da \
-        --project-name $GITHUB_REPOSITORY \
-        --scan-name DA-$GITHUB_HEAD_REF \
+        --project-name DogFood-$GITHUB_REPOSITORY \
+        --scan-name ImportDA-$GITHUB_REF_NAME \
         --path /ort-results/analyzer-result.json
