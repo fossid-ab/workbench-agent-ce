@@ -33,10 +33,10 @@ jobs:
         docker run --rm \
         -v /home/runner/.ort/ort-results:/ort-results \
         ghcr.io/fossid-ab/workbench-agent-ce:latest \
+        import-da \
         --api-url ${{ secrets.WORKBENCH_URL }} \
         --api-user ${{ secrets.WORKBENCH_USER }} \
         --api-token ${{ secrets.WORKBENCH_TOKEN }} \
-        import-da \
         --project-name DogFood-$GITHUB_REPOSITORY \
         --scan-name ImportDA-$GITHUB_REF_NAME \
         --path /ort-results/analyzer-result.json
