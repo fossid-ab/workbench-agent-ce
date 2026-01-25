@@ -1,0 +1,24 @@
+---
+description: Formatting, linting, and production readiness
+alwaysApply: true
+---
+
+# Code quality
+
+We aim for production-ready, professional code. We’re also iterating on logging and user feedback; improvements there are welcome when you touch those paths.
+
+## Linting
+
+- **Target:** pass the `lint` workflow (`.github/workflows/linters.yml`): black, isort, flake8, mypy. Fix lint/format issues when you’re already editing a file.
+
+## Config (from `pyproject.toml`)
+
+- **black:** line-length 75, `include = '\.pyi?$'`.
+- **isort:** profile black, line_length 100.
+- **flake8:** max-line-length 100, extend-ignore E203/W503; per-file ignores for `tests/`.
+- **mypy:** `ignore_missing_imports = true`; tests and `legacy` excluded.
+- **.pylintrc:** respect project disables and config (e.g. `consider-using-f-string`, `missing-docstring`).
+
+## Imports and typing
+
+- Use `TYPE_CHECKING` for `WorkbenchClient` and `BaseAPI` when they’re only in type annotations, to avoid circular imports.

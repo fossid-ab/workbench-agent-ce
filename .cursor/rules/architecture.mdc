@@ -1,0 +1,27 @@
+---
+description: API boundary, SDK direction, and clients vs services
+alwaysApply: true
+---
+
+# Architecture & API Boundary
+
+We’re actively improving separation of concerns, logging, UX, and optimization. When you touch an area, prefer moving toward these ideals when it’s practical—we’re being kind to ourselves as we evolve.
+
+## Project direction
+
+- **CE is the next-generation Workbench Agent.** Build for the future; long term, CE becomes the main agent.
+- **Primary use case:** CI/CD. IDLE/query experience will be polished later; not a current focus.
+- **`src/workbench_agent/api/` is the SDK.** It will be split into a separate `workbench-sdk` repo and versioned with Workbench. When changing `api/`, consider Workbench API version impact.
+
+## API boundary
+
+- **Target:** `api/` should not depend on `cli`, `handlers`, or `utilities`, and should use only `workbench_agent.api.exceptions` (not `workbench_agent.exceptions`). That keeps the SDK self-contained for future extraction. Some cross-deps remain; prefer not to add new ones, and when refactoring in `api/`, moving toward this boundary is welcome.
+
+## Clients vs services
+
+| Layer | Role | Lives in |
+|-------|------|----------|
+| **Clients** | Thin HTTP; core API operations; map API/HTTP failures to `api.exceptions` | `api/clients/` |
+| **Services** | Orchestration, business logic, multi-step workflows; use clients for HTTP | `api/services/` |
+
+- Clients: one concern per client, focused on the core operation and clear error handling. Services: reusable across handlers; encapsulate “how we do X” (e.g. resolve project+scan, run scan, generate report).

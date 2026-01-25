@@ -1,0 +1,28 @@
+---
+description: Clients, services, and utilities responsibilities
+globs: "**/api/clients/**/*.py,**/api/services/**/*.py,**/utilities/**/*.py"
+alwaysApply: false
+---
+
+# Clients, services, utilities
+
+We’re still improving separation of concerns. When refactoring, moving logic from a client to a service, or from a handler to a utility, is welcome when it’s practical.
+
+## Clients (`api/clients/`)
+
+- **Focus:** Core API operation and error handling. One HTTP/API concern per client (e.g. `ScansClient`, `UploadsClient`). Map API/HTTP failures to `api.exceptions` and raise.
+- **Prefer to keep clients thin:** business logic and orchestration belong in services.
+
+## Services (`api/services/`)
+
+- **Business logic and orchestration.** Coordinate clients, implement workflows (e.g. resolve project+scan, run scan, generate and wait for report). Reusable across handlers. Handlers call services (and clients when a service doesn’t exist yet); services call clients.
+
+## Utilities (`utilities/`)
+
+- **Shared logic used by multiple handlers.** Extract repeated handler logic here (e.g. `scan_workflows`, `prep_upload_archive`, `error_handling`, `post_scan_summary`). They receive a `WorkbenchClient` (or results) as an argument; no direct Workbench HTTP.
+
+## Pattern
+
+- **Before adding logic in a handler:** check `utilities/` and `api/services/` for something you can reuse.
+- **Repeated or complex logic in a handler** → consider a service (API/workflow) or a utility (formatting, validation, workflow helpers).
+- **Thin, single-purpose API calls** → clients. **Orchestration and rules** → services. **Cross-handler helpers** → utilities.

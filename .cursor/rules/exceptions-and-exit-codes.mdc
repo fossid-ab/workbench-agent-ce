@@ -1,0 +1,27 @@
+---
+description: Exception trees and exit code contract
+alwaysApply: true
+---
+
+# Exceptions & exit codes
+
+## Two exception trees
+
+- **`workbench_agent.exceptions`** (app): `ValidationError`, `ConfigurationError`, `FileSystemError`. Use in `cli`, `handlers`, `utilities`.
+- **`workbench_agent.api.exceptions`** (API): `ApiError`, `NetworkError`, `ProcessError`, `ProcessTimeoutError`, `ProjectNotFoundError`, `ScanNotFoundError`, `CompatibilityError`, etc. Use in `api/`; handlers and utilities may also catch/raise these.
+
+- **Target for `api/`:** use only `api.exceptions` (not `workbench_agent.exceptions`) so the SDK stays clean for future extraction. Some cross-deps remain; we’re cleaning those up over time.
+
+## Exit codes (owned by `main`)
+
+| Code | Meaning | Examples |
+|------|---------|----------|
+| `0` | Success | Handler returned truthy / completed without exception |
+| `1` | Runtime failure | `ApiError`, `ProcessError`, `NetworkError`, `FileSystemError`, `CompatibilityError`, `ProjectNotFoundError`, `ScanNotFoundError`, etc. |
+| `2` | User-fixable | `ValidationError`, `ConfigurationError`, `AuthenticationError` |
+
+- Handlers **raise**; they don’t call `sys.exit`. `main` catches, calls `format_and_print_error`, and exits. **Order of except clauses matters** (e.g. `AuthenticationError` before `ApiError`, `ProcessTimeoutError` before `ProcessError`).
+
+## Adding a new exception type
+
+- Add it to `api.exceptions` or `exceptions` as appropriate. If it should be user-facing, add a branch in `format_and_print_error` and an `except` in `main` (respecting inheritance order).

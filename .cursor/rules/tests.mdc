@@ -1,0 +1,24 @@
+---
+description: Functional focus, API battle-testing, and test structure
+globs: "tests/**/*.py"
+alwaysApply: false
+---
+
+# Tests
+
+We’re building toward more functional coverage. When you touch an area, adding or improving tests (especially functional where we have Workbench) is welcome.
+
+## Priorities
+
+- **Functional tests against a real Workbench** for real-world commands. Primary goal: **piping is wired correctly** so end-to-end flows don’t break.
+- **Aim for functional tests for the API layer alone** to battle-test the SDK against Workbench version upgrades (future).
+
+## Structure
+
+- **`tests/unit/`** mirrors `src/` (e.g. `unit/api/`, `unit/cli/`, `unit/utilities/`). Heavy mocking of `WorkbenchClient` / `BaseAPI`.
+- **`tests/integration/`** and **`tests/functional/`** for higher-level flows. Functional: real CLI + real Workbench; require `WORKBENCH_*` env.
+
+## Fixtures and markers
+
+- Use `conftest` fixtures: `workbench_inst`, `mock_workbench`, `mock_params` for unit tests.
+- Markers: `unit`, `integration`, `functional`, `requires_workbench`, `requires_toolbox`, `slow`. See `pyproject.toml` and `tests/functional/README.md`.

@@ -1,0 +1,21 @@
+---
+description: Legacy bridge, isolation, and migration
+globs: "**/legacy/**/*.py"
+alwaysApply: false
+---
+
+# Legacy module
+
+## Purpose
+
+- Legacy is a **migration bridge** so existing CI/CD jobs keep working while users adopt `scan`, `blind-scan`, and other modern commands. It will be removed over time.
+
+## Guidelines
+
+- **Keep legacy working.** When changing shared code (e.g. `api/`, `utilities`), ensure legacy behavior still works; run or consider the `dogfood-legacy` workflow.
+- **Minimize legacy → other deps.** Prefer legacy to stay self-contained; avoid pulling in new deps from `handlers`, `utilities`, or new `cli` behavior.
+- **No new features in legacy.** Compatibility and bug fixes only; new behavior goes in the modern interface.
+
+## Detection
+
+- Legacy is chosen when `uses_legacy_interface(args)` is true (e.g. `--project_code`, `--scan_code`, `--blind_scan`). `main` routes to `handle_legacy_main` before any modern parsing.

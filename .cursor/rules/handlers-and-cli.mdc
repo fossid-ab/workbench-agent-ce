@@ -1,0 +1,28 @@
+---
+description: Handler contract, error wrapping, CLI naming, and validation
+globs: "**/handlers/**/*.py,**/cli/**/*.py,**/main.py"
+alwaysApply: false
+---
+
+# Handlers & CLI
+
+We’re still improving UX and validation. When you touch a flow, consider clearer errors or earlier validation where it’s low‑effort.
+
+## Handler contract
+
+- **Signature:** `(client: WorkbenchClient, params: argparse.Namespace) -> bool`. `evaluate-gates` uses truthiness for pass/fail; others: `True` = success, `False` = failure.
+- **Decorator:** Use `@handler_error_wrapper` from `utilities.error_handling`. Prefer to let `main` and `format_and_print_error` handle user-facing error formatting rather than adding try/except in handlers.
+- **Typing:** Use `TYPE_CHECKING` for `WorkbenchClient` when it appears only in type hints to avoid circular imports.
+
+## CLI naming
+
+- **Modern interface:** prefer `--kebab-case` for new options (e.g. `--project-name`, `--scan-name`).
+
+## Validation
+
+- **Validation lives in `cli/validators.py`.** Handlers can usually assume `params` are validated; add defensive checks when it’s justified.
+- **Fail fast:** protect users from mistakes as early as possible via `validate_parsed_args` and command-specific validators.
+
+## Command dispatch
+
+- Commands are in `main.py` → `COMMAND_HANDLERS`. **New command checklist:** (1) subparser + parents in `parser.py`, (2) new parent in `parent_parsers.py` if needed, (3) `_validate_*` in `validators.py`, (4) handler in `handlers/` with `@handler_error_wrapper`, (5) entry in `COMMAND_HANDLERS` in `main.py`.
