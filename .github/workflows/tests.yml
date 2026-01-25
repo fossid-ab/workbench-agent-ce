@@ -6,10 +6,12 @@ on:
   push:
     paths-ignore:
       - '.github/workflows/**'
+      - '.cursor/**'
   pull_request:
     branches: [ main ]
     paths-ignore:
       - '.github/workflows/**'
+      - '.cursor/**'
 
 # For functional tests, set these repository secrets:
 # - WORKBENCH_URL: Your Workbench server URL (e.g., https://workbench.example.com/api.php)
