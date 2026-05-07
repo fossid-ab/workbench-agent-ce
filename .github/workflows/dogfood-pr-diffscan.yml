@@ -39,7 +39,7 @@ jobs:
         run: |
           docker run --rm \
           -v $GITHUB_WORKSPACE:/code \
-          ghcr.io/fossid-ab/workbench-agent-ce:latest \
+          ghcr.io/fossid-ab/workbench-agent-ce:edge \
           scan \
           --api-url ${{ secrets.WORKBENCH_URL }} \
           --api-user ${{ secrets.WORKBENCH_USER }} \
@@ -62,7 +62,7 @@ jobs:
       - name: Evaluate Gates for Diff Scan
         run: |
           docker run --rm \
-          ghcr.io/fossid-ab/workbench-agent-ce:latest \
+          ghcr.io/fossid-ab/workbench-agent-ce:edge \
           evaluate-gates \
           --api-url ${{ secrets.WORKBENCH_URL }} \
           --api-user ${{ secrets.WORKBENCH_USER }} \

@@ -6,7 +6,10 @@ This is the Community Edition (CE) of the Workbench Agent maintained by the Cust
 If you prefer a solution with a contracted SLA, please use the official Workbench Agent, which lives in the [Workbench Agent Repo](https://github.com/fossid-ab/workbench-agent). Reach out if you have any questions!
 
 ## General Usage
-This repo publishes a container image you can pull:
+This repo publishes a container image to GitHub Container Registry (GHCR).
+
+- **`latest`** — points at the **last stable release** (published via the *Publish Stable Release to GHCR* workflow). Use this or a **pinned semver tag** (for example `0.8.0`) when you need reproducible, client-facing behavior.
+- **`edge`** — rebuilt on every push to `main`. Use this for **contributors and internal CI**; it may break between releases.
 
 ```bash
 docker run ghcr.io/fossid-ab/workbench-agent-ce:latest --help
