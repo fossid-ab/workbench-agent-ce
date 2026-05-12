@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Any, cast
+from typing import cast
 
 import requests  # type: ignore[import-untyped]
 
@@ -10,18 +10,12 @@ from workbench_agent.api.exceptions import (
     AuthenticationError,
     NetworkError,
 )
+from workbench_agent.api.utils.redaction import (
+    redact_response_text,
+    redact_sensitive_data,
+)
 
 logger = logging.getLogger("workbench-agent")
-REDACTED_VALUE = "***"
-SENSITIVE_FIELDS = {
-    "api_key",
-    "api_token",
-    "authorization",
-    "key",
-    "password",
-    "secret",
-    "token",
-}
 
 # Check if header logging is enabled via environment variable
 LOG_HEADERS = os.getenv("WORKBENCH_AGENT_LOG_HEADERS", "").lower() in (
@@ -29,44 +23,6 @@ LOG_HEADERS = os.getenv("WORKBENCH_AGENT_LOG_HEADERS", "").lower() in (
     "true",
     "yes",
 )
-
-
-def _redact_sensitive_data(value: Any) -> Any:
-    """Return a copy of value with sensitive fields masked for logging."""
-    if isinstance(value, dict):
-        redacted = {}
-        for key, item in value.items():
-            if str(key).lower() in SENSITIVE_FIELDS:
-                redacted[key] = REDACTED_VALUE
-            else:
-                redacted[key] = _redact_sensitive_data(item)
-        return redacted
-
-    if isinstance(value, list):
-        return [_redact_sensitive_data(item) for item in value]
-
-    return value
-
-
-def _redact_text(text: str, *sensitive_values: str) -> str:
-    """Mask known sensitive values in non-JSON log text."""
-    redacted_text = text
-    for sensitive_value in sensitive_values:
-        if sensitive_value:
-            redacted_text = redacted_text.replace(
-                sensitive_value, REDACTED_VALUE
-            )
-    return redacted_text
-
-
-def _redact_response_text(text: str, *sensitive_values: str) -> str:
-    """Mask sensitive fields in response text before debug logging."""
-    try:
-        parsed = json.loads(text)
-    except (TypeError, ValueError):
-        return _redact_text(text, *sensitive_values)
-
-    return json.dumps(_redact_sensitive_data(parsed))
 
 
 class BaseAPI:
@@ -122,10 +78,12 @@ class BaseAPI:
         payload["data"]["key"] = self.api_token
 
         req_body = json.dumps(payload)
-        redacted_req_body = json.dumps(_redact_sensitive_data(payload))
+        redacted_req_body = json.dumps(redact_sensitive_data(payload))
         logger.debug("API URL: %s", self.api_url)
         if LOG_HEADERS:
-            logger.debug("Request Headers: %s", headers)
+            logger.debug(
+                "Request Headers: %s", redact_sensitive_data(headers)
+            )
         logger.debug("Request Body: %s", redacted_req_body)
 
         try:
@@ -137,12 +95,15 @@ class BaseAPI:
             )
             logger.debug("Response Status Code: %s", response.status_code)
             if LOG_HEADERS:
-                logger.debug("Response Headers: %s", response.headers)
+                logger.debug(
+                    "Response Headers: %s",
+                    redact_sensitive_data(dict(response.headers)),
+                )
             # Log first part of text regardless of JSON success/failure
             response_text = (
                 response.text if hasattr(response, "text") else "(No text)"
             )
-            redacted_response_text = _redact_response_text(
+            redacted_response_text = redact_response_text(
                 response_text,
                 self.api_token,
             )
@@ -173,7 +134,7 @@ class BaseAPI:
                         )
                         logger.debug(
                             f"API returned status 0 JSON: {error_msg} | "
-                            f"Payload: {_redact_sensitive_data(payload)}"
+                            f"Payload: {redact_sensitive_data(payload)}"
                         )
 
                         is_invalid_type_probe = False
