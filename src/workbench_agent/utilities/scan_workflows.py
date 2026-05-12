@@ -94,6 +94,30 @@ def _format_duration(
         return f"{seconds} seconds"
 
 
+def _is_cancelled_scan_result(scan_result) -> bool:
+    """
+    Detect scans cancelled by a user, including API responses that report
+    cancellation as FAILED with cancellation text in the payload.
+    """
+    if getattr(scan_result, "status", None) == "CANCELLED":
+        return True
+
+    raw_data = getattr(scan_result, "raw_data", {}) or {}
+    cancellation_messages = [
+        getattr(scan_result, "error_message", ""),
+        raw_data.get("error", ""),
+        raw_data.get("message", ""),
+        raw_data.get("info", ""),
+        raw_data.get("comment", ""),
+    ]
+    status_message = " ".join(
+        str(message).lower()
+        for message in cancellation_messages
+        if message
+    )
+    return "cancel" in status_message
+
+
 # ============================================================================
 # Post-scan summary
 # ============================================================================
@@ -621,7 +645,9 @@ def execute_scan_workflow(
                 kb_scan_result.duration or 0.0
             )
 
-            if kb_scan_result.is_failed:
+            if kb_scan_result.is_failed and not _is_cancelled_scan_result(
+                kb_scan_result
+            ):
                 logger.warning(
                     f"KB Scan '{scan_code}' ended in "
                     f"{kb_scan_result.status}. Attempting one "

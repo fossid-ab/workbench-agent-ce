@@ -102,7 +102,7 @@ class TestDetermineScansToRun:
         }
 
     def test_conflicting_flags_resolved(self, mock_params):
-        """Test that conflicting flags are resolved (DA only takes precedence)."""
+        """Test that DA only takes precedence."""
         mock_params.run_dependency_analysis = True
         mock_params.dependency_analysis_only = True
 
@@ -178,7 +178,7 @@ class TestExecuteScanWorkflow:
                 duration=8.0,
             ),
         ]
-        durations = {}
+        durations: dict[str, float] = {}
 
         result = execute_scan_workflow(
             mock_client,
@@ -197,6 +197,40 @@ class TestExecuteScanWorkflow:
         )
         assert retry_kwargs["scan_code"] == "SCAN123"
         assert durations["kb_scan"] == 20.0
+
+    def test_kb_scan_cancelled_failure_does_not_retry(
+        self,
+        mocker,
+        mock_client,
+        scan_workflow_params,
+    ):
+        """User-cancelled KB scan should not trigger failed-file retry."""
+        mocker.patch(
+            "workbench_agent.utilities.scan_workflows._print_scan_summary"
+        )
+        mock_client.status_check.check_scan_status.return_value = (
+            StatusResult(
+                status="FAILED",
+                raw_data={
+                    "status": "FAILED",
+                    "state": "FAILED",
+                    "info": "The process was cancelled",
+                    "comment": "The process was cancelled",
+                },
+                duration=12.0,
+            )
+        )
+
+        result = execute_scan_workflow(
+            mock_client,
+            scan_workflow_params,
+            "SCAN123",
+            {},
+        )
+
+        assert result is True
+        assert mock_client.scan_operations.start_scan.call_count == 1
+        mock_client.scan_operations.scan_failed_files.assert_not_called()
 
     def test_kb_scan_failure_retries_only_once_when_retry_fails(
         self,
