@@ -42,8 +42,9 @@ def resolve_fossid_toolbox_path(configured: Optional[str]) -> str:
 
 def validate_fossid_file(file_path: str) -> None:
     """
-    Validate the schema of a pre-generated .fossid file.
+    Validate the encoding and schema of a pre-generated .fossid file.
 
+    The file must be valid UTF-8.
     Each line must be a JSON object containing at minimum:
     - path (str): Relative file path
     - size (int): File size in bytes
@@ -53,11 +54,18 @@ def validate_fossid_file(file_path: str) -> None:
         file_path: Path to the .fossid file to validate
 
     Raises:
-        ValidationError: If the file is empty or has invalid schema
+        ValidationError: If the file is not UTF-8, is empty, or has invalid
+            schema
     """
     try:
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
+    except UnicodeDecodeError as e:
+        raise ValidationError(
+            f"The .fossid file '{file_path}' is not valid UTF-8 "
+            f"(byte {e.start}: {e.reason}). Re-generate it with "
+            f"fossid-toolbox or re-encode it as UTF-8."
+        ) from e
     except Exception as e:
         raise ValidationError(
             f"Failed to read .fossid file '{file_path}': {e}"
