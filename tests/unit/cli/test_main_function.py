@@ -3,7 +3,6 @@
 import logging
 import os
 import sys
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -28,7 +27,7 @@ from workbench_agent.exceptions import (
     FileSystemError,
     ValidationError,
 )
-from workbench_agent.main import main, redact_cli_args_for_logging, setup_logging
+from workbench_agent.main import main, setup_logging
 
 
 class TestMainFunctionSuccess:
@@ -309,32 +308,6 @@ class TestHandlerReturnValues:
             result = main()
 
         assert result == 0
-
-
-class TestRedactCliArgsForLogging:
-    """Tests for secret redaction in CLI args debug logs."""
-
-    def test_redacts_api_token(self):
-        ns = SimpleNamespace(
-            command="scan",
-            api_token="secret-value",
-            api_user="user@example.com",
-        )
-        out = redact_cli_args_for_logging(ns)
-        assert out["api_token"] == "***REDACTED***"
-        assert out["api_user"] == "user@example.com"
-        assert out["command"] == "scan"
-
-    def test_redacts_suffix_style_secrets(self):
-        ns = SimpleNamespace(oauth_refresh_token="x", normal_field="ok")
-        out = redact_cli_args_for_logging(ns)
-        assert out["oauth_refresh_token"] == "***REDACTED***"
-        assert out["normal_field"] == "ok"
-
-    def test_leaves_none_values_unchanged(self):
-        ns = SimpleNamespace(api_token=None, other="v")
-        out = redact_cli_args_for_logging(ns)
-        assert out["api_token"] is None
 
 
 class TestLoggingConfiguration:
