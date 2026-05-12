@@ -1,10 +1,5 @@
-# tests/unit/api/services/test_scan_operations_service.py
-
-from unittest.mock import MagicMock, patch
-
 import pytest
 
-from workbench_agent.api.exceptions import ApiError, ScanNotFoundError
 from workbench_agent.api.services.scan_operations_service import (
     ScanOperationsService,
 )
@@ -119,6 +114,35 @@ def test_start_scan_with_specific_id_reuse(
     assert call_args["reuse_identification"] == "1"
     assert call_args["identification_reuse_type"] == "specific_project"
     assert call_args["specific_code"] == "PROJ123"
+
+
+# --- Test scan_failed_files ---
+def test_scan_failed_files_forces_scan_failed_only(
+    scan_operations_service, mock_scans_client
+):
+    """Test scanning only files that failed in a previous scan."""
+    mock_scans_client.run.return_value = None
+
+    scan_operations_service.scan_failed_files(
+        scan_code="test_scan",
+        limit=100,
+        sensitivity=80,
+        autoid_file_licenses=True,
+        autoid_file_copyrights=False,
+        autoid_pending_ids=True,
+        delta_scan=False,
+        run_dependency_analysis=True,
+        full_file_only=True,
+        scan_host="scan-host-1",
+    )
+
+    mock_scans_client.run.assert_called_once()
+    call_args = mock_scans_client.run.call_args[0][0]
+    assert call_args["scan_code"] == "test_scan"
+    assert call_args["scan_failed_only"] == "1"
+    assert call_args["run_dependency_analysis"] == "1"
+    assert call_args["full_file_only"] == "1"
+    assert call_args["scan_host"] == "scan-host-1"
 
 
 # --- Test start_archive_extraction ---
