@@ -209,6 +209,10 @@ def handle_blind_scan(
             )
             should_cleanup = True
 
+            print("\nValidating generated .fossid file...")
+            validate_fossid_file(hash_file_path)
+            print("Validation successful.")
+
         # ===== STEP 3: Resolve/create project and scan =====
         print("\n--- Project and Scan Checks ---")
         print("Checking target Project and Scan...")

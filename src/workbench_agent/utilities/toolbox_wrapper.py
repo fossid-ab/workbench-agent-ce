@@ -153,13 +153,19 @@ class ToolboxWrapper:
         )
 
         try:
-            # Execute command and redirect output to temporary file
-            with open(temporary_file_path, "w") as outfile:
+            # Execute command and redirect output to temporary file.
+            # Use binary mode for the file because subprocess writes the
+            # child's raw bytes via the underlying file descriptor and
+            # bypasses Python's text-mode wrapper. Decode stderr explicitly
+            # as UTF-8 with replacement so a non-UTF-8 byte in a diagnostic
+            # message can't crash the parent on a non-UTF-8 system locale.
+            with open(temporary_file_path, "wb") as outfile:
                 result = subprocess.run(
                     cmd_args,
                     stdout=outfile,
                     stderr=subprocess.PIPE,
-                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     timeout=int(self.timeout),
                     check=False,  # We handle return code manually
                 )
