@@ -145,7 +145,7 @@ def handle_blind_scan(
     Workflow:
     1. Detects input type (.fossid file vs directory)
     2a. If .fossid file: validates file schema
-    2b. If directory: validates Toolbox and generates hashes
+    2b. If directory: validates Toolbox, generate hashes, validate schema
     3. Resolves/creates project and scan in Workbench
     4. Uploads hash file to Workbench
     5. Runs scans, waits, and displays results
