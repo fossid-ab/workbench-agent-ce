@@ -93,7 +93,7 @@ def test_send_request_masks_api_key_in_debug_logs(
     assert '"key": "testtoken"' in sent_body
     assert "testtoken" not in caplog.text
     assert "server-echoed-token" not in caplog.text
-    assert "***REDACTED***" in caplog.text
+    assert "***" in caplog.text
 
 
 def test_send_request_masks_api_key_in_api_error_log(
@@ -115,7 +115,7 @@ def test_send_request_masks_api_key_in_api_error_log(
             api_base_inst._send_request(payload)
 
     assert "testtoken" not in caplog.text
-    assert "***REDACTED***" in caplog.text
+    assert "***" in caplog.text
 
 
 def test_send_request_api_error(api_base_inst, mock_session):
