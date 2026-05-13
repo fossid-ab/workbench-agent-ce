@@ -12,6 +12,8 @@ from workbench_agent.main import main
 FIXTURES_DIR = os.path.join(
     os.path.dirname(__file__), os.pardir, "fixtures"
 )
+# Real toolbox-style JSONL (no ``.fossid`` extension in-repo; tests copy it).
+SIGNATURES_FIXTURE = os.path.join(FIXTURES_DIR, "signatures")
 
 
 # --- Helper Function to Create Dummy Directories ---
@@ -35,6 +37,20 @@ def create_dummy_directory(tmp_path, content="dummy content"):
     (sub_dir / "utils.py").write_text("def helper_function(): pass")
 
     return str(dummy_dir)
+
+
+def copy_signatures_fixture_as_mock_fossid(dest_path) -> str:
+    """
+    Copy ``tests/fixtures/signatures`` to a ``.fossid`` path for mocked
+    ``generate_hashes`` output.
+
+    The handler runs ``validate_fossid_file`` on the returned path; the
+    fixture is real toolbox-style JSONL so validation matches production
+    data. The source file keeps a neutral name so nothing treats it as an
+    upload artifact by extension alone.
+    """
+    shutil.copy(SIGNATURES_FIXTURE, dest_path)
+    return str(dest_path)
 
 
 class TestBlindScanIntegration:
@@ -115,8 +131,9 @@ class TestBlindScanIntegration:
         mock_toolbox.get_version.return_value = (
             "FossID Toolbox version 2023.2.1"
         )
+        mock_fossid = tmp_path / "mock_toolbox_out.fossid"
         mock_toolbox.generate_hashes.return_value = (
-            "/tmp/blind_scan_result_TESTRAND.fossid"
+            copy_signatures_fixture_as_mock_fossid(mock_fossid)
         )
 
         with (
@@ -174,8 +191,9 @@ class TestBlindScanIntegration:
         mock_toolbox.get_version.return_value = (
             "FossID Toolbox version 2023.2.1"
         )
+        mock_fossid = tmp_path / "mock_toolbox_out_nowait.fossid"
         mock_toolbox.generate_hashes.return_value = (
-            "/tmp/blind_scan_result_TESTRAND.fossid"
+            copy_signatures_fixture_as_mock_fossid(mock_fossid)
         )
 
         with (
@@ -313,9 +331,8 @@ class TestBlindScanIntegration:
         Test blind-scan accepts a .fossid file,
         skips Toolbox hashing, and uploads it directly.
         """
-        signatures_src = os.path.join(FIXTURES_DIR, "signatures")
         fossid_file = tmp_path / "signatures.fossid"
-        shutil.copy(signatures_src, fossid_file)
+        shutil.copy(SIGNATURES_FIXTURE, fossid_file)
 
         mock_toolbox_cls = MagicMock()
 
@@ -503,8 +520,9 @@ class TestBlindScanIntegration:
         mock_toolbox.get_version.return_value = (
             "FossID Toolbox version 2023.2.1"
         )
+        mock_fossid = tmp_path / "mock_toolbox_out_daonly.fossid"
         mock_toolbox.generate_hashes.return_value = (
-            "/tmp/blind_scan_result_TESTRAND.fossid"
+            copy_signatures_fixture_as_mock_fossid(mock_fossid)
         )
 
         with (
