@@ -9,6 +9,7 @@ from typing import Any, Dict, Tuple
 
 from cyclonedx.schema import SchemaVersion
 from cyclonedx.validation.json import JsonStrictValidator
+from packaging import version as packaging_version
 from spdx_tools.spdx.model import Document, Version
 from spdx_tools.spdx.parser.parse_anything import parse_file
 from spdx_tools.spdx.validation.document_validator import (
@@ -20,6 +21,8 @@ from workbench_agent.exceptions import FileSystemError, ValidationError
 
 logger = logging.getLogger("workbench-agent")
 
+SPDX_JSON_NATIVE_MIN_VERSION = "2025.2.0"
+
 
 class SBOMValidator:
     """
@@ -28,6 +31,24 @@ class SBOMValidator:
     """
 
     SUPPORTED_EXTENSIONS = {".json", ".rdf", ".xml", ".spdx"}
+
+    @staticmethod
+    def _supports_native_spdx_json(workbench_version: str) -> bool:
+        """
+        Return True when Workbench accepts SPDX JSON without RDF conversion.
+
+        Expects a normalized MAJOR.MINOR.PATCH string (e.g. from
+        WorkbenchClient). Empty or unparseable versions return False so
+        imports fall back to RDF conversion for older servers.
+        """
+        if not workbench_version:
+            return False
+        try:
+            return packaging_version.parse(
+                workbench_version
+            ) >= packaging_version.parse(SPDX_JSON_NATIVE_MIN_VERSION)
+        except packaging_version.InvalidVersion:
+            return False
 
     @staticmethod
     def validate_sbom_file(
@@ -80,7 +101,10 @@ class SBOMValidator:
 
     @staticmethod
     def prepare_sbom_for_upload(
-        file_path: str, sbom_format: str, parsed_document: Any
+        file_path: str,
+        sbom_format: str,
+        parsed_document: Any,
+        workbench_version: str = "",
     ) -> str:
         """
         Prepares an SBOM for upload to Workbench, converting format if needed.
@@ -89,6 +113,9 @@ class SBOMValidator:
             file_path: Original file path
             sbom_format: Format detected by validator ("cyclonedx" or "spdx")
             parsed_document: Parsed document from validation step
+            workbench_version: Connected Workbench version (normalized
+                MAJOR.MINOR.PATCH). SPDX JSON is uploaded as-is when >=
+                2025.2.0; older or unknown versions convert JSON to RDF.
 
         Returns:
             str: Path to file to upload (original or converted file)
@@ -101,7 +128,7 @@ class SBOMValidator:
             return file_path
         elif sbom_format == "spdx":
             return SBOMValidator._prepare_spdx_for_upload(
-                file_path, parsed_document
+                file_path, parsed_document, workbench_version
             )
         else:
             raise ValidationError(f"Unknown SBOM format: {sbom_format}")
@@ -109,12 +136,15 @@ class SBOMValidator:
     @staticmethod
     def validate_and_prepare_sbom(
         file_path: str,
+        workbench_version: str = "",
     ) -> Tuple[str, str, Dict[str, Any], str]:
         """
         Convenience method that validates and prepares a SBOM for upload.
 
         Args:
             file_path: Path to the SBOM to validate
+            workbench_version: Connected Workbench version for SPDX JSON
+                upload gating (see prepare_sbom_for_upload)
 
         Returns:
             Tuple[str, str, Dict[str, Any], str]: (format, version, metadata, upload_path)
@@ -134,7 +164,7 @@ class SBOMValidator:
 
         # Prepare for upload
         upload_path = SBOMValidator.prepare_sbom_for_upload(
-            file_path, sbom_format, parsed_document
+            file_path, sbom_format, parsed_document, workbench_version
         )
 
         return sbom_format, version, metadata, upload_path
@@ -385,21 +415,33 @@ class SBOMValidator:
             ) from e
 
     @staticmethod
-    def _prepare_spdx_for_upload(file_path: str, document: Any) -> str:
+    def _prepare_spdx_for_upload(
+        file_path: str,
+        document: Any,
+        workbench_version: str = "",
+    ) -> str:
         """
         Prepares SPDX document for upload, converting to RDF format if needed.
 
         Args:
             file_path: Original file path
             document: Parsed SPDX document
+            workbench_version: Connected Workbench version for JSON gating
 
         Returns:
             str: Path to file ready for upload (original or converted temp file)
         """
-        # Check if we need to convert to RDF format for Workbench
         file_ext = Path(file_path).suffix.lower()
         if file_ext == ".json":
-            # Convert JSON SPDX to RDF format
+            if SBOMValidator._supports_native_spdx_json(workbench_version):
+                logger.debug(
+                    "Workbench %s+ supports native SPDX JSON; "
+                    "uploading original file",
+                    SPDX_JSON_NATIVE_MIN_VERSION,
+                )
+                return file_path
+
+            # Convert JSON SPDX to RDF for pre-2025.2 or unknown Workbench
             logger.debug(
                 "Converting SPDX JSON to RDF format for Workbench compatibility"
             )
@@ -453,7 +495,11 @@ class SBOMValidator:
                 "name": "SPDX",
                 "supported_versions": ["2.0", "2.1", "2.2", "2.3"],
                 "supported_extensions": [".json", ".rdf", ".xml", ".spdx"],
-                "description": "SPDX in JSON, RDF, or XML format (converted to RDF for upload)",
+                "description": (
+                    "SPDX in JSON, RDF, or XML format (JSON uploaded as-is "
+                    f"on Workbench >= {SPDX_JSON_NATIVE_MIN_VERSION}, "
+                    "otherwise converted to RDF)"
+                ),
             },
         }
 

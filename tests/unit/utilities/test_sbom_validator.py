@@ -368,26 +368,28 @@ class TestSBOMPreparation:
 
         assert result == "/path/to/file.rdf"  # Original file returned
         mock_prepare_spdx.assert_called_once_with(
-            "/path/to/file.rdf", parsed_document
+            "/path/to/file.rdf", parsed_document, ""
         )
 
     @patch(
         "workbench_agent.utilities.sbom_validator.SBOMValidator._prepare_spdx_for_upload"
     )
     def test_prepare_spdx_json_with_conversion(self, mock_prepare_spdx):
-        """Test that SPDX JSON files are converted to RDF."""
-        # Mock the SPDX preparation to return a converted file path
+        """Test that SPDX JSON files are converted to RDF on older Workbench."""
         mock_prepare_spdx.return_value = "/tmp/spdx_converted_abc123.rdf"
 
         parsed_document = MagicMock()
 
         result = SBOMValidator.prepare_sbom_for_upload(
-            "/path/to/file.json", "spdx", parsed_document
+            "/path/to/file.json",
+            "spdx",
+            parsed_document,
+            "2025.1.9",
         )
 
         assert result == "/tmp/spdx_converted_abc123.rdf"
         mock_prepare_spdx.assert_called_once_with(
-            "/path/to/file.json", parsed_document
+            "/path/to/file.json", parsed_document, "2025.1.9"
         )
 
     def test_prepare_unknown_format_error(self):
@@ -398,3 +400,89 @@ class TestSBOMPreparation:
             SBOMValidator.prepare_sbom_for_upload(
                 "/path/to/file.json", "unknown", {}
             )
+
+
+class TestSupportsNativeSpdxJson:
+    """Tests for Workbench version gating of native SPDX JSON upload."""
+
+    @pytest.mark.parametrize(
+        "workbench_version,expected",
+        [
+            ("2025.2.0", True),
+            ("2026.1.0", True),
+            ("2025.1.9", False),
+            ("24.3.0", False),
+            ("", False),
+            ("garbage", False),
+        ],
+    )
+    def test_supports_native_spdx_json(
+        self, workbench_version, expected
+    ):
+        assert (
+            SBOMValidator._supports_native_spdx_json(workbench_version)
+            is expected
+        )
+
+
+class TestSpdxJsonVersionGating:
+    """Tests for SPDX JSON upload path selection by Workbench version."""
+
+    @pytest.mark.parametrize("workbench_version", ["2025.2.0", "2026.1.0"])
+    def test_spdx_json_native_upload(self, workbench_version):
+        """SPDX JSON is not converted on Workbench >= 2025.2.0."""
+        parsed_document = MagicMock()
+
+        with patch(
+            "workbench_agent.utilities.sbom_validator.write_file"
+        ) as mock_write:
+            result = SBOMValidator._prepare_spdx_for_upload(
+                "/path/to/spdx.json",
+                parsed_document,
+                workbench_version,
+            )
+
+        assert result == "/path/to/spdx.json"
+        mock_write.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "workbench_version",
+        ["2025.1.9", "24.3.0", ""],
+    )
+    @patch("workbench_agent.utilities.sbom_validator.write_file")
+    def test_spdx_json_converts_on_legacy_workbench(
+        self, mock_write, workbench_version
+    ):
+        """SPDX JSON is converted to RDF on older or unknown Workbench."""
+        parsed_document = MagicMock()
+        mock_write.return_value = None
+
+        result = SBOMValidator._prepare_spdx_for_upload(
+            "/path/to/spdx.json",
+            parsed_document,
+            workbench_version,
+        )
+
+        assert result != "/path/to/spdx.json"
+        assert result.endswith(".rdf")
+        mock_write.assert_called_once()
+        try:
+            os.unlink(result)
+        except OSError:
+            pass
+
+    def test_spdx_rdf_unchanged_regardless_of_version(self):
+        """SPDX RDF files are never converted."""
+        parsed_document = MagicMock()
+
+        with patch(
+            "workbench_agent.utilities.sbom_validator.write_file"
+        ) as mock_write:
+            result = SBOMValidator._prepare_spdx_for_upload(
+                "/path/to/file.rdf",
+                parsed_document,
+                "2025.1.9",
+            )
+
+        assert result == "/path/to/file.rdf"
+        mock_write.assert_not_called()

@@ -208,14 +208,24 @@ Examples:
   workbench-agent import-sbom --project-name "MyProject" --scan-name "v1.0" \\
       --path ./cyclonedx-bom.json
 
+  # Import SPDX SBOM (JSON; uploaded directly on Workbench 2025.2.0+)
+  workbench-agent import-sbom --project-name "MyProject" --scan-name "v1.0" \\
+      --path ./spdx-document.json
+
   # Import SPDX SBOM (RDF format)
   workbench-agent import-sbom --project-name "MyProject" --scan-name "v1.0" \\
       --path ./spdx-document.rdf
+
+On Workbench versions before 2025.2.0, SPDX JSON is automatically converted
+to RDF before upload. RDF and XML SPDX files are always uploaded as-is.
 """,
     )
     import_sbom_parser.add_argument(
         "--path",
-        help="Path to SBOM to import (CycloneDX JSON or SPDX JSON/RDF/XML)",
+        help=(
+            "Path to SBOM to import (CycloneDX JSON or SPDX JSON/RDF/XML; "
+            "SPDX JSON is sent directly on Workbench 2025.2.0+)"
+        ),
         type=str,
         required=True,
         metavar="PATH",
