@@ -134,6 +134,24 @@ class TestValidationEdgeCases:
         # Should not raise an exception
         _validate_scan_commands(args)
 
+    @patch("os.path.isdir", return_value=True)
+    @patch("os.path.exists", return_value=True)
+    def test_blind_scan_invalid_toolbox_timeout_raises(
+        self, mock_exists, mock_isdir
+    ):
+        """Test that non-positive fossid-toolbox-timeout is rejected."""
+        args = Namespace(
+            command="blind-scan",
+            path="/valid/path",
+            fossid_toolbox_timeout=0,
+        )
+
+        with pytest.raises(
+            ValidationError,
+            match="fossid-toolbox-timeout must be a positive integer",
+        ):
+            _validate_scan_commands(args)
+
     def test_full_validation_with_missing_credentials(self):
         """Test full validation flow with missing credentials."""
         args = Namespace(

@@ -340,6 +340,36 @@ def create_project_scan_target_parser():
     return project_scan_target_parent
 
 
+def create_fossid_toolbox_parser():
+    """Create parent parser for FossID Toolbox options (blind-scan)."""
+    fossid_toolbox_parent = argparse.ArgumentParser(add_help=False)
+    toolbox_args = fossid_toolbox_parent.add_argument_group(
+        "FossID Toolbox Options"
+    )
+    toolbox_args.add_argument(
+        "--fossid-toolbox-path",
+        help=(
+            "Path to fossid-toolbox executable. If omitted, "
+            "'fossid-toolbox' is resolved from the system PATH."
+        ),
+        type=str,
+        default=None,
+        dest="fossid_toolbox_path",
+    )
+    toolbox_args.add_argument(
+        "--fossid-toolbox-timeout",
+        help=(
+            "Maximum seconds to wait for fossid-toolbox subprocesses "
+            "(hash generation and version check) (Default: 300)"
+        ),
+        type=int,
+        default=300,
+        dest="fossid_toolbox_timeout",
+        metavar="SECONDS",
+    )
+    return fossid_toolbox_parent
+
+
 def create_git_options_parser():
     """Create parent parser for Git scanning options."""
     git_options_parent = argparse.ArgumentParser(add_help=False)
@@ -399,5 +429,6 @@ def create_common_parent_parsers():
         "monitoring": create_monitoring_parser(),
         "result_options": create_result_options_parser(),
         "project_scan_target": create_project_scan_target_parser(),
+        "fossid_toolbox": create_fossid_toolbox_parser(),
         "git_options": create_git_options_parser(),
     }

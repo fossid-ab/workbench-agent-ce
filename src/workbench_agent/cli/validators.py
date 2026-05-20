@@ -88,6 +88,11 @@ def _validate_scan_commands(args: Namespace) -> None:
                     "blind-scan path must be a directory or a "
                     ".fossid file."
                 )
+            timeout = getattr(args, "fossid_toolbox_timeout", None)
+            if timeout is not None and timeout <= 0:
+                raise ValidationError(
+                    "fossid-toolbox-timeout must be a positive integer."
+                )
 
     # Validate ID reuse parameters
     _validate_id_reuse_args(args)

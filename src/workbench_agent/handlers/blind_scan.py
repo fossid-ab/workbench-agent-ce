@@ -195,6 +195,9 @@ def handle_blind_scan(
                 toolbox_path=resolve_fossid_toolbox_path(
                     getattr(params, "fossid_toolbox_path", None)
                 ),
+                timeout=str(
+                    getattr(params, "fossid_toolbox_timeout", 300)
+                ),
             )
 
             version = toolbox_wrapper.get_version()

@@ -24,16 +24,16 @@ class ToolboxWrapper:
 
     Attributes:
         toolbox_path (str): Path to the FossID Toolbox executable
-        timeout (str): Timeout for Toolbox expressed in seconds
+        timeout (str): Timeout for Toolbox subprocesses in seconds
     """
 
-    def __init__(self, toolbox_path: str, timeout: str = "120"):
+    def __init__(self, toolbox_path: str, timeout: str = "300"):
         """
         Initialize ToolboxWrapper.
 
         Args:
             toolbox_path: Path to the fossid-toolbox executable
-            timeout: Timeout in seconds (default: "120")
+            timeout: Timeout in seconds (default: "300")
 
         Raises:
             FileSystemError: If toolbox_path doesn't exist or isn't executable

@@ -117,6 +117,7 @@ Examples:
             parent_parsers["cli_behaviors"],
             parent_parsers["workbench_connection"],
             parent_parsers["project_scan_target"],
+            parent_parsers["fossid_toolbox"],
             parent_parsers["scan_operations"],
             parent_parsers["scan_control"],
             parent_parsers["id_assist_control"],
@@ -133,9 +134,10 @@ Examples:
   workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
       --path ./src --run-dependency-analysis
 
-  # Blind scan with custom fossid-toolbox path
+  # Blind scan with custom fossid-toolbox path and timeout
   workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
-      --path ./src --fossid-toolbox-path /usr/local/bin/fossid-toolbox
+      --path ./src --fossid-toolbox-path /usr/local/bin/fossid-toolbox \\
+      --fossid-toolbox-timeout 600
 
   # Blind scan with a pre-generated .fossid file (skips hashing)
   workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
@@ -147,20 +149,6 @@ Examples:
         help="Local directory to hash, or a pre-generated .fossid file",
         required=True,
         metavar="PATH",
-    )
-
-    # Toolbox-specific options for blind scan (dash-separated)
-    cli_group = blind_scan_parser.add_argument_group(
-        "FossID Toolbox Options"
-    )
-    cli_group.add_argument(
-        "--fossid-toolbox-path",
-        help=(
-            "Path to fossid-toolbox executable. If omitted, "
-            "'fossid-toolbox' is resolved from the system PATH."
-        ),
-        type=str,
-        default=None,
     )
 
     # --- 'import-da' Subcommand ---
