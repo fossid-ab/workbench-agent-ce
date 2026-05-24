@@ -1,3 +1,5 @@
+# Publishes ghcr.io/fossid-ab/workbench-agent-ce stable tags from the checked-out ref.
+# Run via workflow_dispatch from main after bumping version in pyproject.toml.
 name: Publish Stable Release to GHCR
 
 on:
@@ -7,16 +9,10 @@ on:
         description: "Semver without v prefix (must match pyproject.toml), e.g. 0.8.0"
         required: true
         type: string
-      prerelease:
-        description: "If true, publish only the version tag (no latest, no major.minor alias)"
-        required: false
-        type: boolean
-        default: false
-      release_notes:
-        description: "Release notes (markdown). Leave empty to auto-generate from commits."
-        required: false
-        type: string
-        default: ""
+
+concurrency:
+  group: ghcr-release
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -32,33 +28,38 @@ jobs:
         env:
           EXPECTED_VERSION: ${{ inputs.version }}
         run: |
+          set -euo pipefail
           got=$(grep -E '^version[[:space:]]*=' pyproject.toml | head -1 | sed -E 's/^version[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/')
           if [ "$got" != "$EXPECTED_VERSION" ]; then
             echo "pyproject.toml version is '$got', expected '$EXPECTED_VERSION'"
             exit 1
           fi
+          if ! [[ "$EXPECTED_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Releases require semver X.Y.Z (got '$EXPECTED_VERSION')"
+            exit 1
+          fi
 
-      - name: GHCR image name (lowercase)
-        id: ghcr
-        run: echo "image=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+      - name: Ensure GitHub release does not already exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            echo "GitHub release v${VERSION} already exists"
+            exit 1
+          fi
 
       - name: Docker tags
         id: dockertags
         env:
-          IMAGE: ${{ steps.ghcr.outputs.image }}
           VERSION: ${{ inputs.version }}
-          # Stringify boolean so bash always sees literal true/false
-          PRERELEASE: ${{ inputs.prerelease && 'true' || 'false' }}
         run: |
+          IMAGE=ghcr.io/fossid-ab/workbench-agent-ce
           {
             echo 'tags<<EOF'
             echo "${IMAGE}:${VERSION}"
-            if [ "$PRERELEASE" != "true" ]; then
-              echo "${IMAGE}:latest"
-              if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                echo "${IMAGE}:${VERSION%.*}"
-              fi
-            fi
+            echo "${IMAGE}:latest"
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
@@ -80,29 +81,18 @@ jobs:
           tags: ${{ steps.dockertags.outputs.tags }}
           labels: |
             org.opencontainers.image.title=workbench-agent-ce
+            org.opencontainers.image.version=${{ inputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Create GitHub Release and git tag
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
-          PRERELEASE: ${{ inputs.prerelease && 'true' || 'false' }}
-          RELEASE_NOTES: ${{ inputs.release_notes }}
         run: |
           set -euo pipefail
-          NOTES_FILE="${RUNNER_TEMP}/release-notes.md"
-          if [ -n "${RELEASE_NOTES// }" ]; then
-            printf '%s\n' "$RELEASE_NOTES" > "$NOTES_FILE"
-            NOTES_ARG=(--notes-file "$NOTES_FILE")
-          else
-            NOTES_ARG=(--generate-notes)
-          fi
-          PRE_ARG=()
-          if [ "$PRERELEASE" = "true" ]; then
-            PRE_ARG=(--prerelease)
-          fi
           gh release create "v${VERSION}" \
             --target "$GITHUB_SHA" \
             --title "v${VERSION}" \
-            "${NOTES_ARG[@]}" \
-            "${PRE_ARG[@]}"
+            --generate-notes

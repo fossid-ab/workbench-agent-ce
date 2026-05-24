@@ -47,9 +47,10 @@ jobs:
           --project-name $GITHUB_REPOSITORY \
           --scan-name PR-HEAD-DIFF-$GITHUB_HEAD_REF \
           --path /code/diff-archive.zip \
+          --incremental-upload \
+          --delta-scan \
           --autoid-file-licenses \
-          --autoid-file-copyrights \
-          --delta-scan
+          --autoid-file-copyrights
 
       - name: No changes to scan
         if: steps.create-diff-archive.outputs.has_changes == 'false'
@@ -70,4 +71,5 @@ jobs:
           --project-name $GITHUB_REPOSITORY \
           --scan-name PR-HEAD-DIFF-$GITHUB_HEAD_REF \
           --fail-on-pending \
-          --fail-on-policy
+          --fail-on-policy \
+          --fail-on-vuln-severity high
