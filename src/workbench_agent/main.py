@@ -31,30 +31,34 @@ from workbench_agent.handlers import (
 )
 from workbench_agent.utilities.config_display import print_configuration
 from workbench_agent.utilities.error_handling import format_and_print_error
+from workbench_agent.utilities.redaction import redact_cli_args_for_logging
 
 
 def setup_logging(log_level: str) -> logging.Logger:
     """
     Set up logging configuration with file and console handlers.
 
+    The log file always records at DEBUG so runs leave a full audit trail.
+    ``log_level`` controls console verbosity only.
+
     Args:
-        log_level: The logging level (DEBUG, INFO, WARNING, ERROR)
+        log_level: Console logging level (DEBUG, INFO, WARNING, ERROR)
 
     Returns:
         Configured logger instance
     """
-    # Parse log level
+    # Parse log level (used for console handler only)
     numeric_level = getattr(logging, log_level.upper(), logging.INFO)
 
-    # Configure root logger
+    # Configure root logger: DEBUG so handlers can filter independently
     root_logger = logging.getLogger()
-    root_logger.setLevel(numeric_level)
+    root_logger.setLevel(logging.DEBUG)
 
     # Clear any existing handlers to avoid duplicates
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    # Configure file handler with detailed format
+    # Configure file handler with detailed format (always DEBUG)
     file_handler = logging.FileHandler(
         "workbench-agent-log.txt", mode="w", encoding="utf-8"
     )
@@ -64,7 +68,7 @@ def setup_logging(log_level: str) -> logging.Logger:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     file_handler.setFormatter(file_formatter)
-    file_handler.setLevel(numeric_level)
+    file_handler.setLevel(logging.DEBUG)
     root_logger.addHandler(file_handler)
 
     # Configure console handler with simpler format
@@ -74,9 +78,14 @@ def setup_logging(log_level: str) -> logging.Logger:
     console_handler.setLevel(numeric_level)
     root_logger.addHandler(console_handler)
 
-    # Configure workbench-agent logger
+    # Configure workbench-agent logger (do not filter below file handler)
     app_logger = logging.getLogger("workbench-agent")
-    app_logger.setLevel(numeric_level)
+    app_logger.setLevel(logging.DEBUG)
+
+    # Keep third-party HTTP client libraries from flooding DEBUG output
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
+    logging.getLogger("requests").setLevel(logging.WARNING)
 
     return app_logger
 
@@ -94,7 +103,9 @@ def main() -> int:
         logger = setup_logging(args.log)
 
         logger.info("Workbench Agent starting...")
-        logger.debug(f"Command line arguments: {vars(args)}")
+        logger.debug(
+            "Command line arguments: %s", redact_cli_args_for_logging(args)
+        )
 
         logger.info("Initializing WorkbenchClient...")
         workbench = WorkbenchClient(

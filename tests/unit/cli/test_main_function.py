@@ -1,5 +1,6 @@
 """Test main() function orchestration and exception handling."""
 
+import logging
 import os
 import sys
 from unittest.mock import MagicMock, patch
@@ -26,7 +27,7 @@ from workbench_agent.exceptions import (
     FileSystemError,
     ValidationError,
 )
-from workbench_agent.main import main
+from workbench_agent.main import main, setup_logging
 
 
 class TestMainFunctionSuccess:
@@ -311,6 +312,16 @@ class TestHandlerReturnValues:
 
 class TestLoggingConfiguration:
     """Test proper logging configuration."""
+
+    def test_setup_logging_downgrades_http_client_loggers(self):
+        """urllib3/requests should not spam DEBUG when root accepts DEBUG."""
+        setup_logging("DEBUG")
+        assert logging.getLogger("urllib3").level == logging.WARNING
+        assert (
+            logging.getLogger("urllib3.connectionpool").level
+            == logging.WARNING
+        )
+        assert logging.getLogger("requests").level == logging.WARNING
 
     def test_main_handles_log_level(self, mock_main_dependencies):
         """Test that main() properly handles different log levels."""

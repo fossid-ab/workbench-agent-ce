@@ -1,213 +1,222 @@
 # SDK Distribution Strategy
 
+This document describes how the Workbench HTTP client layer under `src/workbench_agent/api/` could be published as a separate Python package (working name: **`workbench-sdk`**), and how the **Workbench Agent CE** CLI would depend on it. It is updated to match the repository as of the last revision of this file.
+
 ## Architecture Overview
+
+**Today (monorepo):** the CE CLI and the API client live in one installable distribution, `workbench-agent` (see root `pyproject.toml`). There is **no** separate `workbench-sdk` on PyPI yet; imports use `workbench_agent.api`.
+
+**Target (two packages):** the CLI consumes a published SDK that owns all Workbench REST usage.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Workbench Agent CLI (workbench-agent)                 │
-│  - Version: independent (0.8.0, 0.9.0, etc.)           │
-│  - Depends on: workbench-sdk>=24.3.0                   │
-│  - pyproject.toml enforces SDK version requirement      │
+│  Workbench Agent CE CLI (distribution: workbench-agent)   │
+│  - Version: semantic (e.g. 0.8.x) — product / CE cadence  │
+│  - Depends on: workbench-sdk>=… (once split)             │
+│  - Owns: cli/, handlers/, utilities/, main, Docker      │
 └───────────────────┬─────────────────────────────────────┘
-                    │ requires
+                    │ pip dependency
                     ↓
 ┌─────────────────────────────────────────────────────────┐
-│  Workbench SDK (workbench-sdk)                          │
-│  - Version: matches Workbench API (24.3.0, 25.1.0)     │
-│  - Located in: src/workbench_agent/api/                │
-│  - Checks server compatibility on init                  │
+│  Workbench SDK (distribution: workbench-sdk)            │
+│  - Owns: HTTP client, services, API exceptions           │
+│  - Versioning: see “Versioning” below (not 1:1 with CE)  │
+│  - Code path today: src/workbench_agent/api/             │
+│  - Code path target: src/workbench_sdk/ (or similar)    │
 └───────────────────┬─────────────────────────────────────┘
-                    │ connects to
+                    │ HTTPS
                     ↓
 ┌─────────────────────────────────────────────────────────┐
-│  Workbench Server                                       │
-│  - Version: 24.3.0, 25.1.0, etc.                       │
-│  - SDK validates compatibility automatically            │
+│  FossID Workbench Server                                 │
+│  - Compatibility: enforced in WorkbenchClient init       │
+│    (minimum server version constant in code today)       │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Version Correspondence
+## Versioning (current code vs future policy)
 
-### SDK Versions Match Workbench Versions
-- `workbench-sdk==24.3.0` → Works with Workbench 24.3.x servers
-- `workbench-sdk==25.1.0` → Works with Workbench 25.1.x servers
-- SDK checks server compatibility at initialization time
+**Current behavior**
 
-### CLI Application Specifies SDK Requirements
-The CLI application (`workbench-agent`) specifies its SDK dependency in `pyproject.toml`:
-```toml
-dependencies = [
-    "workbench-sdk>=24.3.0",  # CLI requires SDK 24.3.0 or newer
-    "requests",
-    # ... other deps
-]
-```
+- The **CE package** version is the semver in root `pyproject.toml` (e.g. `0.8.0`). It is **not** the same numbering scheme as FossID Workbench server releases.
+- `WorkbenchClient` performs a **minimum Workbench server version** check using a constant in `workbench_client.py` (`MINIMUM_VERSION`, currently `24.3.0`), via `internal.get_config()` and `packaging.version`.
+- There is **no** `workbench-sdk` entry in `dependencies` today; the strategy sections below describe a **future** split.
 
-## Current Setup (Monorepo)
+**Future options (choose explicitly when extracting)**
 
-Currently, both SDK and CLI are in the same repository:
+1. **SDK semver independent of Workbench** (e.g. `workbench-sdk` 1.0.0, 1.1.0) and document supported Workbench ranges in release notes + keep `MINIMUM_VERSION` (and optionally a maximum) in code.
+2. **SDK version tracks Workbench** (e.g. `24.3.0`) — only works if release cadence and breaking-change policy align with Workbench; CE would still use its own semver.
+
+## Current repository layout (monorepo)
 
 ```
 workbench-agent-ce/
-├── pyproject.toml              # CLI application config
-├── src/
-│   └── workbench_agent/
-│       ├── api/                # ← SDK code (will be extracted)
-│       │   ├── __init__.py    # Exports WorkbenchClient, exceptions
-│       │   ├── exceptions.py
-│       │   ├── workbench_client.py
-│       │   ├── clients/
-│       │   ├── services/
-│       │   └── helpers/
-│       ├── cli/                # CLI code (stays here)
-│       ├── handlers/           # CLI code (stays here)
-│       └── main.py            # CLI entry point (stays here)
+├── pyproject.toml                 # Single [project] name = workbench-agent
+├── src/workbench_agent/
+│   ├── api/                       # ← Candidate SDK surface (see boundary audit)
+│   │   ├── __init__.py            # Public exports: WorkbenchClient, exceptions
+│   │   ├── exceptions.py
+│   │   ├── workbench_client.py
+│   │   ├── clients/
+│   │   ├── services/
+│   │   ├── helpers/
+│   │   └── utils/                 # e.g. process_waiter, report_definitions
+│   ├── cli/
+│   ├── handlers/                  # Many imports from workbench_agent.api
+│   ├── utilities/                 # Several imports from workbench_agent.api
+│   ├── exceptions.py            # CLI-level errors (WorkbenchAgentError, …)
+│   └── main.py
+└── tests/                         # Large unit surface under tests/unit/api/
 ```
 
-## Future Setup (Separate Packages)
+## Boundary audit (prerequisite for extraction)
 
-###  Step 1: Create SDK Package
+### Inward boundary (good)
+
+- Under `src/workbench_agent/api/`, **no** imports from `workbench_agent.cli`, `workbench_agent.handlers`, or `workbench_agent.utilities`.
+- The API layer is the right place for REST clients, orchestration services, and `WorkbenchClient`.
+
+### Outward boundary (must fix before a clean SDK wheel)
+
+The API package **does** import application-level exceptions from `workbench_agent.exceptions` in several modules, for example:
+
+- `FileSystemError` — `upload_api.py`, `upload_service.py`, `report_service.py`
+- `ValidationError` — `download_api.py`, `report_service.py`
+
+`WorkbenchAgentError` and subclasses live outside `api/` today. For a standalone `workbench-sdk` wheel, either:
+
+- **Move** shared types into the SDK (e.g. `workbench_sdk.errors` with thin subclasses), and have the CLI re-export or wrap them, or  
+- **Define** SDK-local I/O/validation exceptions and map them at the CLI boundary.
+
+Until one of these is done, the claim “SDK has no dependencies on non-SDK code” is **false**.
+
+### Minor coupling
+
+- `WorkbenchClient` uses `logging.getLogger("workbench-agent")`. For a separate package, rename to something like `workbench-sdk` for log filtering.
+
+### Consumers outside `api/`
+
+Many modules import `workbench_agent.api` (handlers, `main.py`, utilities, tests, integration `conftest`). A rename to `workbench_sdk` implies a **repo-wide import and docstring reference** update, plus moving or duplicating tests that belong to the SDK package.
+
+## Future layout (two distributions)
+
+### SDK repository / package
 
 ```
 workbench-sdk/
-├── pyproject.toml              # SDK-specific config
+├── pyproject.toml
 │   [project]
 │   name = "workbench-sdk"
-│   version = "24.3.0"         # Matches Workbench version!
+│   version = "…"                    # Policy: see “Versioning”
 │   dependencies = [
 │       "requests",
 │       "packaging>=21.0",
 │   ]
-├── src/
-│   └── workbench_sdk/          # Renamed from workbench_agent.api
-│       ├── __init__.py
-│       ├── exceptions.py
-│       ├── workbench_client.py
-│       ├── clients/
-│       ├── services/
-│       └── helpers/
-└── README.md                   # SDK-specific docs
+├── src/workbench_sdk/
+│   ├── __init__.py
+│   ├── exceptions.py
+│   ├── workbench_client.py
+│   ├── clients/
+│   ├── services/
+│   ├── helpers/
+│   └── utils/
+└── README.md
 ```
 
-### Step 2: Update CLI to Use SDK Package
+### CE CLI repository (or same monorepo with two packages)
 
 ```
-workbench-agent/
+workbench-agent-ce/
 ├── pyproject.toml
-│   [project]
-│   name = "workbench-agent"
-│   version = "1.0.0"           # CLI version (independent!)
 │   dependencies = [
-│       "workbench-sdk>=24.3.0",  # ← Declares SDK requirement
-│       "spdx-tools>=0.8.0",
+│       "workbench-sdk>=…",
+│       "spdx-tools>=0.8.5",
 │       "cyclonedx-python-lib[validation]>=7.0.0",
+│       …
 │   ]
-├── src/
-│   └── workbench_agent/
-│       ├── cli/
-│       ├── handlers/
-│       ├── utilities/
-│       └── main.py
-│           # Changed import:
-│           from workbench_sdk import WorkbenchClient  # ← External package
+├── src/workbench_agent/
+│   ├── cli/
+│   ├── handlers/                  # from workbench_sdk import WorkbenchClient
+│   ├── utilities/
+│   └── main.py
 ```
 
-## Implementation Steps
+## What it would take to separate the layer (effort summary)
 
-### Phase 1: Prepare SDK for Extraction (Current)
-- ✅ SDK has its own exception module (`api/exceptions.py`)
-- ✅ SDK exports all public APIs via `api/__init__.py`
-- ✅ SDK checks Workbench version compatibility
-- ✅ Clear boundary between SDK (`api/`) and CLI (everything else)
+Rough phases for planning (ordering matters):
 
-### Phase 2: Test SDK Independence
-- [ ] Add `src/workbench_agent/api/pyproject.toml` (optional - for testing)
-- [ ] Verify SDK has no dependencies on CLI code
-- [ ] Test SDK can be imported standalone
+1. **Decouple exceptions** — Remove `from workbench_agent.exceptions import …` from `api/` (small, blocking).
+2. **Mechanical rename** — `workbench_agent.api` → `workbench_sdk` (or keep `workbench_agent.api` as a thin re-export shim for one release — optional migration path).
+3. **Split packaging** — Second `pyproject.toml` (second package in monorepo *or* new repo), setuptools package discovery, optional `[tool.setuptools.packages.find]` boundaries.
+4. **Wire CE to SDK** — Add `workbench-sdk` dependency; delete or shrink in-tree `api/`; run full test suite.
+5. **Tests** — Move `tests/unit/api/` with the SDK or keep in CE with `workbench-sdk` as dev dependency; update `tests/integration` fixtures that patch `workbench_agent.api…`.
+6. **Release engineering** — PyPI (or private index) for `workbench-sdk`, version policy, changelog, and aligning `MINIMUM_VERSION` with documented supported Workbench versions.
+7. **Docs** — Public SDK README, exception hierarchy, compatibility guarantees.
 
-### Phase 3: Extract SDK to Separate Repo
-- [ ] Create `workbench-sdk` repository
-- [ ] Move `src/workbench_agent/api/` → `src/workbench_sdk/`
-- [ ] Create SDK-specific pyproject.toml with version matching Workbench
-- [ ] Publish to PyPI as `workbench-sdk`
+CI (GitHub Actions), Docker, and GHCR publishing for CE remain separate from SDK publication unless you add a dedicated SDK workflow.
 
-### Phase 4: Update CLI to Use External SDK
-- [ ] Update `workbench-agent/pyproject.toml` to depend on `workbench-sdk`
-- [ ] Change imports from `workbench_agent.api` → `workbench_sdk`
-- [ ] Remove `src/workbench_agent/api/` from CLI repo
+## Implementation steps
 
-## Benefits
+### Phase 1: Prepare SDK for extraction (in progress)
 
-### For SDK Consumers
+- [x] SDK-oriented exceptions in `api/exceptions.py` and exports from `api/__init__.py`
+- [x] `WorkbenchClient` with domain clients/services and Workbench version compatibility check
+- [ ] **Remove dependency on `workbench_agent.exceptions` from `api/`** (blocking for a clean split)
+- [ ] Optional: add a second package in the **same** repo (e.g. `packages/workbench-sdk/pyproject.toml`) to prove `pip install -e ./packages/workbench-sdk` without publishing
+
+### Phase 2: Test SDK independence
+
+- [ ] `pip install` SDK alone in a clean venv; `from workbench_sdk import WorkbenchClient` (after rename)
+- [ ] Static check: no imports from `workbench_agent` outside the new SDK root (ruff/mypy path constraints or a simple grep in CI)
+
+### Phase 3: Extract SDK (repository choice)
+
+- [ ] New repository **or** monorepo multi-package — team decision
+- [ ] Move/rename tree; publish `workbench-sdk` to PyPI (name availability / trademark — verify org-wide)
+
+### Phase 4: Update CE to depend on external SDK
+
+- [ ] Root `pyproject.toml`: add `workbench-sdk>=…`
+- [ ] Replace imports across handlers, utilities, `main.py`, tests
+- [ ] Remove in-tree `api/` (or keep compatibility shim for one major CE version)
+
+## Benefits (unchanged intent)
+
+### For SDK consumers
+
 ```python
-# Anyone can use the SDK directly
 from workbench_sdk import WorkbenchClient
 from workbench_sdk.exceptions import ApiError
 
 client = WorkbenchClient(url, user, token)
-projects = client.projects.list()
 ```
 
-### For CLI Users
-- CLI version evolves independently from API version
-- CLI declares which SDK versions it supports
-- Users get appropriate SDK automatically via pip
+### For CLI users
 
-### For Maintainers
-- SDK releases match Workbench releases (24.3.0, 25.1.0)
-- CLI releases are independent (1.0.0, 1.1.0, 2.0.0)
-- Clear separation of concerns
+- CE version can move on its own cadence once the SDK is a versioned dependency.
+- Pinning `workbench-sdk` in enterprise environments becomes possible.
 
-## Version Management
+### For maintainers
 
-### SDK Releases
-- **When**: When Workbench API changes (new Workbench release)
-- **Version**: Matches Workbench version (24.3.0, 25.1.0)
-- **Breaking Changes**: Expected when Workbench API changes
+- Clear ownership: REST contract and server compatibility in SDK; UX and orchestration in CLI.
 
-### CLI Releases
-- **When**: When CLI features change (new commands, bug fixes)
-- **Version**: Semantic versioning (1.0.0, 1.1.0, 2.0.0)
-- **SDK Dependency**: Update when new Workbench features needed
-  ```toml
-  # workbench-agent v1.0.0
-  dependencies = ["workbench-sdk>=24.3.0"]
-  
-  # workbench-agent v2.0.0 (needs new Workbench features)
-  dependencies = ["workbench-sdk>=25.1.0"]
-  ```
+## Example: version evolution (illustrative)
 
-## Example: Version Evolution
+After a split, a plausible timeline (numbers are examples only):
 
 ```
-Timeline:
-
-Workbench 24.3.0 released
-  └─> workbench-sdk==24.3.0 released
-      └─> workbench-agent==1.0.0 (requires workbench-sdk>=24.3.0)
-
-Workbench 25.1.0 released (new APIs!)
-  └─> workbench-sdk==25.1.0 released (supports new APIs)
-      ├─> workbench-agent==1.0.0 still works (uses old APIs)
-      └─> workbench-agent==2.0.0 released (uses new APIs, requires workbench-sdk>=25.1.0)
+CE 0.8.x ships with workbench-sdk 1.2.x (supports Workbench >= 24.3)
+CE 0.9.x bumps to workbench-sdk 1.3.x when new API surface is required
 ```
 
-## Current State
+Exact coupling should follow the policy chosen under “Versioning”.
 
-✅ **SDK is Ready for Extraction**
-- Clean API boundary
-- Self-contained exception handling  
-- Version checking built-in
-- No dependencies on CLI code
+## Checklist before claiming “SDK ready for extraction”
 
-🎯 **Next Steps**
-1. Add SDK-specific documentation
-2. Create separate pyproject.toml for SDK
-3. Test standalone SDK installation
-4. Extract to separate repository when ready
+- [ ] No imports from `workbench_agent.exceptions` (or any non-SDK module) inside the SDK tree
+- [ ] Logger names / package metadata aligned with distribution name
+- [ ] Tests and docs run with SDK installed as the only source of `WorkbenchClient`
+- [ ] Published artifact on an index you control; CE declares compatible range
 
-This architecture follows Python best practices (like `requests`, `boto3`, etc.) where:
-- SDK versions match the API they support
-- Applications declare their SDK requirements
-- Clear separation enables independent evolution
+---
 
+This architecture follows common Python practice: a thin application package depends on a library package with a explicit version range, and the library owns the remote API contract.

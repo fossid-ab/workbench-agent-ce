@@ -12,6 +12,7 @@ _AGENT_CONFIG_PARAMS = frozenset(
     {
         "log",
         "fossid_toolbox_path",
+        "fossid_toolbox_timeout",
         "scan_number_of_tries",
         "scan_wait_time",
         "no_wait",

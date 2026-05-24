@@ -60,6 +60,7 @@ def _prepare_sbom_for_upload(
     file_path: str,
     sbom_format: str,
     parsed_document: Any,
+    workbench_version: str = "",
 ) -> Tuple[str, bool]:
     """
     Prepares SBOM file for upload, converting format if needed.
@@ -68,6 +69,7 @@ def _prepare_sbom_for_upload(
         file_path: Original file path
         sbom_format: Detected SBOM format
         parsed_document: Parsed document from validation
+        workbench_version: Connected Workbench version for SPDX JSON gating
 
     Returns:
         tuple[str, bool]: (upload_path, temp_file_created)
@@ -81,6 +83,7 @@ def _prepare_sbom_for_upload(
             file_path,
             sbom_format,
             parsed_document,
+            workbench_version,
         )
         temp_file_created = upload_path != file_path
         logger.debug(
@@ -120,8 +123,9 @@ def handle_import_sbom(
     Handler for the 'import-sbom' command.
 
     Imports SBOM (Software Bill of Materials) data from a file into a scan.
-    Supports both CycloneDX and SPDX formats with automatic validation and
-    conversion if needed.
+    Supports both CycloneDX and SPDX formats with automatic validation.
+    SPDX JSON is uploaded directly on Workbench 2025.2.0+; older servers
+    receive an automatic JSON-to-RDF conversion before upload.
 
     Workflow:
     1. Validates SBOM file format and content
@@ -170,7 +174,10 @@ def handle_import_sbom(
         # Prepare SBOM file for upload (convert if needed)
         print("\n--- Preparing SBOM for Upload ---")
         upload_path, temp_file_created = _prepare_sbom_for_upload(
-            params.path, sbom_format, parsed_document
+            params.path,
+            sbom_format,
+            parsed_document,
+            client.get_workbench_version(),
         )
 
         if temp_file_created:

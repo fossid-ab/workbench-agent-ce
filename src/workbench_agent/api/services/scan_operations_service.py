@@ -187,6 +187,53 @@ class ScanOperationsService:
         # Delegate to client for API call
         return self._scans.run(payload_data)
 
+    def scan_failed_files(
+        self,
+        scan_code: str,
+        limit: int,
+        sensitivity: int,
+        autoid_file_licenses: bool,
+        autoid_file_copyrights: bool,
+        autoid_pending_ids: bool,
+        delta_scan: bool,
+        id_reuse_type: Optional[str] = None,
+        id_reuse_specific_code: Optional[str] = None,
+        run_dependency_analysis: Optional[bool] = None,
+        replace_existing_identifications: bool = False,
+        full_file_only: bool = False,
+        advanced_match_scoring: bool = True,
+        match_filtering_threshold: Optional[int] = None,
+        scan_host: Optional[str] = None,
+    ):
+        """
+        Start a KB scan for files that failed in a previous scan.
+
+        This wraps start_scan with scan_failed_only on.
+        """
+        logger.info(
+            f"Starting failed-file scan retry for '{scan_code}'..."
+        )
+        return self.start_scan(
+            scan_code=scan_code,
+            limit=limit,
+            sensitivity=sensitivity,
+            autoid_file_licenses=autoid_file_licenses,
+            autoid_file_copyrights=autoid_file_copyrights,
+            autoid_pending_ids=autoid_pending_ids,
+            delta_scan=delta_scan,
+            id_reuse_type=id_reuse_type,
+            id_reuse_specific_code=id_reuse_specific_code,
+            run_dependency_analysis=run_dependency_analysis,
+            replace_existing_identifications=(
+                replace_existing_identifications
+            ),
+            scan_failed_only=True,
+            full_file_only=full_file_only,
+            advanced_match_scoring=advanced_match_scoring,
+            match_filtering_threshold=match_filtering_threshold,
+            scan_host=scan_host,
+        )
+
     def start_archive_extraction(
         self,
         scan_code: str,
@@ -239,7 +286,8 @@ class ScanOperationsService:
         )
 
         # Delegate to client
-        return self._scans.extract_archives(payload_data)
+        result: bool = self._scans.extract_archives(payload_data)
+        return result
 
     def start_da_only(self, scan_code: str):
         """

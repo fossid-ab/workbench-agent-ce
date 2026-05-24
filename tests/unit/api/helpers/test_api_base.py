@@ -1,11 +1,10 @@
 # tests/unit/api/helpers/test_api_base.py
 
 import json
-import time
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock
 
 import pytest
-import requests
+import requests  # type: ignore[import-untyped]
 
 from workbench_agent.api.exceptions import (
     ApiError,
@@ -69,6 +68,54 @@ def test_send_request_success(api_base_inst, mock_session):
     result = api_base_inst._send_request(payload)
     mock_session.post.assert_called_once()
     assert result == {"status": "1", "data": {"key": "value"}}
+
+
+def test_send_request_masks_api_key_in_debug_logs(
+    api_base_inst, mock_session, caplog
+):
+    mock_response = MagicMock(spec=requests.Response)
+    mock_response.status_code = 200
+    mock_response.headers = {"content-type": "application/json"}
+    mock_response.text = (
+        '{"status": "1", "data": {"key": "server-echoed-token"}}'
+    )
+    mock_response.json.return_value = {
+        "status": "1",
+        "data": {"key": "server-echoed-token"},
+    }
+    mock_session.post.return_value = mock_response
+    payload = {"group": "test", "action": "test"}
+
+    with caplog.at_level("DEBUG", logger="workbench-agent"):
+        api_base_inst._send_request(payload)
+
+    sent_body = mock_session.post.call_args.kwargs["data"]
+    assert '"key": "testtoken"' in sent_body
+    assert "testtoken" not in caplog.text
+    assert "server-echoed-token" not in caplog.text
+    assert "***" in caplog.text
+
+
+def test_send_request_masks_api_key_in_api_error_log(
+    api_base_inst, mock_session, caplog
+):
+    mock_response = MagicMock(spec=requests.Response)
+    mock_response.status_code = 200
+    mock_response.headers = {"content-type": "application/json"}
+    mock_response.text = '{"status": "0", "error": "A generic failure"}'
+    mock_response.json.return_value = {
+        "status": "0",
+        "error": "A generic failure",
+    }
+    mock_session.post.return_value = mock_response
+    payload = {"group": "test", "action": "fail"}
+
+    with caplog.at_level("DEBUG", logger="workbench-agent"):
+        with pytest.raises(ApiError, match="A generic failure"):
+            api_base_inst._send_request(payload)
+
+    assert "testtoken" not in caplog.text
+    assert "***" in caplog.text
 
 
 def test_send_request_api_error(api_base_inst, mock_session):
@@ -164,12 +211,22 @@ def test_send_request_git_repository_access_error(
         "data": [
             {
                 "code": "RequestData.Base.issue_with_executing_command",
-                "message": "Field git_repo_url: there was an issue executing command: timeout 200 git ls-remote 'https://github.com/fake/repo' 2>&1.",
+                "message": (
+                    "Field git_repo_url: there was an issue executing "
+                    "command: timeout 200 git ls-remote "
+                    "'https://github.com/fake/repo' 2>&1."
+                ),
                 "message_parameters": {
                     "fieldname": "git_repo_url",
-                    "cmd": "timeout 200 git ls-remote 'https://github.com/fake/repo' 2>&1",
+                    "cmd": (
+                        "timeout 200 git ls-remote "
+                        "'https://github.com/fake/repo' 2>&1"
+                    ),
                     "exitStatus": 128,
-                    "out": "fatal: could not read Username for 'https://github.com': No such device or address",
+                    "out": (
+                        "fatal: could not read Username for "
+                        "'https://github.com': No such device or address"
+                    ),
                 },
             }
         ],

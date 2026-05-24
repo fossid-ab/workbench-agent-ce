@@ -1,13 +1,18 @@
 import json
 import logging
 import os
+from typing import cast
 
-import requests
+import requests  # type: ignore[import-untyped]
 
 from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
     NetworkError,
+)
+from workbench_agent.api.utils.redaction import (
+    redact_response_text,
+    redact_sensitive_data,
 )
 
 logger = logging.getLogger("workbench-agent")
@@ -73,10 +78,13 @@ class BaseAPI:
         payload["data"]["key"] = self.api_token
 
         req_body = json.dumps(payload)
+        redacted_req_body = json.dumps(redact_sensitive_data(payload))
         logger.debug("API URL: %s", self.api_url)
         if LOG_HEADERS:
-            logger.debug("Request Headers: %s", headers)
-        logger.debug("Request Body: %s", req_body)
+            logger.debug(
+                "Request Headers: %s", redact_sensitive_data(headers)
+            )
+        logger.debug("Request Body: %s", redacted_req_body)
 
         try:
             response = self.session.post(
@@ -87,11 +95,21 @@ class BaseAPI:
             )
             logger.debug("Response Status Code: %s", response.status_code)
             if LOG_HEADERS:
-                logger.debug("Response Headers: %s", response.headers)
+                logger.debug(
+                    "Response Headers: %s",
+                    redact_sensitive_data(dict(response.headers)),
+                )
             # Log first part of text regardless of JSON success/failure
+            response_text = (
+                response.text if hasattr(response, "text") else "(No text)"
+            )
+            redacted_response_text = redact_response_text(
+                response_text,
+                self.api_token,
+            )
             logger.debug(
                 f"Response Text (first 500 chars): "
-                f"{response.text[:500] if hasattr(response, 'text') else '(No text)'}"
+                f"{redacted_response_text[:500]}"
             )
 
             # Handle authentication errors
@@ -116,7 +134,7 @@ class BaseAPI:
                         )
                         logger.debug(
                             f"API returned status 0 JSON: {error_msg} | "
-                            f"Payload: {payload}"
+                            f"Payload: {redact_sensitive_data(payload)}"
                         )
 
                         is_invalid_type_probe = False
@@ -155,14 +173,15 @@ class BaseAPI:
                                 details=parsed_json,
                             )
 
-                    return parsed_json
+                    return cast(dict, parsed_json)
                 except (ValueError, TypeError) as e:
                     logger.error(f"Failed to parse JSON response: {e}")
                     raise ApiError(f"Invalid JSON response: {e}")
             else:
                 # Handle non-JSON responses (like file downloads)
                 logger.debug(
-                    f"Non-JSON response received (Content-Type: {content_type})"
+                    "Non-JSON response received "
+                    f"(Content-Type: {content_type})"
                 )
                 return {"_raw_response": response}
 

@@ -39,7 +39,7 @@ jobs:
         run: |
           docker run --rm \
           -v $GITHUB_WORKSPACE:/code \
-          ghcr.io/fossid-ab/workbench-agent-ce:latest \
+          ghcr.io/fossid-ab/workbench-agent-ce:edge \
           scan \
           --api-url ${{ secrets.WORKBENCH_URL }} \
           --api-user ${{ secrets.WORKBENCH_USER }} \
@@ -47,9 +47,10 @@ jobs:
           --project-name $GITHUB_REPOSITORY \
           --scan-name PR-HEAD-DIFF-$GITHUB_HEAD_REF \
           --path /code/diff-archive.zip \
+          --incremental-upload \
+          --delta-scan \
           --autoid-file-licenses \
-          --autoid-file-copyrights \
-          --delta-scan
+          --autoid-file-copyrights
 
       - name: No changes to scan
         if: steps.create-diff-archive.outputs.has_changes == 'false'
@@ -62,7 +63,7 @@ jobs:
       - name: Evaluate Gates for Diff Scan
         run: |
           docker run --rm \
-          ghcr.io/fossid-ab/workbench-agent-ce:latest \
+          ghcr.io/fossid-ab/workbench-agent-ce:edge \
           evaluate-gates \
           --api-url ${{ secrets.WORKBENCH_URL }} \
           --api-user ${{ secrets.WORKBENCH_USER }} \
@@ -70,4 +71,5 @@ jobs:
           --project-name $GITHUB_REPOSITORY \
           --scan-name PR-HEAD-DIFF-$GITHUB_HEAD_REF \
           --fail-on-pending \
-          --fail-on-policy
+          --fail-on-policy \
+          --fail-on-vuln-severity high

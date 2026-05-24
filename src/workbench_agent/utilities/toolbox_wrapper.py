@@ -24,16 +24,16 @@ class ToolboxWrapper:
 
     Attributes:
         toolbox_path (str): Path to the FossID Toolbox executable
-        timeout (str): Timeout for Toolbox expressed in seconds
+        timeout (str): Timeout for Toolbox subprocesses in seconds
     """
 
-    def __init__(self, toolbox_path: str, timeout: str = "120"):
+    def __init__(self, toolbox_path: str, timeout: str = "300"):
         """
         Initialize ToolboxWrapper.
 
         Args:
             toolbox_path: Path to the fossid-toolbox executable
-            timeout: Timeout in seconds (default: "120")
+            timeout: Timeout in seconds (default: "300")
 
         Raises:
             FileSystemError: If toolbox_path doesn't exist or isn't executable
@@ -153,13 +153,19 @@ class ToolboxWrapper:
         )
 
         try:
-            # Execute command and redirect output to temporary file
-            with open(temporary_file_path, "w") as outfile:
+            # Execute command and redirect output to temporary file.
+            # Use binary mode for the file because subprocess writes the
+            # child's raw bytes via the underlying file descriptor and
+            # bypasses Python's text-mode wrapper. Decode stderr explicitly
+            # as UTF-8 with replacement so a non-UTF-8 byte in a diagnostic
+            # message can't crash the parent on a non-UTF-8 system locale.
+            with open(temporary_file_path, "wb") as outfile:
                 result = subprocess.run(
                     cmd_args,
                     stdout=outfile,
                     stderr=subprocess.PIPE,
-                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     timeout=int(self.timeout),
                     check=False,  # We handle return code manually
                 )

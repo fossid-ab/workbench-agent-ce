@@ -42,8 +42,9 @@ def resolve_fossid_toolbox_path(configured: Optional[str]) -> str:
 
 def validate_fossid_file(file_path: str) -> None:
     """
-    Validate the schema of a pre-generated .fossid file.
+    Validate the encoding and schema of a pre-generated .fossid file.
 
+    The file must be valid UTF-8.
     Each line must be a JSON object containing at minimum:
     - path (str): Relative file path
     - size (int): File size in bytes
@@ -53,11 +54,18 @@ def validate_fossid_file(file_path: str) -> None:
         file_path: Path to the .fossid file to validate
 
     Raises:
-        ValidationError: If the file is empty or has invalid schema
+        ValidationError: If the file is not UTF-8, is empty, or has invalid
+            schema
     """
     try:
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
+    except UnicodeDecodeError as e:
+        raise ValidationError(
+            f"The .fossid file '{file_path}' is not valid UTF-8 "
+            f"(byte {e.start}: {e.reason}). Re-generate it with "
+            f"fossid-toolbox or re-encode it as UTF-8."
+        ) from e
     except Exception as e:
         raise ValidationError(
             f"Failed to read .fossid file '{file_path}': {e}"
@@ -137,7 +145,7 @@ def handle_blind_scan(
     Workflow:
     1. Detects input type (.fossid file vs directory)
     2a. If .fossid file: validates file schema
-    2b. If directory: validates Toolbox and generates hashes
+    2b. If directory: validates Toolbox, generate hashes, validate schema
     3. Resolves/creates project and scan in Workbench
     4. Uploads hash file to Workbench
     5. Runs scans, waits, and displays results
@@ -187,6 +195,9 @@ def handle_blind_scan(
                 toolbox_path=resolve_fossid_toolbox_path(
                     getattr(params, "fossid_toolbox_path", None)
                 ),
+                timeout=str(
+                    getattr(params, "fossid_toolbox_timeout", 300)
+                ),
             )
 
             version = toolbox_wrapper.get_version()
@@ -200,6 +211,10 @@ def handle_blind_scan(
                 ),
             )
             should_cleanup = True
+
+            print("\nValidating generated .fossid file...")
+            validate_fossid_file(hash_file_path)
+            print("Validation successful.")
 
         # ===== STEP 3: Resolve/create project and scan =====
         print("\n--- Project and Scan Checks ---")

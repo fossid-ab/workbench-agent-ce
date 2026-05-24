@@ -94,6 +94,30 @@ def _format_duration(
         return f"{seconds} seconds"
 
 
+def _is_cancelled_scan_result(scan_result) -> bool:
+    """
+    Detect scans cancelled by a user, including API responses that report
+    cancellation as FAILED with cancellation text in the payload.
+    """
+    if getattr(scan_result, "status", None) == "CANCELLED":
+        return True
+
+    raw_data = getattr(scan_result, "raw_data", {}) or {}
+    cancellation_messages = [
+        getattr(scan_result, "error_message", ""),
+        raw_data.get("error", ""),
+        raw_data.get("message", ""),
+        raw_data.get("info", ""),
+        raw_data.get("comment", ""),
+    ]
+    status_message = " ".join(
+        str(message).lower()
+        for message in cancellation_messages
+        if message
+    )
+    return "cancel" in status_message
+
+
 # ============================================================================
 # Post-scan summary
 # ============================================================================
@@ -245,17 +269,32 @@ def _print_scan_summary(
         else:
             print("    - ID Reuse: Disabled")
 
+        autoid_pending_ids = (
+            "Yes"
+            if getattr(params, "autoid_pending_ids", False)
+            else "No"
+        )
+        autoid_file_licenses = (
+            "Yes"
+            if getattr(params, "autoid_file_licenses", False)
+            else "No"
+        )
+        autoid_file_copyrights = (
+            "Yes"
+            if getattr(params, "autoid_file_copyrights", False)
+            else "No"
+        )
         print(
             f"    - AutoID Pending IDs: "
-            f"{'Yes' if getattr(params, 'autoid_pending_ids', False) else 'No'}"
+            f"{autoid_pending_ids}"
         )
         print(
             f"    - License Extraction: "
-            f"{'Yes' if getattr(params, 'autoid_file_licenses', False) else 'No'}"
+            f"{autoid_file_licenses}"
         )
         print(
             f"    - Copyright Extraction: "
-            f"{'Yes' if getattr(params, 'autoid_file_copyrights', False) else 'No'}"
+            f"{autoid_file_copyrights}"
         )
 
     if da_completed:
@@ -605,6 +644,69 @@ def execute_scan_workflow(
             durations["kb_scan"] = (
                 kb_scan_result.duration or 0.0
             )
+
+            if kb_scan_result.is_failed and not _is_cancelled_scan_result(
+                kb_scan_result
+            ):
+                logger.warning(
+                    f"KB Scan '{scan_code}' ended in "
+                    f"{kb_scan_result.status}. Attempting one "
+                    f"automatic retry with scan_failed_only=True."
+                )
+                client.scan_operations.scan_failed_files(
+                    scan_code=scan_code,
+                    limit=params.limit,
+                    sensitivity=params.sensitivity,
+                    autoid_file_licenses=params.autoid_file_licenses,
+                    autoid_file_copyrights=(
+                        params.autoid_file_copyrights
+                    ),
+                    autoid_pending_ids=params.autoid_pending_ids,
+                    delta_scan=params.delta_scan,
+                    id_reuse_type=id_reuse_type,
+                    id_reuse_specific_code=id_reuse_specific_code,
+                    run_dependency_analysis=scan_operations[
+                        "run_dependency_analysis"
+                    ],
+                    replace_existing_identifications=getattr(
+                        params,
+                        "replace_existing_identifications",
+                        False,
+                    ),
+                    full_file_only=getattr(
+                        params, "full_file_only", False
+                    ),
+                    advanced_match_scoring=getattr(
+                        params, "advanced_match_scoring", True
+                    ),
+                    match_filtering_threshold=getattr(
+                        params, "match_filtering_threshold", None
+                    ),
+                    scan_host=getattr(params, "scan_host", None),
+                )
+                kb_scan_result = (
+                    client.status_check.check_scan_status(
+                        scan_code,
+                        wait=True,
+                        wait_retry_count=params.scan_number_of_tries,
+                        wait_retry_interval=params.scan_wait_time,
+                        should_track_files=True,
+                    )
+                )
+                durations["kb_scan"] += (
+                    kb_scan_result.duration or 0.0
+                )
+
+                if kb_scan_result.is_failed:
+                    logger.error(
+                        f"KB Scan '{scan_code}' failed again "
+                        f"after retry (status="
+                        f"{kb_scan_result.status})."
+                    )
+                    print(
+                        f"\nKB Scan still {kb_scan_result.status} "
+                        f"after retry."
+                    )
 
             if "DEPENDENCY_ANALYSIS" in process_types_to_wait:
                 print(
