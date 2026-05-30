@@ -65,7 +65,7 @@ workbench-agent-ce/
 │   ├── utilities/                 # Several imports from workbench_agent.api
 │   ├── exceptions.py            # CLI-level errors (WorkbenchAgentError, …)
 │   └── main.py
-└── tests/                         # Large unit surface under tests/unit/api/
+└── tests/                         # API tests under tests/api/ (SDK-ready layout)
 ```
 
 ## Boundary audit (prerequisite for extraction)
@@ -148,7 +148,7 @@ Rough phases for planning (ordering matters):
 2. **Mechanical rename** — `workbench_agent.api` → `workbench_sdk` (or keep `workbench_agent.api` as a thin re-export shim for one release — optional migration path).
 3. **Split packaging** — Second `pyproject.toml` (second package in monorepo *or* new repo), setuptools package discovery, optional `[tool.setuptools.packages.find]` boundaries.
 4. **Wire CE to SDK** — Add `workbench-sdk` dependency; delete or shrink in-tree `api/`; run full test suite.
-5. **Tests** — Move `tests/unit/api/` with the SDK or keep in CE with `workbench-sdk` as dev dependency; update `tests/integration` fixtures that patch `workbench_agent.api…`.
+5. **Tests** — Move `tests/api/` with the SDK or keep in CE with `workbench-sdk` as dev dependency; update `tests/integration` fixtures that patch `workbench_agent.api…`.
 6. **Release engineering** — PyPI (or private index) for `workbench-sdk`, version policy, changelog, and aligning `MINIMUM_VERSION` with documented supported Workbench versions.
 7. **Docs** — Public SDK README, exception hierarchy, compatibility guarantees.
 

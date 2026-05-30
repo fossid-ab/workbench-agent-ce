@@ -1,0 +1,57 @@
+# Workflow Overview
+
+For all the scanning-related handlers where a KB Scan is run, the Workflow in Workbench is as follows:
+
+1. Files are analyzed.
+2. For any files that match to Open Source in the KB, those files are put into "Pending Identification"
+3. Files without KB Matches are put into "No Matches".
+
+Note: The --show-scan-metrics option of show-results shows a breakdown of this:
+```
+=== Scan File Metrics ===
+  - Total Files Scanned: 165
+  - Files Pending Identification: 105
+  - Files Identified: 0
+  - Files Without Matches: 60
+```
+
+4. Users review the KB Matches for files in the Pending ID section. 
+5. Users perform Identifications for those files:
+- If the file belongs to a Component, a Component Identification is added.
+- If the File has a Snippet Match (type partial) - a File License of type Snippet is added.
+- If the File has a File-Level License (such as a License Identifier in the HEader or Embedded License Text) a File License Identification is created.
+- If the File has a Copyright Statement, a Copyright Identification is created.
+- If the File is not distributed with the Application, it's marked as "Not Distributed"
+- If the File had a Snippet Match and a Snippet License was added, a Comment is added indicating the Line Range and Origin.
+
+6. Once all the Identification information is added, the File is marked as Identified.
+7. The User repeats until all Files are identifies.
+
+# Identification Service - Project Scope
+The goal is to create a new identification_service.py to handle the process of reviewing matches and creating identifications.
+This will be used by a IDE Plugin and/or MCP Servers in the future to guide users through reviewing matches and writing identifications.
+
+## Required APIs.
+Scans -> Show_Scan_Metrics provides a breakdown of Files Pending, Identified, or without Matches
+The Files_and_Folders APIs contain the operations to create Component Identifications and FIle Identifications for Copyrights and Licenses.
+They also contain operations for creating comments, marking files as not distributed, and marking files identified.
+
+## Identification Operations
+The Identification Service should support the following operations:
+1. Identify Component to Folder - creates a component identification for all files in a provided folder path
+2. Identify Component to File - creates a component identification for a given file path
+3. Add File License to Folder - adds a File License of type File to all files in a Folder.
+4. Add File License to File - adds a File License of type File to a File.
+5. Add File Copyright to Folder - adds a Copyright to all files in a folder.
+6. Identify Snippet in File - adds a File License of type Snippet to a File and a Comment with Match Information.
+
+## Match Review Operations
+In order to create Identifications, it should also support reviewing matches.
+1. Get Matches for a File - uses get_fossid_results to retrieve the matches
+2. Get Matched Content - for partial matches, retrieves the matches lines
+
+## Other notes
+
+In order to create a component identification, the component must already exist in Workbench. 
+A component may need to be created in Workbench from a match result in order to be usable for identifications.
+If during a scan operation (scan, blind-scan, scan-git) the --autoid-file-licenses or --autoid-file-copyrights was used, the file licenses and copyrights will already be present if found

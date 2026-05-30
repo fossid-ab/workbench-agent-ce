@@ -159,11 +159,32 @@ class BaseAPI:
                             )
 
                         # Determine if this error is expected and non-fatal
-                        is_existence_check = (
-                            payload.get("action") == "get_information"
+                        # Domain clients interpret status "0" themselves
+                        is_client_handled_status_zero = (
+                            payload.get("group") == "projects"
+                            and payload.get("action")
+                            in (
+                                "get_information",
+                                "get_all_scans",
+                                "create",
+                                "update",
+                                "generate_report",
+                            )
+                        ) or (
+                            payload.get("group") == "users"
+                            and payload.get("action")
+                            in (
+                                "get_information",
+                                "get_user_permissions_list",
+                            )
+                        ) or (payload.get("group") == "components") or (
+                            payload.get("group") == "files_and_folders"
                         )
 
-                        if is_invalid_type_probe or is_existence_check:
+                        if (
+                            is_invalid_type_probe
+                            or is_client_handled_status_zero
+                        ):
                             # Don't raise an exception for these expected cases
                             return parsed_json
                         else:

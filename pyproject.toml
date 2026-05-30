@@ -145,6 +145,7 @@ markers = [
     "unit: Unit tests",
     "integration: Integration tests", 
     "functional: Functional end-to-end tests (requires real Workbench server)",
+    "api_contract: Live API contract tests against a real Workbench server",
     "requires_workbench: Tests that require WORKBENCH_URL, WORKBENCH_USER, and WORKBENCH_TOKEN environment variables",
     "requires_toolbox: Tests that require fossid-toolbox installed on PATH",
     "slow: Slow-running tests"

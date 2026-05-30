@@ -1,0 +1,40 @@
+{
+  "operation": "projects_get_all_scans",
+  "status": "1",
+  "data": [
+    {
+      "id": "2271",
+      "created": "2026-05-30 09:16:11",
+      "updated": "2026-05-30 09:16:33",
+      "last_run": "2026-05-30 11:16:15",
+      "user_id": "3",
+      "project_id": "723",
+      "code": "Test_Scan_2265",
+      "name": "Test Scan",
+      "description": null,
+      "comment": null,
+      "is_archived": "0",
+      "is_deleted": "0",
+      "target_path": null,
+      "is_blind_audit": "1",
+      "is_from_report": "0",
+      "files_not_scanned": null,
+      "pending_items": null,
+      "git_repo_url": null,
+      "git_branch": null,
+      "git_depth": null,
+      "git_ref_type": null,
+      "imported_metadata": null,
+      "has_file_extension": "1",
+      "jar_extraction": null,
+      "any_archives_expanded": "0",
+      "uploaded_files": "1",
+      "sensitivity": "10",
+      "scanlimit": "10",
+      "kb_version": "a:13:{s:3:\"cli\";a:3:{i:0;s:3:\"cli\";i:1;s:30:\"fossid-toolbox 1.6.0 (RELEASE)\";i:2;s:25:\"fossid-webapp-pod-cs-demo\";}s:7:\"gateway\";a:3:{i:0;s:7:\"gateway\";i:1;s:5:\"1.1.3\";i:2;s:51:\"scan-cluster-node1.euc1-scanprod.fossidbackyard.com\";}s:6:\"alfred\";a:3:{i:0;s:6:\"alfred\";i:1;s:45:\"FossID Alfred 6.3.14 (build 797f8ba, RELEASE)\";i:2;s:51:\"scan-cluster-node1.euc1-scanprod.fossidbackyard.com\";}s:33:\"- /fossid/vols/ram/VOLCODEPROJECT\";a:4:{i:0;s:33:\"- /fossid/vols/ram/VOLCODEPROJECT\";i:1;s:2:\"uc\";i:2;s:10:\"2023-08-01\";i:3;s:20:\"(CodeProject Volume)\";}s:24:\"- /fossid/vols/ram/VOLSO\";a:4:{i:0;s:24:\"- /fossid/vols/ram/VOLSO\";i:1;s:2:\"uc\";i:2;s:10:\"2024-04-06\";i:3;s:22:\"(StackOverflow Volume)\";}s:30:\"- /fossid/vols/ram/VOLPROJMETA\";a:4:{i:0;s:30:\"- /fossid/vols/ram/VOLPROJMETA\";i:1;s:7:\"regular\";i:2;s:10:\"2024-09-24\";i:3;s:18:\"(Project Metadata)\";}s:31:\"- /fossid/vols/ram/VOL2506_LIC2\";a:4:{i:0;s:31:\"- /fossid/vols/ram/VOL2506_LIC2\";i:1;s:7:\"regular\";i:2;s:10:\"2025-07-07\";i:3;s:37:\"(Primary Volume (License Experiment))\";}s:26:\"- /fossid/vols/ram/VOL2602\";a:4:{i:0;s:26:\"- /fossid/vols/ram/VOL2602\";i:1;s:7:\"regular\";i:2;s:10:\"2026-03-05\";i:3;s:16:\"(Primary Volume)\";}s:30:\"- /fossid/vols/ram/VOL2602_LIC\";a:4:{i:0;s:30:\"- /fossid/vols/ram/VOL2602_LIC\";i:1;s:7:\"regular\";i:2;s:10:\"2026-03-05\";i:3;s:26:\"(Primary Volume (License))\";}s:39:\"- /fossid/vols/daily/volvuln-2026-05-29\";a:4:{i:0;s:39:\"- /fossid/vols/daily/volvuln-2026-05-29\";i:1;s:7:\"regular\";i:2;s:10:\"2026-05-29\";i:3;s:22:\"(Vulnerability Volume)\";}s:25:\"- /fossid/vols/ram/VOLCPE\";a:4:{i:0;s:25:\"- /fossid/vols/ram/VOLCPE\";i:1;s:7:\"regular\";i:2;s:10:\"2026-05-29\";i:3;s:30:\"(Vulnerable components volume)\";}s:32:\"- /fossid/vols/ram/VOLCPELICENSE\";a:4:{i:0;s:32:\"- /fossid/vols/ram/VOLCPELICENSE\";i:1;s:7:\"regular\";i:2;s:10:\"2026-05-29\";i:3;s:40:\"(Vulnerable components volume (License))\";}s:25:\"- /fossid/vols/ram/VOLVSF\";a:4:{i:0;s:25:\"- /fossid/vols/ram/VOLVSF\";i:1;s:3:\"vsf\";i:2;s:10:\"2026-05-29\";i:3;s:28:\"(Vuln Snippet Finder Volume)\";}}",
+      "fid_version": "2026.1.0#25559481630",
+      "ort_version": "",
+      "main_handler": "performScan"
+    }
+  ]
+}

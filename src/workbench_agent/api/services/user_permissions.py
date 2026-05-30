@@ -1,8 +1,8 @@
 """
 UserPermissionsService - Resolve if the API user can perform operations.
 
-Uses :class:`~workbench_agent.api.clients.users_api.UsersClient` and
-:class:`~workbench_agent.api.clients.scans_api.ScansClient` so handlers can
+Uses :class:`~workbench_agent.api.clients.users.UsersClient` and
+:class:`~workbench_agent.api.clients.scans.ScansClient` so handlers can
 check permissions (e.g. ``can_delete_scan``) before running an operation.
 """
 

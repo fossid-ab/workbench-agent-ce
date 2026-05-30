@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Optional
 from workbench_agent.api.utils.process_waiter import StatusResult
 
 if TYPE_CHECKING:
-    from workbench_agent.api.clients.scans_api import ScansClient
+    from workbench_agent.api.clients.scans import ScansClient
     from workbench_agent.api.services.status_check_service import (
         StatusCheckService,
     )

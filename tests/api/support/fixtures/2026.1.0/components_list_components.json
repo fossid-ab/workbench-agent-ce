@@ -1,0 +1,49 @@
+{
+  "operation": "components_list_components",
+  "status": "1",
+  "data": [
+    {
+      "id": "25702",
+      "version": "N/A",
+      "name": ".",
+      "cpe": null,
+      "license_name": "Not Applicable",
+      "license_identifier": "N/A",
+      "license_category": "UNCATEGORIZED",
+      "intake_status": "pending",
+      "created": "2026-05-20 15:37:58",
+      "updated": "2026-05-21 04:35:35",
+      "created_by": "3",
+      "supplier_name": "",
+      "critical_vulnerability_count": "0",
+      "high_vulnerability_count": "0",
+      "medium_vulnerability_count": "0",
+      "low_vulnerability_count": "0",
+      "concluded_license_identifier": "N/A",
+      "concluded_license_category": "UNCATEGORIZED",
+      "component_origin": "spdx"
+    },
+    {
+      "id": "25408",
+      "version": "uuid:872de875-c69e-400b-874e-d7788d2f00ad",
+      "name": "/Users/tomasegonzalez/Projects/workbench-agent-ce/.venv/lib/python3.13/site-packages/boolean_py-5.0.dist-info/RECORD",
+      "cpe": null,
+      "license_name": "Not Applicable",
+      "license_identifier": "N/A",
+      "license_category": "UNCATEGORIZED",
+      "intake_status": "pending",
+      "created": "2026-04-30 19:06:15",
+      "updated": "2026-05-06 06:57:26",
+      "created_by": "3",
+      "supplier_name": "",
+      "critical_vulnerability_count": "0",
+      "high_vulnerability_count": "0",
+      "medium_vulnerability_count": "0",
+      "low_vulnerability_count": "0",
+      "concluded_license_identifier": "N/A",
+      "concluded_license_category": "UNCATEGORIZED",
+      "component_origin": null
+    }
+  ],
+  "message": "Success"
+}

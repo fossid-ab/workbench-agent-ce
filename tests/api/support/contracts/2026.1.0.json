@@ -1,0 +1,98 @@
+{
+  "workbench_version": "2026.1.0",
+  "raw_version_example": "2026.1.0#25559481630",
+  "contracts": {
+    "components.list_components": {
+      "data_shape": "list_or_dict",
+      "item_required_keys": ["id", "name", "version"],
+      "count_only_keys": ["count_results"]
+    },
+    "components.list_by_usage": {
+      "data_shape": "dict",
+      "required_keys": ["list"]
+    },
+    "components.get_information": {
+      "data_shape": "list_or_dict",
+      "item_required_keys": ["id", "name", "version"]
+    },
+    "components.get_usage": {
+      "data_shape": "dict",
+      "required_keys": ["page", "list", "records_total"],
+      "list_item_keys": ["scan_code"]
+    },
+    "components.get_usage_count": {
+      "data_shape": "dict",
+      "required_keys": [
+        "identifications_usage_count",
+        "dependency_usage_count"
+      ]
+    },
+    "components.create": {
+      "data_shape": "dict",
+      "required_keys": ["component_id"]
+    },
+    "components.delete": {
+      "data_shape": "bool"
+    },
+    "files_and_folders.get_identification": {
+      "data_shape": "dict",
+      "required_keys": []
+    },
+    "files_and_folders.get_fossid_results": {
+      "data_shape": "dict"
+    },
+    "files_and_folders.get_matched_lines": {
+      "data_shape": "dict",
+      "required_keys": ["local_file", "mirror_file"]
+    },
+    "files_and_folders.get_file_comments": {
+      "data_shape": "list",
+      "item_required_keys": ["id", "comment"]
+    },
+    "files_and_folders.add_license_identification": {
+      "data_shape": "dict",
+      "required_keys": ["identification_id"]
+    },
+    "files_and_folders.write_null_data": {
+      "data_shape": "null"
+    },
+    "files_and_folders.remove_component_identification": {
+      "data_shape": "bool"
+    },
+    "projects.list_projects": {
+      "data_shape": "list",
+      "item_required_keys": ["id", "project_code", "project_name", "created"]
+    },
+    "projects.get_information": {
+      "data_shape": "dict",
+      "required_keys": ["id", "project_code", "project_name"]
+    },
+    "projects.get_all_scans": {
+      "data_shape": "list",
+      "item_required_keys": ["id", "code", "name"]
+    },
+    "projects.create": {
+      "data_shape": "dict",
+      "required_keys": ["project_code"]
+    },
+    "projects.update": {
+      "data_shape": "dict",
+      "required_keys": ["project_id"]
+    },
+    "projects.generate_report": {
+      "data_shape": "dict",
+      "required_keys": ["process_queue_id"]
+    },
+    "projects.check_status": {
+      "data_shape": "dict"
+    },
+    "users.get_information": {
+      "data_shape": "dict",
+      "required_keys": ["id", "username"]
+    },
+    "users.get_user_permissions_list": {
+      "data_shape": "list",
+      "item_required_keys": ["id", "code", "group"]
+    }
+  }
+}
