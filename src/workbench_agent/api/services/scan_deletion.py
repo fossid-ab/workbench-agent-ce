@@ -1,7 +1,7 @@
 """
 ScanDeletionService - Queue scan deletion and wait until the job completes.
 
-Orchestrates :class:`~workbench_agent.api.clients.scans_api.ScansClient`
+Orchestrates :class:`~workbench_agent.api.clients.scans.ScansClient`
 ``delete`` with :class:`~workbench_agent.api.services.status_check_service.StatusCheckService`
 ``check_delete_scan_status`` (polling).
 

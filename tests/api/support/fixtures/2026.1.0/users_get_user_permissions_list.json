@@ -1,0 +1,17 @@
+{
+  "operation": "users_get_user_permissions_list",
+  "status": "1",
+  "data": [
+    {
+      "id": 1,
+      "group": "Projects",
+      "code": "PROJECT_ACCESS_ANY",
+      "name": "Access & Search any project",
+      "description": "You can search and access any existing project even though you are not a member.",
+      "created": "2016-09-27 00:00:00",
+      "updated": "2016-09-26 22:00:00",
+      "role_id": 1,
+      "status": null
+    }
+  ]
+}

@@ -1,14 +1,26 @@
 # .github/workflows/tests.yml
 name: Run Tests
 
-# Run on pushes and pull requests targeting the main branches
+# Run when non-API application code or tests change.
 on:
   push:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
     paths-ignore:
+      - 'src/workbench_agent/api/**'
+      - 'tests/api/**'
       - '.github/workflows/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
     paths-ignore:
+      - 'src/workbench_agent/api/**'
+      - 'tests/api/**'
       - '.github/workflows/**'
 
 # For functional tests, set these repository secrets:
@@ -56,7 +68,6 @@ jobs:
           pip install . pytest pytest-xdist pytest-mock
       - name: Run integration tests
         run: |
-          # Run all integration tests
           pytest tests/integration/ -v --tb=short
 
   functional_tests:
@@ -82,8 +93,7 @@ jobs:
           WORKBENCH_USER: ${{ secrets.WORKBENCH_USER }}
           WORKBENCH_TOKEN: ${{ secrets.WORKBENCH_TOKEN }}
         run: |
-          # All functional tests (including blind-scan via tests/fixtures/signatures; no toolbox in CI)
-          pytest -v -m functional -n 4 --tb=short --junit-xml=functional-test-results.xml
+          pytest tests/functional/ -v -m functional -n 4 --tb=short --junit-xml=functional-test-results.xml
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

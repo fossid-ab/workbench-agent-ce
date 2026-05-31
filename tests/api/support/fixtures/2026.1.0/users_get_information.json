@@ -1,0 +1,16 @@
+{
+  "operation": "users_get_information",
+  "status": "1",
+  "data": {
+    "id": 3,
+    "username": "tomas.gonzalez@fossid.com",
+    "name": "Tomas",
+    "surename": "Gonzalez",
+    "avatar": "",
+    "email": "tomas.gonzalez@fossid.com",
+    "language": "en",
+    "phone": "",
+    "mobile": "",
+    "is_deleted": false
+  }
+}

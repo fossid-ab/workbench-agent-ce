@@ -1,0 +1,22 @@
+{
+  "operation": "files_and_folders_get_folder_extensions_ranking",
+  "status": "1",
+  "data": [
+    {
+      "id": "6",
+      "file_extension": "c",
+      "amount": "28"
+    },
+    {
+      "id": "2",
+      "file_extension": "h",
+      "amount": "17"
+    },
+    {
+      "id": "9",
+      "file_extension": "java",
+      "amount": "12"
+    }
+  ],
+  "message": "Success"
+}

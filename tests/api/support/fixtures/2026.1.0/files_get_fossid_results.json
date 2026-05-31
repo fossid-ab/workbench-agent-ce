@@ -1,0 +1,37 @@
+{
+  "operation": "files_and_folders_get_fossid_results",
+  "status": "1",
+  "data": {
+    "74": {
+      "id": "74",
+      "created": "2026-05-30 09:16:20",
+      "scan_id": "2271",
+      "scan_file_id": "1830934",
+      "file_id": "11",
+      "match_type": "partial",
+      "reason": "",
+      "author": "OpenFastPath",
+      "artifact": "ofp",
+      "version": "1.1",
+      "purl": "pkg:github/openfastpath/ofp@v1.1",
+      "artifact_license": "BSD-3-Clause",
+      "artifact_license_category": "PERMISSIVE",
+      "release_date": "2016-06-08 00:00:00",
+      "mirror": null,
+      "file": "src/ofp_uma.c",
+      "file_license": "BSD-3-Clause",
+      "file_license_category": "PERMISSIVE",
+      "url": "https://github.com/OpenFastPath/ofp/archive/refs/tags/v1.1.tar.gz",
+      "hits": "22 (25.88%)",
+      "size": "3383",
+      "updated": "2026-05-30 09:16:20",
+      "cpe": null,
+      "score": "1",
+      "match_file_id": "110e3d5eb64bf60baa7e5e7400000000",
+      "classification": "{\"chars\":{\"total\":836,\"noise\":0}}",
+      "highlighting": "{\"id\":\"608acf7b8990b1d8d54cd4f8ee440160\",\"local_size\":22,\"local_coverage\":0.2588,\"remote_size\":22,\"remote_coverage\":0.2075,\"remote_highlight\":{\"blocks\":[{\"byte_range\":{\"begin\":527,\"end\":1362},\"char_range\":{\"begin\":527,\"end\":1362},\"id\":\"56133439f536d9b03c493c7a5f4b6f95\"}],\"id\":\"608acf7b8990b1d8d54cd4f8ee440160\",\"encoding\":\"UTF-8\",\"pfm_format\":2},\"local_highlight\":{\"blocks\":[{\"id\":\"56133439f536d9b03c493c7a5f4b6f95\",\"byte_range\":{\"begin\":338,\"end\":1173},\"char_range\":{\"begin\":338,\"end\":1173}}],\"id\":\"608acf7b8990b1d8d54cd4f8ee440160\",\"pfm_format\":2,\"encoding\":\"UTF-8\"}}",
+      "projectscan_type": ""
+    }
+  },
+  "message": "Success"
+}

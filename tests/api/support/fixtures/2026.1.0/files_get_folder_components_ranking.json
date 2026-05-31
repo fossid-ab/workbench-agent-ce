@@ -1,0 +1,31 @@
+{
+  "operation": "files_and_folders_get_folder_components_ranking",
+  "status": "1",
+  "data": [
+    {
+      "rownum": "0",
+      "artifact": "ofp",
+      "version": "1.1",
+      "amount_per_artifact_version": "15",
+      "cpe": null,
+      "artifact_license": "BSD-3-Clause",
+      "category": "PERMISSIVE",
+      "author": "OpenFastPath",
+      "fcrid": "1612",
+      "amount": "43"
+    },
+    {
+      "rownum": "0",
+      "artifact": "android-all",
+      "version": "7.0.0_r1-robolectric-0",
+      "amount_per_artifact_version": "3",
+      "cpe": null,
+      "artifact_license": "Apache 2.0",
+      "category": null,
+      "author": "org.robolectric",
+      "fcrid": "1766",
+      "amount": "7"
+    }
+  ],
+  "message": "Success"
+}

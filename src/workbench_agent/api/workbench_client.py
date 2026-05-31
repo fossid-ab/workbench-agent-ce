@@ -6,12 +6,15 @@ Functionality is organized into domain-specific clients and services.
 """
 
 import logging
-import re
 
 from packaging import version as packaging_version
 
+from workbench_agent.api.utils.version import normalize_workbench_version
+
 from workbench_agent.api.clients import (
+    ComponentsClient,
     DownloadClient,
+    FilesAndFoldersClient,
     InternalClient,
     ProjectsClient,
     QuickScanClient,
@@ -32,7 +35,7 @@ from workbench_agent.api.services import (
     ScanOperationsService,
     StatusCheckService,
     UploadService,
-    UserPermissionsService,
+    UserPermissionsService
 )
 
 logger = logging.getLogger("workbench-agent")
@@ -52,6 +55,8 @@ class WorkbenchClient:
     - `quick_scan`: Quick file scanning
     - `users`: User lookup and listing permissions for a user
     - `internal`: Internal/config operations
+    - `components`: Component catalog (list, create, usage)
+    - `files_and_folders`: File identification and audit operations
 
     **Services (High-level orchestration):**
     - `resolver`: Resolve project/scan names to codes, create if needed
@@ -147,6 +152,8 @@ class WorkbenchClient:
         self.vulnerabilities = VulnerabilitiesClient(self._base_api)
         self.quick_scan = QuickScanClient(self._base_api)
         self.users = UsersClient(self._base_api)
+        self.components = ComponentsClient(self._base_api)
+        self.files_and_folders = FilesAndFoldersClient(self._base_api)
 
         logger.debug("API clients initialized.")
 
@@ -241,17 +248,9 @@ class WorkbenchClient:
 
             # Parse and compare versions
             try:
-                # Handle version strings that might have extra info
-                # (e.g., "2025.2.0#19347124129", "2026.1.0.v11#24448141686")
-                # Extract the leading MAJOR.MINOR.PATCH portion
-                version_str = workbench_version.split()[0]
-                version_str = version_str.split("-")[0]
-                version_str = version_str.split("#")[0]
-
-                match = re.match(r"(\d+\.\d+\.\d+)", version_str)
-                if match:
-                    version_str = match.group(1)
-
+                version_str = normalize_workbench_version(workbench_version)
+                if not version_str:
+                    raise packaging_version.InvalidVersion(workbench_version)
                 self._workbench_version = version_str
 
                 parsed_version = packaging_version.parse(version_str)
@@ -345,7 +344,9 @@ class WorkbenchClient:
         if self._workbench_version:
             return self._workbench_version
         config_data = self.internal.get_config()
-        return config_data.get("version", "Unknown")
+        raw = config_data.get("version", "Unknown")
+        normalized = normalize_workbench_version(str(raw))
+        return normalized or str(raw)
 
     @property
     def api_token(self) -> str:
