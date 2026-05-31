@@ -4,7 +4,7 @@ Contract specifications for Workbench API responses.
 Keys and shapes are refined as live tests validate real server behavior.
 """
 
-from typing import Any, Dict, Set
+from typing import Any, Dict
 
 # operation_id -> contract spec
 CONTRACTS: Dict[str, Dict[str, Any]] = {
