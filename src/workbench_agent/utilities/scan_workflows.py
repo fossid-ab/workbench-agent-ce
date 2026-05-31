@@ -12,6 +12,9 @@ import argparse
 import logging
 from typing import TYPE_CHECKING, Dict, Optional, Union
 
+from workbench_agent.api.utils.vulnerability_helpers import (
+    summarize_vulnerability_rows,
+)
 from workbench_agent.utilities.vulnerability_display import (
     print_vulnerable_component_count,
 )
@@ -203,11 +206,7 @@ def _print_scan_summary(
 
     vulnerability_summary = None
     if vulnerabilities:
-        vulnerability_summary = (
-            workbench.vulnerability.summarize_vulnerabilities(
-                vulnerabilities=vulnerabilities
-            )
-        )
+        vulnerability_summary = summarize_vulnerability_rows(vulnerabilities)
 
     # --- Requested Scan Operations ---
     print("\nScan Operation Summary:")

@@ -203,8 +203,9 @@ CONTRACTS: Dict[str, Dict[str, Any]] = {
         "item_required_keys": {"id", "code", "group"},
     },
     "vulnerabilities.list_vulnerabilities": {
-        "data_shape": "dict",
+        "data_shape": "list_or_dict",
         "required_keys": {"list"},
+        "count_only_keys": {"count_results"},
     },
     "vulnerabilities.get_information": {
         "data_shape": "dict",

@@ -7,7 +7,7 @@ statements. Client: `VulnerabilitiesClient` in `client.py`.
 
 | Action | Method |
 |--------|--------|
-| `list_vulnerabilities` | `list_vulnerabilities`, `count_vulnerabilities` |
+| `list_vulnerabilities` | `list_vulnerabilities` |
 | `get_information` | `get_information` |
 | `vulnerability_exploitability_create` | `create_vulnerability_exploitability` |
 | `vulnerability_exploitability_update` | `update_vulnerability_exploitability` |
@@ -51,10 +51,11 @@ The client returns ``data`` as-is. Automatic pagination lives in
 |--------|---------|
 | `VulnerabilityService.list_scan_vulnerabilities` | All rows for a scan |
 | `VulnerabilityService.list_project_vulnerabilities` | All rows for a project |
-| `VulnerabilityService.search_vulnerabilities` | Pass-through `search_value` |
-| `VulnerabilityService.get_component_vulnerabilities` | Builds `search_value` from name+version, PURL, or CPE |
 | `VulnerabilityService.count_scan_vulnerabilities` | Count for a scan |
 | `VulnerabilityService.count_project_vulnerabilities` | Count for a project |
+| `VulnerabilityService.create_vex` / `update_vex` | VEX write/update |
+
+CLI summaries use ``vulnerability_helpers.summarize_vulnerability_rows`` directly.
 
 ## `get_information`
 

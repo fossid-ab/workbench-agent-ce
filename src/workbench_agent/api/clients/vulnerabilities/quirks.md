@@ -14,14 +14,13 @@ Unit coverage: `tests/api/clients/vulnerabilities/test_vulnerabilities_client.py
 
 - Client performs **one API call** and returns response ``data`` as-is
   (count dict or paginated ``{list: [...]}``).
+- Count-only responses return ``{"count_results": <int>}`` (live-validated on
+  2026.1; read ``data["count_results"]`` directly).
 - **Automatic pagination** is in ``VulnerabilityService`` (`list_scan_vulnerabilities`,
   ``list_project_vulnerabilities``) via ``fetch_all_vulnerability_rows``.
 - Scope: pass ``scan_code`` **or** ``project_code`` (API validates).
-- ``search_value`` filters server-side: CVE id, CPE, PURL, or
-  ``component_name,component_version``. Partial values accepted.
-- ``VulnerabilityService.get_component_vulnerabilities`` uses ``search_value``
-  when name+version, PURL, or CPE is known; ``component_id`` alone falls back
-  to client-side filtering of the full scan list.
+- ``search_value`` is supported by the raw client for API completeness; the
+  service lists full scan/project results without search filters.
 
 ## `get_information`
 

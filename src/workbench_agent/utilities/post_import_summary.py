@@ -3,6 +3,9 @@ import logging
 from typing import TYPE_CHECKING
 
 from workbench_agent.api.exceptions import ApiError, NetworkError
+from workbench_agent.api.utils.vulnerability_helpers import (
+    summarize_vulnerability_rows,
+)
 from workbench_agent.utilities.vulnerability_display import (
     print_vulnerable_component_count,
 )
@@ -91,11 +94,7 @@ def print_import_summary(
 
     vulnerability_summary = None
     if vulnerabilities:
-        vulnerability_summary = (
-            workbench.vulnerability.summarize_vulnerabilities(
-                vulnerabilities=vulnerabilities
-            )
-        )
+        vulnerability_summary = summarize_vulnerability_rows(vulnerabilities)
 
     # --- Identified Components Summary (SBOM imports only) ---
     if is_sbom_import and import_completed:

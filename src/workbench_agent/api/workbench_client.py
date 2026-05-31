@@ -76,7 +76,7 @@ class WorkbenchClient:
     - `quick_scan_service`: Quick single-file scan
     - `dependencies`: Dependency analysis result read/write workflows
     - `identification`: Scan file identification read/write workflows
-    - `vulnerability`: CVE listing, KB lookup, and VEX workflows
+    - `vulnerability`: CVE listing and VEX create/update
 
     Example:
         >>> workbench = WorkbenchClient(api_url, api_user, api_token)

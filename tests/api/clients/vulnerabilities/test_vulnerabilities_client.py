@@ -115,14 +115,6 @@ def test_list_vulnerabilities_api_error(mock_send, vulnerabilities_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_count_vulnerabilities(mock_send, vulnerabilities_client):
-    mock_send.return_value = {"status": "1", "data": {"count_results": 42}}
-
-    assert vulnerabilities_client.count_vulnerabilities(scan_code="scan1") == 42
-    assert mock_send.call_args[0][0]["data"]["count_results"] == "1"
-
-
-@patch.object(BaseAPI, "_send_request")
 def test_get_information(mock_send, vulnerabilities_client):
     mock_send.return_value = {
         "status": "1",

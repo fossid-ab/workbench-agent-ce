@@ -53,9 +53,12 @@ Field reference: `clients/<domain>/schema.md` and `quirks.md`.
 from workbench_agent.api import WorkbenchClient
 
 wb = WorkbenchClient(url, user, token)
-rows = wb.vulnerability.list_scan_vulnerabilities(
-    scan_code,
-    search_value="openssl,1.1.1",
+rows = wb.vulnerability.list_scan_vulnerabilities(scan_code)
+
+# VEX
+wb.vulnerability.create_vex(
+    scan_code, component_id=1909, cve="CVE-2021-20089",
+    status="not_affected", justification="code_not_reachable",
 )
 ```
 
@@ -75,15 +78,8 @@ helpers).
 `logger.debug` / `logger.info` is fine.
 
 ```python
-summary = wb.vulnerability.summarize_vulnerabilities(scan_code)
-# {
-#   "total_cves": 58,
-#   "vulnerable_component_count": 3,
-#   "severity_counts": {"CRITICAL": 5, "HIGH": 12, ...},
-# }
-
-components = wb.vulnerability.get_vulnerable_components(scan_code)
-# [{"component_key": "libxml2:2.9.2-rc1", "cve_count": 58, ...}, ...]
+summary = summarize_vulnerability_rows(vulnerabilities)  # helpers
+components = get_vulnerable_components_from_rows(vulnerabilities)
 ```
 
 | Service | Role |
@@ -91,7 +87,7 @@ components = wb.vulnerability.get_vulnerable_components(scan_code)
 | `component_catalog` | Catalog find / resolve / update |
 | `identification` | File + scan identification read/write |
 | `dependencies` | Dependency analysis read/write |
-| `vulnerability` | `list_scan_vulnerabilities` / `list_project_vulnerabilities`, KB lookup, VEX, scan summaries |
+| `vulnerability` | `list_scan_vulnerabilities` / `list_project_vulnerabilities`, VEX create/update |
 | `results` | Aggregate scan reads for `--show-*` (delegates to domain services) |
 | `resolver`, `scan_operations`, `reports`, … | Higher-level scan/project workflows |
 

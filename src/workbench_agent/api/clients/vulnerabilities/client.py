@@ -25,30 +25,9 @@ class VulnerabilitiesClient:
         >>> info = client.get_information("CVE-2021-20089")
     """
 
-    _GROUP = "vulnerabilities"
-
     def __init__(self, base_api):
         self._api = base_api
         logger.debug("VulnerabilitiesClient initialized")
-
-    def _request(
-        self,
-        action: str,
-        data: Optional[Dict[str, Any]] = None,
-        *,
-        error_context: str,
-    ) -> Dict[str, Any]:
-        payload = {
-            "group": self._GROUP,
-            "action": action,
-            "data": data or {},
-        }
-        response = self._api._send_request(payload)
-        if response.get("status") == "1":
-            return response
-        errors.raise_on_failed_response(
-            response, error_context=error_context
-        )
 
     def list_vulnerabilities(
         self,
@@ -67,37 +46,25 @@ class VulnerabilitiesClient:
         ``{list: [...]}``, or other shapes per ``schema.md``. For a full
         flattened list across pages, use ``VulnerabilityService``.
         """
-        response = self._request(
-            "list_vulnerabilities",
-            errors.build_list_payload(
-                scan_code=scan_code,
-                project_code=project_code,
-                search_value=search_value,
-                records_per_page=records_per_page,
-                page=page,
-                count_results=count_results,
-            ),
-            error_context="Failed to list vulnerabilities",
+        response = self._api._send_request(
+            {
+                "group": "vulnerabilities",
+                "action": "list_vulnerabilities",
+                "data": errors.build_list_payload(
+                    scan_code=scan_code,
+                    project_code=project_code,
+                    search_value=search_value,
+                    records_per_page=records_per_page,
+                    page=page,
+                    count_results=count_results,
+                ),
+            }
         )
-        return response.get("data")
-
-    def count_vulnerabilities(
-        self,
-        *,
-        scan_code: Optional[str] = None,
-        project_code: Optional[str] = None,
-        search_value: Optional[str] = None,
-    ) -> int:
-        """Return ``count_results`` from one count-only list call."""
-        data = self.list_vulnerabilities(
-            scan_code=scan_code,
-            project_code=project_code,
-            search_value=search_value,
-            count_results=True,
+        if response.get("status") == "1":
+            return response.get("data")
+        errors.raise_on_failed_response(
+            response, error_context="Failed to list vulnerabilities"
         )
-        if isinstance(data, dict) and "count_results" in data:
-            return int(data["count_results"])
-        return 0
 
     def get_information(self, cve: str) -> Dict[str, Any]:
         """
@@ -106,17 +73,24 @@ class VulnerabilitiesClient:
         Returns the ``data`` object (``cve`` list and
         ``component_vulnerability_in_scans`` list).
         """
-        response = self._request(
-            "get_information",
-            {"cve": cve},
-            error_context=f"Failed to get vulnerability information for {cve!r}",
+        response = self._api._send_request(
+            {
+                "group": "vulnerabilities",
+                "action": "get_information",
+                "data": {"cve": cve},
+            }
         )
-        data = response.get("data")
-        if isinstance(data, dict):
-            return data
-        raise ApiError(
-            f"Unexpected get_information response for {cve!r}",
-            details=response,
+        if response.get("status") == "1":
+            data = response.get("data")
+            if isinstance(data, dict):
+                return data
+            raise ApiError(
+                f"Unexpected get_information response for {cve!r}",
+                details=response,
+            )
+        errors.raise_on_failed_response(
+            response,
+            error_context=f"Failed to get vulnerability information for {cve!r}",
         )
 
     def create_vulnerability_exploitability(
@@ -150,20 +124,27 @@ class VulnerabilitiesClient:
         if vuln_exp_details is not None:
             payload["vuln_exp_details"] = vuln_exp_details
 
-        response = self._request(
-            "vulnerability_exploitability_create",
-            payload,
+        response = self._api._send_request(
+            {
+                "group": "vulnerabilities",
+                "action": "vulnerability_exploitability_create",
+                "data": payload,
+            }
+        )
+        if response.get("status") == "1":
+            result: Dict[str, Any] = {}
+            if isinstance(response.get("data"), dict):
+                result.update(response["data"])
+            if "message" in response:
+                result["message"] = response["message"]
+            return result
+        errors.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to create vulnerability exploitability for {cve!r} "
                 f"on scan '{scan_code}'"
             ),
         )
-        result: Dict[str, Any] = {}
-        if isinstance(response.get("data"), dict):
-            result.update(response["data"])
-        if "message" in response:
-            result["message"] = response["message"]
-        return result
 
     def update_vulnerability_exploitability(
         self,
@@ -185,17 +166,24 @@ class VulnerabilitiesClient:
         if vuln_exp_details is not None:
             payload["vuln_exp_details"] = vuln_exp_details
 
-        response = self._request(
-            "vulnerability_exploitability_update",
-            payload,
+        response = self._api._send_request(
+            {
+                "group": "vulnerabilities",
+                "action": "vulnerability_exploitability_update",
+                "data": payload,
+            }
+        )
+        if response.get("status") == "1":
+            return {
+                "message": response.get("message"),
+                "data": response.get("data"),
+            }
+        errors.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to update vulnerability exploitability id {vuln_exp_id}"
             ),
         )
-        return {
-            "message": response.get("message"),
-            "data": response.get("data"),
-        }
 
     def import_vulnerability_exploitability_from_scan(
         self,
@@ -210,20 +198,27 @@ class VulnerabilitiesClient:
         Returns:
             Dict with ``data`` (list) and ``message`` from the API.
         """
-        response = self._request(
-            "import_vulnerability_exploitability_from_scan",
+        response = self._api._send_request(
             {
-                "scan_code_from": scan_code_from,
-                "scan_code_to": scan_code_to,
-                "override_vex": errors.flag_str(override_vex),
-            },
+                "group": "vulnerabilities",
+                "action": "import_vulnerability_exploitability_from_scan",
+                "data": {
+                    "scan_code_from": scan_code_from,
+                    "scan_code_to": scan_code_to,
+                    "override_vex": errors.flag_str(override_vex),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            data = response.get("data")
+            return {
+                "data": data if isinstance(data, list) else [],
+                "message": response.get("message"),
+            }
+        errors.raise_on_failed_response(
+            response,
             error_context=(
                 "Failed to import vulnerability exploitability from "
                 f"{scan_code_from!r} to {scan_code_to!r}"
             ),
         )
-        data = response.get("data")
-        return {
-            "data": data if isinstance(data, list) else [],
-            "message": response.get("message"),
-        }

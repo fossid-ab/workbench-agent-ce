@@ -84,6 +84,41 @@ class TestVulnerabilitiesLiveReadOnly:
             )
         assert _cve_from_row(vulns[0])
 
+    def test_list_vulnerabilities_count_results_shape(
+        self,
+        workbench_client,
+        workbench_version,
+        scan_has_vulnerabilities,
+    ):
+        scan_code = scan_has_vulnerabilities["scan_code"]
+        response = workbench_client.vulnerabilities._api._send_request(
+            {
+                "group": "vulnerabilities",
+                "action": "list_vulnerabilities",
+                "data": {"scan_code": scan_code, "count_results": "1"},
+            }
+        )
+        assert_contract(
+            "vulnerabilities.list_vulnerabilities",
+            response,
+            workbench_version=workbench_version,
+        )
+        data = response["data"]
+        assert isinstance(data, dict)
+        assert isinstance(data["count_results"], int)
+
+        client_data = workbench_client.vulnerabilities.list_vulnerabilities(
+            scan_code=scan_code,
+            count_results=True,
+        )
+        assert client_data == data
+
+        count = workbench_client.vulnerability.count_scan_vulnerabilities(
+            scan_code
+        )
+        assert count == data["count_results"]
+        assert count == len(scan_has_vulnerabilities["vulnerabilities"])
+
     def test_get_information_for_listed_cve(
         self,
         workbench_client,
