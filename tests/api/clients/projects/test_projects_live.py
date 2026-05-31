@@ -2,7 +2,7 @@
 
 import pytest
 
-from tests.api.support.contract import assert_contract, assert_data_contract
+from tests.api.support.contract import assert_data_contract
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
