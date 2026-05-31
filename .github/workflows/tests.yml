@@ -4,20 +4,12 @@ name: Run Tests
 # Run when non-API application code or tests change.
 on:
   push:
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'pyproject.toml'
     paths-ignore:
       - 'src/workbench_agent/api/**'
       - 'tests/api/**'
       - '.github/workflows/**'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'pyproject.toml'
     paths-ignore:
       - 'src/workbench_agent/api/**'
       - 'tests/api/**'

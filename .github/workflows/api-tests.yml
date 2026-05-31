@@ -10,16 +10,12 @@ on:
       - 'src/workbench_agent/api/**'
       - 'tests/api/**'
       - 'pyproject.toml'
-    paths-ignore:
-      - '.github/workflows/**'
   pull_request:
     branches: [ main ]
     paths:
       - 'src/workbench_agent/api/**'
       - 'tests/api/**'
       - 'pyproject.toml'
-    paths-ignore:
-      - '.github/workflows/**'
 
 # Live contract tests use the same repository secrets as functional tests:
 # - WORKBENCH_URL
