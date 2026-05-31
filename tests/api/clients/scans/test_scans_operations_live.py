@@ -17,8 +17,6 @@ from tests.api.support.error_assertions import assert_api_error
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
-INVALID_CODE = f"INVALID_SCAN_{uuid.uuid4().hex[:16].upper()}"
-
 
 class TestScansLiveRawProbes:
     def test_raw_create_response_contract(

@@ -147,6 +147,29 @@ class TestFilesAndFoldersLiveReadOnly:
         )
         assert int(sub_metrics.get("total", 0) or 0) >= 1
 
+    def test_get_folder_content_metrics_file_path_returns_zeros(
+        self,
+        workbench_client,
+        workbench_version,
+        test_scan_code,
+    ):
+        metrics = workbench_client.files_and_folders.get_folder_content_metrics(
+            test_scan_code,
+            "LICENSE",
+        )
+        assert_data_contract(
+            "files_and_folders.get_folder_content_metrics",
+            metrics,
+            workbench_version=workbench_version,
+        )
+        for key in (
+            "total",
+            "pending_identification",
+            "identified_files",
+            "without_matches",
+        ):
+            assert int(metrics.get(key, 0) or 0) == 0
+
     def test_get_folder_components_ranking_root(
         self,
         workbench_client,

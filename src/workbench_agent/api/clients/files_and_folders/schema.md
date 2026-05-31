@@ -50,6 +50,9 @@ Path encoding: see `errors.path_for_action` and `quirks.md`.
 | `identified_files` | int | Marked identified |
 | `without_matches` | int | No KB matches |
 
+File path (not a folder): in live testing returns a **zero-count dict**, not `false`
+— see `quirks.md`.
+
 Top-level `message` is present on success but not returned by the client
 (read methods return `data` only — see `quirks.md`).
 
@@ -70,7 +73,7 @@ See **`quirks.md` § get_folder_content_metrics`**.
 
 ### Response `data`
 
-| Shape | Spec | Observed (2026.1 cs-demo) |
+| Shape | Spec | Observed (2026.1 live) |
 |-------|------|-----------------------------|
 | Array of nodes | Yes | Directories: `id`, `text`, `is_directory`, `children`. Files: `id`, `text`, `is_directory`, `icon`. |
 
@@ -89,7 +92,7 @@ See **`quirks.md` § get_folder_content`**.
 
 ### Response `data`
 
-| Shape | Spec | Observed (2026.1 cs-demo) |
+| Shape | Spec | Observed (2026.1 live) |
 |-------|------|-----------------------------|
 | Array of ranking rows | Yes | Sorted by ``amount`` descending |
 | `false` | Yes | Returned when ``path`` is a **file**, not a folder |
@@ -116,7 +119,7 @@ See **`quirks.md` § get_folder_components_ranking`**.
 
 ### Response `data`
 
-| Shape | Spec | Observed (2026.1 cs-demo) |
+| Shape | Spec | Observed (2026.1 live) |
 |-------|------|-----------------------------|
 | Array of extension rows | Yes | Sorted by ``amount`` descending |
 | `false` | — | File path, or some views with no matching files |
@@ -143,7 +146,7 @@ See **`quirks.md` § get_folder_extensions_ranking`**.
 | `data` | `component_identification`, `licenses`, `copyright`, … | Returned as dict |
 | `message` | O | **Not returned** by client (only `data`) — see `quirks.md` |
 
-Observed `data` shapes (2026.1 cs-demo): see **`quirks.md` § get_identification`**
+Observed `data` shapes (2026.1 live): see **`quirks.md` § get_identification`**
 — `component_identification` may be `[]` or a dict; `licenses` may be `false`
 or a dict; distribution is `component_identification.is_distributed`.
 

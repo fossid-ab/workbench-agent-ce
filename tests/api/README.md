@@ -9,8 +9,7 @@ extracted.
 ```
 tests/api/
   README.md
-  conftest.py                 # Credentials + workbench_client + version
-  clients/conftest.py         # Test Scan, pending paths, mutations (live)
+  conftest.py                 # Credentials, Test Scan, pending paths, mutations
   test_workbench_client.py
   support/
     contract.py               # assert_contract (version-aware)

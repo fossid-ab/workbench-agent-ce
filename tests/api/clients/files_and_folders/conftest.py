@@ -2,8 +2,6 @@
 
 import pytest
 
-pytest_plugins = ["tests.api.clients.conftest"]
-
 
 @pytest.fixture
 def auditor_target_path(pending_paths):

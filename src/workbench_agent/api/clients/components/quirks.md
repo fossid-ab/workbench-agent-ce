@@ -1,7 +1,7 @@
 # Components API quirks (Workbench 2026.1)
 
 Full field lists: [`schema.md`](schema.md) (from `components-api.txt`).  
-Validated on cs-demo / `tests/api/clients/components/`.
+Validated via live tests in `tests/api/clients/components/`.
 
 ## Spec vs observed behavior
 
@@ -21,7 +21,7 @@ Validated on cs-demo / `tests/api/clients/components/`.
 
 ## `update`
 
-- On cs-demo, ``sup_com_name`` in the update payload participates in **row lookup**
+- In live testing, ``sup_com_name`` in the update payload participates in **row lookup**
   (with ``name`` and ``version``). If the component was created without that supplier,
   including ``sup_com_name`` on update can yield ``not found`` even when the component
   exists. Set supplier on **create**, or omit ``sup_com_name`` on update unless

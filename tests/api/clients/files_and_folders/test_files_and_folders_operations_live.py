@@ -26,7 +26,6 @@ from tests.api.support.error_assertions import (
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
-INVALID_SCAN = "INVALID_SCAN_CODE___NOT_REAL"
 BAD_PATH = "__no/such/file/path__.c"
 
 
@@ -99,16 +98,6 @@ class TestFilesAndFoldersLiveClientErrors:
         )
         assert "Failed to get identification" in err.message
         assert_api_error_details_status_zero(err)
-
-    def test_get_identification_invalid_scan(
-        self, workbench_client, pending_path
-    ):
-        err = assert_api_error(
-            lambda: workbench_client.files_and_folders.get_identification(
-                INVALID_SCAN, pending_path
-            ),
-        )
-        assert "Failed to get identification" in err.message
 
     def test_set_component_missing_catalog(
         self, workbench_client, test_scan_code, pending_path

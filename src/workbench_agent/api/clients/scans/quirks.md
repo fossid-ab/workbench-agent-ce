@@ -8,11 +8,11 @@ Unit coverage: `tests/api/clients/scans/test_scans_client.py`.
 | Signal | Client behavior |
 |--------|-----------------|
 | `Scan not found`, `row_not_found` in `error` | `ScanNotFoundError` when `BaseAPI` returns JSON with `status: "0"` to the client |
-| `get_information`, `get_folder_metrics`, `get_pending_files` (2026.1 cs-demo) | `status: "0"` + `row_not_found` → **`BaseAPI` raises `ApiError`** before client mapping |
+| `get_information`, `get_folder_metrics`, `get_pending_files` (2026.1) | `status: "0"` + `row_not_found` → **`BaseAPI` raises `ApiError`** before client mapping |
 | `get_scan_identified_*`, `get_policy_warnings_counter` | Often `ScanNotFoundError` via client when error text matches |
 | `check_status` with `scan_code=None` | Same markers → `ScanNotFoundError` with process context |
 
-### Live test timing (cs-demo)
+### Live test timing
 
 Invalid ``scan_code`` requests on several scan actions can take **1–3 minutes each**
 (server-side). Live tests use one session probe for ``row_not_found`` instead of
@@ -36,7 +36,7 @@ timeout; scans live tests cap this via ``WORKBENCH_LIVE_API_TIMEOUT`` (default 1
 
 - Spec success `data` is usually a **map** `{id: component_details}`; client returns
   `list(data.values())`.
-- On 2026.1 cs-demo, when there are **no** identified components, `data` may be boolean
+- On Workbench 2026.1, when there are **no** identified components, `data` may be boolean
   **`false`** (not `{}`) with `status: "1"` and `message: "Success"`.
 - Client treats non-dict `data` as empty → **`[]`**.
 

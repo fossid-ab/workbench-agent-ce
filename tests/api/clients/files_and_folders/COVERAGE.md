@@ -23,9 +23,6 @@
 
 \* `WORKBENCH_ALLOW_MUTATIONS=1`
 
-Pending file discovery uses `scans.get_pending_files` / `results.get_pending_files`
-(session fixtures in `tests/api/clients/conftest.py`).
-
 ## Auditor workflow (canonical live suite)
 
 `test_files_and_folders_auditor_workflow_live.py` runs every client method in

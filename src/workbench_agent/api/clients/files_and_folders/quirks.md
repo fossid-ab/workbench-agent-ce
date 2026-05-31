@@ -1,8 +1,8 @@
 # Files and folders API quirks (Workbench 2026.1)
 
 Full field lists: [`schema.md`](schema.md) (from `files-and-folders-api.txt`).  
-Validated on cs-demo / `tests/api/clients/files_and_folders/` and
-`tests/api/services/identification/` (Test Project / Test Scan).
+Validated via `tests/api/clients/files_and_folders/` and
+`tests/api/services/identification/` live tests (Test Project / Test Scan).
 
 ## Spec vs observed behavior
 
@@ -29,7 +29,7 @@ Folder browser for a KB-scanned scan. Not a substitute for
 ``scans.get_pending_files`` (which returns all pending paths); this API lists
 one directory level at a time.
 
-| Topic | Observed (2026.1 cs-demo) |
+| Topic | Observed (2026.1 live) |
 |-------|---------------------------|
 | Root path | Use ``"."`` — empty string and ``"/"`` are rejected |
 | ``show_all`` / ``source_code_only`` | **Required** on the server despite optional-looking docs; client always sends them |
@@ -47,21 +47,21 @@ one directory level at a time.
 Identification counters for a **folder** in a KB-scanned scan — same shape as
 ``scans.get_folder_metrics`` but scoped to a path.
 
-| Topic | Observed (2026.1 cs-demo) |
+| Topic | Observed (2026.1 live) |
 |-------|---------------------------|
 | Root path | Use ``"."`` — same path rules as ``get_folder_content`` |
 | Root totals | On Test Scan, ``"."`` totals (**100** files) differ from ``scans.get_folder_metrics`` (**200**) — folder metrics count the folder scope, not the full extracted archive tree |
 | Subfolder | Counts are scoped to the folder subtree (e.g. ``OpenFastPath/`` < root) |
-| Sum invariant | ``total`` ≈ ``pending_identification`` + ``identified_files`` + ``without_matches`` (observed on cs-demo) |
+| Sum invariant | ``total`` ≈ ``pending_identification`` + ``identified_files`` + ``without_matches`` (observed in live testing) |
 | Numeric fields | ``total``, ``pending_identification``, etc. may arrive as **strings** |
-| File path | Not validated on Test Scan — expect ``false`` or error like other folder APIs |
+| File path | Returns a **zero-count dict** (not ``false`` like ranking APIs) — e.g. ``LICENSE`` → all ``"0"`` |
 
 ## `get_folder_components_ranking`
 
 Component occurrence ranking for a **folder** in a KB-scanned scan — which
 identified third-party components appear most often under that path.
 
-| Topic | Observed (2026.1 cs-demo) |
+| Topic | Observed (2026.1 live) |
 |-------|---------------------------|
 | Purpose | Ranked list of identified artifacts in the folder subtree, by ``amount`` (descending) |
 | Root path | Use ``"."`` — same path rules as ``get_folder_content`` |
@@ -79,7 +79,7 @@ identified third-party components appear most often under that path.
 File-extension breakdown for a **folder** in a KB-scanned scan — how many files
 of each extension appear under that path.
 
-| Topic | Observed (2026.1 cs-demo) |
+| Topic | Observed (2026.1 live) |
 |-------|---------------------------|
 | Purpose | Count of files per extension, sorted by ``amount`` descending |
 | Root path | Use ``"."`` — empty path fails; ``"/"`` and missing paths error |
@@ -99,7 +99,7 @@ of each extension appear under that path.
 
 Top-level `data` keys observed: `component_identification`, `licenses`, `copyright`.
 
-| Field | Observed shapes (2026.1 cs-demo) |
+| Field | Observed shapes (2026.1 live) |
 |-------|-------------------------------------|
 | `component_identification` | Empty list `[]` when unset; **single dict** when a component ID exists (not always a list) |
 | Linked catalog rows | Nested under ``component_identification.components`` (id → component dict with ``name``, ``version``) |
@@ -130,8 +130,8 @@ top-level field. ``IdentificationService.set_distribution_status`` and
 ## `get_matched_lines`
 
 - Spec describes `local_file` and `mirror_file` as line id maps.
-- On cs-demo partial matches, **`local_file` is often an empty list**; usable
-  line numbers frequently appear under **`mirror_file`** (dict of id → line).
+- On Blind Scans, **`local_file` is often an empty list**; usable
+  line numbers appear under **`mirror_file`** (dict of id → line).
   Consumers should fall back when `local_file` is empty (see
   ``line_range_from_matched_lines``).
 
@@ -151,6 +151,10 @@ top-level field. ``IdentificationService.set_distribution_status`` and
 - `identification_on` must be exactly `'file'` or `'snippet'`.
 
 ## Errors (`status: "0"`)
+
+Live tests assume a valid ``scan_code`` (resolved via ``test_scan_code`` /
+``WORKBENCH_TEST_SCAN_CODE``). Invalid-scan probes are omitted — callers are expected to validate scan codes
+before using these APIs. See ``scans/quirks.md`` for missing-scan behavior.
 
 - ``BaseAPI`` returns ``status: "0"`` for all ``files_and_folders`` actions so the
   client prefixes ``Failed to …`` (live-validated).

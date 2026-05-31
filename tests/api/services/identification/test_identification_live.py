@@ -2,6 +2,8 @@
 
 import pytest
 
+pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
+
 
 @pytest.mark.usefixtures("scan_has_pending")
 class TestIdentificationServiceLive:

@@ -93,6 +93,21 @@ def test_get_folder_components_ranking_file_returns_false(mock_send, files_clien
 
 
 @patch.object(BaseAPI, "_send_request")
+def test_get_folder_content_metrics_file_path_zeros(mock_send, files_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {
+            "total": "0",
+            "pending_identification": "0",
+            "identified_files": "0",
+            "without_matches": "0",
+        },
+    }
+    result = files_client.get_folder_content_metrics("SCAN1", "LICENSE")
+    assert result["total"] == "0"
+
+
+@patch.object(BaseAPI, "_send_request")
 def test_get_folder_content_metrics(mock_send, files_client):
     mock_send.return_value = {
         "status": "1",

@@ -191,7 +191,7 @@ class FilesAndFoldersClient:
         Optional ``current_view`` filters which files are counted:
         ``show_all``, ``all_items``, ``pending_items``,
         ``mark_as_identified``, ``without_matches``. Omit to use the server
-        default (same as ``show_all`` on 2026.1 cs-demo).
+        default (same as ``show_all`` on Workbench 2026.1).
 
         Returns ``False`` when ``path`` is a file or the view has no data.
         See ``quirks.md``.

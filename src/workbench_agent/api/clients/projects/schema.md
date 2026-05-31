@@ -5,7 +5,7 @@ live probes (`tests/api/clients/projects/test_projects_operations_live.py`), and
 `ProjectsClient` implementation.  
 Auth fields (`username`, `key`) are added by `BaseAPI`.
 
-See [`quirks.md`](quirks.md) for cs-demo / 2026.1 error text variants.
+See [`quirks.md`](quirks.md) for Workbench 2026.1 error text variants.
 
 Legend: **R** = required in API `data`, **O** = optional.
 

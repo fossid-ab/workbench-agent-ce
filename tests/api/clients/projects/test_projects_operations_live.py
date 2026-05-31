@@ -61,7 +61,7 @@ class TestProjectsLiveRawProbes:
         assert projects
         sample = projects[0]
         assert "id" in sample and "project_code" in sample
-        # 2026.1 cs-demo: id/scans often strings
+        # Workbench 2026.1: id/scans often strings
         id_val = sample.get("id")
         assert isinstance(id_val, (str, int)), (
             f"Unexpected id type: {type(id_val)}"

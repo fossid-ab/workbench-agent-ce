@@ -1,6 +1,6 @@
 # Identification service live test coverage
 
-Validated on cs-demo **Test Project** / **Test Scan** via
+Validated on **Test Project** / **Test Scan** via
 `tests/api/services/identification/`.
 
 | Operation | Unit | Live read | Live write |

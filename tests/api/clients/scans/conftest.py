@@ -8,7 +8,7 @@ import pytest
 
 from workbench_agent.api.exceptions import ApiError
 
-# BaseAPI defaults to 1800s; cs-demo can take minutes on scan row_not_found paths.
+# BaseAPI defaults to 1800s; some servers can take minutes on scan row_not_found paths.
 _DEFAULT_LIVE_TIMEOUT = 120
 
 
@@ -52,7 +52,7 @@ def unknown_scan_row_not_found_probe(
     """
     One live ``get_information`` for a missing scan.
 
-    On cs-demo this call alone can take 1–3 minutes; other error tests should
+    On some Workbench servers this call alone can take 1–3 minutes; other error tests should
     reuse this fixture instead of repeating the slow request.
     """
     with pytest.raises(ApiError) as exc_info:

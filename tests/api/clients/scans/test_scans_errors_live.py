@@ -10,7 +10,7 @@ pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
 class TestScansErrorsLive:
     """
-    Missing-scan errors on cs-demo are slow (often 1–3 minutes per request).
+    Missing-scan errors can be slow on some servers (often 1–3 minutes per request).
 
     We probe once per session (``unknown_scan_row_not_found_probe``) instead of
     calling every endpoint with an invalid ``scan_code``. See ``scans/quirks.md``.

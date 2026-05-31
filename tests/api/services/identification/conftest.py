@@ -1,12 +1,10 @@
-"""Identification service live tests — reuse client fixtures from tests/api/clients."""
+"""Identification service live tests."""
 
 import pytest
 
 from workbench_agent.api.services.identification_service import (
     IdentificationService,
 )
-
-pytest_plugins = ["tests.api.clients.conftest"]
 
 
 @pytest.fixture

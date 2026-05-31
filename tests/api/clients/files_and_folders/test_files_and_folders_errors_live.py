@@ -25,15 +25,6 @@ class TestFilesAndFoldersErrorsLive:
         )
         assert_api_error_details_status_zero(err)
 
-    def test_get_identification_invalid_scan_code(self, workbench_client):
-        err = assert_api_error(
-            lambda: workbench_client.files_and_folders.get_identification(
-                "INVALID_SCAN_CODE___NOT_REAL",
-                "any/file.c",
-            ),
-        )
-        assert_api_error_details_status_zero(err)
-
     def test_set_identification_component_missing_catalog_component(
         self,
         workbench_client,

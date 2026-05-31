@@ -1,7 +1,7 @@
 # Projects API quirks (Workbench 2026.1)
 
 Field reference: [`schema.md`](schema.md).  
-Validated on cs-demo / `tests/api/clients/projects/`.
+Validated via live tests in `tests/api/clients/projects/`.
 
 ## Spec vs observed behavior
 
