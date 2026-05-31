@@ -32,6 +32,14 @@ timeout; scans live tests cap this via ``WORKBENCH_LIVE_API_TIMEOUT`` (default 1
 
 - `Dependency analysis has not been run` → **`[]`** (not an error).
 
+## `get_scan_identified_components`
+
+- Spec success `data` is usually a **map** `{id: component_details}`; client returns
+  `list(data.values())`.
+- On 2026.1 cs-demo, when there are **no** identified components, `data` may be boolean
+  **`false`** (not `{}`) with `status: "1"` and `message: "Success"`.
+- Client treats non-dict `data` as empty → **`[]`**.
+
 ## `remove_uploaded_content`
 
 - Invalid `filename` → parsing error `filename_is_not_valid` → returns **`True`** (treat as already gone).

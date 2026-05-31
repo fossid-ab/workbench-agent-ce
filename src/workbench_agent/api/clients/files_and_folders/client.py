@@ -63,6 +63,163 @@ class FilesAndFoldersClient:
         )
         return None  # unreachable
 
+    def get_folder_content(
+        self,
+        scan_code: str,
+        path: str = ".",
+        *,
+        show_all: Union[bool, int, str] = True,
+        source_code_only: Union[bool, int, str] = False,
+    ) -> List[Dict[str, Any]]:
+        """
+        List files and subdirectories under a folder in a scan.
+
+        Required: ``scan_code``, ``path`` (base64-encoded automatically).
+        ``show_all``: ``True``/``"1"`` lists all files; ``False``/``"0"`` lists
+        only pending identification. ``source_code_only``: ``True``/``"1"``
+        excludes non-source files.
+
+        Returns a list of tree nodes (directories include ``children``; files
+        include ``icon``). Use ``path="."`` for the scan root — an empty path
+        is rejected by the server. See ``quirks.md``.
+        """
+        result = self._request(
+            "get_folder_content",
+            {
+                "scan_code": scan_code,
+                "path": errors.path_for_action("get_folder_content", path),
+                "show_all": errors.flag_str(show_all),
+                "source_code_only": errors.flag_str(source_code_only),
+            },
+            error_context=(
+                f"Failed to get folder content for '{path}' "
+                f"in scan '{scan_code}'"
+            ),
+        )
+        if isinstance(result, list):
+            return result
+        if result is None:
+            return []
+        raise ApiError(
+            "Unexpected get_folder_content data format",
+            details={"data": result},
+        )
+
+    def get_folder_content_metrics(
+        self,
+        scan_code: str,
+        path: str = ".",
+    ) -> Dict[str, Any]:
+        """
+        Get identification statistics for a folder in a scan.
+
+        Returns a dict with ``total``, ``pending_identification``,
+        ``identified_files``, and ``without_matches``. Use ``path="."`` for the
+        scan root. See ``schema.md`` and ``quirks.md``.
+        """
+        result = self._request(
+            "get_folder_content_metrics",
+            {
+                "scan_code": scan_code,
+                "path": errors.path_for_action(
+                    "get_folder_content_metrics", path
+                ),
+            },
+            error_context=(
+                f"Failed to get folder content metrics for '{path}' "
+                f"in scan '{scan_code}'"
+            ),
+        )
+        if isinstance(result, dict):
+            return result
+        raise ApiError(
+            "Unexpected get_folder_content_metrics data format",
+            details={"data": result},
+        )
+
+    def get_folder_components_ranking(
+        self,
+        scan_code: str,
+        path: str = ".",
+    ) -> Union[List[Dict[str, Any]], bool]:
+        """
+        Rank identified components under a folder by occurrence count.
+
+        Returns a list of component rows sorted by ``amount`` (descending),
+        scoped to the given folder path. Each row describes an identified
+        artifact (``artifact``, ``version``, ``author``, licenses, etc.) with
+        ``amount`` (total hits in the folder) and
+        ``amount_per_artifact_version`` (hits for that name+version pair).
+
+        Returns ``False`` when ``path`` is a file, not a folder. Use
+        ``path="."`` for the scan root. See ``quirks.md``.
+        """
+        result = self._request(
+            "get_folder_components_ranking",
+            {
+                "scan_code": scan_code,
+                "path": errors.path_for_action(
+                    "get_folder_components_ranking", path
+                ),
+            },
+            error_context=(
+                f"Failed to get folder components ranking for '{path}' "
+                f"in scan '{scan_code}'"
+            ),
+        )
+        if isinstance(result, list) or result is False:
+            return result
+        raise ApiError(
+            "Unexpected get_folder_components_ranking data format",
+            details={"data": result},
+        )
+
+    def get_folder_extensions_ranking(
+        self,
+        scan_code: str,
+        path: str = ".",
+        *,
+        current_view: Optional[str] = None,
+    ) -> Union[List[Dict[str, Any]], bool]:
+        """
+        Rank file extensions under a folder by file count.
+
+        Returns a list of rows (``file_extension``, ``amount``, ``id``) sorted
+        by ``amount`` descending, scoped to the given folder path. An empty
+        ``file_extension`` counts extensionless files.
+
+        Optional ``current_view`` filters which files are counted:
+        ``show_all``, ``all_items``, ``pending_items``,
+        ``mark_as_identified``, ``without_matches``. Omit to use the server
+        default (same as ``show_all`` on 2026.1 cs-demo).
+
+        Returns ``False`` when ``path`` is a file or the view has no data.
+        See ``quirks.md``.
+        """
+        data: Dict[str, Any] = {
+            "scan_code": scan_code,
+            "path": errors.path_for_action(
+                "get_folder_extensions_ranking", path
+            ),
+        }
+        if current_view is not None:
+            data["current_view"] = current_view
+
+        result = self._request(
+            "get_folder_extensions_ranking",
+            data,
+            error_context=(
+                f"Failed to get folder extensions ranking for '{path}' "
+                f"in scan '{scan_code}'"
+            ),
+        )
+        if isinstance(result, list) or result is False:
+            return result
+        raise ApiError(
+            "Unexpected get_folder_extensions_ranking data format",
+            details={"data": result},
+        )
+
     def get_identification(
         self, scan_code: str, path: str
     ) -> Dict[str, Any]:

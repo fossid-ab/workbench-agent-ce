@@ -146,6 +146,18 @@ def _assert_data_shape(
             )
         return
 
+    if shape == "list_or_bool":
+        if isinstance(payload, list):
+            _assert_list_items(operation_id, payload, spec, version_hint)
+        elif isinstance(payload, bool):
+            return
+        else:
+            raise AssertionError(
+                f"{operation_id}{version_hint}: expected list or bool, "
+                f"got {type(payload)}"
+            )
+        return
+
     if shape == "any":
         return
 

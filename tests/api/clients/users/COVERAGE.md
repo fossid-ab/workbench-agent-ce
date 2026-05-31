@@ -9,8 +9,11 @@
 
 ```bash
 pytest tests/api/clients/users -m "not requires_workbench"
-pytest tests/api/clients/users -m requires_workbench   # needs .env-cs
+pytest tests/api/clients/users -m requires_workbench
 ```
+
+Requires `WORKBENCH_URL`, `WORKBENCH_USER`, and `WORKBENCH_TOKEN` (see
+[`tests/api/README.md`](../../README.md)).
 
 Full probes:
 

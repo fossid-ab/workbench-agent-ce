@@ -294,6 +294,124 @@ class ComponentsClient:
             result["message"] = response["message"]
         return result
 
+    def update(
+        self,
+        name: str,
+        version: str,
+        *,
+        license_identifier: Optional[str] = None,
+        new_name: Optional[str] = None,
+        new_version: Optional[str] = None,
+        cpe: Optional[str] = None,
+        package_size: Optional[str] = None,
+        package_size_binary: Optional[str] = None,
+        commits_nro: Optional[str] = None,
+        contributors_nro: Optional[str] = None,
+        releases_nro: Optional[str] = None,
+        bugs_nro: Optional[str] = None,
+        fixed_bugs_nro: Optional[str] = None,
+        community_size: Optional[str] = None,
+        purl: Optional[str] = None,
+        url: Optional[str] = None,
+        supplier_url: Optional[str] = None,
+        community_url: Optional[str] = None,
+        download_url: Optional[str] = None,
+        download_url_binary: Optional[str] = None,
+        package_md5: Optional[str] = None,
+        package_sha1: Optional[str] = None,
+        comment: Optional[str] = None,
+        description: Optional[str] = None,
+        repository_download_path_binary: Optional[str] = None,
+        copyright: Optional[str] = None,
+        attribution_acknowledgement: Optional[str] = None,
+        warranty_liability_exclusions: Optional[str] = None,
+        known_bugs: Optional[str] = None,
+        known_vulnerabilities: Optional[str] = None,
+        change_log: Optional[str] = None,
+        platform: Optional[str] = None,
+        programming_language: Optional[str] = None,
+        binary_md5: Optional[str] = None,
+        binary_sha1: Optional[str] = None,
+        sup_com_name: Optional[str] = None,
+        sha256: Optional[str] = None,
+        binary_sha256: Optional[str] = None,
+        release_date: Optional[str] = None,
+        built_date: Optional[str] = None,
+        community_status: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Update an existing component in the Workbench catalog.
+
+        Required: ``name``, ``version`` (identify the component). All other spec
+        fields are optional keyword args — see ``schema.md``.
+
+        Returns:
+            ``{"data": {component_id, …}, "message": …}`` when the API includes
+            a message.
+
+        Raises:
+            ApiError: If the API returns an error.
+        """
+        data: Dict[str, Any] = {
+            "name": name,
+            "version": version,
+        }
+        for key, value in (
+            ("license_identifier", license_identifier),
+            ("new_name", new_name),
+            ("new_version", new_version),
+            ("cpe", cpe),
+            ("package_size", package_size),
+            ("package_size_binary", package_size_binary),
+            ("commits_nro", commits_nro),
+            ("contributors_nro", contributors_nro),
+            ("releases_nro", releases_nro),
+            ("bugs_nro", bugs_nro),
+            ("fixed_bugs_nro", fixed_bugs_nro),
+            ("community_size", community_size),
+            ("purl", purl),
+            ("url", url),
+            ("supplier_url", supplier_url),
+            ("community_url", community_url),
+            ("download_url", download_url),
+            ("download_url_binary", download_url_binary),
+            ("package_md5", package_md5),
+            ("package_sha1", package_sha1),
+            ("comment", comment),
+            ("description", description),
+            ("repository_download_path_binary", repository_download_path_binary),
+            ("copyright", copyright),
+            ("attribution_acknowledgement", attribution_acknowledgement),
+            ("warranty_liability_exclusions", warranty_liability_exclusions),
+            ("known_bugs", known_bugs),
+            ("known_vulnerabilities", known_vulnerabilities),
+            ("change_log", change_log),
+            ("platform", platform),
+            ("programming_language", programming_language),
+            ("binary_md5", binary_md5),
+            ("binary_sha1", binary_sha1),
+            ("sup_com_name", sup_com_name),
+            ("sha256", sha256),
+            ("binary_sha256", binary_sha256),
+            ("release_date", release_date),
+            ("built_date", built_date),
+            ("community_status", community_status),
+        ):
+            if value is not None:
+                data[key] = value
+
+        response = self._request(
+            "update",
+            data,
+            error_context=(
+                f"Failed to update component '{name}' '{version}'"
+            ),
+        )
+        result: Dict[str, Any] = {"data": response.get("data")}
+        if "message" in response:
+            result["message"] = response["message"]
+        return result
+
     def delete(self, name: str, version: str) -> bool:
         """
         Delete a component by name and version.

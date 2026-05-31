@@ -6,7 +6,7 @@ import pytest
 import requests
 
 # Import from the new client structure
-from workbench_agent.api.clients.upload_api import UploadsClient
+from workbench_agent.api.clients.uploads import UploadsClient
 from workbench_agent.api.helpers.base_api import BaseAPI
 from workbench_agent.exceptions import FileSystemError
 

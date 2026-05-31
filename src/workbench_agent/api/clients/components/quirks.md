@@ -19,6 +19,14 @@ Validated on cs-demo / `tests/api/clients/components/`.
 - Use `errors.is_missing_component_information()` to detect success + null.
 - With version omitted, `data` is a **list**; with version, a **single dict**.
 
+## `update`
+
+- On cs-demo, ``sup_com_name`` in the update payload participates in **row lookup**
+  (with ``name`` and ``version``). If the component was created without that supplier,
+  including ``sup_com_name`` on update can yield ``not found`` even when the component
+  exists. Set supplier on **create**, or omit ``sup_com_name`` on update unless
+  changing supplier on an existing row.
+
 ## `list_components`
 
 - `order_by`: `version`, `name`, `license_name`, `license_identifier`, `created`, `updated`.

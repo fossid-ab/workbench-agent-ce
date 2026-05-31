@@ -1,7 +1,9 @@
 """
 Comprehensive live tests for ScansClient operations.
 
-    set -a && source .env-cs && set +a
+Requires ``WORKBENCH_URL``, ``WORKBENCH_USER``, and ``WORKBENCH_TOKEN`` in the
+environment (same variables CI uses).
+
     WORKBENCH_ALLOW_MUTATIONS=1 pytest tests/api/clients/scans/test_scans_operations_live.py -v
 """
 

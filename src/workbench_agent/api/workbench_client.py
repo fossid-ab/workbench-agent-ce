@@ -35,7 +35,7 @@ from workbench_agent.api.services import (
     ScanOperationsService,
     StatusCheckService,
     UploadService,
-    UserPermissionsService,
+    UserPermissionsService
 )
 
 logger = logging.getLogger("workbench-agent")

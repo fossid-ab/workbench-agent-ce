@@ -27,6 +27,58 @@ def files_client(mock_session):
 
 
 @patch.object(BaseAPI, "_send_request")
+def test_get_folder_extensions_ranking_fixture(mock_send, files_client):
+    fixture = load_fixture(
+        WORKBENCH_VERSION, "files_get_folder_extensions_ranking"
+    )
+    mock_send.return_value = fixture
+    data = files_client.get_folder_extensions_ranking(SCAN)
+    assert_contract(
+        "files_and_folders.get_folder_extensions_ranking",
+        fixture,
+        workbench_version=WORKBENCH_VERSION,
+        data=data,
+    )
+    call = mock_send.call_args[0][0]["data"]
+    assert call["path"] == encode_path(".")
+    assert "current_view" not in call
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_folder_components_ranking_fixture(mock_send, files_client):
+    fixture = load_fixture(
+        WORKBENCH_VERSION, "files_get_folder_components_ranking"
+    )
+    mock_send.return_value = fixture
+    data = files_client.get_folder_components_ranking(SCAN)
+    assert_contract(
+        "files_and_folders.get_folder_components_ranking",
+        fixture,
+        workbench_version=WORKBENCH_VERSION,
+        data=data,
+    )
+    call = mock_send.call_args[0][0]["data"]
+    assert call["path"] == encode_path(".")
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_folder_content_fixture(mock_send, files_client):
+    fixture = load_fixture(WORKBENCH_VERSION, "files_get_folder_content")
+    mock_send.return_value = fixture
+    data = files_client.get_folder_content(SCAN)
+    assert_contract(
+        "files_and_folders.get_folder_content",
+        fixture,
+        workbench_version=WORKBENCH_VERSION,
+        data=data,
+    )
+    call = mock_send.call_args[0][0]["data"]
+    assert call["path"] == encode_path(".")
+    assert call["show_all"] == "1"
+    assert call["source_code_only"] == "0"
+
+
+@patch.object(BaseAPI, "_send_request")
 def test_get_identification_fixture(mock_send, files_client):
     fixture = load_fixture(WORKBENCH_VERSION, "files_get_identification")
     mock_send.return_value = fixture

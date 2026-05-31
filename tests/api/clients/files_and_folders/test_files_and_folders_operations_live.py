@@ -1,7 +1,9 @@
 """
 Live validation for FilesAndFoldersClient (paths, errors, mutations).
 
-    set -a && source .env-cs && set +a
+Requires ``WORKBENCH_URL``, ``WORKBENCH_USER``, and ``WORKBENCH_TOKEN`` in the
+environment (same variables CI uses).
+
     WORKBENCH_ALLOW_MUTATIONS=1 pytest tests/api/clients/files_and_folders/test_files_and_folders_operations_live.py -v
 """
 

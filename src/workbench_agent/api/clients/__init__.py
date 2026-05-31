@@ -11,7 +11,7 @@ from .internal_api import InternalClient
 from .projects import ProjectsClient
 from .quickscan_api import QuickScanClient
 from .scans import ScansClient
-from .upload_api import UploadsClient
+from .uploads import UploadsClient
 from .users import UsersClient
 from .vulnerabilities_api import VulnerabilitiesClient
 

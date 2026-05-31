@@ -29,6 +29,248 @@ class TestFilesAndFoldersLiveReadOnly:
             workbench_version=workbench_version,
         )
 
+    def test_get_folder_content_root(
+        self,
+        workbench_client,
+        workbench_version,
+        test_scan_code,
+    ):
+        entries = workbench_client.files_and_folders.get_folder_content(
+            test_scan_code
+        )
+        assert_data_contract(
+            "files_and_folders.get_folder_content",
+            entries,
+            workbench_version=workbench_version,
+        )
+        assert len(entries) >= 1
+        dirs = [
+            e for e in entries if isinstance(e, dict) and e.get("is_directory") == "1"
+        ]
+        files = [
+            e for e in entries if isinstance(e, dict) and e.get("is_directory") == "0"
+        ]
+        assert dirs
+        assert files
+
+    def test_get_folder_content_subdirectory(
+        self,
+        workbench_client,
+        workbench_version,
+        test_scan_code,
+        openfastpath_dir,
+    ):
+        entries = workbench_client.files_and_folders.get_folder_content(
+            test_scan_code,
+            openfastpath_dir,
+        )
+        assert_data_contract(
+            "files_and_folders.get_folder_content",
+            entries,
+            workbench_version=workbench_version,
+        )
+        assert len(entries) >= 1
+
+    def test_get_folder_content_pending_filter(
+        self,
+        workbench_client,
+        test_scan_code,
+    ):
+        all_entries = workbench_client.files_and_folders.get_folder_content(
+            test_scan_code,
+            show_all=True,
+        )
+        pending_entries = workbench_client.files_and_folders.get_folder_content(
+            test_scan_code,
+            show_all=False,
+        )
+        all_files = {
+            e.get("text")
+            for e in all_entries
+            if isinstance(e, dict) and e.get("is_directory") == "0"
+        }
+        pending_files = {
+            e.get("text")
+            for e in pending_entries
+            if isinstance(e, dict) and e.get("is_directory") == "0"
+        }
+        assert pending_files <= all_files
+        assert len(pending_files) <= len(all_files)
+
+    def test_get_folder_content_metrics_root(
+        self,
+        workbench_client,
+        workbench_version,
+        test_scan_code,
+    ):
+        metrics = workbench_client.files_and_folders.get_folder_content_metrics(
+            test_scan_code
+        )
+        assert_data_contract(
+            "files_and_folders.get_folder_content_metrics",
+            metrics,
+            workbench_version=workbench_version,
+        )
+        total = int(metrics.get("total", 0) or 0)
+        pending = int(metrics.get("pending_identification", 0) or 0)
+        identified = int(metrics.get("identified_files", 0) or 0)
+        without_matches = int(metrics.get("without_matches", 0) or 0)
+        assert total >= 1
+        assert pending >= 1
+        assert total == pending + identified + without_matches
+
+    def test_get_folder_content_metrics_subdirectory(
+        self,
+        workbench_client,
+        workbench_version,
+        test_scan_code,
+        openfastpath_dir,
+    ):
+        root_metrics = (
+            workbench_client.files_and_folders.get_folder_content_metrics(
+                test_scan_code
+            )
+        )
+        sub_metrics = (
+            workbench_client.files_and_folders.get_folder_content_metrics(
+                test_scan_code,
+                openfastpath_dir,
+            )
+        )
+        assert_data_contract(
+            "files_and_folders.get_folder_content_metrics",
+            sub_metrics,
+            workbench_version=workbench_version,
+        )
+        assert int(sub_metrics.get("total", 0) or 0) <= int(
+            root_metrics.get("total", 0) or 0
+        )
+        assert int(sub_metrics.get("total", 0) or 0) >= 1
+
+    def test_get_folder_components_ranking_root(
+        self,
+        workbench_client,
+        workbench_version,
+        test_scan_code,
+    ):
+        ranking = workbench_client.files_and_folders.get_folder_components_ranking(
+            test_scan_code
+        )
+        assert_data_contract(
+            "files_and_folders.get_folder_components_ranking",
+            ranking,
+            workbench_version=workbench_version,
+        )
+        assert isinstance(ranking, list)
+        assert len(ranking) >= 1
+        amounts = [int(row.get("amount", 0)) for row in ranking]
+        assert amounts == sorted(amounts, reverse=True)
+
+    def test_get_folder_components_ranking_subdirectory(
+        self,
+        workbench_client,
+        workbench_version,
+        test_scan_code,
+        openfastpath_dir,
+    ):
+        ranking = workbench_client.files_and_folders.get_folder_components_ranking(
+            test_scan_code,
+            openfastpath_dir,
+        )
+        assert_data_contract(
+            "files_and_folders.get_folder_components_ranking",
+            ranking,
+            workbench_version=workbench_version,
+        )
+        assert isinstance(ranking, list)
+        assert len(ranking) >= 1
+        assert ranking[0].get("artifact") == "ofp"
+
+    def test_get_folder_components_ranking_file_path_returns_false(
+        self,
+        workbench_client,
+        test_scan_code,
+    ):
+        ranking = workbench_client.files_and_folders.get_folder_components_ranking(
+            test_scan_code,
+            "LICENSE",
+        )
+        assert ranking is False
+
+    def test_get_folder_extensions_ranking_root(
+        self,
+        workbench_client,
+        workbench_version,
+        test_scan_code,
+    ):
+        ranking = workbench_client.files_and_folders.get_folder_extensions_ranking(
+            test_scan_code
+        )
+        assert_data_contract(
+            "files_and_folders.get_folder_extensions_ranking",
+            ranking,
+            workbench_version=workbench_version,
+        )
+        assert isinstance(ranking, list)
+        assert len(ranking) >= 1
+        amounts = [int(row.get("amount", 0)) for row in ranking]
+        assert amounts == sorted(amounts, reverse=True)
+        extensions = {row.get("file_extension") for row in ranking}
+        assert "c" in extensions or "java" in extensions
+
+    def test_get_folder_extensions_ranking_pending_view(
+        self,
+        workbench_client,
+        test_scan_code,
+    ):
+        all_ranking = (
+            workbench_client.files_and_folders.get_folder_extensions_ranking(
+                test_scan_code,
+                current_view="show_all",
+            )
+        )
+        pending_ranking = (
+            workbench_client.files_and_folders.get_folder_extensions_ranking(
+                test_scan_code,
+                current_view="pending_items",
+            )
+        )
+        assert isinstance(all_ranking, list)
+        assert isinstance(pending_ranking, list)
+        all_total = sum(int(row.get("amount", 0)) for row in all_ranking)
+        pending_total = sum(int(row.get("amount", 0)) for row in pending_ranking)
+        assert pending_total <= all_total
+
+    def test_get_folder_extensions_ranking_subdirectory(
+        self,
+        workbench_client,
+        workbench_version,
+        test_scan_code,
+        openfastpath_dir,
+    ):
+        ranking = workbench_client.files_and_folders.get_folder_extensions_ranking(
+            test_scan_code,
+            openfastpath_dir,
+        )
+        assert_data_contract(
+            "files_and_folders.get_folder_extensions_ranking",
+            ranking,
+            workbench_version=workbench_version,
+        )
+        assert isinstance(ranking, list)
+        assert len(ranking) >= 1
+
+    def test_get_folder_extensions_ranking_file_path_returns_false(
+        self,
+        workbench_client,
+        test_scan_code,
+    ):
+        ranking = workbench_client.files_and_folders.get_folder_extensions_ranking(
+            test_scan_code,
+            "LICENSE",
+        )
+        assert ranking is False
+
     def test_get_fossid_results(
         self,
         workbench_client,

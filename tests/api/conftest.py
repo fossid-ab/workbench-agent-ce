@@ -10,7 +10,12 @@ from workbench_agent.api.utils.version import normalize_workbench_version
 
 @pytest.fixture(scope="session")
 def workbench_config():
-    """Workbench credentials from environment; skips if missing."""
+    """
+    Workbench credentials from environment; skips if missing.
+
+    Live tests read ``WORKBENCH_URL``, ``WORKBENCH_USER``, and
+    ``WORKBENCH_TOKEN`` from the process environment.
+    """
     config = {
         "url": os.environ.get("WORKBENCH_URL"),
         "user": os.environ.get("WORKBENCH_USER"),

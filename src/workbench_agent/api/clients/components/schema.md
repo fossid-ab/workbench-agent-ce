@@ -14,6 +14,7 @@ Legend: **R** = required in API `data`, **O** = optional.
 | `list_by_usage` | `list_by_usage()` | Yes |
 | `get_information` | `get_information()` | Yes |
 | `create` | `create()` | Yes |
+| `update` | `update()` | Yes |
 | `delete` | `delete()` | Yes |
 | `get_usage` | `get_usage()` | Yes |
 | `get_usage_count` | `get_usage_count()` | Yes |
@@ -144,6 +145,65 @@ All optional create fields from the spec are exposed on `create()` — **no gaps
 | `data.component_name` | string | May be base64 on some servers |
 | `data.component_version` | string | May be base64 |
 | `data.component_license` | string | |
+| `message` | string | In `result["message"]` when present |
+
+---
+
+## `update`
+
+### Request (`data`)
+
+| Field | API | Client param |
+|-------|-----|--------------|
+| `name` | **R** | `name` | Exact name of the component to update |
+| `version` | **R** | `version` | Exact version of the component to update |
+| `license_identifier` | O | `license_identifier` | Declared SPDX/catalog license (`components.license_id`) |
+| `new_name` | O | `new_name` | |
+| `new_version` | O | `new_version` | |
+| `cpe` | O | `cpe` | |
+| `package_size` | O | `package_size` | |
+| `package_size_binary` | O | `package_size_binary` | |
+| `commits_nro` | O | `commits_nro` | |
+| `contributors_nro` | O | `contributors_nro` | |
+| `releases_nro` | O | `releases_nro` | |
+| `bugs_nro` | O | `bugs_nro` | |
+| `fixed_bugs_nro` | O | `fixed_bugs_nro` | |
+| `community_size` | O | `community_size` | |
+| `purl` | O | `purl` | |
+| `url` | O | `url` | |
+| `supplier_url` | O | `supplier_url` | |
+| `community_url` | O | `community_url` | |
+| `download_url` | O | `download_url` | |
+| `download_url_binary` | O | `download_url_binary` | |
+| `package_md5` | O | `package_md5` | |
+| `package_sha1` | O | `package_sha1` | |
+| `comment` | O | `comment` | |
+| `description` | O | `description` | |
+| `repository_download_path_binary` | O | `repository_download_path_binary` | |
+| `copyright` | O | `copyright` | |
+| `attribution_acknowledgement` | O | `attribution_acknowledgement` | |
+| `warranty_liability_exclusions` | O | `warranty_liability_exclusions` | |
+| `known_bugs` | O | `known_bugs` | |
+| `known_vulnerabilities` | O | `known_vulnerabilities` | |
+| `change_log` | O | `change_log` | |
+| `platform` | O | `platform` | |
+| `programming_language` | O | `programming_language` | |
+| `binary_md5` | O | `binary_md5` | |
+| `binary_sha1` | O | `binary_sha1` | |
+| `sup_com_name` | O | `sup_com_name` | |
+| `sha256` | O | `sha256` | |
+| `binary_sha256` | O | `binary_sha256` | |
+| `release_date` | O | `release_date` | |
+| `built_date` | O | `built_date` | |
+| `community_status` | O | `community_status` | |
+
+All optional update fields from the spec are exposed on `update()` — **no gaps**.
+
+### Response
+
+| Field | Spec | Client return |
+|-------|------|---------------|
+| `data.component_id` | int | In `result["data"]` |
 | `message` | string | In `result["message"]` when present |
 
 ---

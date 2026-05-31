@@ -1,9 +1,9 @@
 """
 Comprehensive live tests for all ProjectsClient operations.
 
-Run against a real Workbench (e.g. cs-demo):
+Requires ``WORKBENCH_URL``, ``WORKBENCH_USER``, and ``WORKBENCH_TOKEN`` in the
+environment (same variables CI uses).
 
-    set -a && source .env-cs && set +a
     WORKBENCH_ALLOW_MUTATIONS=1 pytest tests/api/clients/projects/test_projects_operations_live.py -v
 """
 

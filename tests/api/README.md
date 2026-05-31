@@ -61,13 +61,16 @@ in [`utils/test_path_encoding.py`](utils/test_path_encoding.py). Used by
 
 ## Prerequisites (live tests)
 
+Live tests read credentials from **environment variables only** — the same
+``WORKBENCH_*`` names used in GitHub Actions secrets.
+
 ```bash
 export WORKBENCH_URL="https://your-workbench-server.com/api.php"
 export WORKBENCH_USER="your_username"
 export WORKBENCH_TOKEN="your_api_token"
 ```
 
-CI can use the same variables when running live tests; default PR CI should use:
+Default PR CI should use:
 
 ```bash
 pytest tests/api -m "not requires_workbench"
@@ -75,7 +78,7 @@ pytest tests/api -m "not requires_workbench"
 
 ### Test Project / Test Scan
 
-Test data on cs-demo includes:
+The Scan on includes:
 
 - **Files with Snippets** — partial matches (`snippet_file_path` fixture)
 - **OpenFastPath/** — shared component, folder ops (`openfastpath_dir` fixture)

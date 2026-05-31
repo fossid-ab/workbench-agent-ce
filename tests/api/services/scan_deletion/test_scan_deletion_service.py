@@ -1,4 +1,4 @@
-"""Tests for ScanDeletionService."""
+"""Tests for ScanDeletionService (unit). Live create/delete: test_scan_deletion_operations_live.py."""
 
 from unittest.mock import MagicMock
 

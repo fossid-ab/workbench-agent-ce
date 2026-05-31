@@ -41,7 +41,8 @@ This client wraps the `scans` group; orchestration lives in `api/services/`.
 ## Response notes
 
 - `list_scans`: `data` is often a **map** `{id: scan_details}`; client returns a **list** with `id` injected.
-- `get_scan_identified_components`: `data` map → list of values.
+- `get_scan_identified_components`: `data` map → list of values; empty may be **`false`**
+  (see [`quirks.md`](quirks.md)).
 - `get_pending_files`: map of file id → path; errors may return `{}` (logged, not raised).
 - `check_status`: `data` may be dict, string, or bool (`DELETE_SCAN` finished → normalized dict).
 - `generate_report` / `notice_extract_download`: may return `_raw_response` for downloads.

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "workbench-agent"
-version = "0.8.0"
+version = "0.8.1"
 description = "Workbench Agent automates Workbench operations like scanning, gating, and more."
 license = "MIT"
 authors = [

@@ -1,7 +1,9 @@
 """
 Live probes for UsersClient (error shapes and data normalization).
 
-    set -a && source .env-cs && set +a
+Requires ``WORKBENCH_URL``, ``WORKBENCH_USER``, and ``WORKBENCH_TOKEN`` in the
+environment (same variables CI uses).
+
     pytest tests/api/clients/users/test_users_operations_live.py -v
 """
 

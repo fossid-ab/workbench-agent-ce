@@ -1,7 +1,9 @@
 """
 Live contract tests for ScansClient (requires Workbench server).
 
-    set -a && source .env-cs && set +a
+Requires ``WORKBENCH_URL``, ``WORKBENCH_USER``, and ``WORKBENCH_TOKEN`` in the
+environment (same variables CI uses).
+
     pytest tests/api/clients/scans/test_scans_live.py -m requires_workbench -v
 
 Successful paths are fast; invalid-scan probes are in ``test_scans_errors_live.py``.

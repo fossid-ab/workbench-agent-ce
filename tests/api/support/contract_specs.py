@@ -25,6 +25,10 @@ CONTRACTS: Dict[str, Dict[str, Any]] = {
         "data_shape": "dict",
         "required_keys": {"component_id"},
     },
+    "components.update": {
+        "data_shape": "dict",
+        "required_keys": {"component_id"},
+    },
     "components.delete": {
         "data_shape": "bool",
     },
@@ -39,6 +43,34 @@ CONTRACTS: Dict[str, Dict[str, Any]] = {
             "identifications_usage_count",
             "dependency_usage_count",
         },
+    },
+    "files_and_folders.get_folder_content": {
+        "data_shape": "list",
+        "item_required_keys": {"id", "text", "is_directory"},
+    },
+    "files_and_folders.get_folder_content_metrics": {
+        "data_shape": "dict",
+        "required_keys": {
+            "total",
+            "pending_identification",
+            "identified_files",
+            "without_matches",
+        },
+    },
+    "files_and_folders.get_folder_components_ranking": {
+        "data_shape": "list_or_bool",
+        "item_required_keys": {
+            "rownum",
+            "artifact",
+            "version",
+            "amount_per_artifact_version",
+            "amount",
+            "fcrid",
+        },
+    },
+    "files_and_folders.get_folder_extensions_ranking": {
+        "data_shape": "list_or_bool",
+        "item_required_keys": {"id", "file_extension", "amount"},
     },
     "files_and_folders.get_identification": {
         "data_shape": "dict",

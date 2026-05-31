@@ -107,6 +107,31 @@ def test_create_returns_data_and_message(mock_send, components_client):
 
 
 @patch.object(BaseAPI, "_send_request")
+def test_update_returns_data_and_message(mock_send, components_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {"component_id": 1200},
+        "message": "Component updated",
+    }
+    result = components_client.update(
+        "test",
+        "1.0",
+        description="Updated description",
+        url="https://example.com",
+        comment="live test note",
+    )
+    assert result["data"]["component_id"] == 1200
+    assert result["message"] == "Component updated"
+    payload = mock_send.call_args[0][0]
+    assert payload["action"] == "update"
+    assert payload["data"]["name"] == "test"
+    assert payload["data"]["version"] == "1.0"
+    assert payload["data"]["description"] == "Updated description"
+    assert payload["data"]["url"] == "https://example.com"
+    assert "license_identifier" not in payload["data"]
+
+
+@patch.object(BaseAPI, "_send_request")
 def test_delete_success(mock_send, components_client):
     mock_send.return_value = {"status": "1", "data": True}
     assert components_client.delete("test", "1.0") is True

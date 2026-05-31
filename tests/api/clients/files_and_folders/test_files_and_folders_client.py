@@ -36,6 +36,115 @@ def test_path_for_action_encodes_except_remove():
 
 
 @patch.object(BaseAPI, "_send_request")
+def test_get_folder_extensions_ranking(mock_send, files_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": [
+            {"id": "6", "file_extension": "c", "amount": "28"},
+            {"id": "2", "file_extension": "h", "amount": "17"},
+        ],
+    }
+    result = files_client.get_folder_extensions_ranking(
+        "SCAN1",
+        "OpenFastPath",
+        current_view="pending_items",
+    )
+    assert len(result) == 2
+    assert result[0]["file_extension"] == "c"
+    data = mock_send.call_args[0][0]["data"]
+    assert data["path"] == FilesAndFoldersClient.encode_path("OpenFastPath")
+    assert data["current_view"] == "pending_items"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_folder_extensions_ranking_file_returns_false(mock_send, files_client):
+    mock_send.return_value = {"status": "1", "data": False}
+    result = files_client.get_folder_extensions_ranking("SCAN1", "LICENSE")
+    assert result is False
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_folder_components_ranking(mock_send, files_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": [
+            {
+                "rownum": "0",
+                "artifact": "ofp",
+                "version": "1.1",
+                "amount_per_artifact_version": "15",
+                "amount": "43",
+                "fcrid": "1612",
+            }
+        ],
+    }
+    result = files_client.get_folder_components_ranking("SCAN1", "OpenFastPath")
+    assert len(result) == 1
+    assert result[0]["artifact"] == "ofp"
+    data = mock_send.call_args[0][0]["data"]
+    assert data["path"] == FilesAndFoldersClient.encode_path("OpenFastPath")
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_folder_components_ranking_file_returns_false(mock_send, files_client):
+    mock_send.return_value = {"status": "1", "data": False}
+    result = files_client.get_folder_components_ranking("SCAN1", "LICENSE")
+    assert result is False
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_folder_content_metrics(mock_send, files_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {
+            "total": "200",
+            "pending_identification": "126",
+            "identified_files": "0",
+            "without_matches": "74",
+        },
+        "message": "Success",
+    }
+    result = files_client.get_folder_content_metrics("SCAN1", ".")
+    assert result["total"] == "200"
+    assert result["pending_identification"] == "126"
+    payload = mock_send.call_args[0][0]
+    assert payload["action"] == "get_folder_content_metrics"
+    assert payload["data"]["path"] == FilesAndFoldersClient.encode_path(".")
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_folder_content(mock_send, files_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": [
+            {
+                "id": "Li9BbmRyb2lkLUJsdWV0b290aA==",
+                "text": "Android-Bluetooth",
+                "is_directory": "1",
+                "children": "1",
+            },
+            {
+                "id": "Li9BbmRyb2lkLUJsdWV0b290aC9CbHVldG9vdGhBY3Rpdml0eUVuZXJneUluZm8uamF2YQ==",
+                "icon": "images/languages_icons/java_26.png",
+                "is_directory": "0",
+                "text": "BluetoothActivityEnergyInfo.java",
+            },
+        ],
+    }
+    result = files_client.get_folder_content(
+        "SCAN1",
+        ".",
+        show_all=False,
+        source_code_only=True,
+    )
+    assert len(result) == 2
+    data = mock_send.call_args[0][0]["data"]
+    assert data["path"] == FilesAndFoldersClient.encode_path(".")
+    assert data["show_all"] == "0"
+    assert data["source_code_only"] == "1"
+
+
+@patch.object(BaseAPI, "_send_request")
 def test_get_identification_encodes_path(mock_send, files_client):
     mock_send.return_value = {
         "status": "1",

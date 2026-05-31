@@ -1,7 +1,9 @@
 """
 Live validation for ComponentsClient (errors, quirks, full operation matrix).
 
-    set -a && source .env-cs && set +a
+Requires ``WORKBENCH_URL``, ``WORKBENCH_USER``, and ``WORKBENCH_TOKEN`` in the
+environment (same variables CI uses).
+
     WORKBENCH_ALLOW_MUTATIONS=1 pytest tests/api/clients/components/test_components_operations_live.py -v
 """
 
@@ -124,7 +126,7 @@ class TestComponentsLiveClientErrors:
 
 @pytest.mark.usefixtures("allow_mutations")
 class TestComponentsLiveMutationsViaClient:
-    def test_create_list_get_usage_delete_cycle(
+    def test_create_update_get_usage_delete_cycle(
         self,
         workbench_client,
         workbench_version,
@@ -146,6 +148,24 @@ class TestComponentsLiveMutationsViaClient:
             workbench_version=workbench_version,
         )
 
+        update_result = workbench_client.components.update(
+            unique_component_name,
+            version,
+            description="API live test component",
+            comment="Created and updated by components operations live test",
+            url="https://example.com/components-live-test",
+            programming_language="Python",
+        )
+        assert update_result.get("data")
+        assert_contract(
+            "components.update",
+            {
+                "status": "1",
+                "data": update_result["data"],
+            },
+            workbench_version=workbench_version,
+        )
+
         info = workbench_client.components.get_information(
             unique_component_name, version
         )
@@ -153,8 +173,15 @@ class TestComponentsLiveMutationsViaClient:
         assert info.get("name") == unique_component_name or info.get(
             "version"
         ) == version
+        assert info.get("description") == "API live test component"
+        assert info.get("comment") == (
+            "Created and updated by components operations live test"
+        )
+        assert info.get("url") == "https://example.com/components-live-test"
 
-        comp_id = info.get("id")
+        comp_id = info.get("id") or update_result["data"].get(
+            "component_id"
+        )
         if comp_id is not None:
             usage = workbench_client.components.get_usage(
                 component_id=int(comp_id),
