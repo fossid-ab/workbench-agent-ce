@@ -1,6 +1,9 @@
 # API clients layout
 
-Domain clients live here. Newer clients use a **package per domain**:
+Domain clients live here. See [`../README.md`](../README.md) for how clients
+fit with services, helpers, and human-readable utilities.
+
+Newer clients use a **package per domain**:
 
 ```
 clients/<domain>/
@@ -22,6 +25,7 @@ clients/<domain>/
 | `projects/` | Not-found mapping; `get_all_scans` → `[]` for unknown project |
 | `users/` | Permission list normalization; parsing-error shape for unknown user |
 | `scans/` | List/map normalization; `check_status` / Git status wrapping; pending files soft-fail |
+| `vulnerabilities/` | Raw `list_vulnerabilities`; paginated lists via `VulnerabilityService`; CVE `get_information`; VEX |
 | `uploads/` | Raw HTTP upload transport (scan target, DA, SBOM) |
 
 | Legacy flat modules (`download_api.py`, …) remain until migrated.

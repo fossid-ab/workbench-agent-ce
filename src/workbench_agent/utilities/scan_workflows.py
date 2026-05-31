@@ -12,6 +12,10 @@ import argparse
 import logging
 from typing import TYPE_CHECKING, Dict, Optional, Union
 
+from workbench_agent.utilities.vulnerability_display import (
+    print_vulnerable_component_count,
+)
+
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
 
@@ -196,6 +200,14 @@ def _print_scan_summary(
         )
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch vulnerabilities: {e}")
+
+    vulnerability_summary = None
+    if vulnerabilities:
+        vulnerability_summary = (
+            workbench.vulnerability.summarize_vulnerabilities(
+                vulnerabilities=vulnerabilities
+            )
+        )
 
     # --- Requested Scan Operations ---
     print("\nScan Operation Summary:")
@@ -434,28 +446,10 @@ def _print_scan_summary(
             "- does the Project have Policies set?"
         )
 
-    if vulnerabilities:
-        unique_vulnerable_components: set = set()
-        for vuln in vulnerabilities:
-            comp_name = vuln.get("component_name", "Unknown")
-            comp_version = vuln.get(
-                "component_version", "Unknown"
-            )
-            unique_vulnerable_components.add(
-                f"{comp_name}:{comp_version}"
-            )
-        num_vulnerable_components = len(
-            unique_vulnerable_components
-        )
-        print(
-            f"  - Components with CVEs: "
-            f"{num_vulnerable_components}"
-        )
-    else:
-        print(
-            "  - No CVEs found for Identified "
-            "Components or Dependencies."
-        )
+    print_vulnerable_component_count(
+        vulnerability_summary
+        or {"total_cves": 0, "vulnerable_component_count": 0}
+    )
 
     print("------------------------------------")
 

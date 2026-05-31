@@ -85,6 +85,13 @@ Test Project holds two scans over the same **Project Sample Mix**:
 | **Identified Test Scan** | Stable identified components, licenses, read-only ID state |
 | **Dependency Analysis Test Scan** | DA-only import (no KB matches); `get_dependency_analysis_results` |
 
+**Vulnerability / VEX tests** (`clients/vulnerabilities/`, `services/vulnerability/`):
+CVE listing requires identified components and/or DA results. Live tests use
+`scan_has_vulnerabilities` (probes Identified Test Scan, then Dependency Analysis
+Test Scan). Prefer `workbench.vulnerability` for agent workflows;
+`workbench.vulnerabilities` remains the raw client. Mutations need
+`WORKBENCH_ALLOW_MUTATIONS=1`.
+
 Both scans use the same **Project Sample Mix** tree (see `../ProjectMix` locally).
 Top-level folders include `OpenFastPath/`, `Android-Bluetooth/`, `Files with Snippets/`, etc.
 There is no scan-root `"."` folder path — pass a top-level folder to folder browser APIs.

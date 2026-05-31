@@ -177,10 +177,14 @@ class ResultsService:
     command-line parameters.
 
     KB identification aggregates delegate to ``IdentificationService``;
-    dependency analysis results delegate to ``DependencyService``.
+    dependency analysis results delegate to ``DependencyService``;
+    vulnerabilities delegate to ``VulnerabilityService``.
 
     Example:
-        >>> results_service = ResultsService(scans_client, vulns_client)
+        >>> results_service = ResultsService(
+        ...     scans_client,
+        ...     vulnerability_service=vulnerability_service,
+        ... )
         >>>
         >>> # Fetch specific result types
         >>> lic = results_service.get_unique_identified_licenses(scan_code)
@@ -193,8 +197,9 @@ class ResultsService:
     def __init__(
         self,
         scans_client,
-        vulnerabilities_client,
         *,
+        vulnerability_service=None,
+        vulnerabilities_client=None,
         identification_service=None,
         dependency_service=None,
         workbench_version: str = "",
@@ -204,13 +209,16 @@ class ResultsService:
 
         Args:
             scans_client: ScansClient for scan info and policy warnings
-            vulnerabilities_client: VulnerabilitiesClient for vuln data
+            vulnerability_service: Optional VulnerabilityService for CVE/VEX
+            vulnerabilities_client: Fallback VulnerabilitiesClient when no
+                service is provided (legacy)
             identification_service: Optional IdentificationService for KB
                 identification aggregates (components, licenses, metrics, pending)
             dependency_service: Optional DependencyService for DA results
             workbench_version: Workbench version for link generation
         """
         self._scans = scans_client
+        self._vulnerability = vulnerability_service
         self._vulnerabilities = vulnerabilities_client
         self._identification = identification_service
         self._dependencies = dependency_service
@@ -449,9 +457,24 @@ class ResultsService:
             ...     )
         """
         logger.debug(f"Fetching vulnerabilities for scan '{scan_code}'")
-        vulnerabilities: List[Dict[str, Any]] = (
-            self._vulnerabilities.list_vulnerabilities(scan_code)
-        )
+        if self._vulnerability is not None:
+            vulnerabilities = self._vulnerability.get_vulnerabilities(
+                scan_code
+            )
+        elif self._vulnerabilities is not None:
+            from workbench_agent.api.utils.vulnerability_helpers import (
+                fetch_all_vulnerability_rows,
+            )
+
+            vulnerabilities = fetch_all_vulnerability_rows(
+                self._vulnerabilities,
+                scan_code=scan_code,
+            )
+        else:
+            raise RuntimeError(
+                "ResultsService requires vulnerability_service or "
+                "vulnerabilities_client"
+            )
         logger.debug(f"Retrieved {len(vulnerabilities)} vulnerabilities")
         return vulnerabilities
 

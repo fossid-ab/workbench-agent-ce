@@ -17,6 +17,7 @@ from .scan_operations_service import ScanOperationsService
 from .status_check_service import StatusCheckService
 from .upload_service import UploadService
 from .user_permissions import UserPermissionsService
+from .vulnerability_service import VulnerabilityService
 
 __all__ = [
     "ComponentService",
@@ -32,4 +33,5 @@ __all__ = [
     "StatusCheckService",
     "UploadService",
     "UserPermissionsService",
+    "VulnerabilityService",
 ]

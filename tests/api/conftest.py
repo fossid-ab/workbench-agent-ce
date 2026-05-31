@@ -381,6 +381,36 @@ def scan_has_da_results(workbench_client, dependency_analysis_test_scan_code):
 
 
 @pytest.fixture(scope="session")
+def scan_has_vulnerabilities(
+    workbench_client,
+    identified_test_scan_code,
+    dependency_analysis_test_scan_code,
+):
+    """
+    First test scan (identified, then DA) that returns CVE rows.
+
+    CVE listing requires identified components and/or dependency analysis.
+    """
+    for scan_code in (
+        identified_test_scan_code,
+        dependency_analysis_test_scan_code,
+    ):
+        vulnerabilities = workbench_client.vulnerability.list_scan_vulnerabilities(
+            scan_code
+        )
+        if vulnerabilities:
+            return {
+                "scan_code": scan_code,
+                "vulnerabilities": vulnerabilities,
+            }
+    pytest.skip(
+        "Neither Identified Test Scan nor Dependency Analysis Test Scan "
+        "returned vulnerabilities. Ensure KB CVE data is available for "
+        "sample components."
+    )
+
+
+@pytest.fixture(scope="session")
 def identified_file_path(openfastpath_file_path):
     """
     File path with catalog linkage on Identified Test Scan.
@@ -434,3 +464,9 @@ def identification_service(workbench_client):
 def dependency_service(workbench_client):
     """DependencyService wired on WorkbenchClient."""
     return workbench_client.dependencies
+
+
+@pytest.fixture
+def vulnerability_service(workbench_client):
+    """VulnerabilityService wired on WorkbenchClient."""
+    return workbench_client.vulnerability

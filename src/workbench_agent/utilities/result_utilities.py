@@ -14,6 +14,10 @@ from typing import TYPE_CHECKING, Any, Dict
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
 
+from workbench_agent.utilities.vulnerability_display import (
+    print_vulnerability_results,
+)
+
 logger = logging.getLogger("workbench-agent")
 
 
@@ -247,95 +251,8 @@ def display_results(
 
     # Display Vulnerability Summary
     if should_fetch_vulnerabilities:
-        print("\n=== Vulnerability Summary ===")
         displayed_something = True
-        if vulnerabilities_data:
-            num_cves = len(vulnerabilities_data)
-            unique_components = set()
-            severity_counts = {
-                "CRITICAL": 0,
-                "HIGH": 0,
-                "MEDIUM": 0,
-                "LOW": 0,
-                "UNKNOWN": 0,
-            }
-
-            for vuln in vulnerabilities_data:
-                comp_name = vuln.get("component_name", "Unknown")
-                comp_version = vuln.get("component_version", "Unknown")
-                unique_components.add(f"{comp_name}:{comp_version}")
-                severity = vuln.get("severity", "UNKNOWN").upper()
-                severity_counts[severity] = (
-                    severity_counts.get(severity, 0) + 1
-                )
-
-            num_unique_components = len(unique_components)
-            print(
-                f"{num_cves} CVEs affect {num_unique_components} components."
-            )
-            print(
-                f"By CVSS Score, "
-                f"{severity_counts['CRITICAL']} are Critical, "
-                f"{severity_counts['HIGH']} are High, "
-                f"{severity_counts['MEDIUM']} are Medium, and "
-                f"{severity_counts['LOW']} are Low."
-            )
-
-            if severity_counts["UNKNOWN"] > 0:
-                print(f"  - Unknown:  {severity_counts['UNKNOWN']}")
-
-        if vulnerabilities_data:
-            print("\n=== Top Vulnerable Components ===")
-            components_vulns = {}
-            # Group vulnerabilities by component:version
-            for vuln in vulnerabilities_data:
-                comp_name = vuln.get("component_name", "UnknownComponent")
-                comp_version = vuln.get(
-                    "component_version", "UnknownVersion"
-                )
-                comp_key = f"{comp_name}:{comp_version}"
-                if comp_key not in components_vulns:
-                    components_vulns[comp_key] = []
-                components_vulns[comp_key].append(vuln)
-
-            # Sort components by the number of vulnerabilities (descending)
-            sorted_components = sorted(
-                components_vulns.items(),
-                key=lambda item: len(item[1]),
-                reverse=True,
-            )
-
-            # Define severity order for sorting vulnerabilities
-            severity_order = {
-                "CRITICAL": 4,
-                "HIGH": 3,
-                "MEDIUM": 2,
-                "LOW": 1,
-                "UNKNOWN": 0,
-            }
-
-            for comp_key, vulns_list in sorted_components:
-                print(f"\n{comp_key} - {len(vulns_list)} vulnerabilities")
-
-                # Sort vulnerabilities within this component by severity
-                sorted_vulns_list = sorted(
-                    vulns_list,
-                    key=lambda v: severity_order.get(
-                        v.get("severity", "UNKNOWN").upper(), 0
-                    ),
-                    reverse=True,
-                )
-
-                # Display top 5 vulnerabilities for each component
-                for vuln in sorted_vulns_list[:5]:
-                    severity = vuln.get("severity", "UNKNOWN").upper()
-                    cve = vuln.get("cve", "NO_CVE_ID")
-                    print(f"  - [{severity}] {cve}")
-                if len(sorted_vulns_list) > 5:
-                    print(f"  ... and {len(sorted_vulns_list) - 5} more.")
-        else:
-            print("No vulnerabilities found.")
-        print("-" * 25)
+        print_vulnerability_results(vulnerabilities_data)
 
     if not displayed_something:
         print(

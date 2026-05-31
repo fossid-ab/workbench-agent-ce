@@ -50,3 +50,9 @@ def test_workbench_client_exposes_new_api_clients(mock_version_check):
     )
 
     assert isinstance(client.identification, IdentificationService)
+    assert hasattr(client, "vulnerability")
+    from workbench_agent.api.services.vulnerability_service import (
+        VulnerabilityService,
+    )
+
+    assert isinstance(client.vulnerability, VulnerabilityService)

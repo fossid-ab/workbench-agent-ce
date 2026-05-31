@@ -13,7 +13,7 @@ from .quickscan_api import QuickScanClient
 from .scans import ScansClient
 from .uploads import UploadsClient
 from .users import UsersClient
-from .vulnerabilities_api import VulnerabilitiesClient
+from .vulnerabilities import VulnerabilitiesClient
 
 __all__ = [
     "ComponentsClient",

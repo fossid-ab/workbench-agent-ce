@@ -1,20 +1,15 @@
-# tests/unit/api/clients/test_vulnerabilities_client.py
+# tests/api/clients/vulnerabilities/test_vulnerabilities_client.py
 
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import requests
 
-# Import from the new client structure
-from workbench_agent.api.clients.vulnerabilities_api import (
-    VulnerabilitiesClient,
-)
+from workbench_agent.api.clients.vulnerabilities import VulnerabilitiesClient
 from workbench_agent.api.exceptions import ApiError
 from workbench_agent.api.helpers.base_api import BaseAPI
 
 
-# --- Fixtures ---
 @pytest.fixture
 def mock_session(mocker):
     mock_sess = mocker.MagicMock(spec=requests.Session)
@@ -25,7 +20,6 @@ def mock_session(mocker):
 
 @pytest.fixture
 def base_api(mock_session):
-    """Create a BaseAPI instance with a properly mocked session."""
     api = BaseAPI(
         api_url="http://dummy.com/api.php",
         api_user="testuser",
@@ -37,196 +31,164 @@ def base_api(mock_session):
 
 @pytest.fixture
 def vulnerabilities_client(base_api):
-    """Create a VulnerabilitiesClient instance with a properly mocked BaseAPI."""
     return VulnerabilitiesClient(base_api)
 
 
-# --- Test Cases ---
-
-
 @patch.object(BaseAPI, "_send_request")
-def test_list_vulnerabilities_with_data(mock_send, vulnerabilities_client):
-    # Mock the count request
-    count_response = {"status": "1", "data": {"count_results": 2}}
-
-    # Mock the paginated data request
-    page_response = {
+def test_list_vulnerabilities_returns_page_data(
+    mock_send, vulnerabilities_client
+):
+    mock_send.return_value = {
         "status": "1",
         "data": {
             "list": [
-                {
-                    "id": 1,
-                    "severity": "HIGH",
-                    "component": "libxml2",
-                    "version": "2.9.0",
-                },
-                {
-                    "id": 2,
-                    "severity": "MEDIUM",
-                    "component": "openssl",
-                    "version": "1.0.1",
-                },
+                {"id": 1, "severity": "HIGH", "component": "libxml2"},
+                {"id": 2, "severity": "MEDIUM", "component": "openssl"},
             ]
         },
     }
 
-    # Set up the mock to return different responses for each call
-    mock_send.side_effect = [count_response, page_response]
+    data = vulnerabilities_client.list_vulnerabilities(
+        scan_code="scan1",
+        page=1,
+    )
 
-    vulnerabilities = vulnerabilities_client.list_vulnerabilities("scan1")
-
-    assert len(vulnerabilities) == 2
-    assert vulnerabilities[0]["id"] == 1
-    assert vulnerabilities[0]["severity"] == "HIGH"
-    assert vulnerabilities[1]["component"] == "openssl"
-
-    # Verify the mock was called correctly
-    assert mock_send.call_count == 2
-
-    # Check the first call (count request)
-    first_call = mock_send.call_args_list[0][0][0]
-    assert first_call["group"] == "vulnerabilities"
-    assert first_call["action"] == "list_vulnerabilities"
-    assert first_call["data"]["scan_code"] == "scan1"
-    assert first_call["data"]["count_results"] == 1
-
-    # Check the second call (data request)
-    second_call = mock_send.call_args_list[1][0][0]
-    assert second_call["group"] == "vulnerabilities"
-    assert second_call["action"] == "list_vulnerabilities"
-    assert second_call["data"]["scan_code"] == "scan1"
-    assert second_call["data"]["page"] == 1
+    assert data["list"][0]["id"] == 1
+    payload = mock_send.call_args[0][0]
+    assert payload["group"] == "vulnerabilities"
+    assert payload["action"] == "list_vulnerabilities"
+    assert payload["data"]["scan_code"] == "scan1"
+    assert payload["data"]["page"] == "1"
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_list_vulnerabilities_empty(mock_send, vulnerabilities_client):
-    # Mock the count request to return 0 vulnerabilities
-    count_response = {"status": "1", "data": {"count_results": 0}}
-    mock_send.return_value = count_response
+def test_list_vulnerabilities_count_shape(mock_send, vulnerabilities_client):
+    mock_send.return_value = {"status": "1", "data": {"count_results": 42}}
 
-    vulnerabilities = vulnerabilities_client.list_vulnerabilities("scan1")
+    data = vulnerabilities_client.list_vulnerabilities(
+        scan_code="scan1",
+        count_results=True,
+    )
 
-    assert vulnerabilities == []
-    assert mock_send.call_count == 1
-
-    # Verify only the count request was made
-    call_args = mock_send.call_args[0][0]
-    assert call_args["data"]["count_results"] == 1
+    assert data == {"count_results": 42}
+    assert mock_send.call_args[0][0]["data"]["count_results"] == "1"
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_list_vulnerabilities_multiple_pages(
+def test_list_vulnerabilities_project_scope(mock_send, vulnerabilities_client):
+    mock_send.return_value = {"status": "1", "data": {"count_results": 0}}
+
+    data = vulnerabilities_client.list_vulnerabilities(
+        project_code="proj1",
+        count_results=True,
+    )
+
+    assert data["count_results"] == 0
+    assert mock_send.call_args[0][0]["data"]["project_code"] == "proj1"
+    assert "scan_code" not in mock_send.call_args[0][0]["data"]
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_list_vulnerabilities_with_search_value(
     mock_send, vulnerabilities_client
 ):
-    # Mock count response indicating 150 vulnerabilities (2 pages at 100 per page)
-    count_response = {"status": "1", "data": {"count_results": 150}}
+    mock_send.return_value = {
+        "status": "1",
+        "data": {"list": [{"cve": "CVE-2020-1"}]},
+    }
 
-    # Mock page 1 response
-    page1_response = {
+    data = vulnerabilities_client.list_vulnerabilities(
+        scan_code="scan1",
+        search_value="openssl,1.1.1",
+    )
+
+    assert data["list"][0]["cve"] == "CVE-2020-1"
+    assert mock_send.call_args[0][0]["data"]["search_value"] == "openssl,1.1.1"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_list_vulnerabilities_api_error(mock_send, vulnerabilities_client):
+    mock_send.return_value = {"status": "0", "error": "Scan not found"}
+
+    with pytest.raises(ApiError, match="Failed to list vulnerabilities"):
+        vulnerabilities_client.list_vulnerabilities(scan_code="scan1")
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_count_vulnerabilities(mock_send, vulnerabilities_client):
+    mock_send.return_value = {"status": "1", "data": {"count_results": 42}}
+
+    assert vulnerabilities_client.count_vulnerabilities(scan_code="scan1") == 42
+    assert mock_send.call_args[0][0]["data"]["count_results"] == "1"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_information(mock_send, vulnerabilities_client):
+    mock_send.return_value = {
         "status": "1",
         "data": {
-            "list": [{"id": i, "severity": "HIGH"} for i in range(100)]
+            "cve": [{"id": "CVE-2020-1234"}],
+            "component_vulnerability_in_scans": [],
         },
     }
 
-    # Mock page 2 response
-    page2_response = {
+    info = vulnerabilities_client.get_information("CVE-2020-1234")
+
+    assert info["cve"]
+    payload = mock_send.call_args[0][0]
+    assert payload["action"] == "get_information"
+    assert payload["data"]["cve"] == "CVE-2020-1234"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_create_vulnerability_exploitability(mock_send, vulnerabilities_client):
+    mock_send.return_value = {"status": "1", "data": {"id": 99}}
+
+    result = vulnerabilities_client.create_vulnerability_exploitability(
+        scan_code="scan1",
+        component_id=1,
+        cve="CVE-2020-1234",
+        vuln_exp_status="not_affected",
+        vuln_exp_justification="component_not_present",
+    )
+
+    assert result["id"] == 99
+    payload = mock_send.call_args[0][0]
+    assert payload["action"] == "vulnerability_exploitability_create"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_update_vulnerability_exploitability(mock_send, vulnerabilities_client):
+    mock_send.return_value = {"status": "1", "data": None, "message": "ok"}
+
+    result = vulnerabilities_client.update_vulnerability_exploitability(
+        42,
+        vuln_exp_status="affected",
+    )
+
+    assert result["message"] == "ok"
+    payload = mock_send.call_args[0][0]
+    assert payload["action"] == "vulnerability_exploitability_update"
+    assert payload["data"]["vuln_exp_id"] == 42
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_import_vulnerability_exploitability_from_scan(
+    mock_send, vulnerabilities_client
+):
+    mock_send.return_value = {
         "status": "1",
-        "data": {
-            "list": [
-                {"id": i, "severity": "MEDIUM"} for i in range(100, 150)
-            ]
-        },
+        "data": [{"id": 1}],
+        "message": "done",
     }
 
-    # Set up the mock to return different responses for each call
-    mock_send.side_effect = [
-        count_response,
-        page1_response,
-        page2_response,
-    ]
+    result = (
+        vulnerabilities_client.import_vulnerability_exploitability_from_scan(
+            "source",
+            "target",
+            override_vex=False,
+        )
+    )
 
-    vulnerabilities = vulnerabilities_client.list_vulnerabilities("scan1")
-
-    assert len(vulnerabilities) == 150
-    assert vulnerabilities[0]["id"] == 0
-    assert vulnerabilities[99]["id"] == 99
-    assert vulnerabilities[100]["id"] == 100
-    assert vulnerabilities[149]["id"] == 149
-
-    # Verify all calls were made
-    assert mock_send.call_count == 3
-
-
-@patch.object(BaseAPI, "_send_request")
-def test_list_vulnerabilities_count_api_error(
-    mock_send, vulnerabilities_client
-):
-    # Mock the count request to fail
-    count_response = {"status": "0", "error": "Scan not found"}
-    mock_send.return_value = count_response
-
-    with pytest.raises(
-        ApiError,
-        match="Failed to get vulnerability count for scan 'scan1': Scan not found",
-    ):
-        vulnerabilities_client.list_vulnerabilities("scan1")
-
-
-@patch.object(BaseAPI, "_send_request")
-def test_list_vulnerabilities_page_api_error(
-    mock_send, vulnerabilities_client
-):
-    # Mock the count to succeed but page request to fail
-    count_response = {"status": "1", "data": {"count_results": 50}}
-    page_error_response = {"status": "0", "error": "Page not found"}
-
-    mock_send.side_effect = [count_response, page_error_response]
-
-    with pytest.raises(
-        ApiError,
-        match="Failed to fetch vulnerabilities page 1 for scan 'scan1': Page not found",
-    ):
-        vulnerabilities_client.list_vulnerabilities("scan1")
-
-
-@patch.object(BaseAPI, "_send_request")
-def test_list_vulnerabilities_unexpected_data_format(
-    mock_send, vulnerabilities_client
-):
-    # Mock count response
-    count_response = {"status": "1", "data": {"count_results": 1}}
-
-    # Mock page response with unexpected data format
-    page_response = {
-        "status": "1",
-        "data": {
-            "list": "not_a_list"
-        },  # Should be a list but it's a string
-    }
-
-    mock_send.side_effect = [count_response, page_response]
-
-    # Should handle gracefully and log warning
-    vulnerabilities = vulnerabilities_client.list_vulnerabilities("scan1")
-
-    # Should still return empty list despite bad data
-    assert vulnerabilities == []
-
-
-@patch.object(BaseAPI, "_send_request")
-def test_list_vulnerabilities_empty_page_data(
-    mock_send, vulnerabilities_client
-):
-    # Mock count response
-    count_response = {"status": "1", "data": {"count_results": 50}}
-
-    # Mock page response with empty/unexpected data
-    page_response = {"status": "1", "data": {}}
-
-    mock_send.side_effect = [count_response, page_response]
-
-    # Should handle gracefully and continue
-    vulnerabilities = vulnerabilities_client.list_vulnerabilities("scan1")
-
-    assert vulnerabilities == []
+    assert result["data"] == [{"id": 1}]
+    assert result["message"] == "done"

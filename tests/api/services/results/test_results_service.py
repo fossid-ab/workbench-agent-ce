@@ -59,7 +59,10 @@ def mock_results_service():
     mock_base_api.api_url = TEST_API_URL
     mock_scans_client._api = mock_base_api
 
-    return ResultsService(mock_scans_client, mock_vulns_client)
+    return ResultsService(
+        mock_scans_client,
+        vulnerabilities_client=mock_vulns_client,
+    )
 
 
 # ============================================================================
@@ -180,7 +183,8 @@ class TestWorkbenchLinks:
         mock_scans_client._api = mock_base_api
 
         results_service = ResultsService(
-            mock_scans_client, mock_vulns_client
+            mock_scans_client,
+            vulnerabilities_client=mock_vulns_client,
         )
         links = results_service.workbench_links(TEST_SCAN_ID)
 
@@ -444,7 +448,7 @@ class TestWorkbenchLinksNui:
 
         service = ResultsService(
             mock_scans_client,
-            mock_vulns_client,
+            vulnerabilities_client=mock_vulns_client,
             workbench_version="2026.1.0",
         )
         links = service.workbench_links(TEST_SCAN_ID)
@@ -463,7 +467,7 @@ class TestResultsServiceDelegation:
 
         service = ResultsService(
             scans,
-            vulns,
+            vulnerabilities_client=vulns,
             identification_service=identification,
             dependency_service=dependencies,
         )
@@ -481,7 +485,7 @@ class TestResultsServiceDelegation:
 
         service = ResultsService(
             scans,
-            vulns,
+            vulnerabilities_client=vulns,
             identification_service=identification,
             dependency_service=dependencies,
         )
@@ -489,3 +493,18 @@ class TestResultsServiceDelegation:
         assert metrics["total"] == 5
         identification.get_scan_metrics.assert_called_once_with("S1")
         scans.get_scan_folder_metrics.assert_not_called()
+
+    def test_get_vulnerabilities_delegates_to_vulnerability_service(self):
+        scans = MagicMock()
+        vulnerability = MagicMock()
+        vulnerability.get_vulnerabilities.return_value = [
+            {"cve": "CVE-2020-1"}
+        ]
+
+        service = ResultsService(
+            scans,
+            vulnerability_service=vulnerability,
+        )
+        result = service.get_vulnerabilities("S1")
+        assert result == [{"cve": "CVE-2020-1"}]
+        vulnerability.get_vulnerabilities.assert_called_once_with("S1")

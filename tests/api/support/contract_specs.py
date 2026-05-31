@@ -202,4 +202,22 @@ CONTRACTS: Dict[str, Dict[str, Any]] = {
         "data_shape": "list",
         "item_required_keys": {"id", "code", "group"},
     },
+    "vulnerabilities.list_vulnerabilities": {
+        "data_shape": "dict",
+        "required_keys": {"list"},
+    },
+    "vulnerabilities.get_information": {
+        "data_shape": "dict",
+        "required_keys": {"cve", "component_vulnerability_in_scans"},
+    },
+    "vulnerabilities.vulnerability_exploitability_create": {
+        "data_shape": "dict",
+        "required_keys": {"id"},
+    },
+    "vulnerabilities.vulnerability_exploitability_update": {
+        "data_shape": "null",
+    },
+    "vulnerabilities.import_vulnerability_exploitability_from_scan": {
+        "data_shape": "list",
+    },
 }

@@ -3,6 +3,9 @@ import logging
 from typing import TYPE_CHECKING
 
 from workbench_agent.api.exceptions import ApiError, NetworkError
+from workbench_agent.utilities.vulnerability_display import (
+    print_vulnerable_component_count,
+)
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -86,6 +89,14 @@ def print_import_summary(
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch vulnerabilities: {e}")
 
+    vulnerability_summary = None
+    if vulnerabilities:
+        vulnerability_summary = (
+            workbench.vulnerability.summarize_vulnerabilities(
+                vulnerabilities=vulnerabilities
+            )
+        )
+
     # --- Identified Components Summary (SBOM imports only) ---
     if is_sbom_import and import_completed:
         print("\nImported Identifications:")
@@ -140,17 +151,13 @@ def print_import_summary(
     else:
         print("  - Could not check Policy Warnings - are Policies set?")
 
-    # Vulnerable components count
-    if vulnerabilities:
-        unique_vulnerable_components = set()
-        for vuln in vulnerabilities:
-            comp_name = vuln.get("component_name", "Unknown")
-            comp_version = vuln.get("component_version", "Unknown")
-            unique_vulnerable_components.add(f"{comp_name}:{comp_version}")
-        num_vulnerable_components = len(unique_vulnerable_components)
-        print(f"  - Components with CVEs: {num_vulnerable_components}")
-    else:
-        print("  - No CVEs found for Components or Dependencies.")
+    print_vulnerable_component_count(
+        vulnerability_summary
+        or {"total_cves": 0, "vulnerable_component_count": 0},
+        empty_message=(
+            "  - No CVEs found for Components or Dependencies."
+        ),
+    )
 
     print("------------------------------------")
 

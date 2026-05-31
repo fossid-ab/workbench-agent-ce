@@ -38,7 +38,8 @@ from workbench_agent.api.services import (
     ScanOperationsService,
     StatusCheckService,
     UploadService,
-    UserPermissionsService
+    UserPermissionsService,
+    VulnerabilityService,
 )
 
 logger = logging.getLogger("workbench-agent")
@@ -75,6 +76,7 @@ class WorkbenchClient:
     - `quick_scan_service`: Quick single-file scan
     - `dependencies`: Dependency analysis result read/write workflows
     - `identification`: Scan file identification read/write workflows
+    - `vulnerability`: CVE listing, KB lookup, and VEX workflows
 
     Example:
         >>> workbench = WorkbenchClient(api_url, api_user, api_token)
@@ -207,9 +209,13 @@ class WorkbenchClient:
             scans_client=self.scans,
         )
 
+        self.vulnerability = VulnerabilityService(
+            vulnerabilities_client=self.vulnerabilities,
+        )
+
         self.results = ResultsService(
             scans_client=self.scans,
-            vulnerabilities_client=self.vulnerabilities,
+            vulnerability_service=self.vulnerability,
             identification_service=self.identification,
             dependency_service=self.dependencies,
             workbench_version=self._workbench_version,
