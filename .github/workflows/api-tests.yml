@@ -1,5 +1,7 @@
 # .github/workflows/api-tests.yml
 name: API Tests
+permissions:
+  contents: read
 
 # Run when API package or API test tree changes.
 on:
