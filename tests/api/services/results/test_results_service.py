@@ -237,7 +237,8 @@ class TestWorkbenchLinks:
             mock_scans_client._api = mock_base_api
 
             results_service = ResultsService(
-                mock_scans_client, mock_vulns_client
+                mock_scans_client,
+                vulnerabilities_client=mock_vulns_client,
             )
             links = results_service.workbench_links(TEST_SCAN_ID)
             scan_url = links.scan["url"]
