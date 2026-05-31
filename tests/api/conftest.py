@@ -12,13 +12,49 @@ from workbench_agent.api.exceptions import (
 )
 from workbench_agent.api.utils.version import normalize_workbench_version
 
-# Substrings for known test-data layout on Test Scan.
+DEFAULT_UNIDENTIFIED_SCAN_NAME = "Unidentified Test Scan"
+DEFAULT_IDENTIFIED_SCAN_NAME = "Identified Test Scan"
+DEFAULT_DEPENDENCY_ANALYSIS_SCAN_NAME = "Dependency Analysis Test Scan"
+
+# Substrings for known test-data layout (same Project Sample Mix on both scans).
 SNIPPET_PATH_MARKER = os.environ.get(
     "WORKBENCH_TEST_SNIPPET_PATH_MARKER", "Snippet"
 )
 OPENFASTPATH_MARKER = os.environ.get(
     "WORKBENCH_TEST_OPENFASTPATH_MARKER", "OpenFastPath"
 )
+
+
+def _resolve_scan_code(
+    workbench_client: WorkbenchClient,
+    project_name: str,
+    scan_name: str,
+) -> str:
+    _, scan_code, _ = workbench_client.resolver.find_project_and_scan(
+        project_name,
+        scan_name,
+    )
+    return scan_code
+
+
+def _scan_code_fixture(
+    workbench_client,
+    test_project_name,
+    scan_name,
+    *,
+    env_override_key: str,
+    label: str,
+):
+    override = os.environ.get(env_override_key)
+    if override:
+        return override
+    try:
+        return _resolve_scan_code(workbench_client, test_project_name, scan_name)
+    except (ProjectNotFoundError, ScanNotFoundError) as exc:
+        pytest.skip(
+            f"{label} not found ({test_project_name!r} / {scan_name!r}): {exc}. "
+            f"Create the scan or set {env_override_key}."
+        )
 
 
 @pytest.fixture(scope="session")
@@ -81,8 +117,45 @@ def test_project_name():
 
 
 @pytest.fixture(scope="session")
-def test_scan_name():
-    return os.environ.get("WORKBENCH_TEST_SCAN_NAME", "Test Scan")
+def unidentified_test_scan_name():
+    """
+    Scan with pending identification work (mutations and pending read tests).
+
+    ``WORKBENCH_TEST_SCAN_NAME`` is kept as a backward-compatible alias.
+    """
+    return (
+        os.environ.get("WORKBENCH_TEST_UNIDENTIFIED_SCAN_NAME")
+        or os.environ.get("WORKBENCH_TEST_SCAN_NAME")
+        or DEFAULT_UNIDENTIFIED_SCAN_NAME
+    )
+
+
+@pytest.fixture(scope="session")
+def identified_test_scan_name():
+    """Scan with completed identifications (read-only identified-state tests)."""
+    return os.environ.get(
+        "WORKBENCH_TEST_IDENTIFIED_SCAN_NAME",
+        DEFAULT_IDENTIFIED_SCAN_NAME,
+    )
+
+
+@pytest.fixture(scope="session")
+def dependency_analysis_test_scan_name():
+    """
+    Scan with Dependency Analysis only (no KB / FossID matches).
+
+    Used for ``get_dependency_analysis_results`` and related read tests.
+    """
+    return os.environ.get(
+        "WORKBENCH_TEST_DA_SCAN_NAME",
+        DEFAULT_DEPENDENCY_ANALYSIS_SCAN_NAME,
+    )
+
+
+@pytest.fixture(scope="session")
+def test_scan_name(unidentified_test_scan_name):
+    """Default live-test scan: Unidentified Test Scan (pending files)."""
+    return unidentified_test_scan_name
 
 
 @pytest.fixture(scope="session")
@@ -107,25 +180,51 @@ def test_project_code(workbench_client, test_project_name):
 @pytest.fixture(scope="session")
 def test_scan_code(workbench_client, test_project_name, test_scan_name):
     """
-    Resolve scan code by env override or resolver lookup.
+    Unidentified Test Scan code — pending files, mutations, auditor workflow.
 
-    Set WORKBENCH_TEST_SCAN_CODE to skip name resolution.
+    Set ``WORKBENCH_TEST_SCAN_CODE`` (or ``WORKBENCH_TEST_UNIDENTIFIED_SCAN_CODE``)
+    to skip name resolution.
     """
-    override = os.environ.get("WORKBENCH_TEST_SCAN_CODE")
+    override = os.environ.get("WORKBENCH_TEST_UNIDENTIFIED_SCAN_CODE") or os.environ.get(
+        "WORKBENCH_TEST_SCAN_CODE"
+    )
     if override:
         return override
-    try:
-        _, scan_code, _ = workbench_client.resolver.find_project_and_scan(
-            test_project_name,
-            test_scan_name,
-        )
-        return scan_code
-    except (ProjectNotFoundError, ScanNotFoundError) as exc:
-        pytest.skip(
-            f"Test scan not found ({test_project_name!r} / "
-            f"{test_scan_name!r}): {exc}. "
-            "Create the project and scan or set WORKBENCH_TEST_SCAN_CODE."
-        )
+    return _scan_code_fixture(
+        workbench_client,
+        test_project_name,
+        test_scan_name,
+        env_override_key="WORKBENCH_TEST_SCAN_CODE",
+        label="Unidentified test scan",
+    )
+
+
+@pytest.fixture(scope="session")
+def identified_test_scan_code(
+    workbench_client, test_project_name, identified_test_scan_name
+):
+    """Identified Test Scan code — stable identified components and licenses."""
+    return _scan_code_fixture(
+        workbench_client,
+        test_project_name,
+        identified_test_scan_name,
+        env_override_key="WORKBENCH_TEST_IDENTIFIED_SCAN_CODE",
+        label="Identified test scan",
+    )
+
+
+@pytest.fixture(scope="session")
+def dependency_analysis_test_scan_code(
+    workbench_client, test_project_name, dependency_analysis_test_scan_name
+):
+    """Dependency Analysis Test Scan code — DA import, no KB identified components."""
+    return _scan_code_fixture(
+        workbench_client,
+        test_project_name,
+        dependency_analysis_test_scan_name,
+        env_override_key="WORKBENCH_TEST_DA_SCAN_CODE",
+        label="Dependency Analysis test scan",
+    )
 
 
 def pending_file_paths(pending_files: dict) -> list:
@@ -150,7 +249,12 @@ def _find_path(paths: list, marker: str) -> str | None:
 
 @pytest.fixture(scope="session")
 def pending_files(workbench_client, test_scan_code):
-    """Pending identification files for the test scan (file_id -> path)."""
+    """
+    Pending identification files from ``scans.get_pending_files``.
+
+    Returns ``{file_id: relative_path}``. All unidentified-scan live tests that
+    need file paths should derive from this fixture (or ``pending_paths``).
+    """
     pending = workbench_client.scans.get_pending_files(test_scan_code)
     if not pending:
         pytest.skip(
@@ -162,7 +266,12 @@ def pending_files(workbench_client, test_scan_code):
 
 @pytest.fixture(scope="session")
 def pending_paths(pending_files):
-    """Relative paths of pending files for identification tests."""
+    """
+    Relative paths from ``scans.get_pending_files`` (dict values).
+
+    Feed these paths to ``files_and_folders.get_identification``,
+    ``get_fossid_results``, and the rest of the auditor workflow.
+    """
     paths = pending_file_paths(pending_files)
     if not paths:
         pytest.skip(
@@ -192,7 +301,7 @@ def snippet_file_path(pending_paths):
     if not path:
         pytest.skip(
             f"No pending path containing {SNIPPET_PATH_MARKER!r}. "
-            "Ensure Test Scan includes Files with Snippets test data."
+            "Ensure Unidentified Test Scan includes Files with Snippets test data."
         )
     return path
 
@@ -212,21 +321,76 @@ def openfastpath_dir(pending_paths):
         return OPENFASTPATH_MARKER
     pytest.skip(
         f"No pending paths under {OPENFASTPATH_MARKER!r}. "
-        "Ensure Test Scan includes OpenFastPath test data."
+        "Ensure Unidentified Test Scan includes OpenFastPath test data."
     )
+
+
+@pytest.fixture(scope="session")
+def openfastpath_file_path(pending_paths, openfastpath_dir):
+    """A pending file under ``OpenFastPath/`` (same path on both test scans)."""
+    path = next(
+        (p for p in pending_paths if p.startswith(openfastpath_dir + "/")),
+        None,
+    )
+    if not path:
+        pytest.skip("No pending file under OpenFastPath")
+    return path
 
 
 @pytest.fixture(scope="session")
 def scan_has_pending(workbench_client, test_scan_code):
     """Ensure the test scan has at least one pending file."""
-    metrics = workbench_client.results.get_scan_metrics(test_scan_code)
+    metrics = workbench_client.identification.get_scan_metrics(test_scan_code)
     pending = int(metrics.get("pending_identification", 0) or 0)
     if pending < 1:
         pytest.skip(
             f"Scan {test_scan_code!r} has no pending_identification "
-            f"(metrics: {metrics}). Re-run the scan on Test Scan."
+            f"(metrics: {metrics}). Re-run the scan on Unidentified Test Scan."
         )
     return metrics
+
+
+@pytest.fixture(scope="session")
+def scan_has_identified(workbench_client, identified_test_scan_code):
+    """Ensure Identified Test Scan has at least one identified file."""
+    metrics = workbench_client.identification.get_scan_metrics(
+        identified_test_scan_code
+    )
+    identified = int(metrics.get("identified_files", 0) or 0)
+    if identified < 1:
+        pytest.skip(
+            f"Scan {identified_test_scan_code!r} has no identified_files "
+            f"(metrics: {metrics}). Use Identified Test Scan."
+        )
+    return metrics
+
+
+@pytest.fixture(scope="session")
+def scan_has_da_results(workbench_client, dependency_analysis_test_scan_code):
+    """Ensure Dependency Analysis Test Scan has dependency analysis results."""
+    results = workbench_client.scans.get_dependency_analysis_results(
+        dependency_analysis_test_scan_code
+    )
+    if not results:
+        pytest.skip(
+            f"Scan {dependency_analysis_test_scan_code!r} has no dependency "
+            "analysis results. Run Dependency Analysis on Dependency Analysis "
+            "Test Scan."
+        )
+    return results
+
+
+@pytest.fixture(scope="session")
+def identified_file_path(openfastpath_file_path):
+    """
+    File path with catalog linkage on Identified Test Scan.
+
+    Same relative paths exist on both scans (Project Sample Mix); discovery
+    uses pending files on Unidentified Test Scan. Snippet files may be marked
+    identified with a file license only — prefer OpenFastPath for linked
+    catalog components.
+    """
+    return openfastpath_file_path
 
 
 @pytest.fixture
@@ -239,7 +403,7 @@ def allow_mutations():
     ):
         pytest.skip(
             "Set WORKBENCH_ALLOW_MUTATIONS=1 to run mutation tests "
-            "against the shared Test Scan."
+            "against the shared Unidentified Test Scan."
         )
 
 
@@ -258,3 +422,15 @@ def mutation_pending_path(pending_paths, pending_path):
     if len(pending_paths) > 1:
         return pending_paths[1]
     return pending_path
+
+
+@pytest.fixture
+def identification_service(workbench_client):
+    """IdentificationService wired on WorkbenchClient."""
+    return workbench_client.identification
+
+
+@pytest.fixture
+def dependency_service(workbench_client):
+    """DependencyService wired on WorkbenchClient."""
+    return workbench_client.dependencies

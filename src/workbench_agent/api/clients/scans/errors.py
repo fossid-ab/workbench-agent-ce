@@ -81,6 +81,13 @@ def normalize_git_status_data(data: Any) -> Dict[str, Any]:
     return {"data": str(data)}
 
 
+def flag_str(value: Any) -> str:
+    """Convert bool/int flags to API ``'0'`` / ``'1'`` strings."""
+    if value in (True, 1, "1"):
+        return "1"
+    return "0"
+
+
 def normalize_check_status_data(
     data: Any,
     *,

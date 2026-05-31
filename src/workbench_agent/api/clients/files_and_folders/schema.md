@@ -39,7 +39,7 @@ Path encoding: see `errors.path_for_action` and `quirks.md`.
 | Field | API | Client param | Default |
 |-------|-----|--------------|---------|
 | `scan_code` | **R** | `scan_code` | |
-| `path` | **R** | `path` | `"."` (scan root) |
+| `path` | **R** | `path` | top-level folder (e.g. `OpenFastPath`) |
 
 ### Response `data`
 
@@ -67,7 +67,7 @@ See **`quirks.md` § get_folder_content_metrics`**.
 | Field | API | Client param | Default |
 |-------|-----|--------------|---------|
 | `scan_code` | **R** | `scan_code` | |
-| `path` | **R** | `path` | `"."` (scan root) |
+| `path` | **R** | `path` | top-level folder (e.g. `OpenFastPath`) |
 | `show_all` | **R** | `show_all` | `True` → `"1"` |
 | `source_code_only` | **R** | `source_code_only` | `False` → `"0"` |
 
@@ -88,7 +88,7 @@ See **`quirks.md` § get_folder_content`**.
 | Field | API | Client param | Default |
 |-------|-----|--------------|---------|
 | `scan_code` | **R** | `scan_code` | |
-| `path` | **R** | `path` | `"."` (scan root) |
+| `path` | **R** | `path` | top-level folder (e.g. `OpenFastPath`) |
 
 ### Response `data`
 
@@ -111,7 +111,7 @@ See **`quirks.md` § get_folder_components_ranking`**.
 | Field | API | Client param | Default |
 |-------|-----|--------------|---------|
 | `scan_code` | **R** | `scan_code` | |
-| `path` | **R** | `path` | `"."` (scan root) |
+| `path` | **R** | `path` | top-level folder (e.g. `OpenFastPath`) |
 | `current_view` | O | `current_view` | omitted (server default) |
 
 ``current_view`` values: ``show_all``, ``all_items``, ``pending_items``,

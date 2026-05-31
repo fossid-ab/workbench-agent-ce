@@ -66,7 +66,7 @@ class FilesAndFoldersClient:
     def get_folder_content(
         self,
         scan_code: str,
-        path: str = ".",
+        path: str,
         *,
         show_all: Union[bool, int, str] = True,
         source_code_only: Union[bool, int, str] = False,
@@ -75,13 +75,14 @@ class FilesAndFoldersClient:
         List files and subdirectories under a folder in a scan.
 
         Required: ``scan_code``, ``path`` (base64-encoded automatically).
+        Pass a top-level sample folder (e.g. ``OpenFastPath``) — there is no
+        scan-root ``"."`` path on Project Sample Mix scans.
         ``show_all``: ``True``/``"1"`` lists all files; ``False``/``"0"`` lists
         only pending identification. ``source_code_only``: ``True``/``"1"``
         excludes non-source files.
 
         Returns a list of tree nodes (directories include ``children``; files
-        include ``icon``). Use ``path="."`` for the scan root — an empty path
-        is rejected by the server. See ``quirks.md``.
+        include ``icon``). See ``quirks.md``.
         """
         result = self._request(
             "get_folder_content",
@@ -108,14 +109,14 @@ class FilesAndFoldersClient:
     def get_folder_content_metrics(
         self,
         scan_code: str,
-        path: str = ".",
+        path: str,
     ) -> Dict[str, Any]:
         """
         Get identification statistics for a folder in a scan.
 
         Returns a dict with ``total``, ``pending_identification``,
-        ``identified_files``, and ``without_matches``. Use ``path="."`` for the
-        scan root. See ``schema.md`` and ``quirks.md``.
+        ``identified_files``, and ``without_matches``. See ``schema.md`` and
+        ``quirks.md``.
         """
         result = self._request(
             "get_folder_content_metrics",
@@ -140,7 +141,7 @@ class FilesAndFoldersClient:
     def get_folder_components_ranking(
         self,
         scan_code: str,
-        path: str = ".",
+        path: str,
     ) -> Union[List[Dict[str, Any]], bool]:
         """
         Rank identified components under a folder by occurrence count.
@@ -151,8 +152,7 @@ class FilesAndFoldersClient:
         ``amount`` (total hits in the folder) and
         ``amount_per_artifact_version`` (hits for that name+version pair).
 
-        Returns ``False`` when ``path`` is a file, not a folder. Use
-        ``path="."`` for the scan root. See ``quirks.md``.
+        Returns ``False`` when ``path`` is a file, not a folder. See ``quirks.md``.
         """
         result = self._request(
             "get_folder_components_ranking",
@@ -177,7 +177,7 @@ class FilesAndFoldersClient:
     def get_folder_extensions_ranking(
         self,
         scan_code: str,
-        path: str = ".",
+        path: str,
         *,
         current_view: Optional[str] = None,
     ) -> Union[List[Dict[str, Any]], bool]:

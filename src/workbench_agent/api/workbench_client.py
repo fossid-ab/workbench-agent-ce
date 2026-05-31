@@ -26,6 +26,9 @@ from workbench_agent.api.clients import (
 from workbench_agent.api.exceptions import CompatibilityError
 from workbench_agent.api.helpers.base_api import BaseAPI
 from workbench_agent.api.services import (
+    ComponentService,
+    DependencyService,
+    IdentificationService,
     QuickScanService,
     ReportService,
     ResolverService,
@@ -55,7 +58,8 @@ class WorkbenchClient:
     - `quick_scan`: Quick file scanning
     - `users`: User lookup and listing permissions for a user
     - `internal`: Internal/config operations
-    - `components`: Component catalog (list, create, usage)
+    - `components`: Component catalog (list, create, update, usage)
+    - `component_catalog`: Catalog orchestration (find, resolve, update)
     - `files_and_folders`: File identification and audit operations
 
     **Services (High-level orchestration):**
@@ -69,6 +73,8 @@ class WorkbenchClient:
     - `user_permissions`: Check Workbench permissions for the API user
     - `upload_service`: File upload operations
     - `quick_scan_service`: Quick single-file scan
+    - `dependencies`: Dependency analysis result read/write workflows
+    - `identification`: Scan file identification read/write workflows
 
     Example:
         >>> workbench = WorkbenchClient(api_url, api_user, api_token)
@@ -155,6 +161,10 @@ class WorkbenchClient:
         self.components = ComponentsClient(self._base_api)
         self.files_and_folders = FilesAndFoldersClient(self._base_api)
 
+        self.component_catalog = ComponentService(
+            components_client=self.components
+        )
+
         logger.debug("API clients initialized.")
 
         # Initialize orchestration services
@@ -186,9 +196,22 @@ class WorkbenchClient:
             workbench_version=self._workbench_version,
         )
 
+        self.dependencies = DependencyService(
+            scans_client=self.scans,
+            component_catalog=self.component_catalog,
+        )
+
+        self.identification = IdentificationService(
+            files_and_folders_client=self.files_and_folders,
+            component_catalog=self.component_catalog,
+            scans_client=self.scans,
+        )
+
         self.results = ResultsService(
             scans_client=self.scans,
             vulnerabilities_client=self.vulnerabilities,
+            identification_service=self.identification,
+            dependency_service=self.dependencies,
             workbench_version=self._workbench_version,
         )
 

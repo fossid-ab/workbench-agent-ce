@@ -685,6 +685,87 @@ def test_get_dependency_analysis_results_not_run(mock_send, scans_client):
 
 
 @patch.object(BaseAPI, "_send_request")
+def test_add_dependency_analysis_results(mock_send, scans_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {
+            "scan_id": 200,
+            "component_id": 793,
+            "package_id": "pkg:npm/abbrev@1.1.1",
+            "projects_and_scopes": None,
+            "detailed_dependency_info": None,
+            "include_in_report": True,
+            "updated": "2024-01-05 11:36:36",
+        },
+    }
+    result = scans_client.add_dependency_analysis_results(
+        "scan1",
+        "abbrev",
+        "1.1.1",
+        "pkg:npm/abbrev@1.1.1",
+        include_in_report=True,
+    )
+    assert result["component_id"] == 793
+    assert result["include_in_report"] is True
+    payload = mock_send.call_args[0][0]
+    assert payload["action"] == "add_dependency_analysis_results"
+    data = payload["data"]
+    assert data["scan_code"] == "scan1"
+    assert data["component_name"] == "abbrev"
+    assert data["component_version"] == "1.1.1"
+    assert data["package_id"] == "pkg:npm/abbrev@1.1.1"
+    assert data["include_in_report"] == "1"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_update_dependency_analysis_results(mock_send, scans_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {
+            "scan_id": 200,
+            "component_id": 793,
+            "package_id": "pkg:npm/abbrev@1.1.1",
+            "projects_and_scopes": None,
+            "detailed_dependency_info": None,
+            "include_in_report": False,
+            "updated": "2024-01-05 11:36:36",
+        },
+    }
+    result = scans_client.update_dependency_analysis_results(
+        "scan1",
+        "abbrev",
+        "1.1.1",
+        package_id="pkg:npm/abbrev@1.1.1",
+        include_in_report=False,
+    )
+    assert result["component_id"] == 793
+    assert result["include_in_report"] is False
+    payload = mock_send.call_args[0][0]
+    assert payload["action"] == "update_dependency_analysis_results"
+    data = payload["data"]
+    assert data["scan_code"] == "scan1"
+    assert data["component_name"] == "abbrev"
+    assert data["component_version"] == "1.1.1"
+    assert data["include_in_report"] == "0"
+    assert data["package_id"] == "pkg:npm/abbrev@1.1.1"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_remove_dependency_analysis_results(mock_send, scans_client):
+    mock_send.return_value = {"status": "1", "data": True}
+    assert scans_client.remove_dependency_analysis_results(
+        "scan1", "abbrev", "1.1.1"
+    )
+    payload = mock_send.call_args[0][0]
+    assert payload["action"] == "remove_dependency_analysis_results"
+    assert payload["data"] == {
+        "scan_code": "scan1",
+        "component_name": "abbrev",
+        "component_version": "1.1.1",
+    }
+
+
+@patch.object(BaseAPI, "_send_request")
 def test_get_pending_files_success(mock_send, scans_client):
     mock_send.return_value = {
         "status": "1",

@@ -9,7 +9,7 @@ Validated on **Test Project** / **Test Scan** via
 | `get_identification` / summarize | Yes | Yes | — |
 | `get_matches` | Yes | Yes | — |
 | `get_matched_content` | Yes | Yes | — |
-| `ensure_component` / from match | Yes | Yes* | Yes* |
+| `resolve_component` / from match | Yes | Yes* | Yes* |
 | `identify_component_to_file` | Yes | — | Yes* |
 | `add_file_license_to_file` | Yes | — | Yes* |
 | `identify_snippet_in_file` | Yes | — | Yes* |

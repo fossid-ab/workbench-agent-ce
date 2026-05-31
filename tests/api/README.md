@@ -9,7 +9,7 @@ extracted.
 ```
 tests/api/
   README.md
-  conftest.py                 # Credentials, Test Scan, pending paths, mutations
+  conftest.py                 # Credentials, dual test scans, pending paths, mutations
   test_workbench_client.py
   support/
     contract.py               # assert_contract (version-aware)
@@ -75,18 +75,42 @@ Default PR CI should use:
 pytest tests/api -m "not requires_workbench"
 ```
 
-### Test Project / Test Scan
+### Test Project / Test Scans
 
-The Scan on includes:
+Test Project holds two scans over the same **Project Sample Mix**:
 
-- **Files with Snippets** — partial matches (`snippet_file_path` fixture)
-- **OpenFastPath/** — shared component, folder ops (`openfastpath_dir` fixture)
+| Scan | Use |
+|------|-----|
+| **Unidentified Test Scan** | Pending files, mutations, auditor workflow |
+| **Identified Test Scan** | Stable identified components, licenses, read-only ID state |
+| **Dependency Analysis Test Scan** | DA-only import (no KB matches); `get_dependency_analysis_results` |
+
+Both scans use the same **Project Sample Mix** tree (see `../ProjectMix` locally).
+Top-level folders include `OpenFastPath/`, `Android-Bluetooth/`, `Files with Snippets/`, etc.
+There is no scan-root `"."` folder path — pass a top-level folder to folder browser APIs.
+
+### Unidentified scan: auditor workflow
+
+1. **`scans.get_pending_files(scan_code)`** — returns `{file_id: relative_path}`.
+2. Use **path values** (not file-id keys) for file-scoped APIs:
+   - `files_and_folders.get_identification`
+   - `files_and_folders.get_fossid_results` / `get_matched_lines`
+   - identification writes (license, component, mark identified, …)
+3. Optional folder context: `get_folder_content` / rankings under a top-level folder
+   (e.g. `OpenFastPath`) — not a substitute for step 1.
+
+Fixtures: `pending_files`, `pending_paths`, `pending_path` (session-scoped from step 1).
 
 ```bash
 export WORKBENCH_TEST_PROJECT_NAME="Test Project"
-export WORKBENCH_TEST_SCAN_NAME="Test Scan"
-export WORKBENCH_TEST_SCAN_CODE="..."              # optional
-export WORKBENCH_TEST_SNIPPET_FILE_PATH="..."      # optional override
+export WORKBENCH_TEST_UNIDENTIFIED_SCAN_NAME="Unidentified Test Scan"  # default
+export WORKBENCH_TEST_IDENTIFIED_SCAN_NAME="Identified Test Scan"    # default
+export WORKBENCH_TEST_DA_SCAN_NAME="Dependency Analysis Test Scan" # default
+export WORKBENCH_TEST_SCAN_NAME="Unidentified Test Scan"             # alias for unidentified
+export WORKBENCH_TEST_SCAN_CODE="..."                                # unidentified override
+export WORKBENCH_TEST_IDENTIFIED_SCAN_CODE="..."                     # optional
+export WORKBENCH_TEST_DA_SCAN_CODE="..."                             # optional
+export WORKBENCH_TEST_SNIPPET_FILE_PATH="..."                        # optional override
 export WORKBENCH_TEST_OPENFASTPATH_DIR="OpenFastPath"
 ```
 

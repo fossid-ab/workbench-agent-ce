@@ -38,3 +38,15 @@ def test_workbench_client_exposes_new_api_clients(mock_version_check):
 
     assert isinstance(client.components, ComponentsClient)
     assert isinstance(client.files_and_folders, FilesAndFoldersClient)
+    assert hasattr(client, "component_catalog")
+    from workbench_agent.api.services.component_service import ComponentService
+    from workbench_agent.api.services.dependency_service import DependencyService
+
+    assert isinstance(client.component_catalog, ComponentService)
+    assert isinstance(client.dependencies, DependencyService)
+    assert hasattr(client, "identification")
+    from workbench_agent.api.services.identification_service import (
+        IdentificationService,
+    )
+
+    assert isinstance(client.identification, IdentificationService)

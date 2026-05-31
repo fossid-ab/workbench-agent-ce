@@ -38,6 +38,7 @@ class TestProjectsLiveReadOnly:
         workbench_version,
         test_project_code,
         test_scan_code,
+        identified_test_scan_code,
     ):
         data = workbench_client.projects.get_all_scans(test_project_code)
         assert_data_contract(
@@ -47,3 +48,14 @@ class TestProjectsLiveReadOnly:
         )
         codes = {s.get("code") for s in data if isinstance(s, dict)}
         assert test_scan_code in codes
+        assert identified_test_scan_code in codes
+
+    def test_get_all_scans_includes_dependency_analysis_scan(
+        self,
+        workbench_client,
+        test_project_code,
+        dependency_analysis_test_scan_code,
+    ):
+        data = workbench_client.projects.get_all_scans(test_project_code)
+        codes = {s.get("code") for s in data if isinstance(s, dict)}
+        assert dependency_analysis_test_scan_code in codes

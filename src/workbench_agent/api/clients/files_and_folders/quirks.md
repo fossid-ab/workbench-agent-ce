@@ -2,7 +2,8 @@
 
 Full field lists: [`schema.md`](schema.md) (from `files-and-folders-api.txt`).  
 Validated via `tests/api/clients/files_and_folders/` and
-`tests/api/services/identification/` live tests (Test Project / Test Scan).
+`tests/api/services/identification/` live tests (Test Project /
+Unidentified + Identified Test Scans over Project Sample Mix).
 
 ## Spec vs observed behavior
 
@@ -17,10 +18,11 @@ Validated via `tests/api/clients/files_and_folders/` and
 
 ## Paths
 
+- **Pending file discovery:** call `scans.get_pending_files(scan_code)` first on
+  unidentified scans; use **dict values** (relative paths) for all file-scoped
+  `files_and_folders` actions.
 - Encoding rules: `errors.path_for_action` / `PLAIN_PATH_ACTIONS`.
-- Pending file paths: `scans.get_pending_files` returns `{file_id: relative_path}` —
-  use **values** (e.g. `Android-Bluetooth/Foo.java`), **not keys** (e.g. `1830925`).
-  Passing a file id produces errors such as
+- Do **not** use `get_pending_files` **keys** (file ids) as paths — produces errors such as
   ``The provided file path '1830925' does not exists currently in the scan``.
 
 ## `get_folder_content`
@@ -31,7 +33,7 @@ one directory level at a time.
 
 | Topic | Observed (2026.1 live) |
 |-------|---------------------------|
-| Root path | Use ``"."`` — empty string and ``"/"`` are rejected |
+| Folder path | Use a **top-level sample folder** (e.g. ``OpenFastPath``, ``Android-Bluetooth``). Project Sample Mix has no scan-root ``"."`` folder — empty string and ``"/"`` are rejected |
 | ``show_all`` / ``source_code_only`` | **Required** on the server despite optional-looking docs; client always sends them |
 | ``is_directory``, ``children`` | String ``"0"`` / ``"1"``, not JSON booleans |
 | Directory ``id`` | Base64-encoded relative path (e.g. ``./Android-Bluetooth``); pass decoded path to list subfolders |
@@ -49,9 +51,8 @@ Identification counters for a **folder** in a KB-scanned scan — same shape as
 
 | Topic | Observed (2026.1 live) |
 |-------|---------------------------|
-| Root path | Use ``"."`` — same path rules as ``get_folder_content`` |
-| Root totals | On Test Scan, ``"."`` totals (**100** files) differ from ``scans.get_folder_metrics`` (**200**) — folder metrics count the folder scope, not the full extracted archive tree |
-| Subfolder | Counts are scoped to the folder subtree (e.g. ``OpenFastPath/`` < root) |
+| Folder path | Top-level sample folder (e.g. ``OpenFastPath/``) — same path rules as ``get_folder_content`` |
+| Subfolder scope | Counts are scoped to the folder subtree (e.g. ``OpenFastPath/src/`` < ``OpenFastPath/``) |
 | Sum invariant | ``total`` ≈ ``pending_identification`` + ``identified_files`` + ``without_matches`` (observed in live testing) |
 | Numeric fields | ``total``, ``pending_identification``, etc. may arrive as **strings** |
 | File path | Returns a **zero-count dict** (not ``false`` like ranking APIs) — e.g. ``LICENSE`` → all ``"0"`` |
@@ -64,8 +65,8 @@ identified third-party components appear most often under that path.
 | Topic | Observed (2026.1 live) |
 |-------|---------------------------|
 | Purpose | Ranked list of identified artifacts in the folder subtree, by ``amount`` (descending) |
-| Root path | Use ``"."`` — same path rules as ``get_folder_content`` |
-| ``amount`` | Total component hits scoped to the folder (root ``ofp`` → 43; ``OpenFastPath/`` → 21) |
+| Folder path | Top-level sample folder (e.g. ``OpenFastPath``) |
+| ``amount`` | Total component hits scoped to the folder (``OpenFastPath/`` → 21 on Identified Test Scan) |
 | ``amount_per_artifact_version`` | Hits for that specific ``artifact`` + ``version`` pair within the folder |
 | ``fcrid`` | Internal catalog/component reference id (string on live server) |
 | ``rownum`` | Always ``"0"`` in samples — spec says integer; treat as unreliable |
@@ -82,17 +83,17 @@ of each extension appear under that path.
 | Topic | Observed (2026.1 live) |
 |-------|---------------------------|
 | Purpose | Count of files per extension, sorted by ``amount`` descending |
-| Root path | Use ``"."`` — empty path fails; ``"/"`` and missing paths error |
+| Folder path | Top-level sample folder (e.g. ``OpenFastPath``) |
 | ``file_extension`` | Extension without dot (``c``, ``java``, ``sh``); empty string = extensionless files |
 | ``amount`` | File count for that extension within the folder scope |
 | ``id`` | Opaque row id (string on live server, not useful for clients) |
 | Numeric fields | ``id`` and ``amount`` arrive as **strings** |
 | File path | Returns ``data: false`` (e.g. ``LICENSE``) |
 | ``current_view`` | Optional filter; omit → same as ``show_all`` / ``all_items`` |
-| ``show_all`` / ``all_items`` | Full folder counts (root sum = 100 on Test Scan) |
-| ``pending_items`` | Pending-identification files only (root sum = 63) |
-| ``without_matches`` | Files without KB matches (root sum = 37) |
-| ``mark_as_identified`` | Returns ``false`` on Test Scan (no marked files in view) |
+| ``show_all`` / ``all_items`` | Full folder counts under the given path |
+| ``pending_items`` | Pending-identification files only |
+| ``without_matches`` | Files without KB matches |
+| ``mark_as_identified`` | Returns ``false`` when no files match the view |
 | Invalid ``current_view`` | Request parse error |
 
 ## `get_identification`

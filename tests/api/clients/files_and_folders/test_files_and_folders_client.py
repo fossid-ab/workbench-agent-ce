@@ -119,12 +119,12 @@ def test_get_folder_content_metrics(mock_send, files_client):
         },
         "message": "Success",
     }
-    result = files_client.get_folder_content_metrics("SCAN1", ".")
+    result = files_client.get_folder_content_metrics("SCAN1", "OpenFastPath")
     assert result["total"] == "200"
     assert result["pending_identification"] == "126"
     payload = mock_send.call_args[0][0]
     assert payload["action"] == "get_folder_content_metrics"
-    assert payload["data"]["path"] == FilesAndFoldersClient.encode_path(".")
+    assert payload["data"]["path"] == FilesAndFoldersClient.encode_path("OpenFastPath")
 
 
 @patch.object(BaseAPI, "_send_request")
@@ -148,13 +148,13 @@ def test_get_folder_content(mock_send, files_client):
     }
     result = files_client.get_folder_content(
         "SCAN1",
-        ".",
+        "OpenFastPath",
         show_all=False,
         source_code_only=True,
     )
     assert len(result) == 2
     data = mock_send.call_args[0][0]["data"]
-    assert data["path"] == FilesAndFoldersClient.encode_path(".")
+    assert data["path"] == FilesAndFoldersClient.encode_path("OpenFastPath")
     assert data["show_all"] == "0"
     assert data["source_code_only"] == "1"
 

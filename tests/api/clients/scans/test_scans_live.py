@@ -67,56 +67,58 @@ class TestScansLiveReadOnly:
     def test_get_pending_files(
         self,
         workbench_client,
+        workbench_version,
         test_scan_code,
+        pending_files,
+        pending_paths,
     ):
+        """Unidentified Test Scan: paths come from scans.get_pending_files."""
         data = workbench_client.scans.get_pending_files(test_scan_code)
-        assert isinstance(data, dict)
-        assert len(data) >= 1
+        assert data == pending_files
+        assert_data_contract(
+            "scans.get_pending_files",
+            data,
+            workbench_version=workbench_version,
+        )
+        assert len(pending_paths) >= 1
+        for path in pending_paths[:5]:
+            assert isinstance(path, str) and path
+            assert "/" in path or "." in path
+            assert not path.isdigit()
+        assert set(pending_paths) == set(data.values())
 
+    @pytest.mark.usefixtures("scan_has_identified")
     def test_get_scan_identified_licenses_unique(
         self,
         workbench_client,
         workbench_version,
-        test_scan_code,
+        identified_test_scan_code,
     ):
         data = workbench_client.scans.get_scan_identified_licenses(
-            test_scan_code, unique=True
+            identified_test_scan_code, unique=True
         )
         assert isinstance(data, list)
-        if data:
-            assert_data_contract(
-                "scans.get_scan_identified_licenses",
-                data,
-                workbench_version=workbench_version,
-            )
-
-    def test_get_scan_identified_components(
-        self,
-        workbench_client,
-        workbench_version,
-        test_scan_code,
-    ):
-        data = workbench_client.scans.get_scan_identified_components(
-            test_scan_code
-        )
-        assert isinstance(data, list)
+        assert len(data) >= 1
         assert_data_contract(
-            "scans.get_scan_identified_components",
+            "scans.get_scan_identified_licenses",
             data,
             workbench_version=workbench_version,
         )
 
-    def test_get_dependency_analysis_results(
+    @pytest.mark.usefixtures("scan_has_identified")
+    def test_get_scan_identified_components(
         self,
         workbench_client,
         workbench_version,
-        test_scan_code,
+        identified_test_scan_code,
     ):
-        data = workbench_client.scans.get_dependency_analysis_results(
-            test_scan_code
+        data = workbench_client.scans.get_scan_identified_components(
+            identified_test_scan_code
         )
+        assert isinstance(data, list)
+        assert len(data) >= 1
         assert_data_contract(
-            "scans.get_dependency_analysis_results",
+            "scans.get_scan_identified_components",
             data,
             workbench_version=workbench_version,
         )
@@ -159,3 +161,52 @@ class TestScansLiveReadOnly:
     ):
         status = workbench_client.scans.check_status(test_scan_code, "SCAN")
         assert isinstance(status, dict)
+
+
+@pytest.mark.usefixtures("scan_has_da_results")
+class TestScansLiveDependencyAnalysis:
+    """Dependency Analysis Test Scan — DA-only import, no KB identified components."""
+
+    def test_get_dependency_analysis_results(
+        self,
+        workbench_client,
+        workbench_version,
+        dependency_analysis_test_scan_code,
+        scan_has_da_results,
+    ):
+        data = workbench_client.scans.get_dependency_analysis_results(
+            dependency_analysis_test_scan_code
+        )
+        assert data == scan_has_da_results
+        assert len(data) >= 1
+        assert_data_contract(
+            "scans.get_dependency_analysis_results",
+            data,
+            workbench_version=workbench_version,
+        )
+        first = data[0]
+        assert first.get("name")
+        assert "version" in first
+        assert first.get("package_id")
+
+    def test_no_kb_identified_components(
+        self,
+        workbench_client,
+        dependency_analysis_test_scan_code,
+    ):
+        components = workbench_client.scans.get_scan_identified_components(
+            dependency_analysis_test_scan_code
+        )
+        assert components == []
+
+    def test_results_service_get_dependencies(
+        self,
+        workbench_client,
+        dependency_analysis_test_scan_code,
+        scan_has_da_results,
+    ):
+        deps = workbench_client.dependencies.get_dependencies(
+            dependency_analysis_test_scan_code
+        )
+        assert deps == scan_has_da_results
+        assert len(deps) >= 1

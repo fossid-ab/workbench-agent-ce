@@ -12,8 +12,9 @@ from workbench_agent.api.services.identification_service import (
 @pytest.fixture
 def identification_service():
     files = MagicMock()
-    components = MagicMock()
-    return IdentificationService(files, components)
+    catalog = MagicMock()
+    scans = MagicMock()
+    return IdentificationService(files, catalog, scans)
 
 
 FULL_MATCH = {
@@ -37,6 +38,33 @@ def test_get_identification_delegates(identification_service):
     )
 
 
+def test_get_pending_files_delegates(identification_service):
+    identification_service._scans.get_pending_files.return_value = {
+        "1": "src/a.c"
+    }
+    pending = identification_service.get_pending_files("S1")
+    assert pending == {"1": "src/a.c"}
+    identification_service._scans.get_pending_files.assert_called_once_with(
+        "S1"
+    )
+
+
+def test_get_scan_metrics_delegates(identification_service):
+    identification_service._scans.get_scan_folder_metrics.return_value = {
+        "total": 10
+    }
+    metrics = identification_service.get_scan_metrics("S1")
+    assert metrics["total"] == 10
+
+
+def test_get_identified_components_delegates(identification_service):
+    identification_service._scans.get_scan_identified_components.return_value = [
+        {"name": "ofp"}
+    ]
+    components = identification_service.get_identified_components("S1")
+    assert len(components) == 1
+
+
 def test_explore_folder_delegates(identification_service):
     identification_service._files.get_folder_content.return_value = []
     identification_service._files.get_folder_extensions_ranking.return_value = []
@@ -53,31 +81,29 @@ def test_explore_folder_delegates(identification_service):
     )
 
 
-def test_ensure_component_skips_create_when_exists(identification_service):
-    identification_service._components.get_information.return_value = {
-        "name": "ofp"
-    }
-    result = identification_service.ensure_component(
+def test_resolve_component_delegates_to_catalog(identification_service):
+    identification_service._catalog.resolve.return_value = {"created": False}
+    result = identification_service.resolve_component(
         "ofp", "1.1", "BSD-3-Clause", supplier_name="OpenFastPath"
     )
     assert result["created"] is False
-    identification_service._components.create.assert_not_called()
-
-
-def test_ensure_component_creates_when_missing(identification_service):
-    identification_service._components.get_information.return_value = None
-    identification_service._components.create.return_value = {
-        "data": {"component_id": 1}
-    }
-    result = identification_service.ensure_component("ofp", "1.1", "MIT")
-    assert result["created"] is True
-    identification_service._components.create.assert_called_once()
+    identification_service._catalog.resolve.assert_called_once_with(
+        "ofp",
+        "1.1",
+        "BSD-3-Clause",
+        supplier_name="OpenFastPath",
+        purl=None,
+        url=None,
+        cpe=None,
+    )
 
 
 def test_identify_whole_file_from_match_orchestrates(identification_service):
-    identification_service._components.get_information.return_value = None
-    identification_service._components.create.return_value = {
-        "data": {"component_id": 1}
+    identification_service._catalog.resolve.return_value = {
+        "component_name": "ofp",
+        "component_version": "1.1",
+        "supplier_name": "OpenFastPath",
+        "created": True,
     }
     identification_service._files.set_identification_component.return_value = {
         "message": "ok"
@@ -101,8 +127,10 @@ def test_identify_from_best_full_match_picks_full(identification_service):
         "1": {"id": "1", "match_type": "partial", "artifact": "x", "version": "1"},
         "2": FULL_MATCH,
     }
-    identification_service._components.get_information.return_value = {
-        "name": "ofp"
+    identification_service._catalog.resolve.return_value = {
+        "component_name": "ofp",
+        "component_version": "1.1",
+        "created": False,
     }
     identification_service._files.set_identification_component.return_value = {
         "message": "ok"

@@ -152,6 +152,28 @@ CONTRACTS: Dict[str, Dict[str, Any]] = {
     },
     "scans.get_dependency_analysis_results": {
         "data_shape": "list",
+        "item_required_keys": {"name", "package_id"},
+    },
+    "scans.add_dependency_analysis_results": {
+        "data_shape": "dict",
+        "required_keys": {
+            "scan_id",
+            "component_id",
+            "include_in_report",
+            "updated",
+        },
+    },
+    "scans.update_dependency_analysis_results": {
+        "data_shape": "dict",
+        "required_keys": {
+            "scan_id",
+            "component_id",
+            "include_in_report",
+            "updated",
+        },
+    },
+    "scans.remove_dependency_analysis_results": {
+        "data_shape": "bool",
     },
     "scans.get_policy_warnings_counter": {
         "data_shape": "dict",

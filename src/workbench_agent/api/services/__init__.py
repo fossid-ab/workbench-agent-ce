@@ -4,6 +4,8 @@ Services - Orchestration layer for complex workflows.
 Services coordinate multiple clients to accomplish higher-level tasks.
 """
 
+from .component_service import ComponentService
+from .dependency_service import DependencyService
 from .identification_service import IdentificationService
 from .quick_scan_service import QuickScanService
 from .report_service import ReportService
@@ -17,6 +19,8 @@ from .upload_service import UploadService
 from .user_permissions import UserPermissionsService
 
 __all__ = [
+    "ComponentService",
+    "DependencyService",
     "IdentificationService",
     "QuickScanService",
     "ReportService",

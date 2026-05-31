@@ -451,3 +451,41 @@ class TestWorkbenchLinksNui:
 
         assert "/nui/scans/" in links.scan["url"]
         assert "index.html" not in links.scan["url"]
+
+
+class TestResultsServiceDelegation:
+    def test_get_dependencies_delegates_to_dependency_service(self):
+        scans = MagicMock()
+        vulns = MagicMock()
+        identification = MagicMock()
+        dependencies = MagicMock()
+        dependencies.get_dependencies.return_value = [{"name": "abbrev"}]
+
+        service = ResultsService(
+            scans,
+            vulns,
+            identification_service=identification,
+            dependency_service=dependencies,
+        )
+        result = service.get_dependencies("S1")
+        assert result == [{"name": "abbrev"}]
+        dependencies.get_dependencies.assert_called_once_with("S1")
+        scans.get_dependency_analysis_results.assert_not_called()
+
+    def test_get_scan_metrics_delegates_to_identification_service(self):
+        scans = MagicMock()
+        vulns = MagicMock()
+        identification = MagicMock()
+        identification.get_scan_metrics.return_value = {"total": 5}
+        dependencies = MagicMock()
+
+        service = ResultsService(
+            scans,
+            vulns,
+            identification_service=identification,
+            dependency_service=dependencies,
+        )
+        metrics = service.get_scan_metrics("S1")
+        assert metrics["total"] == 5
+        identification.get_scan_metrics.assert_called_once_with("S1")
+        scans.get_scan_folder_metrics.assert_not_called()

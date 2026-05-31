@@ -12,6 +12,7 @@ from tests.api.support.version_contracts import load_fixture
 
 WORKBENCH_VERSION = "2026.1.0"
 SCAN = "Test_Scan"
+FOLDER = "OpenFastPath"
 PATH = "Files with Snippets/kernel-snippet.c"
 
 
@@ -32,7 +33,7 @@ def test_get_folder_extensions_ranking_fixture(mock_send, files_client):
         WORKBENCH_VERSION, "files_get_folder_extensions_ranking"
     )
     mock_send.return_value = fixture
-    data = files_client.get_folder_extensions_ranking(SCAN)
+    data = files_client.get_folder_extensions_ranking(SCAN, FOLDER)
     assert_contract(
         "files_and_folders.get_folder_extensions_ranking",
         fixture,
@@ -40,7 +41,7 @@ def test_get_folder_extensions_ranking_fixture(mock_send, files_client):
         data=data,
     )
     call = mock_send.call_args[0][0]["data"]
-    assert call["path"] == encode_path(".")
+    assert call["path"] == encode_path(FOLDER)
     assert "current_view" not in call
 
 
@@ -50,7 +51,7 @@ def test_get_folder_components_ranking_fixture(mock_send, files_client):
         WORKBENCH_VERSION, "files_get_folder_components_ranking"
     )
     mock_send.return_value = fixture
-    data = files_client.get_folder_components_ranking(SCAN)
+    data = files_client.get_folder_components_ranking(SCAN, FOLDER)
     assert_contract(
         "files_and_folders.get_folder_components_ranking",
         fixture,
@@ -58,14 +59,14 @@ def test_get_folder_components_ranking_fixture(mock_send, files_client):
         data=data,
     )
     call = mock_send.call_args[0][0]["data"]
-    assert call["path"] == encode_path(".")
+    assert call["path"] == encode_path(FOLDER)
 
 
 @patch.object(BaseAPI, "_send_request")
 def test_get_folder_content_fixture(mock_send, files_client):
     fixture = load_fixture(WORKBENCH_VERSION, "files_get_folder_content")
     mock_send.return_value = fixture
-    data = files_client.get_folder_content(SCAN)
+    data = files_client.get_folder_content(SCAN, FOLDER)
     assert_contract(
         "files_and_folders.get_folder_content",
         fixture,
@@ -73,7 +74,7 @@ def test_get_folder_content_fixture(mock_send, files_client):
         data=data,
     )
     call = mock_send.call_args[0][0]["data"]
-    assert call["path"] == encode_path(".")
+    assert call["path"] == encode_path(FOLDER)
     assert call["show_all"] == "1"
     assert call["source_code_only"] == "0"
 

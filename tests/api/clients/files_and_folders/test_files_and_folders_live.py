@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-from tests.api.support.contract import assert_contract, assert_data_contract
+from tests.api.support.contract import assert_data_contract
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
@@ -12,46 +12,6 @@ pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 class TestFilesAndFoldersLiveReadOnly:
     def test_scan_has_pending(self, scan_has_pending):
         assert int(scan_has_pending.get("pending_identification", 0)) >= 1
-
-    def test_get_identification(
-        self,
-        workbench_client,
-        workbench_version,
-        test_scan_code,
-        pending_path,
-    ):
-        data = workbench_client.files_and_folders.get_identification(
-            test_scan_code, pending_path
-        )
-        assert_data_contract(
-            "files_and_folders.get_identification",
-            data,
-            workbench_version=workbench_version,
-        )
-
-    def test_get_folder_content_root(
-        self,
-        workbench_client,
-        workbench_version,
-        test_scan_code,
-    ):
-        entries = workbench_client.files_and_folders.get_folder_content(
-            test_scan_code
-        )
-        assert_data_contract(
-            "files_and_folders.get_folder_content",
-            entries,
-            workbench_version=workbench_version,
-        )
-        assert len(entries) >= 1
-        dirs = [
-            e for e in entries if isinstance(e, dict) and e.get("is_directory") == "1"
-        ]
-        files = [
-            e for e in entries if isinstance(e, dict) and e.get("is_directory") == "0"
-        ]
-        assert dirs
-        assert files
 
     def test_get_folder_content_subdirectory(
         self,
@@ -75,13 +35,16 @@ class TestFilesAndFoldersLiveReadOnly:
         self,
         workbench_client,
         test_scan_code,
+        openfastpath_dir,
     ):
         all_entries = workbench_client.files_and_folders.get_folder_content(
             test_scan_code,
+            openfastpath_dir,
             show_all=True,
         )
         pending_entries = workbench_client.files_and_folders.get_folder_content(
             test_scan_code,
+            openfastpath_dir,
             show_all=False,
         )
         all_files = {
@@ -97,14 +60,16 @@ class TestFilesAndFoldersLiveReadOnly:
         assert pending_files <= all_files
         assert len(pending_files) <= len(all_files)
 
-    def test_get_folder_content_metrics_root(
+    def test_get_folder_content_metrics_pending_folder(
         self,
         workbench_client,
         workbench_version,
         test_scan_code,
+        openfastpath_dir,
     ):
         metrics = workbench_client.files_and_folders.get_folder_content_metrics(
-            test_scan_code
+            test_scan_code,
+            openfastpath_dir,
         )
         assert_data_contract(
             "files_and_folders.get_folder_content_metrics",
@@ -119,33 +84,27 @@ class TestFilesAndFoldersLiveReadOnly:
         assert pending >= 1
         assert total == pending + identified + without_matches
 
-    def test_get_folder_content_metrics_subdirectory(
+    @pytest.mark.usefixtures("scan_has_identified")
+    def test_get_folder_content_metrics_identified_scan(
         self,
         workbench_client,
         workbench_version,
-        test_scan_code,
+        identified_test_scan_code,
         openfastpath_dir,
     ):
-        root_metrics = (
-            workbench_client.files_and_folders.get_folder_content_metrics(
-                test_scan_code
-            )
-        )
-        sub_metrics = (
-            workbench_client.files_and_folders.get_folder_content_metrics(
-                test_scan_code,
-                openfastpath_dir,
-            )
+        metrics = workbench_client.files_and_folders.get_folder_content_metrics(
+            identified_test_scan_code,
+            openfastpath_dir,
         )
         assert_data_contract(
             "files_and_folders.get_folder_content_metrics",
-            sub_metrics,
+            metrics,
             workbench_version=workbench_version,
         )
-        assert int(sub_metrics.get("total", 0) or 0) <= int(
-            root_metrics.get("total", 0) or 0
-        )
-        assert int(sub_metrics.get("total", 0) or 0) >= 1
+        pending = int(metrics.get("pending_identification", 0) or 0)
+        identified = int(metrics.get("identified_files", 0) or 0)
+        assert pending == 0
+        assert identified >= 1
 
     def test_get_folder_content_metrics_file_path_returns_zeros(
         self,
@@ -155,7 +114,7 @@ class TestFilesAndFoldersLiveReadOnly:
     ):
         metrics = workbench_client.files_and_folders.get_folder_content_metrics(
             test_scan_code,
-            "LICENSE",
+            "OpenFastPath/LICENSE",
         )
         assert_data_contract(
             "files_and_folders.get_folder_content_metrics",
@@ -169,25 +128,6 @@ class TestFilesAndFoldersLiveReadOnly:
             "without_matches",
         ):
             assert int(metrics.get(key, 0) or 0) == 0
-
-    def test_get_folder_components_ranking_root(
-        self,
-        workbench_client,
-        workbench_version,
-        test_scan_code,
-    ):
-        ranking = workbench_client.files_and_folders.get_folder_components_ranking(
-            test_scan_code
-        )
-        assert_data_contract(
-            "files_and_folders.get_folder_components_ranking",
-            ranking,
-            workbench_version=workbench_version,
-        )
-        assert isinstance(ranking, list)
-        assert len(ranking) >= 1
-        amounts = [int(row.get("amount", 0)) for row in ranking]
-        assert amounts == sorted(amounts, reverse=True)
 
     def test_get_folder_components_ranking_subdirectory(
         self,
@@ -216,45 +156,27 @@ class TestFilesAndFoldersLiveReadOnly:
     ):
         ranking = workbench_client.files_and_folders.get_folder_components_ranking(
             test_scan_code,
-            "LICENSE",
+            "OpenFastPath/LICENSE",
         )
         assert ranking is False
-
-    def test_get_folder_extensions_ranking_root(
-        self,
-        workbench_client,
-        workbench_version,
-        test_scan_code,
-    ):
-        ranking = workbench_client.files_and_folders.get_folder_extensions_ranking(
-            test_scan_code
-        )
-        assert_data_contract(
-            "files_and_folders.get_folder_extensions_ranking",
-            ranking,
-            workbench_version=workbench_version,
-        )
-        assert isinstance(ranking, list)
-        assert len(ranking) >= 1
-        amounts = [int(row.get("amount", 0)) for row in ranking]
-        assert amounts == sorted(amounts, reverse=True)
-        extensions = {row.get("file_extension") for row in ranking}
-        assert "c" in extensions or "java" in extensions
 
     def test_get_folder_extensions_ranking_pending_view(
         self,
         workbench_client,
         test_scan_code,
+        openfastpath_dir,
     ):
         all_ranking = (
             workbench_client.files_and_folders.get_folder_extensions_ranking(
                 test_scan_code,
+                openfastpath_dir,
                 current_view="show_all",
             )
         )
         pending_ranking = (
             workbench_client.files_and_folders.get_folder_extensions_ranking(
                 test_scan_code,
+                openfastpath_dir,
                 current_view="pending_items",
             )
         )
@@ -290,7 +212,7 @@ class TestFilesAndFoldersLiveReadOnly:
     ):
         ranking = workbench_client.files_and_folders.get_folder_extensions_ranking(
             test_scan_code,
-            "LICENSE",
+            "OpenFastPath/LICENSE",
         )
         assert ranking is False
 
@@ -355,44 +277,44 @@ class TestFilesAndFoldersLiveReadOnly:
             workbench_version=workbench_version,
         )
 
-    def test_get_identification_under_openfastpath(
+
+@pytest.mark.usefixtures("scan_has_identified")
+class TestFilesAndFoldersIdentifiedScanReadOnly:
+    def test_get_identification_linked_component(
         self,
-        workbench_client,
+        identification_service,
         workbench_version,
-        test_scan_code,
-        openfastpath_dir,
-        pending_paths,
+        identified_test_scan_code,
+        identified_file_path,
     ):
-        file_path = next(
-            (p for p in pending_paths if p.startswith(openfastpath_dir + "/")),
-            None,
-        )
-        if not file_path:
-            pytest.skip("No pending file under OpenFastPath")
-        data = workbench_client.files_and_folders.get_identification(
-            test_scan_code, file_path
+        data = identification_service.get_identification(
+            identified_test_scan_code, identified_file_path
         )
         assert_data_contract(
             "files_and_folders.get_identification",
             data,
             workbench_version=workbench_version,
         )
+        summary = identification_service.summarize_identification(
+            identified_test_scan_code, identified_file_path
+        )
+        assert summary["has_linked_catalog_component"] is True
+        assert summary["is_marked_identified"] is True
 
 
 @pytest.mark.usefixtures("allow_mutations", "scan_has_pending")
 class TestFilesAndFoldersLiveMutations:
     def test_add_license_identification_success(
         self,
-        workbench_client,
+        identification_service,
         workbench_version,
         test_scan_code,
         mutation_pending_path,
     ):
-        result = workbench_client.files_and_folders.add_license_identification(
+        result = identification_service.add_file_license_to_file(
             test_scan_code,
             mutation_pending_path,
             "MIT",
-            "file",
         )
         assert result.get("message")
         if result.get("data"):
@@ -404,56 +326,58 @@ class TestFilesAndFoldersLiveMutations:
 
     def test_change_distribution_status(
         self,
-        workbench_client,
+        identification_service,
         test_scan_code,
         mutation_pending_path,
     ):
-        result = workbench_client.files_and_folders.change_distribution_status(
-            test_scan_code, mutation_pending_path
+        result = identification_service.set_distribution_status(
+            test_scan_code, mutation_pending_path, distributed=False
         )
-        assert result.get("message")
+        assert result["changed"] is True
+        identification_service.set_distribution_status(
+            test_scan_code, mutation_pending_path, distributed=True
+        )
 
     def test_set_copyright_on_openfastpath_directory(
         self,
-        workbench_client,
+        identification_service,
         test_scan_code,
         openfastpath_dir,
     ):
-        result = workbench_client.files_and_folders.set_identification_copyright(
+        result = identification_service.add_copyright_to_folder(
             test_scan_code,
             openfastpath_dir,
             "(c) API directory test",
-            is_directory=True,
         )
         assert result.get("message")
 
     def test_set_copyright(
         self,
-        workbench_client,
+        identification_service,
         test_scan_code,
         mutation_pending_path,
     ):
-        result = workbench_client.files_and_folders.set_identification_copyright(
+        result = identification_service.add_copyright_to_file(
             test_scan_code,
             mutation_pending_path,
             "(c) API test",
-            is_directory=False,
         )
         assert result.get("message")
 
     def test_comment_cycle(
         self,
+        identification_service,
         workbench_client,
         test_scan_code,
         mutation_pending_path,
     ):
         tag = f"api-test-{uuid.uuid4().hex[:8]}"
-        workbench_client.files_and_folders.add_file_comment(
+        identification_service.add_file_comment(
             test_scan_code,
             mutation_pending_path,
             f"comment {tag}",
         )
-        comments = workbench_client.files_and_folders.get_file_comments(
+        comments = identification_service.get_file_comments(
             test_scan_code, mutation_pending_path
         )
         created = [
@@ -475,53 +399,38 @@ class TestFilesAndFoldersLiveMutations:
 
     def test_mark_and_unmark_identified(
         self,
-        workbench_client,
+        identification_service,
         test_scan_code,
         mutation_pending_path,
     ):
-        workbench_client.files_and_folders.mark_as_identified(
+        identification_service.mark_as_identified(
             test_scan_code, mutation_pending_path
         )
-        workbench_client.files_and_folders.unmark_as_identified(
+        identification_service.unmark_as_identified(
             test_scan_code, mutation_pending_path
         )
 
     def test_component_identification_cycle(
         self,
+        identification_service,
         workbench_client,
-        workbench_version,
         test_scan_code,
         mutation_pending_path,
         unique_component_name,
     ):
         version = "0.0.1-api-test"
-        create_response = workbench_client.components._api._send_request(
-            {
-                "group": "components",
-                "action": "create",
-                "data": {
-                    "name": unique_component_name,
-                    "version": version,
-                    "license_identifier": "MIT",
-                },
-            }
-        )
-        assert_contract(
-            "components.create",
-            create_response,
-            workbench_version=workbench_version,
+        identification_service.resolve_component(
+            unique_component_name, version, "MIT"
         )
         try:
-            workbench_client.files_and_folders.set_identification_component(
+            identification_service.identify_component_to_file(
                 test_scan_code,
                 mutation_pending_path,
                 unique_component_name,
                 version,
             )
-            removed = (
-                workbench_client.files_and_folders.remove_component_identification(
-                    test_scan_code, mutation_pending_path
-                )
+            removed = identification_service.remove_component_identification(
+                test_scan_code, mutation_pending_path
             )
             assert removed is True
         finally:

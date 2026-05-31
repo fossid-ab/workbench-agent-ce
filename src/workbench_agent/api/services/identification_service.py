@@ -1,14 +1,14 @@
 """
 IdentificationService - Scan file identification orchestration.
 
-Coordinates ``FilesAndFoldersClient`` and ``ComponentsClient`` for reviewing
-KB matches and writing identifications in Workbench.
+Coordinates ``FilesAndFoldersClient``, ``ComponentService``, and scan-level
+read APIs for reviewing KB matches and writing identifications in Workbench.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Mapping, Optional, Union
+from typing import Any, Dict, List, Mapping, Optional, Union
 
 from workbench_agent.api.utils.identification_helpers import (
     build_snippet_comment,
@@ -27,23 +27,81 @@ class IdentificationService:
     Service for scan file identification workflows.
 
     Example:
-        >>> svc = IdentificationService(
-        ...     client.files_and_folders, client.components
-        ... )
+        >>> svc = client.identification
+        >>> pending = svc.get_pending_files(scan_code)
+        >>> metrics = svc.get_scan_metrics(scan_code)
         >>> info = svc.get_identification(scan_code, "src/main.c")
         >>> matches = svc.get_matches(scan_code, "src/main.c")
-        >>> svc.ensure_component_from_match(matches["74"])
+        >>> svc.resolve_component_from_match(matches["74"])
         >>> svc.identify_component_to_file(
         ...     scan_code, "src/main.c", "ofp", "1.1", supplier_name="OpenFastPath"
         ... )
     """
 
-    def __init__(self, files_and_folders_client, components_client) -> None:
+    def __init__(
+        self,
+        files_and_folders_client,
+        component_catalog,
+        scans_client,
+    ) -> None:
         self._files = files_and_folders_client
-        self._components = components_client
+        self._catalog = component_catalog
+        self._scans = scans_client
         logger.debug("IdentificationService initialized")
 
-    # ===== READ / REVIEW =====
+    # ===== SCAN-LEVEL READS =====
+
+    def get_pending_files(self, scan_code: str) -> Dict[str, str]:
+        """
+        Return files pending identification for a scan.
+
+        Maps scan file id → relative path. Use **values** as paths for file
+        APIs (auditor workflow entry point).
+        """
+        logger.debug(
+            "Fetching pending files for scan '%s'", scan_code
+        )
+        return self._scans.get_pending_files(scan_code)
+
+    def get_scan_metrics(self, scan_code: str) -> Dict[str, Any]:
+        """Return scan-level file metrics (total, pending, identified, …)."""
+        logger.debug(
+            "Fetching scan metrics for scan '%s'", scan_code
+        )
+        return self._scans.get_scan_folder_metrics(scan_code)
+
+    def get_identified_components(
+        self, scan_code: str
+    ) -> List[Dict[str, Any]]:
+        """Return KB-identified components for a scan."""
+        logger.debug(
+            "Fetching identified components for scan '%s'", scan_code
+        )
+        return self._scans.get_scan_identified_components(scan_code)
+
+    def get_unique_identified_licenses(
+        self, scan_code: str
+    ) -> List[Dict[str, Any]]:
+        """Return unique identified licenses (identifier + name) for a scan."""
+        logger.debug(
+            "Fetching unique identified licenses for scan '%s'", scan_code
+        )
+        return self._scans.get_scan_identified_licenses(
+            scan_code, unique=True
+        )
+
+    def get_all_identified_licenses(
+        self, scan_code: str
+    ) -> List[Dict[str, Any]]:
+        """Return all identified licenses including file paths for a scan."""
+        logger.debug(
+            "Fetching all identified licenses for scan '%s'", scan_code
+        )
+        return self._scans.get_scan_identified_licenses(
+            scan_code, unique=False
+        )
+
+    # ===== FILE-LEVEL READ / REVIEW =====
 
     def get_identification(
         self, scan_code: str, path: str
@@ -91,7 +149,7 @@ class IdentificationService:
     def explore_folder(
         self,
         scan_code: str,
-        path: str = ".",
+        path: str,
         *,
         pending_only: bool = False,
     ) -> Dict[str, Any]:
@@ -128,27 +186,25 @@ class IdentificationService:
         component_version: Optional[str] = None,
     ) -> Optional[Union[Dict[str, Any], list]]:
         """Return catalog component information, or ``None`` if missing."""
-        return self._components.get_information(
-            component_name, component_version
-        )
+        return self._catalog.find(component_name, component_version)
 
-    def ensure_component_from_match(
+    def resolve_component_from_match(
         self,
         match: Mapping[str, Any],
         *,
         license_identifier: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Ensure the component described by a FossID match exists in Workbench.
+        Resolve the component described by a FossID match in the catalog.
 
         Creates the catalog entry when missing; returns field metadata either way.
         """
         fields = fossid_match_to_component_fields(
             match, license_identifier=license_identifier
         )
-        return self.ensure_component(**fields)
+        return self.resolve_component(**fields)
 
-    def ensure_component(
+    def resolve_component(
         self,
         component_name: str,
         component_version: str,
@@ -160,64 +216,23 @@ class IdentificationService:
         cpe: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Ensure a catalog component exists; create it when absent.
+        Resolve a catalog component by name and version; create when absent.
+
+        ``license_identifier`` is required (see ``ComponentService.resolve``).
 
         Returns:
             Dict with ``component_name``, ``component_version``, ``created`` bool,
             and optional ``create_response``.
         """
-        name = component_name.strip()
-        version = component_version.strip()
-        license_id = license_identifier.strip()
-        if not name or not version:
-            raise ValueError("component_name and component_version are required")
-        if not license_id:
-            raise ValueError("license_identifier is required to create a component")
-
-        existing = self.find_component(name, version)
-        if existing is not None:
-            catalog_supplier = (
-                existing.get("supplier_name")
-                if isinstance(existing, dict)
-                else None
-            )
-            resolved_supplier = catalog_supplier or supplier_name
-            logger.debug(
-                "Component '%s' v%s already exists in catalog (supplier=%r)",
-                name,
-                version,
-                resolved_supplier,
-            )
-            return {
-                "component_name": name,
-                "component_version": version,
-                "supplier_name": resolved_supplier,
-                "created": False,
-            }
-
-        logger.info("Creating catalog component '%s' v%s", name, version)
-        create_kwargs: Dict[str, Any] = {
-            "name": name,
-            "version": version,
-            "license_identifier": license_id,
-        }
-        if supplier_name:
-            create_kwargs["sup_com_name"] = supplier_name
-        if purl:
-            create_kwargs["purl"] = purl
-        if url:
-            create_kwargs["url"] = url
-        if cpe:
-            create_kwargs["cpe"] = cpe
-
-        create_response = self._components.create(**create_kwargs)
-        return {
-            "component_name": name,
-            "component_version": version,
-            "supplier_name": supplier_name,
-            "created": True,
-            "create_response": create_response,
-        }
+        return self._catalog.resolve(
+            component_name,
+            component_version,
+            license_identifier,
+            supplier_name=supplier_name,
+            purl=purl,
+            url=url,
+            cpe=cpe,
+        )
 
     def identify_component_to_file(
         self,
@@ -275,7 +290,7 @@ class IdentificationService:
         Ensure catalog component from a full-file FossID match and link it.
 
         Typical agent flow after ``get_matches``: pick a ``match_type='full'``
-        entry, ensure the catalog row exists, associate it with the file, and
+        entry, resolve the catalog row, associate it with the file, and
         optionally add the artifact license at file level.
         """
         fields = fossid_match_to_component_fields(match)
@@ -289,10 +304,10 @@ class IdentificationService:
         if not license_id:
             raise ValueError(
                 "Match is missing artifact_license; supply a license or "
-                "call ensure_component / identify_component_to_file directly"
+                "call resolve_component / identify_component_to_file directly"
             )
 
-        ensured = self.ensure_component(
+        resolved = self.resolve_component(
             name,
             version,
             license_id,
@@ -306,7 +321,7 @@ class IdentificationService:
             path,
             name,
             version,
-            supplier_name=ensured.get("supplier_name") or supplier_name,
+            supplier_name=resolved.get("supplier_name") or supplier_name,
             preserve_existing_identifications=preserve_existing_identifications,
         )
         license_result = None
@@ -316,7 +331,7 @@ class IdentificationService:
             )
         return {
             "fields": fields,
-            "catalog": ensured,
+            "catalog": resolved,
             "component": component_result,
             "license": license_result,
         }

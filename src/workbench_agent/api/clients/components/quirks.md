@@ -3,6 +3,13 @@
 Full field lists: [`schema.md`](schema.md) (from `components-api.txt`).  
 Validated via live tests in `tests/api/clients/components/`.
 
+## Catalog orchestration (`ComponentService`)
+
+Creating a catalog row always requires ``license_identifier`` — enforced by
+``ComponentService.resolve`` and reused by ``IdentificationService`` and
+``DependencyService.add_dependency``. Use ``workbench.component_catalog`` for
+find/resolve/update workflows; ``workbench.components`` remains the thin API client.
+
 ## Spec vs observed behavior
 
 | Area | Official spec | Observed (2026.1) |

@@ -319,6 +319,180 @@ class ScansClient:
                     details=response,
                 )
 
+    def add_dependency_analysis_results(
+        self,
+        scan_code: str,
+        component_name: str,
+        component_version: str,
+        package_id: str,
+        *,
+        projects_and_scopes: Optional[str] = None,
+        detailed_dependency_info: Optional[str] = None,
+        include_in_report: Optional[Union[bool, int, str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Add a dependency row to dependency analysis results for a scan.
+
+        Required: ``scan_code``, ``component_name``, ``component_version``,
+        ``package_id``. Optional fields match the Workbench API.
+
+        Returns:
+            Created dependency record (``scan_id``, ``component_id``,
+            ``include_in_report``, ``updated``, …).
+
+        Raises:
+            ScanNotFoundError: If the scan does not exist
+            ApiError: If the API call fails
+        """
+        payload_data: Dict[str, Any] = {
+            "scan_code": scan_code,
+            "component_name": component_name,
+            "component_version": component_version,
+            "package_id": package_id,
+        }
+        if projects_and_scopes is not None:
+            payload_data["projects_and_scopes"] = projects_and_scopes
+        if detailed_dependency_info is not None:
+            payload_data["detailed_dependency_info"] = detailed_dependency_info
+        if include_in_report is not None:
+            payload_data["include_in_report"] = errors.flag_str(
+                include_in_report
+            )
+
+        response = self._api._send_request(
+            {
+                "group": "scans",
+                "action": "add_dependency_analysis_results",
+                "data": payload_data,
+            }
+        )
+
+        if response.get("status") == "1" and isinstance(
+            response.get("data"), dict
+        ):
+            return response["data"]
+
+        error_msg = response.get("error", "Unknown error")
+        if errors.is_scan_not_found(error_msg):
+            errors.raise_scan_not_found(scan_code)
+        raise ApiError(
+            "Failed to add dependency analysis results for "
+            f"'{component_name}' {component_version!r} on scan "
+            f"'{scan_code}': {error_msg}",
+            details=response,
+        )
+
+    def update_dependency_analysis_results(
+        self,
+        scan_code: str,
+        component_name: str,
+        component_version: str,
+        *,
+        package_id: Optional[str] = None,
+        projects_and_scopes: Optional[str] = None,
+        detailed_dependency_info: Optional[str] = None,
+        include_in_report: Optional[Union[bool, int, str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Update a dependency analysis row for a scan.
+
+        Required: ``scan_code``, ``component_name``, ``component_version``.
+        Optional fields match the Workbench API (``include_in_report`` as
+        ``"0"`` / ``"1"``, JSON strings for scope/detail blobs).
+
+        Returns:
+            Updated dependency record (``scan_id``, ``component_id``,
+            ``include_in_report``, ``updated``, …).
+
+        Raises:
+            ScanNotFoundError: If the scan does not exist
+            ApiError: If the API call fails
+        """
+        payload_data: Dict[str, Any] = {
+            "scan_code": scan_code,
+            "component_name": component_name,
+            "component_version": component_version,
+        }
+        if package_id is not None:
+            payload_data["package_id"] = package_id
+        if projects_and_scopes is not None:
+            payload_data["projects_and_scopes"] = projects_and_scopes
+        if detailed_dependency_info is not None:
+            payload_data["detailed_dependency_info"] = detailed_dependency_info
+        if include_in_report is not None:
+            payload_data["include_in_report"] = errors.flag_str(
+                include_in_report
+            )
+
+        response = self._api._send_request(
+            {
+                "group": "scans",
+                "action": "update_dependency_analysis_results",
+                "data": payload_data,
+            }
+        )
+
+        if response.get("status") == "1" and isinstance(
+            response.get("data"), dict
+        ):
+            return response["data"]
+
+        error_msg = response.get("error", "Unknown error")
+        if errors.is_scan_not_found(error_msg):
+            errors.raise_scan_not_found(scan_code)
+        raise ApiError(
+            "Failed to update dependency analysis results for "
+            f"'{component_name}' {component_version!r} on scan "
+            f"'{scan_code}': {error_msg}",
+            details=response,
+        )
+
+    def remove_dependency_analysis_results(
+        self,
+        scan_code: str,
+        component_name: str,
+        component_version: str,
+    ) -> bool:
+        """
+        Remove a dependency from dependency analysis results for a scan.
+
+        Args:
+            scan_code: Code of the scan
+            component_name: Component name to remove
+            component_version: Component version to remove
+
+        Returns:
+            ``True`` when the API returns ``data: true``.
+
+        Raises:
+            ScanNotFoundError: If the scan does not exist
+            ApiError: If the API call fails
+        """
+        response = self._api._send_request(
+            {
+                "group": "scans",
+                "action": "remove_dependency_analysis_results",
+                "data": {
+                    "scan_code": scan_code,
+                    "component_name": component_name,
+                    "component_version": component_version,
+                },
+            }
+        )
+
+        if response.get("status") == "1" and response.get("data") is True:
+            return True
+
+        error_msg = response.get("error", "Unknown error")
+        if errors.is_scan_not_found(error_msg):
+            errors.raise_scan_not_found(scan_code)
+        raise ApiError(
+            "Failed to remove dependency analysis results for "
+            f"'{component_name}' {component_version!r} on scan "
+            f"'{scan_code}': {error_msg}",
+            details=response,
+        )
+
     def get_pending_files(self, scan_code: str) -> Dict[str, str]:
         """
         Retrieves pending files for a scan.

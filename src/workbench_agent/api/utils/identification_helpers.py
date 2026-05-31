@@ -36,7 +36,7 @@ def fossid_match_to_component_fields(
 
     Workbench matches expose ``author``, ``artifact``, and ``version`` separately.
     ``artifact_license`` is the KB component license. ``url`` is the download URL,
-    useful when creating catalog entries via ``ensure_component``.
+    useful when creating catalog entries via ``resolve_component``.
     """
     component_name = str(match.get("artifact") or "").strip()
     supplier_name = str(match.get("author") or "").strip()
@@ -119,22 +119,6 @@ def build_snippet_comment(
 
     origin_suffix = f" ({origin_file})" if origin_file else ""
     return f"{range_text} match {component_label}{origin_suffix}"
-
-
-def _coerce_bool(value: Any) -> Optional[bool]:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
-        return bool(value)
-    if isinstance(value, str):
-        lowered = value.strip().lower()
-        if lowered in {"1", "true", "yes", "distributed"}:
-            return True
-        if lowered in {"0", "false", "no", "not_distributed", "not distributed"}:
-            return False
-    return None
 
 
 def _component_identification_record(
@@ -221,13 +205,18 @@ def parse_identifying_done(
     """
     Parse audit-complete status from ``component_identification.identifying_done``.
 
-    Returns ``True`` when marked identified, ``False`` when explicitly not,
-    ``None`` when the field is absent.
+    Returns ``True`` when marked identified, ``False`` when ``"0"``,
+    ``None`` when the field is absent or ``null``.
     """
     record = _component_identification_record(identification)
     if record is None or "identifying_done" not in record:
         return None
-    return _coerce_bool(record.get("identifying_done"))
+    value = record.get("identifying_done")
+    if value == "1":
+        return True
+    if value == "0":
+        return False
+    return None
 
 
 def parse_license_identifiers(
@@ -307,33 +296,19 @@ def parse_distribution_status(
     Best-effort parse of distributed / not-distributed from identification data.
 
     On Workbench 2026.1, ``is_distributed`` lives on ``component_identification``
-    (``"0"`` / ``"1"`` strings), not as a top-level field.
+    as ``"0"`` / ``"1"`` strings (or ``null`` when unset).
 
     Returns:
         ``True`` if distributed, ``False`` if not, ``None`` if unknown.
     """
-    for key in (
-        "distributed",
-        "is_distributed",
-        "distribution_status",
-        "distribution",
-    ):
-        if key not in identification:
-            continue
-        parsed = _coerce_bool(identification.get(key))
-        if parsed is not None:
-            return parsed
-        raw = identification.get(key)
-        if isinstance(raw, str):
-            lowered = raw.strip().lower()
-            if "not" in lowered and "distrib" in lowered:
-                return False
-            if "distrib" in lowered:
-                return True
-
     record = _component_identification_record(identification)
-    if record is not None and "is_distributed" in record:
-        return _coerce_bool(record.get("is_distributed"))
+    if record is None or "is_distributed" not in record:
+        return None
+    value = record.get("is_distributed")
+    if value == "1":
+        return True
+    if value == "0":
+        return False
     return None
 
 

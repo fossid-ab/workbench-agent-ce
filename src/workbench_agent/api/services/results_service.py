@@ -171,10 +171,13 @@ class ResultsService:
     """
     Service for fetching scan results.
 
-    This service orchestrates result fetching from the Workbench API,
-    providing both granular methods for individual result types and
+    This service orchestrates result fetching from domain services and the
+    Workbench API, providing granular methods for individual result types and
     a high-level method for fetching all requested results based on
     command-line parameters.
+
+    KB identification aggregates delegate to ``IdentificationService``;
+    dependency analysis results delegate to ``DependencyService``.
 
     Example:
         >>> results_service = ResultsService(scans_client, vulns_client)
@@ -188,18 +191,29 @@ class ResultsService:
     """
 
     def __init__(
-        self, scans_client, vulnerabilities_client, workbench_version: str = ""
+        self,
+        scans_client,
+        vulnerabilities_client,
+        *,
+        identification_service=None,
+        dependency_service=None,
+        workbench_version: str = "",
     ):
         """
         Initialize ResultsService.
 
         Args:
-            scans_client: ScansClient instance for scan results
+            scans_client: ScansClient for scan info and policy warnings
             vulnerabilities_client: VulnerabilitiesClient for vuln data
+            identification_service: Optional IdentificationService for KB
+                identification aggregates (components, licenses, metrics, pending)
+            dependency_service: Optional DependencyService for DA results
             workbench_version: Workbench version for link generation
         """
         self._scans = scans_client
         self._vulnerabilities = vulnerabilities_client
+        self._identification = identification_service
+        self._dependencies = dependency_service
         self._workbench_version = workbench_version
         logger.debug("ResultsService initialized")
 
@@ -285,11 +299,14 @@ class ResultsService:
         logger.debug(
             f"Fetching unique identified licenses for scan '{scan_code}'"
         )
-        licenses: List[Dict[str, Any]] = (
-            self._scans.get_scan_identified_licenses(
+        if self._identification is not None:
+            licenses = self._identification.get_unique_identified_licenses(
+                scan_code
+            )
+        else:
+            licenses = self._scans.get_scan_identified_licenses(
                 scan_code, unique=True
             )
-        )
         logger.debug(f"Retrieved {len(licenses)} unique licenses")
         return licenses
 
@@ -324,11 +341,14 @@ class ResultsService:
         logger.debug(
             f"Fetching all identified licenses for scan '{scan_code}'"
         )
-        licenses: List[Dict[str, Any]] = (
-            self._scans.get_scan_identified_licenses(
+        if self._identification is not None:
+            licenses = self._identification.get_all_identified_licenses(
+                scan_code
+            )
+        else:
+            licenses = self._scans.get_scan_identified_licenses(
                 scan_code, unique=False
             )
-        )
         logger.debug(f"Retrieved {len(licenses)} license occurrences")
         return licenses
 
@@ -359,9 +379,14 @@ class ResultsService:
         logger.debug(
             f"Fetching identified components for scan '{scan_code}'"
         )
-        components: List[Dict[str, Any]] = (
-            self._scans.get_scan_identified_components(scan_code)
-        )
+        if self._identification is not None:
+            components = self._identification.get_identified_components(
+                scan_code
+            )
+        else:
+            components = self._scans.get_scan_identified_components(
+                scan_code
+            )
         logger.debug(f"Retrieved {len(components)} components")
         return components
 
@@ -391,9 +416,12 @@ class ResultsService:
         logger.debug(
             f"Fetching dependency analysis results for scan '{scan_code}'"
         )
-        dependencies: List[Dict[str, Any]] = (
-            self._scans.get_dependency_analysis_results(scan_code)
-        )
+        if self._dependencies is not None:
+            dependencies = self._dependencies.get_dependencies(scan_code)
+        else:
+            dependencies = self._scans.get_dependency_analysis_results(
+                scan_code
+            )
         logger.debug(f"Retrieved {len(dependencies)} dependencies")
         return dependencies
 
@@ -452,9 +480,10 @@ class ResultsService:
             >>> print(f"Pending: {metrics['pending_identification']}")
         """
         logger.debug(f"Fetching scan metrics for scan '{scan_code}'")
-        metrics: Dict[str, Any] = self._scans.get_scan_folder_metrics(
-            scan_code
-        )
+        if self._identification is not None:
+            metrics = self._identification.get_scan_metrics(scan_code)
+        else:
+            metrics = self._scans.get_scan_folder_metrics(scan_code)
         logger.debug("Retrieved scan metrics")
         return metrics
 
@@ -474,7 +503,10 @@ class ResultsService:
             ScanNotFoundError: If the scan doesn't exist
         """
         logger.debug(f"Fetching pending files for scan '{scan_code}'")
-        pending: Dict[str, Any] = self._scans.get_pending_files(scan_code)
+        if self._identification is not None:
+            pending = self._identification.get_pending_files(scan_code)
+        else:
+            pending = self._scans.get_pending_files(scan_code)
         logger.debug(f"Retrieved {len(pending)} pending files")
         return pending
 
