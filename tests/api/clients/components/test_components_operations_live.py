@@ -14,7 +14,6 @@ import pytest
 from workbench_agent.api.clients.components.errors import (
     is_missing_component_information,
 )
-from workbench_agent.api.exceptions import ApiError
 from tests.api.support.contract import assert_contract, assert_data_contract
 from tests.api.support.error_assertions import (
     assert_api_error,
