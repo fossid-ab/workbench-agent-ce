@@ -1,7 +1,7 @@
 # Vulnerabilities API (`group: vulnerabilities`)
 
 CVE lookup, scan vulnerability listing, and VEX (vulnerability exploitability)
-statements. Client: `VulnerabilitiesClient` in `client.py`.
+interactions. Client: `VulnerabilitiesClient` in `client.py`.
 
 ## Actions (client methods)
 

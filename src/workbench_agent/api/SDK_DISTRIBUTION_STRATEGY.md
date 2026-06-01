@@ -38,7 +38,7 @@ This document describes how the Workbench HTTP client layer under `src/workbench
 **Current behavior**
 
 - The **CE package** version is the semver in root `pyproject.toml` (e.g. `0.8.0`). It is **not** the same numbering scheme as FossID Workbench server releases.
-- `WorkbenchClient` performs a **minimum Workbench server version** check using a constant in `workbench_client.py` (`MINIMUM_VERSION`, currently `24.3.0`), via `internal.get_config()` and `packaging.version`.
+- `WorkbenchClient` performs a **minimum Workbench server version** check using a constant in `workbench_client.py` (`MINIMUM_VERSION`, currently `24.3.0`), via `get_workbench_config()` and `packaging.version`.
 - There is **no** `workbench-sdk` entry in `dependencies` today; the strategy sections below describe a **future** split.
 
 **Future options (choose explicitly when extracting)**

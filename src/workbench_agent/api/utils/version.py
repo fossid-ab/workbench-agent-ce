@@ -9,14 +9,14 @@ _VERSION_RE = re.compile(r"(\d+\.\d+\.\d+)")
 
 def normalize_workbench_version(raw_version: str) -> Optional[str]:
     """
-    Normalize raw ``getConfig`` version to MAJOR.MINOR.PATCH.
+    Normalize raw `getConfig` version to MAJOR.MINOR.PATCH.
 
     Examples:
         ``2026.1.0#25559481630`` -> ``2026.1.0``
         ``2026.1.0.v11#24448141686`` -> ``2026.1.0``
 
     Args:
-        raw_version: Value of ``config["version"]`` from internal getConfig.
+        raw_version: Value of `config["version"]` from `get_workbench_config`.
 
     Returns:
         Normalized version string, or None if no numeric triple is found.

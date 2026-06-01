@@ -457,7 +457,9 @@ class ResultsService:
             raise RuntimeError(
                 "ResultsService requires vulnerability_service"
             )
-        vulnerabilities = self._vulnerability.get_vulnerabilities(scan_code)
+        vulnerabilities = self._vulnerability.list_scan_vulnerabilities(
+            scan_code
+        )
         logger.debug(f"Retrieved {len(vulnerabilities)} vulnerabilities")
         return vulnerabilities
 

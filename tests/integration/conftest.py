@@ -514,8 +514,9 @@ def mock_workbench_api(mocker):
     mock_client.reports.resolve_report_types.return_value = {"spdx"}
 
     # --- Mock Internal Client (for version check) ---
-    mock_client.internal = MagicMock()
-    mock_client.internal.get_config.return_value = {"version": "24.3.0"}
+    mock_client.get_workbench_config = MagicMock(
+        return_value={"version": "24.3.0"}
+    )
 
     # Patch WorkbenchClient to return our mock when instantiated
     # Use patch.object with context manager for proper cleanup

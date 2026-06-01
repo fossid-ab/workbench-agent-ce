@@ -115,10 +115,9 @@ def fixture_mock_params(mocker):
 
 @pytest.fixture(name="mock_workbench_client")
 def fixture_mock_workbench_client(mocker):
-    """A WorkbenchClient mock with a stubbable ``internal.get_config()``."""
+    """A WorkbenchClient mock with a stubbable ``get_workbench_config()``."""
     mock_client = mocker.MagicMock()
-    mock_client.internal = mocker.MagicMock()
-    mock_client.internal.get_config = mocker.MagicMock()
+    mock_client.get_workbench_config = mocker.MagicMock()
     return mock_client
 
 
@@ -365,7 +364,7 @@ def test_print_connection_info_success(
     mock_print, mock_params, mock_workbench_client
 ):
     """Test printing connection info with successful server info retrieval."""
-    mock_workbench_client.internal.get_config.return_value = {
+    mock_workbench_client.get_workbench_config.return_value = {
         "server_name": "Test Server",
         "version": "24.3.0",
         "default_language": "en",
@@ -393,7 +392,7 @@ def test_print_connection_info_success(
     assert any("24.3.0" in line for line in printed_lines)
     assert any("✓ Connected" in line for line in printed_lines)
 
-    mock_workbench_client.internal.get_config.assert_called_once()
+    mock_workbench_client.get_workbench_config.assert_called_once()
 
 
 @patch("builtins.print")
@@ -401,7 +400,7 @@ def test_print_connection_info_empty_server_info(
     mock_print, mock_params, mock_workbench_client
 ):
     """Test connection info when server info is empty."""
-    mock_workbench_client.internal.get_config.return_value = {}
+    mock_workbench_client.get_workbench_config.return_value = {}
 
     _print_connection_info(mock_params, mock_workbench_client)
 
@@ -426,7 +425,7 @@ def test_print_connection_info_exception_handling(
     mock_print, mock_params, mock_workbench_client
 ):
     """Test connection info when get_config raises an exception."""
-    mock_workbench_client.internal.get_config.side_effect = Exception(
+    mock_workbench_client.get_workbench_config.side_effect = Exception(
         "Connection failed"
     )
 
@@ -453,7 +452,7 @@ def test_print_connection_info_partial_server_info(
     mock_print, mock_params, mock_workbench_client
 ):
     """Test connection info with partial server info (missing some fields)."""
-    mock_workbench_client.internal.get_config.return_value = {
+    mock_workbench_client.get_workbench_config.return_value = {
         "version": "24.3.0",
     }
 
@@ -559,7 +558,7 @@ def test_print_configuration_integration(
     mock_print, mock_params, mock_workbench_client
 ):
     """End-to-end smoke test without mocking sub-functions."""
-    mock_workbench_client.internal.get_config.return_value = {
+    mock_workbench_client.get_workbench_config.return_value = {
         "server_name": "Integration Server",
         "version": "24.4.0",
     }

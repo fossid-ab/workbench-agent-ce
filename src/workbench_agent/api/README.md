@@ -37,6 +37,9 @@ baking in human formatting.
 Domain clients receive a ``BaseAPI`` instance from ``WorkbenchClient`` and call
 ``_send_request`` with their ``group`` / ``action`` payloads.
 
+``WorkbenchClient.get_workbench_config()`` calls ``internal.getConfig`` once
+(cached) for server version and settings — there is no separate internal client.
+
 ## Clients
 
 **Own:** one Workbench API **group** per domain (`projects`, `scans`,
@@ -85,7 +88,7 @@ helpers).
 
 ```python
 vulns = wb.vulnerability.list_scan_vulnerabilities(scan_code)
-wb.results.get_vulnerabilities(scan_code)  # delegates to vulnerability service
+wb.results.get_vulnerabilities(scan_code)  # scan aggregation helper
 ```
 
 | Service | Role |

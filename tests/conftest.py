@@ -88,8 +88,7 @@ def workbench_inst(mock_session, mocker):
         )
         # Replace the session with our mock
         wb._base_api.session = mock_session
-        # Mock the internal client's get_config for any version checks
-        wb.internal.get_config = mock_get_config
+        wb.get_workbench_config = mock_get_config
         return wb
 
 

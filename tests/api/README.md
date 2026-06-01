@@ -1,8 +1,6 @@
 # API tests (`tests/api/`)
 
-Self-contained test suite for `workbench_agent.api`. Layout mirrors the SDK
-package so this tree can move with `src/workbench_agent/api/` when the SDK is
-extracted.
+Test suite for `workbench_agent.api`. Layout mirrors the SDK so this tree can move with `src/workbench_agent/api/` when the SDK is extracted.
 
 ## Layout
 
@@ -41,7 +39,8 @@ Coverage matrices live in `tests/api/clients/<domain>/COVERAGE.md` — see
 
 ## Workbench version normalization
 
-`internal.getConfig()` returns a raw string such as `2026.1.0#25559481630`.
+`WorkbenchClient.get_workbench_config()` (`internal.getConfig`) returns a raw
+version string such as `2026.1.0#25559481630`.
 The SDK normalizes to **`2026.1.0`** via
 `workbench_agent.api.utils.version.normalize_workbench_version` (same logic as
 `WorkbenchClient`).
@@ -94,9 +93,6 @@ Test Scan). Prefer `workbench.vulnerability` for agent workflows;
 `workbench.vulnerabilities` remains the raw client. Mutations need
 `WORKBENCH_ALLOW_MUTATIONS=1`.
 
-Both scans use the same **Project Sample Mix** tree (see `../ProjectMix` locally).
-Top-level folders include `OpenFastPath/`, `Android-Bluetooth/`, `Files with Snippets/`, etc.
-There is no scan-root `"."` folder path — pass a top-level folder to folder browser APIs.
 
 ### Unidentified scan: auditor workflow
 
@@ -105,8 +101,7 @@ There is no scan-root `"."` folder path — pass a top-level folder to folder br
    - `files_and_folders.get_identification`
    - `files_and_folders.get_fossid_results` / `get_matched_lines`
    - identification writes (license, component, mark identified, …)
-3. Optional folder context: `get_folder_content` / rankings under a top-level folder
-   (e.g. `OpenFastPath`) — not a substitute for step 1.
+3. Optional folder context: `get_folder_content` / rankings under a top-level folder.
 
 Fixtures: `pending_files`, `pending_paths`, `pending_path` (session-scoped from step 1).
 

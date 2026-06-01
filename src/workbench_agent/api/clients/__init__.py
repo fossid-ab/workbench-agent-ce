@@ -7,7 +7,6 @@ Each client handles operations for a specific domain (projects, scans, etc.).
 from .components import ComponentsClient
 from .download_api import DownloadClient
 from .files_and_folders import FilesAndFoldersClient
-from .internal_api import InternalClient
 from .projects import ProjectsClient
 from .quickscan_api import QuickScanClient
 from .scans import ScansClient
@@ -19,7 +18,6 @@ __all__ = [
     "ComponentsClient",
     "DownloadClient",
     "FilesAndFoldersClient",
-    "InternalClient",
     "ProjectsClient",
     "QuickScanClient",
     "ScansClient",

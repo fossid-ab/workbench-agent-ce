@@ -230,7 +230,7 @@ def _print_connection_info(params: Any, workbench_api: Any) -> None:
     status = "⚠ Could not retrieve server info"
 
     try:
-        config_data = workbench_api.internal.get_config()
+        config_data = workbench_api.get_workbench_config()
         if config_data:
             server_name = config_data.get("server_name", "Unknown")
             version = config_data.get("version", "Unknown")

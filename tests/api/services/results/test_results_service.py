@@ -496,7 +496,7 @@ class TestResultsServiceDelegation:
     def test_get_vulnerabilities_delegates_to_vulnerability_service(self):
         scans = MagicMock()
         vulnerability = MagicMock()
-        vulnerability.get_vulnerabilities.return_value = [
+        vulnerability.list_scan_vulnerabilities.return_value = [
             {"cve": "CVE-2020-1"}
         ]
 
@@ -506,4 +506,4 @@ class TestResultsServiceDelegation:
         )
         result = service.get_vulnerabilities("S1")
         assert result == [{"cve": "CVE-2020-1"}]
-        vulnerability.get_vulnerabilities.assert_called_once_with("S1")
+        vulnerability.list_scan_vulnerabilities.assert_called_once_with("S1")

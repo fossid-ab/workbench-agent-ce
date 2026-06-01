@@ -93,7 +93,7 @@ def workbench_client(workbench_config):
 @pytest.fixture(scope="session")
 def workbench_version_raw(workbench_client):
     """Raw version string from getConfig (e.g. ``2026.1.0#25559481630``)."""
-    return workbench_client.internal.get_config().get("version", "Unknown")
+    return workbench_client.get_workbench_config().get("version", "Unknown")
 
 
 @pytest.fixture(scope="session")

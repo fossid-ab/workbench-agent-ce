@@ -6,6 +6,7 @@ Functionality is organized into domain-specific clients and services.
 """
 
 import logging
+from typing import Any, Dict
 
 from packaging import version as packaging_version
 
@@ -15,7 +16,6 @@ from workbench_agent.api.clients import (
     ComponentsClient,
     DownloadClient,
     FilesAndFoldersClient,
-    InternalClient,
     ProjectsClient,
     QuickScanClient,
     ScansClient,
@@ -23,7 +23,7 @@ from workbench_agent.api.clients import (
     UsersClient,
     VulnerabilitiesClient,
 )
-from workbench_agent.api.exceptions import CompatibilityError
+from workbench_agent.api.exceptions import ApiError, CompatibilityError
 from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.services import (
     ComponentService,
@@ -58,7 +58,6 @@ class WorkbenchClient:
     - `vulnerabilities`: Vulnerability queries
     - `quick_scan`: Quick file scanning
     - `users`: User lookup and listing permissions for a user
-    - `internal`: Internal/config operations
     - `components`: Component catalog (list, create, update, usage)
     - `component_catalog`: Catalog orchestration (find, resolve, update)
     - `files_and_folders`: File identification and audit operations
@@ -77,6 +76,10 @@ class WorkbenchClient:
     - `dependencies`: Dependency analysis result read/write workflows
     - `identification`: Scan file identification read/write workflows
     - `vulnerability`: CVE listing and VEX create/update
+
+    **Client lifecycle:**
+    - `get_workbench_config()`: Server config from ``internal.getConfig``
+    - `get_workbench_version()`: Normalized version (cached after init check)
 
     Example:
         >>> workbench = WorkbenchClient(api_url, api_user, api_token)
@@ -142,10 +145,7 @@ class WorkbenchClient:
             f"BaseAPI initialized with URL: {self._base_api.api_url}"
         )
 
-        # Initialize InternalClient first (needed for version check)
-        self.internal = InternalClient(self._base_api)
-
-        # Check Workbench server version compatibility (also caches version)
+        self._workbench_config: Dict[str, Any] = {}
         self._workbench_version = ""
         self._check_version_compatibility()
 
@@ -260,7 +260,7 @@ class WorkbenchClient:
             logger.info(
                 "Checking Workbench version compatibility..."
             )
-            config_data = self.internal.get_config()
+            config_data = self.get_workbench_config()
             workbench_version = config_data.get("version", "Unknown")
 
             if workbench_version == "Unknown":
@@ -352,6 +352,49 @@ class WorkbenchClient:
 
     # ===== PUBLIC METHODS =====
 
+    def get_workbench_config(self) -> Dict[str, Any]:
+        """
+        Return Workbench configuration from ``internal.getConfig``.
+
+        Includes ``version``, ``server_name``, and other server settings.
+        Cached after the first successful fetch (including during init).
+
+        Returns:
+            Configuration dict from the API ``data`` object.
+
+        Raises:
+            ApiError: If the API returns an error or unexpected shape.
+            NetworkError: On connection failures.
+        """
+        if self._workbench_config:
+            return self._workbench_config
+
+        logger.debug("Getting Workbench configuration...")
+        response = self._base_api._send_request(
+            {"group": "internal", "action": "getConfig", "data": {}}
+        )
+
+        if response.get("status") == "1" and "data" in response:
+            data = response["data"]
+            if isinstance(data, dict):
+                self._workbench_config = data
+                logger.debug(
+                    "Successfully retrieved Workbench configuration."
+                )
+                return data
+            logger.warning(
+                "API returned success for getConfig but 'data' was not "
+                "a dict: %s",
+                type(data),
+            )
+            return {}
+
+        error_msg = response.get("error", f"Unexpected response: {response}")
+        raise ApiError(
+            f"Failed to get configuration: {error_msg}",
+            details=response,
+        )
+
     def get_workbench_version(self) -> str:
         """
         Get the Workbench server version.
@@ -372,7 +415,7 @@ class WorkbenchClient:
         """
         if self._workbench_version:
             return self._workbench_version
-        config_data = self.internal.get_config()
+        config_data = self.get_workbench_config()
         raw = config_data.get("version", "Unknown")
         normalized = normalize_workbench_version(str(raw))
         return normalized or str(raw)
