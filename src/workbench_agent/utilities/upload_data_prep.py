@@ -68,7 +68,7 @@ def prepare_scan_target(path: str) -> Iterator[str]:
         path: Source path (directory or file) to prepare for upload.
 
     Yields:
-        str: A file path safe to hand to ``UploadService.upload_scan_target``.
+        str: A file path safe to hand to ``ScanContentService.upload_scan_target``.
     """
     if os.path.isdir(path):
         print("The path provided is a directory. Compressing...")

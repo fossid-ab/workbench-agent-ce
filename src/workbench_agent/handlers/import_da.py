@@ -78,7 +78,7 @@ def handle_import_da(
     # Upload dependency analysis file
     print("\n--- Uploading Dependency Analysis File ---")
     try:
-        client.upload_service.upload_da_results(
+        client.scan_content.upload_da_results(
             scan_code=scan_code, path=params.path
         )
         print("Dependency analysis results uploaded successfully!")

@@ -1,14 +1,8 @@
 """
-ScanOperationsService - Handles scan execution operations.
+ScanOperationsService - Control all Scanning-related Operations in Workbench.
 
-This service provides:
-- Scan execution with validation and version awareness
-- Archive extraction orchestration
-- Dependency analysis orchestration
-
-The service handles business logic and payload construction:
-- Service layer: Payload building, orchestration
-- Client layer: Raw HTTP API calls
+Supports KB scanning, dependency analysis run/import, and SBOM import. 
+File upload, extraction, and Git ops live in ``ScanContentService``.
 """
 
 import logging
@@ -23,32 +17,14 @@ class ScanOperationsService:
 
     This service handles business logic for:
     - Running KB scans with ID reuse resolution
-    - Extracting archives
-    - Starting dependency analysis
-    - ID reuse name→code resolution
-
-    Architecture:
-    - Service layer: Payload building, orchestration
-    - Client layer: Raw HTTP API calls
+    - Dependency analysis (run or import-only)
+    - SBOM report import
 
     Example:
         >>> scan_ops = ScanOperationsService(scans_client, resolver_service)
-        >>>
-        >>> # Start a scan (ID reuse resolution happens automatically)
-        >>> scan_ops.start_scan(
-        ...     scan_code="scan_code",
-        ...     limit=10,
-        ...     sensitivity=6,
-        ...     autoid_file_licenses=True,
-        ...     id_reuse_project_name="MyProject"  # Resolved automatically
-        ... )
-        >>>
-        >>> # Start archive extraction
-        >>> scan_ops.start_archive_extraction(
-        ...     scan_code="scan_code",
-        ...     recursively_extract_archives=True,
-        ...     jar_file_extraction=True
-        ... )
+        >>> scan_ops.start_scan(scan_code="S1", limit=10, sensitivity=6, ...)
+        >>> scan_ops.start_da_import(scan_code="S1")
+        >>> scan_ops.start_sbom_import(scan_code="S1")
     """
 
     def __init__(self, scans_client, resolver_service):
@@ -63,7 +39,7 @@ class ScanOperationsService:
         self._resolver = resolver_service
         logger.debug("ScanOperationsService initialized")
 
-    # ===== PUBLIC API =====
+    # ===== SCANNING OPERATIONS =====
 
     def start_scan(
         self,
@@ -234,61 +210,6 @@ class ScanOperationsService:
             scan_host=scan_host,
         )
 
-    def start_archive_extraction(
-        self,
-        scan_code: str,
-        recursively_extract_archives: bool,
-        jar_file_extraction: bool,
-        extract_to_directory: bool = False,
-        filename: Optional[str] = None,
-    ) -> bool:
-        """
-        Start archive extraction for a scan with validation.
-
-        This method builds the payload and delegates to ScansClient.
-
-        Args:
-            scan_code: Code of the scan to extract archives for
-            recursively_extract_archives: Whether to recursively extract
-            jar_file_extraction: Whether to extract JAR files
-            extract_to_directory: Whether to extract to a directory
-                (default: False - extracts to flat structure)
-            filename: Specific filename to extract (optional, extracts
-                all if not specified)
-
-        Returns:
-            True if extraction was triggered successfully
-
-        Raises:
-            ApiError: If there are API issues
-            ScanNotFoundError: If the scan doesn't exist
-            NetworkError: If there are network issues
-        """
-        logger.info(f"Extracting archives for scan '{scan_code}'...")
-
-        # Build payload
-        payload_data = {
-            "scan_code": scan_code,
-            "recursively_extract_archives": (
-                str(recursively_extract_archives).lower()
-            ),
-            "jar_file_extraction": str(jar_file_extraction).lower(),
-            "extract_to_directory": "1" if extract_to_directory else "0",
-        }
-
-        # Add optional filename parameter if provided
-        if filename is not None:
-            payload_data["filename"] = filename
-
-        logger.debug(
-            f"Built extract archives payload with "
-            f"{len(payload_data)} parameters for scan '{scan_code}'"
-        )
-
-        # Delegate to client
-        result: bool = self._scans.extract_archives(payload_data)
-        return result
-
     def start_da_only(self, scan_code: str):
         """
         Start dependency analysis only (without KB scan).
@@ -317,6 +238,8 @@ class ScanOperationsService:
 
         # Delegate to client
         return self._scans.run_dependency_analysis(payload_data)
+
+    # ===== IMPORT OPERATIONS =====
 
     def start_da_import(self, scan_code: str):
         """

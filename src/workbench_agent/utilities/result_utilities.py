@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Dict
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
 
+from workbench_agent.api.exceptions import ApiError, NetworkError
 from workbench_agent.utilities.vulnerability_display import (
     print_vulnerability_results,
 )
@@ -29,9 +30,8 @@ def fetch_results(
     """
     Fetches requested scan results based on --show-* flags.
 
-    This delegates to ResultsService.fetch_results() for
-    fetching multiple result types. It allows partial
-    results to be returned even if some fetches fail.
+    Orchestrates domain services on the Workbench client. Partial
+    results are returned even if some fetches fail.
 
     Args:
         workbench: WorkbenchClient instance
@@ -73,8 +73,106 @@ def fetch_results(
         )
         return {}
 
-    # Delegate to ResultsService.fetch_results()
-    return workbench.results.fetch_results(scan_code, params)
+    logger.debug(
+        "Fetching requested results for scan '%s' based on --show-* flags",
+        scan_code,
+    )
+    collected_results: Dict[str, Any] = {}
+
+    if should_fetch_licenses or should_fetch_dependencies:
+        try:
+            da_results = workbench.dependencies.list_dependencies(scan_code)
+            if da_results:
+                collected_results["dependency_analysis"] = da_results
+                logger.info(
+                    "Fetched %d dependency analysis results",
+                    len(da_results),
+                )
+        except (ApiError, NetworkError) as e:
+            logger.warning(
+                "Could not fetch Dependency Analysis results: %s", e
+            )
+            print(
+                f"Warning: Could not fetch Dependency Analysis results: {e}"
+            )
+
+    if should_fetch_licenses:
+        try:
+            kb_licenses = (
+                workbench.identification.get_unique_identified_licenses(
+                    scan_code
+                )
+            )
+            if kb_licenses:
+                collected_results["kb_licenses"] = sorted(
+                    kb_licenses,
+                    key=lambda x: x.get("identifier", "").lower(),
+                )
+                logger.info("Fetched %d KB licenses", len(kb_licenses))
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch KB Identified Licenses: %s", e)
+            print(f"Warning: Could not fetch KB Identified Licenses: {e}")
+
+    if should_fetch_components:
+        try:
+            kb_components = (
+                workbench.identification.get_identified_components(scan_code)
+            )
+            if kb_components:
+                collected_results["kb_components"] = sorted(
+                    kb_components,
+                    key=lambda x: (
+                        x.get("name", "").lower(),
+                        x.get("version", ""),
+                    ),
+                )
+                logger.info(
+                    "Fetched %d KB components", len(kb_components)
+                )
+        except (ApiError, NetworkError) as e:
+            logger.warning(
+                "Could not fetch KB Identified Scan Components: %s", e
+            )
+            print(
+                "Warning: Could not fetch KB Identified Scan Components: "
+                f"{e}"
+            )
+
+    if should_fetch_metrics:
+        try:
+            metrics = workbench.identification.get_scan_metrics(scan_code)
+            if metrics:
+                collected_results["scan_metrics"] = metrics
+                logger.info("Fetched scan metrics")
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch Scan File Metrics: %s", e)
+            print(f"Warning: Could not fetch Scan File Metrics: {e}")
+
+    if should_fetch_policy:
+        try:
+            warnings = workbench.policy.get_policy_warnings(scan_code)
+            if warnings:
+                collected_results["policy_warnings"] = warnings
+                logger.info("Fetched policy warnings counter")
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch Scan Policy Warnings: %s", e)
+            print(f"Warning: Could not fetch Scan Policy Warnings: {e}")
+
+    if should_fetch_vulnerabilities:
+        try:
+            vulnerabilities = (
+                workbench.vulnerability.list_scan_vulnerabilities(scan_code)
+            )
+            if vulnerabilities:
+                collected_results["vulnerabilities"] = vulnerabilities
+                logger.info(
+                    "Fetched %d vulnerabilities", len(vulnerabilities)
+                )
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch Vulnerabilities: %s", e)
+            print(f"Warning: Could not fetch Vulnerabilities: {e}")
+
+    return collected_results
 
 
 def display_results(

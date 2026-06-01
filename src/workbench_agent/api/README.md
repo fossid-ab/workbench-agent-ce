@@ -88,7 +88,8 @@ helpers).
 
 ```python
 vulns = wb.vulnerability.list_scan_vulnerabilities(scan_code)
-wb.results.get_vulnerabilities(scan_code)  # scan aggregation helper
+links = wb.links.get_workbench_links(scan_code)
+warnings = wb.policy.get_policy_warnings(scan_code)
 ```
 
 | Service | Role |
@@ -97,8 +98,11 @@ wb.results.get_vulnerabilities(scan_code)  # scan aggregation helper
 | `identification` | File + scan identification read/write |
 | `dependencies` | Dependency analysis read/write |
 | `vulnerability` | `list_scan_vulnerabilities` / `list_project_vulnerabilities`, VEX create/update |
-| `results` | Aggregate scan reads for `--show-*` (delegates to domain services) |
-| `resolver`, `scan_operations`, `reports`, … | Higher-level scan/project workflows |
+| `policy` | License policy warning counts (`get_policy_warnings`) |
+| `links` | Version-aware Workbench UI deep links (not an API group) |
+| `scan_content` | Scan file directory: upload (target/DA/SBOM), extract, remove, Git |
+| `scan_operations` | Process scan files: KB scan, DA run/import, SBOM import |
+| `resolver`, `reports`, … | Higher-level scan/project workflows |
 
 Prefer **services** in application and agent code. Reach for **clients** when
 you need direct access to a single API action, contract tests, or a method not
@@ -148,9 +152,8 @@ See [`tests/api/README.md`](../../../tests/api/README.md).
 - Older **flat** client modules (`*_api.py`) are being replaced by packaged
   `clients/<domain>/`.
 - Some **legacy services** still emit CLI `print()` during long-running
-  workflows (`resolver`, `status_check`, parts of `results.fetch_results`).
-  New service code should not add prints; migrate callers to utilities when
-  touching those paths.
+  workflows (`resolver`, `status_check`). New service code should not add
+  prints; `--show-*` orchestration lives in `workbench_agent.utilities`.
 
 ## Related docs
 

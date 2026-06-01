@@ -145,51 +145,6 @@ def test_scan_failed_files_forces_scan_failed_only(
     assert call_args["scan_host"] == "scan-host-1"
 
 
-# --- Test start_archive_extraction ---
-def test_start_archive_extraction_basic(
-    scan_operations_service, mock_scans_client
-):
-    """Test starting archive extraction with basic parameters."""
-    mock_scans_client.extract_archives.return_value = True
-
-    result = scan_operations_service.start_archive_extraction(
-        scan_code="test_scan",
-        recursively_extract_archives=True,
-        jar_file_extraction=False,
-    )
-
-    assert result is True
-    mock_scans_client.extract_archives.assert_called_once()
-    call_args = mock_scans_client.extract_archives.call_args[0][0]
-    assert call_args["scan_code"] == "test_scan"
-    assert call_args["recursively_extract_archives"] == "true"
-    assert call_args["jar_file_extraction"] == "false"
-    assert call_args["extract_to_directory"] == "0"
-
-
-def test_start_archive_extraction_with_options(
-    scan_operations_service, mock_scans_client
-):
-    """Test starting archive extraction with different options."""
-    mock_scans_client.extract_archives.return_value = True
-
-    result = scan_operations_service.start_archive_extraction(
-        scan_code="another_scan",
-        recursively_extract_archives=False,
-        jar_file_extraction=True,
-        extract_to_directory=True,
-        filename="archive.zip",
-    )
-
-    assert result is True
-    call_args = mock_scans_client.extract_archives.call_args[0][0]
-    assert call_args["scan_code"] == "another_scan"
-    assert call_args["recursively_extract_archives"] == "false"
-    assert call_args["jar_file_extraction"] == "true"
-    assert call_args["extract_to_directory"] == "1"
-    assert call_args["filename"] == "archive.zip"
-
-
 # --- Test DA methods ---
 def test_start_da_only(scan_operations_service, mock_scans_client):
     """Test start_da_only method."""

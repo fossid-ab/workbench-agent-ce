@@ -40,7 +40,7 @@ def print_import_summary(
     if not show_summary:
         # Just show the link and return
         try:
-            links = workbench.results.get_workbench_links(scan_code)
+            links = workbench.links.get_workbench_links(scan_code)
             print("\n🔗 View this Scan in Workbench:\n")
             print(f"{links.scan['url']}")
         except Exception as e:
@@ -62,31 +62,39 @@ def print_import_summary(
     # Fetch dependencies (if import was completed)
     if import_completed:
         try:
-            dependencies = workbench.results.get_dependencies(scan_code)
+            dependencies = workbench.dependencies.list_dependencies(scan_code)
         except (ApiError, NetworkError) as e:
             logger.debug(f"Could not fetch dependencies: {e}")
 
     # Fetch KB components and licenses for SBOM imports
     if is_sbom_import and import_completed:
         try:
-            kb_components = workbench.results.get_identified_components(scan_code)
+            kb_components = workbench.identification.get_identified_components(
+                scan_code
+            )
         except (ApiError, NetworkError) as e:
             logger.debug(f"Could not fetch KB components: {e}")
 
         try:
-            kb_licenses = workbench.results.get_unique_identified_licenses(scan_code)
+            kb_licenses = (
+                workbench.identification.get_unique_identified_licenses(
+                    scan_code
+                )
+            )
         except (ApiError, NetworkError) as e:
             logger.debug(f"Could not fetch KB licenses: {e}")
 
     # Fetch policy warnings
     try:
-        policy_warnings = workbench.results.get_policy_warnings(scan_code)
+        policy_warnings = workbench.policy.get_policy_warnings(scan_code)
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch policy warnings: {e}")
 
     # Fetch vulnerabilities
     try:
-        vulnerabilities = workbench.results.get_vulnerabilities(scan_code)
+        vulnerabilities = workbench.vulnerability.list_scan_vulnerabilities(
+            scan_code
+        )
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch vulnerabilities: {e}")
 
@@ -160,7 +168,7 @@ def print_import_summary(
 
     # Always show Workbench link
     try:
-        links = workbench.results.get_workbench_links(scan_code)
+        links = workbench.links.get_workbench_links(scan_code)
         print("\n🔗 View this Scan in Workbench:\n")
         print(f"{links.scan['url']}")
     except Exception as e:

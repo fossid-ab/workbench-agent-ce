@@ -12,7 +12,7 @@
 - ``Content-Length`` must be stripped from prepared chunk requests.
 - Non-200 chunk responses are retried up to ``MAX_CHUNK_RETRIES`` (3).
 - Service layer switches to chunked mode above ~7 MiB
-  (``UploadService.CHUNKED_UPLOAD_THRESHOLD``).
+  (``ScanContentService.CHUNKED_UPLOAD_THRESHOLD``).
 
 ## Standard upload JSON
 

@@ -959,10 +959,9 @@ class ScansClient:
         """
         Extract archives using pre-built payload.
 
-        This method directly wraps the API's extract_archives action.
-        For most use cases, prefer using
-        ScanOperationsService.start_archive_extraction() which provides
-        validation and business logic.
+        This method wraps the API's extract_archives action.
+        For most use cases, use ScanContentService.extract_archives()
+        which provides validation and business logic.
 
         Args:
             payload_data: Pre-built payload data dictionary containing:

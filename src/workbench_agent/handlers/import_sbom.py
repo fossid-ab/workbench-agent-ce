@@ -206,7 +206,7 @@ def handle_import_sbom(
         # Upload SBOM file using the prepared upload path
         print("\n--- Uploading SBOM File ---")
         try:
-            client.upload_service.upload_sbom_file(
+            client.scan_content.upload_sbom_file(
                 scan_code=scan_code, path=upload_path
             )
             print(f"SBOM uploaded successfully from: {upload_path}")

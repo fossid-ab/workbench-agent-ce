@@ -37,9 +37,9 @@ def mock_client():
         "scan_code",
         False,
     )
-    client.scan_operations.start_archive_extraction.return_value = False
     client.scan_content = MagicMock()
     client.scan_content.remove_uploaded_content.return_value = True
+    client.scan_content.extract_archives.return_value = False
     return client
 
 
@@ -191,7 +191,7 @@ class TestScanHandlerUploadWiring:
         handle_scan(mock_client, base_params)
 
         mock_prep.assert_called_once_with(base_params.path)
-        mock_client.upload_service.upload_scan_target.assert_called_once_with(
+        mock_client.scan_content.upload_scan_target.assert_called_once_with(
             "scan_code", "/tmp/prepared.zip"
         )
         prepared_ctx.__exit__.assert_called_once()

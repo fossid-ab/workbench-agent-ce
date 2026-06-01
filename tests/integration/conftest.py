@@ -425,12 +425,6 @@ def mock_workbench_api(mocker):
     )  # Empty list for project lookup
     mock_client.projects.create.return_value = {"project_code": "PRJ-MOCK"}
 
-    # --- Mock Upload Service ---
-    mock_client.upload_service = MagicMock()
-    mock_client.upload_service.upload_scan_target.return_value = None
-    mock_client.upload_service.upload_da_results.return_value = None
-    mock_client.upload_service.upload_sbom_file.return_value = None
-
     # --- Mock Vulnerabilities Client ---
     mock_client.vulnerabilities = MagicMock()
     mock_client.vulnerabilities.list_vulnerabilities.return_value = []
@@ -464,14 +458,15 @@ def mock_workbench_api(mocker):
         duration=2.0,
         success=True,
     )
-    mock_client.scan_content.check_git_clone_status.return_value = (
-        _git_clone_done
-    )
     mock_client.scan_content.download_git_and_wait.return_value = (
         _git_clone_done
     )
     mock_client.scan_content.download_content_from_git.return_value = True
     mock_client.scan_content.remove_uploaded_content.return_value = True
+    mock_client.scan_content.upload_scan_target.return_value = None
+    mock_client.scan_content.upload_da_results.return_value = None
+    mock_client.scan_content.upload_sbom_file.return_value = None
+    mock_client.scan_content.extract_archives.return_value = True
 
     mock_client.quick_scan_service = MagicMock()
     mock_client.quick_scan_service.scan_one_file.return_value = []
@@ -495,19 +490,16 @@ def mock_workbench_api(mocker):
     mock_client.user_permissions = MagicMock()
     mock_client.user_permissions.can_delete_scan.return_value = True
 
-    # --- Mock Results Service ---
-    mock_client.results = MagicMock()
-    mock_client.results.fetch_results.return_value = {
-        "dependency_analysis": {},
-        "kb_licenses": [],
-        "vulnerabilities": [],
-    }
-    mock_client.results.links = MagicMock()
-    mock_client.results.get_pending_files.return_value = {}
-    mock_client.results.get_policy_warnings.return_value = {
+    # --- Mock Policy / Links / domain services for gates and summaries ---
+    mock_client.policy = MagicMock()
+    mock_client.policy.get_policy_warnings.return_value = {
         "policy_warnings_total": 0
     }
-    mock_client.results.get_vulnerabilities.return_value = []
+    mock_client.links = MagicMock()
+    mock_client.identification = MagicMock()
+    mock_client.identification.get_pending_files.return_value = {}
+    mock_client.vulnerability = MagicMock()
+    mock_client.vulnerability.list_scan_vulnerabilities.return_value = []
 
     # --- Mock Reports Service ---
     mock_client.reports = MagicMock()

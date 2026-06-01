@@ -2,7 +2,7 @@
 
 Uploads are **not** JSON ``group``/``action`` calls. The client POSTs raw file
 bytes to the Workbench ``api.php`` URL with FossID-specific HTTP headers.
-``UploadService`` builds headers; ``UploadsClient`` performs transport.
+``ScanContentService`` builds headers; ``UploadsClient`` performs transport.
 
 Auth: HTTP Basic Auth (``api_user``, ``api_token``) on every request.
 

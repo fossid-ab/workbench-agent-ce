@@ -26,7 +26,7 @@ class UploadsClient:
     Transport quirks: ``clients/uploads/quirks.md``.
 
     Business logic (header building, chunked vs standard) lives in
-    ``UploadService``.
+    ``ScanContentService``.
 
     Example:
         >>> uploads = UploadsClient(base_api)

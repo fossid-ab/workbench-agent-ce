@@ -48,7 +48,7 @@ class TestEvaluateGatesIntegration:
         """
         Test evaluate-gates command when pending files are found and --fail-on-pending is set.
         """
-        mock_workbench_api.results.get_pending_files.return_value = {
+        mock_workbench_api.identification.get_pending_files.return_value = {
             "file1.cpp": {"status": "pending"},
             "file2.h": {"status": "pending"},
         }
@@ -85,7 +85,7 @@ class TestEvaluateGatesIntegration:
         """
         Test evaluate-gates command when policy warnings are found and --fail-on-policy is set.
         """
-        mock_workbench_api.results.get_policy_warnings.return_value = {
+        mock_workbench_api.policy.get_policy_warnings.return_value = {
             "policy_warnings_total": 2
         }
 
@@ -121,7 +121,7 @@ class TestEvaluateGatesIntegration:
         """
         Test evaluate-gates command when vulnerabilities are found and --fail-on-vuln-severity is set.
         """
-        mock_workbench_api.results.get_vulnerabilities.return_value = [
+        mock_workbench_api.vulnerability.list_scan_vulnerabilities.return_value = [
             {
                 "id": "CVE-2021-1234",
                 "severity": "critical",
@@ -167,7 +167,7 @@ class TestEvaluateGatesIntegration:
         """
         Test evaluate-gates command when pending files exist but --fail-on-pending is not set.
         """
-        mock_workbench_api.results.get_pending_files.return_value = {
+        mock_workbench_api.identification.get_pending_files.return_value = {
             "file1.cpp": {"status": "pending", "path": "/src/file1.cpp"}
         }
 

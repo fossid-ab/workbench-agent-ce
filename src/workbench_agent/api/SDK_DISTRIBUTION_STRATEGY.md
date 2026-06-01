@@ -79,7 +79,7 @@ workbench-agent-ce/
 
 The API package **does** import application-level exceptions from `workbench_agent.exceptions` in several modules, for example:
 
-- `FileSystemError` — `upload_api.py`, `upload_service.py`, `report_service.py`
+- `FileSystemError` — `uploads` client transport, `scan_content_service.py`, `report_service.py`
 - `ValidationError` — `download_api.py`, `report_service.py`
 
 `WorkbenchAgentError` and subclasses live outside `api/` today. For a standalone `workbench-sdk` wheel, either:

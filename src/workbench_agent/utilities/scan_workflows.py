@@ -70,7 +70,7 @@ def _print_workbench_link(
 ):
     """Display a clickable Workbench link for *scan_code*."""
     try:
-        links = workbench.results.get_workbench_links(scan_code)
+        links = workbench.links.get_workbench_links(scan_code)
         print("\n🔗 View this Scan in Workbench:\n")
         print(f"{links.scan['url']}")
     except Exception as e:
@@ -174,7 +174,7 @@ def _print_scan_summary(
 
     if kb_scan_performed:
         try:
-            scan_metrics = workbench.results.get_scan_metrics(
+            scan_metrics = workbench.identification.get_scan_metrics(
                 scan_code
             )
         except (ApiError, NetworkError) as e:
@@ -182,21 +182,19 @@ def _print_scan_summary(
 
     if da_completed:
         try:
-            dependencies = workbench.results.get_dependencies(
+            dependencies = workbench.dependencies.list_dependencies(
                 scan_code
             )
         except (ApiError, NetworkError) as e:
             logger.debug(f"Could not fetch dependencies: {e}")
 
     try:
-        policy_warnings = workbench.results.get_policy_warnings(
-            scan_code
-        )
+        policy_warnings = workbench.policy.get_policy_warnings(scan_code)
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch policy warnings: {e}")
 
     try:
-        vulnerabilities = workbench.results.get_vulnerabilities(
+        vulnerabilities = workbench.vulnerability.list_scan_vulnerabilities(
             scan_code
         )
     except (ApiError, NetworkError) as e:
@@ -212,7 +210,7 @@ def _print_scan_summary(
     if kb_scan_performed:
         try:
             kb_components = (
-                workbench.results.get_identified_components(
+                workbench.identification.get_identified_components(
                     scan_code
                 )
             )
@@ -221,7 +219,7 @@ def _print_scan_summary(
 
         try:
             kb_licenses = (
-                workbench.results.get_unique_identified_licenses(
+                workbench.identification.get_unique_identified_licenses(
                     scan_code
                 )
             )

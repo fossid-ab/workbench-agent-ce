@@ -102,12 +102,12 @@ def handle_scan(
     print("\n--- Preparing Scan Target ---")
     with prepare_scan_target(params.path) as upload_path:
         print("\nUploading Code to Workbench...")
-        client.upload_service.upload_scan_target(scan_code, upload_path)
+        client.scan_content.upload_scan_target(scan_code, upload_path)
 
     # ===== STEP 5: Extract archives =====
     print("\nExtracting Uploaded Archive...")
     extraction_triggered = (
-        client.scan_operations.start_archive_extraction(
+        client.scan_content.extract_archives(
             scan_code=scan_code,
             recursively_extract_archives=(
                 params.recursively_extract_archives

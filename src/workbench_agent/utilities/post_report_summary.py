@@ -11,7 +11,7 @@ logger = logging.getLogger("workbench-agent")
 def _print_workbench_link(workbench: "WorkbenchClient", scan_code: str):
     """Helper to display Workbench link."""
     try:
-        links = workbench.results.get_workbench_links(scan_code)
+        links = workbench.links.get_workbench_links(scan_code)
         print("\n🔗 View this Scan in Workbench:\n")
         print(f"{links.scan['url']}")
     except Exception as e:

@@ -140,13 +140,13 @@ def scan_git_pre_flight_check(
     # Check each process type individually
     try:
         # Check if git clone is active
-        git_status = client.scan_content.check_git_clone_status(scan_code)
+        git_status = client.status_check.check_git_clone_status(scan_code)
         if git_status.is_active:
             print(
                 "\nA prior Git Clone operation is in progress, "
                 "waiting for it to complete..."
             )
-            client.scan_content.check_git_clone_status(
+            client.status_check.check_git_clone_status(
                 scan_code,
                 wait=True,
                 wait_retry_count=params.scan_number_of_tries,

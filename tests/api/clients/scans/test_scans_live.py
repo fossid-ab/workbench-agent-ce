@@ -199,7 +199,7 @@ class TestScansLiveDependencyAnalysis:
         )
         assert components == []
 
-    def test_results_service_get_dependencies(
+    def test_dependency_service_get_dependencies(
         self,
         workbench_client,
         dependency_analysis_test_scan_code,

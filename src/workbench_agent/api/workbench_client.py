@@ -31,13 +31,13 @@ from workbench_agent.api.services import (
     IdentificationService,
     QuickScanService,
     ReportService,
+    LinksService,
+    PolicyService,
     ResolverService,
-    ResultsService,
     ScanContentService,
     ScanDeletionService,
     ScanOperationsService,
     StatusCheckService,
-    UploadService,
     UserPermissionsService,
     VulnerabilityService,
 )
@@ -65,13 +65,13 @@ class WorkbenchClient:
     **Services (High-level orchestration):**
     - `resolver`: Resolve project/scan names to codes, create if needed
     - `status_check`: Check status of async operations (specialized methods)
-    - `scan_content`: Manages scan content on the Workbench Server
+    - `scan_content`: Scan file directory (upload, extract, remove, Git)
     - `reports`: Report generation with validation and waiting
-    - `results`: Fetch and aggregate scan results
+    - `policy`: License policy warning counts for a scan
+    - `links`: Version-aware Workbench UI deep links
     - `scan_operations`: Scan execution with standardized behavior
     - `scan_deletion`: Queue scan delete and wait until complete
     - `user_permissions`: Check Workbench permissions for the API user
-    - `upload_service`: File upload operations
     - `quick_scan_service`: Quick single-file scan
     - `dependencies`: Dependency analysis result read/write workflows
     - `identification`: Scan file identification read/write workflows
@@ -87,7 +87,7 @@ class WorkbenchClient:
         >>> # Direct API operations via clients
         >>> all_projects = workbench.projects.list_projects()
         >>> scan_info = workbench.scans.get_information(scan_code)
-        >>> workbench.upload_service.upload_scan_target(
+        >>> workbench.scan_content.upload_scan_target(
         ...     scan_code, "./source.zip"
         ... )
         >>>
@@ -183,6 +183,7 @@ class WorkbenchClient:
 
         self.scan_content = ScanContentService(
             scans_client=self.scans,
+            uploads_client=self.uploads,
             status_check_service=self.status_check,
         )
 
@@ -213,11 +214,11 @@ class WorkbenchClient:
             vulnerabilities_client=self.vulnerabilities,
         )
 
-        self.results = ResultsService(
+        self.policy = PolicyService(scans_client=self.scans)
+
+        self.links = LinksService(
             scans_client=self.scans,
-            vulnerability_service=self.vulnerability,
-            identification_service=self.identification,
-            dependency_service=self.dependencies,
+            api_url=self._base_api.api_url,
             workbench_version=self._workbench_version,
         )
 
@@ -229,8 +230,6 @@ class WorkbenchClient:
             scans_client=self.scans,
             status_check_service=self.status_check,
         )
-
-        self.upload_service = UploadService(uploads_client=self.uploads)
 
         self.user_permissions = UserPermissionsService(
             users_client=self.users,
