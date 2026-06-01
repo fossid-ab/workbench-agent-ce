@@ -98,7 +98,7 @@ warnings = wb.policy.get_policy_warnings(scan_code)
 | `identification` | File + scan identification read/write |
 | `dependencies` | Dependency analysis read/write |
 | `vulnerability` | `list_scan_vulnerabilities` / `list_project_vulnerabilities`, VEX create/update |
-| `policy` | Scan policy counts; project aggregates (`get_project_*_policy_warnings`) |
+| `policy` | Scan counters; scan/project policy warnings; `download_project_policy_json` |
 | `links` | Version-aware Workbench UI deep links (not an API group) |
 | `scan_content` | Scan file directory: upload (target/DA/SBOM), extract, remove, Git |
 | `scan_operations` | Process scan files: KB scan, DA run/import, SBOM import |

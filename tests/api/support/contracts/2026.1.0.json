@@ -91,6 +91,10 @@
     "files_and_folders.remove_component_identification": {
       "data_shape": "bool"
     },
+    "scans.get_policy_warnings_info": {
+      "data_shape": "dict",
+      "required_keys": ["policy_warnings_list"]
+    },
     "projects.list_projects": {
       "data_shape": "list",
       "item_required_keys": ["id", "project_code", "project_name", "created"]

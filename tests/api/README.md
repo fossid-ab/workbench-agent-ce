@@ -86,6 +86,10 @@ Test Project holds two scans over the same **Project Sample Mix**:
 | **Identified Test Scan** | Stable identified components, licenses, read-only ID state |
 | **Dependency Analysis Test Scan** | DA-only import (no KB matches); `get_dependency_analysis_results` |
 
+**Policy tests** (`clients/scans/`, `clients/projects/`, `services/policy/`): Test
+Project policies include one **license-category** rule and one **license** rule; both
+can appear in `scans.get_policy_warnings_info` on Identified Test Scan.
+
 **Vulnerability / VEX tests** (`clients/vulnerabilities/`, `services/vulnerability/`):
 CVE listing requires identified components and/or DA results. Live tests use
 `scan_has_vulnerabilities` (probes Identified Test Scan, then Dependency Analysis

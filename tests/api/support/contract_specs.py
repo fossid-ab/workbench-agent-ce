@@ -191,6 +191,10 @@ CONTRACTS: Dict[str, Dict[str, Any]] = {
             "dependencies_with_warnings",
         },
     },
+    "scans.get_policy_warnings_info": {
+        "data_shape": "dict",
+        "required_keys": {"policy_warnings_list"},
+    },
     "scans.create": {
         "data_shape": "dict",
         "required_keys": {"scan_id"},

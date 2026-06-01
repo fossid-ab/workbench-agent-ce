@@ -1,0 +1,40 @@
+{
+  "operation": "scans_get_policy_warnings_info",
+  "status": "1",
+  "data": {
+    "policy_warnings_list": [
+      {
+        "id": 12,
+        "user_id": 1,
+        "project_id": 5,
+        "license_id": null,
+        "license_category": "WEAK_COPYLEFT",
+        "description": "",
+        "action": "generate_warning",
+        "type": "license_category",
+        "created": "2023-11-15 11:21:40",
+        "updated": "2023-11-15 11:21:40",
+        "license_info": null,
+        "findings": 1
+      },
+      {
+        "id": 13,
+        "user_id": 1,
+        "project_id": 5,
+        "license_id": 50,
+        "license_category": null,
+        "description": "",
+        "action": "generate_warning",
+        "type": "license",
+        "created": "2023-11-13 12:50:35",
+        "updated": "2023-11-13 12:50:35",
+        "license_info": {
+          "rule_lic_id": 50,
+          "rule_lic_identifier": "BSD-3-Clause",
+          "rule_lic_cat": "PERMISSIVE"
+        },
+        "findings": 30
+      }
+    ]
+  }
+}

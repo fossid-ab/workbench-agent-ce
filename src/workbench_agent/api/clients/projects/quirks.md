@@ -42,3 +42,6 @@ Validated via live tests in `tests/api/clients/projects/`.
 - List items use ``scan_id``, ``scan_name``, ``scan_code`` (2026.1 live).
 - Empty result sets may return ``null`` for all three top-level fields (not ``0`` / ``[]``).
 - Missing project → ``ProjectNotFoundError`` (same markers as ``get_information``).
+- Scan-level detail (per-rule rows) is ``scans.get_policy_warnings_info`` — Test Project
+  policies flag one **license category** and one **specific license**; both can fire on
+  Identified Test Scan (see ``scans`` quirks).

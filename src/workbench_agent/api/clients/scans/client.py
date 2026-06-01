@@ -1,7 +1,9 @@
 """ScansClient - scan-related Workbench API operations (group: scans)."""
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
+
+PolicyWarningType = Literal["identifications", "dependencies", "all"]
 
 import requests
 
@@ -582,6 +584,66 @@ class ScansClient:
                 f"Error getting scan policy warnings counter for '{scan_code}': {error_msg}",
                 details=response,
             )
+
+    def get_policy_warnings_info(
+        self,
+        scan_code: str,
+        *,
+        warning_type: PolicyWarningType = "identifications",
+    ) -> Dict[str, Any]:
+        """
+        Detailed policy rules and finding counts for a scan.
+
+        Args:
+            scan_code: Target scan code.
+            warning_type: ``identifications``, ``dependencies``, or ``all``.
+
+        Returns:
+            Dict with ``policy_warnings_list``: rule rows including ``findings``,
+            ``type``, ``license_category``, and optional ``license_info``.
+
+        Raises:
+            ScanNotFoundError: If the scan does not exist.
+            ApiError: On other API failures.
+        """
+        logger.debug(
+            "Fetching scan policy warnings info for '%s' (type=%s)",
+            scan_code,
+            warning_type,
+        )
+        response = self._api._send_request(
+            {
+                "group": "scans",
+                "action": "get_policy_warnings_info",
+                "data": {
+                    "scan_code": scan_code,
+                    "type": warning_type,
+                },
+            }
+        )
+
+        if response.get("status") == "1" and "data" in response:
+            data = response["data"]
+            if isinstance(data, dict):
+                logger.debug(
+                    "Retrieved scan policy warnings info for '%s'",
+                    scan_code,
+                )
+                return data
+            raise ApiError(
+                f"Unexpected data type for scan policy warnings info: "
+                f"{type(data)}",
+                details=response,
+            )
+
+        error_msg = response.get("error", "Unknown error")
+        if helpers.is_scan_not_found(error_msg):
+            helpers.raise_scan_not_found(scan_code)
+        raise ApiError(
+            f"Error getting scan policy warnings info for "
+            f"'{scan_code}': {error_msg}",
+            details=response,
+        )
 
     # ===== SCAN MANAGEMENT OPERATIONS =====
 

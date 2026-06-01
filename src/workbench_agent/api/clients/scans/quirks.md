@@ -9,7 +9,7 @@ Unit coverage: `tests/api/clients/scans/test_scans_client.py`.
 |--------|-----------------|
 | `Scan not found`, `row_not_found` in `error` | `ScanNotFoundError` when `BaseAPI` returns JSON with `status: "0"` to the client |
 | `get_information`, `get_folder_metrics`, `get_pending_files` (2026.1) | `status: "0"` + `row_not_found` → **`BaseAPI` raises `ApiError`** before client mapping |
-| `get_scan_identified_*`, `get_policy_warnings_counter` | Often `ScanNotFoundError` via client when error text matches |
+| `get_scan_identified_*`, `get_policy_warnings_counter`, `get_policy_warnings_info` | Often `ScanNotFoundError` via client when error text matches |
 | `check_status` with `scan_code=None` | Same markers → `ScanNotFoundError` with process context |
 
 ### Live test timing
@@ -88,6 +88,16 @@ Updates a single dependency analysis row (report inclusion, scope JSON, etc.).
 
 Removes a dependency row from DA results. Success `data` is boolean **`true`**
 (operation id `scans_remove_dependency_analysis_results`).
+
+## `get_policy_warnings_info`
+
+| Topic | Observed |
+|-------|----------|
+| Request | `scan_code`, optional `type` (`identifications` default) |
+| Success `data` | `policy_warnings_list` array (may be empty) |
+| Rule kinds | `type=license_category` (category-wide) or `type=license` (specific license via `license_info`) |
+| Test Project | Policies include **one of each** rule kind; Identified Test Scan live data can return both rows |
+| vs `get_policy_warnings_counter` | Counter returns totals only; this action returns per-rule `findings` |
 
 ## `get_scan_identified_components`
 

@@ -217,6 +217,7 @@ class WorkbenchClient:
         self.policy = PolicyService(
             scans_client=self.scans,
             projects_client=self.projects,
+            downloads_client=self.downloads,
         )
 
         self.links = LinksService(

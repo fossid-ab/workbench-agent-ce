@@ -795,6 +795,53 @@ def test_get_policy_warnings_counter_success(mock_send, scans_client):
 
 
 @patch.object(BaseAPI, "_send_request")
+def test_get_policy_warnings_info_success(mock_send, scans_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {
+            "policy_warnings_list": [
+                {
+                    "id": 12,
+                    "user_id": 1,
+                    "project_id": 5,
+                    "license_id": None,
+                    "license_category": "WEAK_COPYLEFT",
+                    "description": "",
+                    "action": "generate_warning",
+                    "type": "license_category",
+                    "created": "2023-11-15 11:21:40",
+                    "updated": "2023-11-15 11:21:40",
+                    "license_info": None,
+                    "findings": 1,
+                }
+            ]
+        },
+    }
+    data = scans_client.get_policy_warnings_info("scan1")
+    assert len(data["policy_warnings_list"]) == 1
+    payload = mock_send.call_args[0][0]
+    assert payload["action"] == "get_policy_warnings_info"
+    assert payload["data"]["type"] == "identifications"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_policy_warnings_info_all_type(mock_send, scans_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {"policy_warnings_list": []},
+    }
+    scans_client.get_policy_warnings_info("scan1", warning_type="all")
+    assert mock_send.call_args[0][0]["data"]["type"] == "all"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_policy_warnings_info_scan_not_found(mock_send, scans_client):
+    mock_send.return_value = {"status": "0", "error": "Scan not found"}
+    with pytest.raises(ScanNotFoundError, match="Scan 'scan1' not found"):
+        scans_client.get_policy_warnings_info("scan1")
+
+
+@patch.object(BaseAPI, "_send_request")
 def test_get_scan_information_failure(mock_send_request, scans_client):
     mock_send_request.return_value = {"status": "0", "error": "Not found"}
     with pytest.raises(ApiError, match="Not found"):

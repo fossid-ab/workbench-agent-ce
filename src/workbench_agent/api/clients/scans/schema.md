@@ -26,6 +26,7 @@ This client wraps the `scans` group; orchestration lives in `api/services/`.
 | `remove_dependency_analysis_results` | `remove_dependency_analysis_results` |
 | `get_pending_files` | `get_pending_files` |
 | `get_policy_warnings_counter` | `get_policy_warnings_counter` |
+| `get_policy_warnings_info` | `get_policy_warnings_info` |
 | `create` | `create` |
 | `update` | `update` |
 | `delete` | `delete` (raw; use `ScanDeletionService` for orchestration) |
@@ -150,6 +151,47 @@ Same shape as `update_dependency_analysis_results` (operation id
 ### Response `data`
 
 Boolean **`true`** on success.
+
+## `get_policy_warnings_info`
+
+Operation id: `scans_get_policy_warnings_info`.
+
+### Request (`data`)
+
+| Field | API | Client param |
+|-------|-----|--------------|
+| `scan_code` | **R** | `scan_code` |
+| `type` | O | `warning_type` — `identifications` (default), `dependencies`, `all` |
+
+### Response `data`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `policy_warnings_list` | list | Policy rules with finding counts for this scan |
+
+### `policy_warnings_list` item
+
+Workbench policy rules target either a **license category** or a **specific license**
+(`type` discriminates which fields are populated).
+
+| `type` value | Rule targets | Typical populated fields |
+|--------------|--------------|-------------------------|
+| `license_category` | Category (e.g. `WEAK_COPYLEFT`) | `license_category`; `license_id` and `license_info` usually `null` |
+| `license` | One SPDX-style license | `license_id`, `license_info` (`rule_lic_identifier`, …); `license_category` usually `null` |
+
+| Field | Notes |
+|-------|-------|
+| `id`, `user_id`, `project_id` | Rule metadata |
+| `license_id`, `license_category` | See table above — mutually informative by `type` |
+| `description`, `action` | Rule definition (`action` often `generate_warning`) |
+| `created`, `updated` | Timestamps |
+| `license_info` | Present for `type=license`; `null` for category rules |
+| `findings` | How many hits for this rule on the scan |
+
+**Test Project** (live): one category rule and one license rule are configured; both
+can appear in sample responses when identifications trigger policy checks.
+
+Prefer ``PolicyService.get_scan_*_policy_warnings_info`` for typed access.
 
 ## Other response notes
 

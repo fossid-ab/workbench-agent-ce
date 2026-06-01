@@ -220,3 +220,36 @@ class TestDownloadClientIntegration:
         assert payload["action"] == "download_report"
         assert "report_entity" in payload["data"]
         assert "process_id" in payload["data"]
+
+
+class TestGetProjectPolicy:
+    """Test cases for get_project_policy method."""
+
+    def test_get_project_policy_success(self, downloads_client, base_api):
+        """Test successful project policy download request."""
+        mock_response = MagicMock(spec=requests.Response)
+        mock_response.status_code = 200
+        mock_response.content = b'[{"id":"MIT","blocked":false,"reason":""}]'
+        mock_response.headers = {"content-type": "text/plain; charset=utf-8"}
+
+        base_api._send_request = MagicMock(
+            return_value={"_raw_response": mock_response}
+        )
+
+        result = downloads_client.get_project_policy("Test_Project_723")
+
+        base_api._send_request.assert_called_once()
+        payload = base_api._send_request.call_args[0][0]
+        assert payload["group"] == "download"
+        assert payload["action"] == "licenses_policy_info"
+        assert payload["data"]["project_code"] == "Test_Project_723"
+        assert result == {"_raw_response": mock_response}
+
+    def test_get_project_policy_api_error(self, downloads_client, base_api):
+        """Test that API errors are propagated."""
+        base_api._send_request = MagicMock(
+            side_effect=ApiError("Project not found")
+        )
+
+        with pytest.raises(ApiError, match="Project not found"):
+            downloads_client.get_project_policy("missing")

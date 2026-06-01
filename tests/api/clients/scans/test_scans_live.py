@@ -138,6 +138,65 @@ class TestScansLiveReadOnly:
             workbench_version=workbench_version,
         )
 
+    @staticmethod
+    def _assert_policy_warnings_list_items(policy_warnings_list):
+        assert isinstance(policy_warnings_list, list)
+        types_seen = set()
+        for item in policy_warnings_list:
+            assert isinstance(item, dict)
+            assert "id" in item
+            assert "type" in item
+            assert "findings" in item
+            assert "action" in item
+            rule_type = item["type"]
+            types_seen.add(rule_type)
+            if rule_type == "license_category":
+                assert item.get("license_category")
+                assert item.get("license_info") is None
+            elif rule_type == "license":
+                assert item.get("license_info")
+                assert item["license_info"].get("rule_lic_identifier")
+            if item.get("license_info") is not None:
+                info = item["license_info"]
+                assert "rule_lic_identifier" in info
+        if policy_warnings_list:
+            assert types_seen <= {"license_category", "license"}
+
+    def test_get_policy_warnings_info_identifications(
+        self,
+        workbench_client,
+        workbench_version,
+        identified_test_scan_code,
+    ):
+        data = workbench_client.scans.get_policy_warnings_info(
+            identified_test_scan_code, warning_type="identifications"
+        )
+        assert_data_contract(
+            "scans.get_policy_warnings_info",
+            data,
+            workbench_version=workbench_version,
+        )
+        rules = data["policy_warnings_list"]
+        self._assert_policy_warnings_list_items(rules)
+        rule_types = {r["type"] for r in rules}
+        assert "license_category" in rule_types
+        assert "license" in rule_types
+
+    def test_get_policy_warnings_info_via_policy_service(
+        self,
+        workbench_client,
+        workbench_version,
+        identified_test_scan_code,
+    ):
+        data = workbench_client.policy.get_scan_policy_warnings_info_all(
+            identified_test_scan_code
+        )
+        assert_data_contract(
+            "scans.get_policy_warnings_info",
+            data,
+            workbench_version=workbench_version,
+        )
+
     def test_check_status_download_content_from_git_non_git_scan(
         self, workbench_client, test_scan_code
     ):

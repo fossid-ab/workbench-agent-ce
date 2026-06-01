@@ -112,3 +112,35 @@ class DownloadClient:
         )
 
         return self._api._send_request(payload, timeout=actual_timeout)
+
+    def get_project_policy(self, project_code: str) -> Dict[str, Any]:
+        """
+        Download the project's license policy as JSON.
+
+        The server responds with a ``text/plain`` body containing a JSON array
+        of license rules (``id``, ``blocked``, ``reason``, …). ``BaseAPI``
+        surfaces that as ``{"_raw_response": ...}``; use
+        :meth:`PolicyService.download_project_policy_json` to parse it.
+
+        Args:
+            project_code: Project code (not display name)
+
+        Returns:
+            Dict with ``_raw_response`` (``requests.Response``) on success
+
+        Raises:
+            ApiError: If the download fails
+            NetworkError: If there are network issues
+        """
+        logger.debug(
+            "Downloading license policy JSON for project '%s'",
+            project_code,
+        )
+        payload = {
+            "group": "download",
+            "action": "licenses_policy_info",
+            "data": {
+                "project_code": project_code,
+            },
+        }
+        return self._api._send_request(payload)
