@@ -6,6 +6,7 @@ Validated on **Test Project** / **Test Scan** via
 | Operation | Unit | Live read | Live write |
 |-----------|------|-----------|------------|
 | Scan metrics / pending files | — | Yes | — |
+| `summarize_identification_data` | Yes | — | — |
 | `get_identification` / summarize | Yes | Yes | — |
 | `get_matches` | Yes | Yes | — |
 | `get_matched_content` | Yes | Yes | — |

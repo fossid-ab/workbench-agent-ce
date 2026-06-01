@@ -6,10 +6,12 @@ from unittest.mock import patch
 import pytest
 
 from workbench_agent.api.clients.files_and_folders import FilesAndFoldersClient
-from workbench_agent.api.clients.files_and_folders.errors import path_for_action
-from workbench_agent.api.utils.path_encoding import encode_path
+from workbench_agent.api.clients.files_and_folders.helpers import (
+    encode_path,
+    path_for_action,
+)
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.helpers.base_api import BaseAPI
+from workbench_agent.api.base_api import BaseAPI
 
 
 @pytest.fixture

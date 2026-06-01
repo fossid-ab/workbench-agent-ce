@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from . import errors
+from . import helpers
 
 logger = logging.getLogger("workbench-agent")
 
@@ -44,7 +44,7 @@ class UsersClient:
         if response.get("status") == "1" and "data" in response:
             return response["data"]
 
-        errors.raise_on_failed_response(
+        helpers.raise_on_failed_response(
             response,
             error_context=(
                 f"Failed to get information for user '{searched_username}'"
@@ -82,14 +82,14 @@ class UsersClient:
         )
 
         if response.get("status") == "1":
-            items = errors.normalize_permissions_list_data(
+            items = helpers.normalize_permissions_list_data(
                 response.get("data"),
                 operation=action,
             )
             logger.debug("users.%s: %d item(s)", action, len(items))
             return items
 
-        errors.raise_on_failed_response(
+        helpers.raise_on_failed_response(
             response,
             error_context="Failed to list user permissions",
         )

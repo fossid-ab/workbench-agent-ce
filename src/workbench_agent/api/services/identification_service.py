@@ -8,18 +8,263 @@ read APIs for reviewing KB matches and writing identifications in Workbench.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Mapping, Optional, Union
-
-from workbench_agent.api.utils.identification_helpers import (
-    build_snippet_comment,
-    find_first_match,
-    fossid_match_to_component_fields,
-    parse_distribution_status,
-    parse_identifying_done,
-    summarize_identification_state,
-)
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 
 logger = logging.getLogger("workbench-agent")
+
+
+def _fossid_match_to_component_fields(
+    match: Mapping[str, Any],
+    *,
+    license_identifier: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Map a ``get_fossid_results`` match to catalog resolve fields."""
+    component_name = str(match.get("artifact") or "").strip()
+    supplier_name = str(match.get("author") or "").strip()
+    version = str(match.get("version") or "").strip()
+    license_id = str(match.get("artifact_license") or "").strip()
+    if license_identifier is not None:
+        license_id = license_identifier.strip()
+    url = str(match.get("url") or "").strip()
+    return {
+        "component_name": component_name,
+        "component_version": version,
+        "supplier_name": supplier_name,
+        "license_identifier": license_id,
+        "purl": match.get("purl"),
+        "url": url,
+        "cpe": match.get("cpe"),
+    }
+
+
+def _line_range_from_matched_lines(
+    matched_lines: Mapping[str, Any],
+    *,
+    prefer_local: bool = True,
+) -> Optional[Tuple[int, int]]:
+    """Derive an inclusive line range from ``get_matched_lines`` data."""
+    key = "local_file" if prefer_local else "mirror_file"
+    line_map = matched_lines.get(key)
+    if not line_map:
+        alt = "mirror_file" if prefer_local else "local_file"
+        line_map = matched_lines.get(alt)
+    if not line_map or not isinstance(line_map, Mapping):
+        return None
+
+    numeric: List[int] = []
+    for line_id in line_map:
+        try:
+            numeric.append(int(line_id))
+        except (TypeError, ValueError):
+            continue
+    if not numeric:
+        return None
+    return min(numeric), max(numeric)
+
+
+def _build_snippet_comment(
+    match: Mapping[str, Any],
+    matched_lines: Optional[Mapping[str, Any]] = None,
+    *,
+    line_range: Optional[Tuple[int, int]] = None,
+) -> str:
+    """Build a Workbench file comment describing a snippet identification."""
+    author = match.get("author") or ""
+    artifact = match.get("artifact") or ""
+    version = match.get("version") or ""
+    origin_file = match.get("file") or ""
+
+    if line_range is None and matched_lines is not None:
+        line_range = _line_range_from_matched_lines(matched_lines)
+
+    component_label = f"{author}/{artifact}".strip("/")
+    if version:
+        component_label = f"{component_label} v{version}".strip()
+
+    if line_range:
+        start, end = line_range
+        range_text = f"Lines {start}-{end}"
+    else:
+        range_text = "Snippet match"
+
+    origin_suffix = f" ({origin_file})" if origin_file else ""
+    return f"{range_text} match {component_label}{origin_suffix}"
+
+
+def _component_identification_record(
+    identification: Mapping[str, Any],
+) -> Optional[Mapping[str, Any]]:
+    """Return the primary component identification object when present."""
+    components = identification.get("component_identification")
+    if isinstance(components, dict) and components:
+        return components
+    if (
+        isinstance(components, list)
+        and components
+        and isinstance(components[0], Mapping)
+    ):
+        return components[0]
+    return None
+
+
+def _has_identification_record(identification: Mapping[str, Any]) -> bool:
+    return _component_identification_record(identification) is not None
+
+
+def _parse_linked_catalog_components(
+    identification: Mapping[str, Any],
+) -> List[Dict[str, Any]]:
+    record = _component_identification_record(identification)
+    if record is None:
+        return []
+
+    linked: List[Dict[str, Any]] = []
+    components = record.get("components")
+    if isinstance(components, dict):
+        for comp in components.values():
+            if not isinstance(comp, Mapping):
+                continue
+            name = comp.get("name")
+            if not name:
+                continue
+            linked.append(
+                {
+                    "name": str(name),
+                    "version": str(comp.get("version") or ""),
+                    "component_id": comp.get("component_id") or comp.get("id"),
+                    "license_identifier": comp.get("license_identifier"),
+                }
+            )
+    return linked
+
+
+def _has_linked_catalog_component(identification: Mapping[str, Any]) -> bool:
+    return bool(_parse_linked_catalog_components(identification))
+
+
+def _parse_identifying_done(
+    identification: Mapping[str, Any],
+) -> Optional[bool]:
+    record = _component_identification_record(identification)
+    if record is None or "identifying_done" not in record:
+        return None
+    value = record.get("identifying_done")
+    if value == "1":
+        return True
+    if value == "0":
+        return False
+    return None
+
+
+def _parse_license_identifiers(
+    identification: Mapping[str, Any],
+) -> List[str]:
+    licenses = identification.get("licenses")
+    if licenses in (False, None):
+        return []
+
+    identifiers: List[str] = []
+    if isinstance(licenses, dict):
+        items = licenses.values()
+    elif isinstance(licenses, list):
+        items = licenses
+    else:
+        return []
+
+    for item in items:
+        if not isinstance(item, Mapping):
+            continue
+        for key in (
+            "license_identifier",
+            "identifier",
+            "spdx_identifier",
+            "license",
+        ):
+            value = item.get(key)
+            if isinstance(value, str) and value.strip():
+                identifiers.append(value.strip())
+                break
+    return identifiers
+
+
+def _parse_copyright_text(identification: Mapping[str, Any]) -> Optional[str]:
+    value = identification.get("copyright")
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return None
+
+
+def _find_first_match(
+    matches: Mapping[str, Any],
+    *,
+    match_type: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    for entry in matches.values():
+        if not isinstance(entry, dict):
+            continue
+        if match_type is None or entry.get("match_type") == match_type:
+            return dict(entry)
+    return None
+
+
+def _parse_distribution_status(
+    identification: Mapping[str, Any],
+) -> Optional[bool]:
+    record = _component_identification_record(identification)
+    if record is None or "is_distributed" not in record:
+        return None
+    value = record.get("is_distributed")
+    if value == "1":
+        return True
+    if value == "0":
+        return False
+    return None
+
+
+def _has_file_license(data: Mapping[str, Any]) -> bool:
+    licenses = data.get("licenses")
+    if licenses is False or licenses is None:
+        return False
+    if isinstance(licenses, list):
+        return len(licenses) > 0
+    if isinstance(licenses, dict):
+        return bool(licenses)
+    return bool(licenses)
+
+
+def _has_copyright(data: Mapping[str, Any]) -> bool:
+    copyright_val = data.get("copyright")
+    if copyright_val is None:
+        return False
+    if isinstance(copyright_val, str):
+        return bool(copyright_val.strip())
+    return bool(copyright_val)
+
+
+def _summarize_identification_state(
+    identification: Mapping[str, Any],
+) -> Dict[str, Any]:
+    record = _component_identification_record(identification)
+    return {
+        "has_identification_record": _has_identification_record(identification),
+        "has_component_identification": _has_identification_record(
+            identification
+        ),
+        "has_linked_catalog_component": _has_linked_catalog_component(
+            identification
+        ),
+        "linked_catalog_components": _parse_linked_catalog_components(
+            identification
+        ),
+        "has_file_license": _has_file_license(identification),
+        "has_copyright": _has_copyright(identification),
+        "is_marked_identified": _parse_identifying_done(identification),
+        "distribution_status": _parse_distribution_status(identification),
+        "license_identifiers": _parse_license_identifiers(identification),
+        "copyright_text": _parse_copyright_text(identification),
+        "component_record": dict(record) if record is not None else None,
+        "raw": dict(identification),
+    }
 
 
 class IdentificationService:
@@ -112,12 +357,22 @@ class IdentificationService:
         )
         return self._files.get_identification(scan_code, path)
 
+    def summarize_identification_data(
+        self, identification: Mapping[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Summarize identification fields from raw ``get_identification`` data.
+
+        Does not decide readiness to mark identified — callers apply policy.
+        """
+        return _summarize_identification_state(identification)
+
     def summarize_identification(
         self, scan_code: str, path: str
     ) -> Dict[str, Any]:
         """Return a summary of identification state for a file."""
         data = self.get_identification(scan_code, path)
-        summary = summarize_identification_state(data)
+        summary = self.summarize_identification_data(data)
         summary["path"] = path
         summary["scan_code"] = scan_code
         return summary
@@ -199,7 +454,7 @@ class IdentificationService:
 
         Creates the catalog entry when missing; returns field metadata either way.
         """
-        fields = fossid_match_to_component_fields(
+        fields = _fossid_match_to_component_fields(
             match, license_identifier=license_identifier
         )
         return self.resolve_component(**fields)
@@ -293,7 +548,7 @@ class IdentificationService:
         entry, resolve the catalog row, associate it with the file, and
         optionally add the artifact license at file level.
         """
-        fields = fossid_match_to_component_fields(match)
+        fields = _fossid_match_to_component_fields(match)
         name = fields["component_name"]
         version = fields["component_version"]
         if not name or not version:
@@ -344,7 +599,7 @@ class IdentificationService:
     ) -> Dict[str, Any]:
         """Pick the first ``full`` FossID match and run ``identify_whole_file_from_match``."""
         matches = self.get_matches(scan_code, path)
-        match = find_first_match(matches, match_type="full")
+        match = _find_first_match(matches, match_type="full")
         if match is None:
             raise ValueError(
                 f"No full-file FossID match available for '{path}'"
@@ -431,7 +686,7 @@ class IdentificationService:
         matched_lines = self.get_matched_content(
             scan_code, path, client_result_id
         )
-        comment = build_snippet_comment(match, matched_lines)
+        comment = _build_snippet_comment(match, matched_lines)
         license_result = self._files.add_license_identification(
             scan_code,
             path,
@@ -480,7 +735,7 @@ class IdentificationService:
         result = self._files.mark_as_identified(
             scan_code, path, is_directory=is_directory
         )
-        result["is_marked_identified"] = parse_identifying_done(
+        result["is_marked_identified"] = _parse_identifying_done(
             self.get_identification(scan_code, path)
         )
         return result
@@ -496,7 +751,7 @@ class IdentificationService:
         result = self._files.unmark_as_identified(
             scan_code, path, is_directory=is_directory
         )
-        result["is_marked_identified"] = parse_identifying_done(
+        result["is_marked_identified"] = _parse_identifying_done(
             self.get_identification(scan_code, path)
         )
         return result
@@ -515,7 +770,7 @@ class IdentificationService:
         current state is unknown or differs from the requested value.
         """
         identification = self.get_identification(scan_code, path)
-        current = parse_distribution_status(identification)
+        current = _parse_distribution_status(identification)
         if current is not None and current == distributed:
             return {
                 "changed": False,
@@ -524,12 +779,12 @@ class IdentificationService:
             }
 
         result = self._files.change_distribution_status(scan_code, path)
-        after = parse_distribution_status(
+        after = _parse_distribution_status(
             self.get_identification(scan_code, path)
         )
         if after is not None and after != distributed:
             result = self._files.change_distribution_status(scan_code, path)
-            after = parse_distribution_status(
+            after = _parse_distribution_status(
                 self.get_identification(scan_code, path)
             )
 

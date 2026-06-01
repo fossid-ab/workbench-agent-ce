@@ -12,12 +12,12 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.clients.files_and_folders.errors import (
+from workbench_agent.api.clients.files_and_folders.helpers import (
     PLAIN_PATH_ACTIONS,
     path_for_action,
 )
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.utils.path_encoding import encode_path
+from workbench_agent.api.clients.files_and_folders.helpers import encode_path
 from tests.api.support.contract import assert_data_contract
 from tests.api.support.error_assertions import (
     assert_api_error,

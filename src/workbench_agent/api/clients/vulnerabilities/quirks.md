@@ -16,8 +16,7 @@ Unit coverage: `tests/api/clients/vulnerabilities/test_vulnerabilities_client.py
   (count dict or paginated ``{list: [...]}``).
 - Count-only responses return ``{"count_results": <int>}`` (live-validated on
   2026.1; read ``data["count_results"]`` directly).
-- **Automatic pagination** is in ``VulnerabilityService`` (`list_scan_vulnerabilities`,
-  ``list_project_vulnerabilities``) via ``fetch_all_vulnerability_rows``.
+Automatic pagination is in ``VulnerabilityService`` (private ``_fetch_all_rows``).
 - Scope: pass ``scan_code`` **or** ``project_code`` (API validates).
 - ``search_value`` is supported by the raw client for API completeness; the
   service lists full scan/project results without search filters.
@@ -34,6 +33,10 @@ Unit coverage: `tests/api/clients/vulnerabilities/test_vulnerabilities_client.py
 - Update success `data` may be **`null`**; rely on `message`.
 - Import copies VEX between scans with matching components; `override_vex`
   defaults to `"0"`.
+- VEX field vocabulary (status, justification, response) follows **CycloneDX
+  1.7** — see [`schema.md` § VEX (CycloneDX)](schema.md#vex-cyclonedx).
+- Workbench sends **`vuln_exp_response`** as a single string per write; CycloneDX
+  BOMs model `response` as an array.
 
 Live mutation tests: `test_vulnerabilities_operations_live.py` with
 `WORKBENCH_ALLOW_MUTATIONS=1`.

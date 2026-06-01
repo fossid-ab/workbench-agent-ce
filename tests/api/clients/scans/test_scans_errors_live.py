@@ -2,7 +2,7 @@
 
 import pytest
 
-from workbench_agent.api.clients.scans.errors import is_scan_not_found
+from workbench_agent.api.clients.scans.helpers import is_scan_not_found
 from workbench_agent.api.exceptions import ApiError
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]

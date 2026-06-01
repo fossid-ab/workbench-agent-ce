@@ -1,12 +1,28 @@
 """Files and folders API error handling and path rules."""
 
+import base64
 from typing import Any, Dict, Set
 
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.utils.path_encoding import encode_path
 
 # Actions that send a plain relative path (not base64-encoded).
 PLAIN_PATH_ACTIONS: Set[str] = frozenset({"remove_component_identification"})
+
+
+def encode_path(path: str) -> str:
+    """
+    Base64-encode a relative file or folder path for the Workbench API.
+
+    Most ``files_and_folders`` actions expect an encoded path. The exception is
+    ``remove_component_identification``, which sends a plain relative path
+    (see ``FilesAndFoldersClient.remove_component_identification``).
+    """
+    return base64.b64encode(path.encode("utf-8")).decode("ascii")
+
+
+def decode_path(encoded: str) -> str:
+    """Decode a base64-encoded path from the API."""
+    return base64.b64decode(encoded.encode("ascii")).decode("utf-8")
 
 
 def path_for_action(action: str, relative_path: str) -> str:

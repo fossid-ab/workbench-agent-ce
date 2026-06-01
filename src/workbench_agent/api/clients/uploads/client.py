@@ -13,7 +13,7 @@ import requests
 from workbench_agent.api.exceptions import ApiError, NetworkError
 from workbench_agent.exceptions import FileSystemError
 
-from . import errors
+from . import helpers
 
 logger = logging.getLogger("workbench-agent")
 
@@ -75,7 +75,7 @@ class UploadsClient:
             logger.debug(
                 "Standard upload response: %s", response.text[:500]
             )
-            errors.validate_standard_upload_response(response)
+            helpers.validate_standard_upload_response(response)
         except requests.exceptions.RequestException as e:
             logger.error("Network error during standard upload: %s", e)
             raise NetworkError(f"Network error during upload: {e}") from e
@@ -163,7 +163,7 @@ class UploadsClient:
                 resp_chunk = self._api.session.send(
                     prepped, timeout=self.UPLOAD_TIMEOUT_SECONDS
                 )
-                errors.validate_chunk_upload_response(
+                helpers.validate_chunk_upload_response(
                     resp_chunk,
                     chunk_number,
                     retry_count,

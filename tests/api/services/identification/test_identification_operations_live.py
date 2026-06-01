@@ -5,9 +5,6 @@ import uuid
 import pytest
 
 from tests.api.support.contract import assert_data_contract
-from workbench_agent.api.utils.identification_helpers import (
-    fossid_match_to_component_fields,
-)
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
@@ -56,9 +53,8 @@ class TestIdentificationServiceLiveReadOnly:
         )
         assert matches
         first = next(iter(matches.values()))
-        fields = fossid_match_to_component_fields(first)
-        assert fields["component_name"]
-        assert fields["component_version"]
+        assert first.get("artifact")
+        assert first.get("version")
 
     def test_get_matched_lines_for_snippet(
         self,
@@ -262,14 +258,16 @@ class TestIdentificationServiceLiveMutations:
         matches = identification_service.get_matches(
             test_scan_code, pending_path
         )
-        match = next(iter(matches.values()))
-        fields = fossid_match_to_component_fields(match)
-
-        resolved = identification_service.resolve_component(
-            unique_component_name,
-            "0.0.1-from-match",
-            fields["license_identifier"] or "MIT",
-            supplier_name=fields.get("supplier_name"),
+        match = {
+            **next(iter(matches.values())),
+            "artifact": unique_component_name,
+            "version": "0.0.1-from-match",
+            "purl": None,
+            "url": "",
+            "cpe": None,
+        }
+        resolved = identification_service.resolve_component_from_match(
+            match, license_identifier="MIT"
         )
         assert resolved["created"] is True
         workbench_client.components.delete(

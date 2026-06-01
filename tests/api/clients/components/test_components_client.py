@@ -5,11 +5,11 @@ from unittest.mock import patch
 import pytest
 
 from workbench_agent.api.clients.components import ComponentsClient
-from workbench_agent.api.clients.components.errors import (
+from workbench_agent.api.clients.components.helpers import (
     is_missing_component_information,
 )
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.helpers.base_api import BaseAPI
+from workbench_agent.api.base_api import BaseAPI
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 """Uploads API client package."""
 
 from .client import UploadsClient
-from .errors import (
+from .helpers import (
     HEADER_FILE_NAME,
     HEADER_SCAN_CODE,
     HEADER_UPLOAD_TYPE,

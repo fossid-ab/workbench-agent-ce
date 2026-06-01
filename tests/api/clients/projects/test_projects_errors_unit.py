@@ -5,9 +5,9 @@ from unittest.mock import patch
 import pytest
 
 from workbench_agent.api.clients.projects import ProjectsClient
-from workbench_agent.api.clients.projects.errors import is_project_not_found
+from workbench_agent.api.clients.projects.helpers import is_project_not_found
 from workbench_agent.api.exceptions import ApiError, ProjectNotFoundError
-from workbench_agent.api.helpers.base_api import BaseAPI
+from workbench_agent.api.base_api import BaseAPI
 from tests.api.support.error_assertions import (
     assert_api_error,
     assert_api_error_details_status_zero,

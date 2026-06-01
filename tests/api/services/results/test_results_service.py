@@ -52,7 +52,7 @@ EXPECTED_MESSAGES = {
 def mock_results_service():
     """Create a ResultsService with mocked clients."""
     mock_scans_client = MagicMock()
-    mock_vulns_client = MagicMock()
+    mock_vulnerability = MagicMock()
 
     # Mock the _api attribute on scans_client to provide api_url
     mock_base_api = MagicMock()
@@ -61,7 +61,7 @@ def mock_results_service():
 
     return ResultsService(
         mock_scans_client,
-        vulnerabilities_client=mock_vulns_client,
+        vulnerability_service=mock_vulnerability,
     )
 
 
@@ -177,14 +177,14 @@ class TestWorkbenchLinks:
     def test_api_url_variants(self, api_url):
         """Test that function handles various API URL formats correctly."""
         mock_scans_client = MagicMock()
-        mock_vulns_client = MagicMock()
+        mock_vulnerability = MagicMock()
         mock_base_api = MagicMock()
         mock_base_api.api_url = api_url
         mock_scans_client._api = mock_base_api
 
         results_service = ResultsService(
             mock_scans_client,
-            vulnerabilities_client=mock_vulns_client,
+            vulnerability_service=mock_vulnerability,
         )
         links = results_service.workbench_links(TEST_SCAN_ID)
 
@@ -231,14 +231,14 @@ class TestWorkbenchLinks:
 
         for input_url, expected_base in test_cases:
             mock_scans_client = MagicMock()
-            mock_vulns_client = MagicMock()
+            mock_vulnerability = MagicMock()
             mock_base_api = MagicMock()
             mock_base_api.api_url = input_url
             mock_scans_client._api = mock_base_api
 
             results_service = ResultsService(
                 mock_scans_client,
-                vulnerabilities_client=mock_vulns_client,
+                vulnerability_service=mock_vulnerability,
             )
             links = results_service.workbench_links(TEST_SCAN_ID)
             scan_url = links.scan["url"]
@@ -442,14 +442,14 @@ class TestWorkbenchLinksNui:
     def test_nui_via_results_service(self):
         """ResultsService should propagate version to WorkbenchLinks."""
         mock_scans_client = MagicMock()
-        mock_vulns_client = MagicMock()
+        mock_vulnerability = MagicMock()
         mock_base_api = MagicMock()
         mock_base_api.api_url = TEST_API_URL
         mock_scans_client._api = mock_base_api
 
         service = ResultsService(
             mock_scans_client,
-            vulnerabilities_client=mock_vulns_client,
+            vulnerability_service=mock_vulnerability,
             workbench_version="2026.1.0",
         )
         links = service.workbench_links(TEST_SCAN_ID)
@@ -461,14 +461,13 @@ class TestWorkbenchLinksNui:
 class TestResultsServiceDelegation:
     def test_get_dependencies_delegates_to_dependency_service(self):
         scans = MagicMock()
-        vulns = MagicMock()
         identification = MagicMock()
         dependencies = MagicMock()
         dependencies.get_dependencies.return_value = [{"name": "abbrev"}]
 
         service = ResultsService(
             scans,
-            vulnerabilities_client=vulns,
+            vulnerability_service=MagicMock(),
             identification_service=identification,
             dependency_service=dependencies,
         )
@@ -479,14 +478,13 @@ class TestResultsServiceDelegation:
 
     def test_get_scan_metrics_delegates_to_identification_service(self):
         scans = MagicMock()
-        vulns = MagicMock()
         identification = MagicMock()
         identification.get_scan_metrics.return_value = {"total": 5}
         dependencies = MagicMock()
 
         service = ResultsService(
             scans,
-            vulnerabilities_client=vulns,
+            vulnerability_service=MagicMock(),
             identification_service=identification,
             dependency_service=dependencies,
         )

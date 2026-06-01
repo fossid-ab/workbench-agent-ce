@@ -7,7 +7,7 @@ import requests
 
 from workbench_agent.api.clients.download_api import DownloadClient
 from workbench_agent.api.exceptions import ApiError, NetworkError
-from workbench_agent.api.helpers.base_api import BaseAPI
+from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.exceptions import ValidationError
 
 

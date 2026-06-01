@@ -23,7 +23,7 @@ find/resolve/update workflows; ``workbench.components`` remains the thin API cli
 
 ## `get_information`
 
-- Use `errors.is_missing_component_information()` to detect success + null.
+- Use `helpers.is_missing_component_information()` to detect success + null.
 - With version omitted, `data` is a **list**; with version, a **single dict**.
 
 ## `update`

@@ -21,7 +21,7 @@ Unidentified + Identified Test Scans over Project Sample Mix).
 - **Pending file discovery:** call `scans.get_pending_files(scan_code)` first on
   unidentified scans; use **dict values** (relative paths) for all file-scoped
   `files_and_folders` actions.
-- Encoding rules: `errors.path_for_action` / `PLAIN_PATH_ACTIONS`.
+- Encoding rules: `helpers.path_for_action` / `PLAIN_PATH_ACTIONS`.
 - Do **not** use `get_pending_files` **keys** (file ids) as paths — produces errors such as
   ``The provided file path '1830925' does not exists currently in the scan``.
 
@@ -116,7 +116,7 @@ after autoid or partial review. Always read before writing.
 
 **Distribution status** is on `component_identification.is_distributed`, not a
 top-level field. ``IdentificationService.set_distribution_status`` and
-``parse_distribution_status`` read this nested value when present.
+``summarize_identification_data`` read this nested value when present.
 
 ## `get_fossid_results`
 

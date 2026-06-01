@@ -11,6 +11,7 @@ tests/api/
   README.md
   conftest.py                 # Credentials, dual test scans, pending paths, mutations
   test_workbench_client.py
+  test_base_api.py
   support/
     contract.py               # assert_contract (version-aware)
     contract_specs.py         # Base contracts (all versions)
@@ -20,7 +21,7 @@ tests/api/
     version_contracts.py
   clients/<name>/             # Mirrors api/clients/
   services/<name>/            # Mirrors api/services/
-  helpers/, utils/
+  utils/
 ```
 
 ### Test file patterns
@@ -52,11 +53,12 @@ The SDK normalizes to **`2026.1.0`** via
 
 Add a new JSON file when supporting another Workbench release.
 
-## Path encoding utility
+## Path encoding
 
-`workbench_agent.api.utils.path_encoding.encode_path` / `decode_path` — tested
-in [`utils/test_path_encoding.py`](utils/test_path_encoding.py). Used by
-`FilesAndFoldersClient` (except `remove_component_identification`).
+`FilesAndFoldersClient.encode_path` / `decode_path` (implemented in
+`clients/files_and_folders/helpers.py`) — tested in
+[`clients/files_and_folders/test_path_encoding.py`](clients/files_and_folders/test_path_encoding.py).
+Most actions base64-encode paths; `remove_component_identification` sends plain paths.
 
 ## Prerequisites (live tests)
 

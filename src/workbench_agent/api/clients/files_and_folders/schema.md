@@ -5,7 +5,7 @@ Client: `FilesAndFoldersClient` in `client.py`.
 Auth fields (`username`, `key`) are added by `BaseAPI`.
 
 Legend: **R** = required in API `data`, **O** = optional.  
-Path encoding: see `errors.path_for_action` and `quirks.md`.
+Path encoding: see `helpers.path_for_action` and `quirks.md`.
 
 ## Actions overview
 

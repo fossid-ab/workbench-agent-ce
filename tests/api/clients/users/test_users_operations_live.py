@@ -11,7 +11,7 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.clients.users.errors import (
+from workbench_agent.api.clients.users.helpers import (
     is_user_not_found,
     normalize_permissions_list_data,
 )

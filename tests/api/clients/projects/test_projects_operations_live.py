@@ -11,7 +11,7 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.clients.projects.errors import is_project_not_found
+from workbench_agent.api.clients.projects.helpers import is_project_not_found
 from workbench_agent.api.exceptions import ApiError, ProjectNotFoundError
 from tests.api.support.contract import assert_contract, assert_data_contract
 from tests.api.support.error_assertions import (

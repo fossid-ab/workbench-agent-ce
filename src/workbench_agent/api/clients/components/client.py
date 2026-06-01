@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from workbench_agent.api.exceptions import ApiError
 
-from . import errors
+from . import helpers
 
 logger = logging.getLogger("workbench-agent")
 
@@ -50,7 +50,7 @@ class ComponentsClient:
         response = self._api._send_request(payload)
         if response.get("status") == "1":
             return response
-        errors.raise_on_failed_response(
+        helpers.raise_on_failed_response(
             response, error_context=error_context
         )
 
@@ -89,9 +89,9 @@ class ComponentsClient:
                 "1" if count_results in (True, 1, "1") else "0"
             )
         if records_per_page is not None:
-            data["records_per_page"] = errors.optional_str(records_per_page)
+            data["records_per_page"] = helpers.optional_str(records_per_page)
         if page is not None:
-            data["page"] = errors.optional_str(page)
+            data["page"] = helpers.optional_str(page)
         if order_by is not None:
             data["order_by"] = order_by
         if direction is not None:

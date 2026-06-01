@@ -6,12 +6,12 @@ import pytest
 import requests
 
 from workbench_agent.api.clients.users import UsersClient
-from workbench_agent.api.clients.users.errors import (
+from workbench_agent.api.clients.users.helpers import (
     is_user_not_found,
     normalize_permissions_list_data,
 )
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.helpers.base_api import BaseAPI
+from workbench_agent.api.base_api import BaseAPI
 
 
 @pytest.fixture

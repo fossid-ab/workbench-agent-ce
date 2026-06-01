@@ -199,7 +199,6 @@ class ResultsService:
         scans_client,
         *,
         vulnerability_service=None,
-        vulnerabilities_client=None,
         identification_service=None,
         dependency_service=None,
         workbench_version: str = "",
@@ -209,9 +208,7 @@ class ResultsService:
 
         Args:
             scans_client: ScansClient for scan info and policy warnings
-            vulnerability_service: Optional VulnerabilityService for CVE/VEX
-            vulnerabilities_client: Fallback VulnerabilitiesClient when no
-                service is provided (legacy)
+            vulnerability_service: VulnerabilityService for CVE rows
             identification_service: Optional IdentificationService for KB
                 identification aggregates (components, licenses, metrics, pending)
             dependency_service: Optional DependencyService for DA results
@@ -219,7 +216,6 @@ class ResultsService:
         """
         self._scans = scans_client
         self._vulnerability = vulnerability_service
-        self._vulnerabilities = vulnerabilities_client
         self._identification = identification_service
         self._dependencies = dependency_service
         self._workbench_version = workbench_version
@@ -457,24 +453,11 @@ class ResultsService:
             ...     )
         """
         logger.debug(f"Fetching vulnerabilities for scan '{scan_code}'")
-        if self._vulnerability is not None:
-            vulnerabilities = self._vulnerability.get_vulnerabilities(
-                scan_code
-            )
-        elif self._vulnerabilities is not None:
-            from workbench_agent.api.utils.vulnerability_helpers import (
-                fetch_all_vulnerability_rows,
-            )
-
-            vulnerabilities = fetch_all_vulnerability_rows(
-                self._vulnerabilities,
-                scan_code=scan_code,
-            )
-        else:
+        if self._vulnerability is None:
             raise RuntimeError(
-                "ResultsService requires vulnerability_service or "
-                "vulnerabilities_client"
+                "ResultsService requires vulnerability_service"
             )
+        vulnerabilities = self._vulnerability.get_vulnerabilities(scan_code)
         logger.debug(f"Retrieved {len(vulnerabilities)} vulnerabilities")
         return vulnerabilities
 

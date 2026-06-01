@@ -55,10 +55,10 @@ workbench-agent-ce/
 │   ├── api/                       # ← Candidate SDK surface (see boundary audit)
 │   │   ├── __init__.py            # Public exports: WorkbenchClient, exceptions
 │   │   ├── exceptions.py
+│   │   ├── base_api.py            # HTTP transport (_send_request)
 │   │   ├── workbench_client.py
 │   │   ├── clients/
 │   │   ├── services/
-│   │   ├── helpers/
 │   │   └── utils/                 # e.g. process_waiter, report_definitions
 │   ├── cli/
 │   ├── handlers/                  # Many imports from workbench_agent.api
@@ -114,10 +114,10 @@ workbench-sdk/
 ├── src/workbench_sdk/
 │   ├── __init__.py
 │   ├── exceptions.py
+│   ├── base_api.py
 │   ├── workbench_client.py
 │   ├── clients/
 │   ├── services/
-│   ├── helpers/
 │   └── utils/
 └── README.md
 ```

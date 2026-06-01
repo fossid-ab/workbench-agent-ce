@@ -8,6 +8,19 @@ from workbench_agent.api.services.identification_service import (
     IdentificationService,
 )
 
+OFP_MATCH = {
+    "id": "1329",
+    "match_type": "full",
+    "author": "OpenFastPath",
+    "artifact": "ofp",
+    "version": "1.1",
+    "purl": "pkg:github/openfastpath/ofp@v1.1",
+    "artifact_license": "BSD-3-Clause",
+    "artifact_license_category": "PERMISSIVE",
+    "file_license": None,
+    "url": "https://github.com/OpenFastPath/ofp/archive/refs/tags/v1.1.tar.gz",
+}
+
 
 @pytest.fixture
 def identification_service():
@@ -196,4 +209,90 @@ def test_mark_as_identified_includes_parsed_state(identification_service):
     }
     result = identification_service.mark_as_identified("S1", "src/a.c")
     assert result["is_marked_identified"] is True
+
+
+def test_summarize_identification_data_parses_match_fields(
+    identification_service,
+):
+    identification_service._catalog.resolve.return_value = {"created": True}
+    result = identification_service.resolve_component_from_match(OFP_MATCH)
+    identification_service._catalog.resolve.assert_called_once()
+    call_args = identification_service._catalog.resolve.call_args
+    assert call_args[0][0] == "ofp"
+    assert call_args[0][1] == "1.1"
+    assert call_args[0][2] == "BSD-3-Clause"
+    assert call_args[1]["url"] == OFP_MATCH["url"]
+    assert result["created"] is True
+
+
+def test_summarize_identification_data_license_only_vs_linked(
+    identification_service,
+):
+    license_only = {
+        "component_identification": {
+            "id": "1",
+            "identifying_done": "0",
+            "is_distributed": "1",
+        },
+        "licenses": {"1": {"license_identifier": "MIT"}},
+        "copyright": None,
+    }
+    summary = identification_service.summarize_identification_data(license_only)
+    assert summary["has_identification_record"] is True
+    assert summary["has_linked_catalog_component"] is False
+
+    linked = {
+        "component_identification": {
+            "components": {
+                "25737": {
+                    "component_id": 25737,
+                    "name": "ofp",
+                    "version": "1.1",
+                }
+            },
+            "identifying_done": "1",
+        },
+        "licenses": False,
+        "copyright": "(c) Example",
+    }
+    summary = identification_service.summarize_identification_data(linked)
+    assert summary["has_linked_catalog_component"] is True
+    assert summary["linked_catalog_components"][0]["name"] == "ofp"
+    assert summary["is_marked_identified"] is True
+
+
+def test_summarize_identification_data_includes_agent_fields(
+    identification_service,
+):
+    data = {
+        "component_identification": {
+            "components": {
+                "1": {
+                    "name": "ofp",
+                    "version": "1.1",
+                    "license_identifier": "BSD-3-Clause",
+                }
+            },
+            "identifying_done": "1",
+            "is_distributed": "0",
+        },
+        "licenses": {"1": {"license_identifier": "BSD-3-Clause"}},
+        "copyright": "(c) Test",
+    }
+    summary = identification_service.summarize_identification_data(data)
+    assert summary["has_linked_catalog_component"] is True
+    assert summary["linked_catalog_components"][0]["name"] == "ofp"
+    assert summary["is_marked_identified"] is True
+    assert summary["license_identifiers"] == ["BSD-3-Clause"]
+    assert summary["copyright_text"] == "(c) Test"
+
+
+def test_summarize_identification_data_empty_licenses(
+    identification_service,
+):
+    summary = identification_service.summarize_identification_data(
+        {"licenses": False, "component_identification": []}
+    )
+    assert summary["license_identifiers"] == []
+    assert summary["has_identification_record"] is False
 

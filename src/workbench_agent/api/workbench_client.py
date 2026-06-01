@@ -24,7 +24,7 @@ from workbench_agent.api.clients import (
     VulnerabilitiesClient,
 )
 from workbench_agent.api.exceptions import CompatibilityError
-from workbench_agent.api.helpers.base_api import BaseAPI
+from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.services import (
     ComponentService,
     DependencyService,

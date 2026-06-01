@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Union
 
 from workbench_agent.api.exceptions import ApiError
 
-from . import errors
+from . import helpers
 
 logger = logging.getLogger("workbench-agent")
 
@@ -50,7 +50,7 @@ class VulnerabilitiesClient:
             {
                 "group": "vulnerabilities",
                 "action": "list_vulnerabilities",
-                "data": errors.build_list_payload(
+                "data": helpers.build_list_payload(
                     scan_code=scan_code,
                     project_code=project_code,
                     search_value=search_value,
@@ -62,7 +62,7 @@ class VulnerabilitiesClient:
         )
         if response.get("status") == "1":
             return response.get("data")
-        errors.raise_on_failed_response(
+        helpers.raise_on_failed_response(
             response, error_context="Failed to list vulnerabilities"
         )
 
@@ -88,7 +88,7 @@ class VulnerabilitiesClient:
                 f"Unexpected get_information response for {cve!r}",
                 details=response,
             )
-        errors.raise_on_failed_response(
+        helpers.raise_on_failed_response(
             response,
             error_context=f"Failed to get vulnerability information for {cve!r}",
         )
@@ -106,6 +106,8 @@ class VulnerabilitiesClient:
     ) -> Dict[str, Any]:
         """
         Create a VEX (vulnerability exploitability) statement for a scan row.
+
+        VEX field values follow CycloneDX 1.7 — see ``schema.md`` § VEX.
 
         Returns:
             Dict with ``id`` and optional ``message`` from the API body.
@@ -138,7 +140,7 @@ class VulnerabilitiesClient:
             if "message" in response:
                 result["message"] = response["message"]
             return result
-        errors.raise_on_failed_response(
+        helpers.raise_on_failed_response(
             response,
             error_context=(
                 f"Failed to create vulnerability exploitability for {cve!r} "
@@ -155,7 +157,10 @@ class VulnerabilitiesClient:
         vuln_exp_response: Optional[str] = None,
         vuln_exp_details: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Update an existing VEX statement by id."""
+        """Update an existing VEX statement by id.
+
+        VEX field values follow CycloneDX 1.7 — see ``schema.md`` § VEX.
+        """
         payload: Dict[str, Any] = {"vuln_exp_id": int(vuln_exp_id)}
         if vuln_exp_status is not None:
             payload["vuln_exp_status"] = vuln_exp_status
@@ -178,7 +183,7 @@ class VulnerabilitiesClient:
                 "message": response.get("message"),
                 "data": response.get("data"),
             }
-        errors.raise_on_failed_response(
+        helpers.raise_on_failed_response(
             response,
             error_context=(
                 f"Failed to update vulnerability exploitability id {vuln_exp_id}"
@@ -205,7 +210,7 @@ class VulnerabilitiesClient:
                 "data": {
                     "scan_code_from": scan_code_from,
                     "scan_code_to": scan_code_to,
-                    "override_vex": errors.flag_str(override_vex),
+                    "override_vex": helpers.flag_str(override_vex),
                 },
             }
         )
@@ -215,7 +220,7 @@ class VulnerabilitiesClient:
                 "data": data if isinstance(data, list) else [],
                 "message": response.get("message"),
             }
-        errors.raise_on_failed_response(
+        helpers.raise_on_failed_response(
             response,
             error_context=(
                 "Failed to import vulnerability exploitability from "

@@ -1,4 +1,4 @@
-# tests/unit/api/helpers/test_api_base.py
+"""Tests for workbench_agent.api.base_api.BaseAPI."""
 
 import json
 from unittest.mock import MagicMock
@@ -6,12 +6,12 @@ from unittest.mock import MagicMock
 import pytest
 import requests  # type: ignore[import-untyped]
 
+from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
     NetworkError,
 )
-from workbench_agent.api.helpers.base_api import BaseAPI
 
 
 # --- Fixtures ---

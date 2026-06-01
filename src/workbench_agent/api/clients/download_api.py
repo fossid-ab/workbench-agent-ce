@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from workbench_agent.exceptions import ValidationError
 
 if TYPE_CHECKING:
-    from workbench_agent.api.helpers.base_api import BaseAPI
+    from workbench_agent.api.base_api import BaseAPI
 
 logger = logging.getLogger("workbench-agent")
 

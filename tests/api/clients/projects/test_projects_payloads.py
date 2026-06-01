@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from workbench_agent.api.clients.projects import ProjectsClient
-from workbench_agent.api.helpers.base_api import BaseAPI
+from workbench_agent.api.base_api import BaseAPI
 from tests.api.support.projects_request_manifest import (
     PROJECTS_REQUEST_MANIFEST,
 )

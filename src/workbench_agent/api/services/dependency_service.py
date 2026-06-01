@@ -11,11 +11,6 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Union
 
-from workbench_agent.api.utils.dependency_helpers import (
-    find_dependency,
-    parse_include_in_report,
-)
-
 logger = logging.getLogger("workbench-agent")
 
 
@@ -57,11 +52,14 @@ class DependencyService:
         component_version: str,
     ) -> Optional[Dict[str, Any]]:
         """Return one dependency row by name and version, or ``None``."""
-        return find_dependency(
-            self.list_dependencies(scan_code),
-            component_name,
-            component_version,
-        )
+        version = str(component_version)
+        for row in self.list_dependencies(scan_code):
+            if (
+                row.get("name") == component_name
+                and str(row.get("version", "")) == version
+            ):
+                return row
+        return None
 
     def summarize_dependency(
         self,
@@ -84,9 +82,8 @@ class DependencyService:
             "component_version": str(component_version),
             "found": True,
             "package_id": row.get("package_id"),
-            "include_in_report": parse_include_in_report(
-                row.get("include_in_report")
-            ),
+            "include_in_report": row.get("include_in_report")
+            in (True, 1, "1"),
             "component_id": row.get("component_id"),
         }
 

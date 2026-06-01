@@ -7,7 +7,7 @@ import requests
 
 from workbench_agent.api.exceptions import ApiError, ScanNotFoundError
 
-from . import errors
+from . import helpers
 
 logger = logging.getLogger("workbench-agent")
 
@@ -54,7 +54,7 @@ class ScansClient:
         )
 
         if response.get("status") == "1" and "data" in response:
-            scan_list = errors.parse_list_scans_data(response["data"])
+            scan_list = helpers.parse_list_scans_data(response["data"])
             logger.debug("Successfully listed %s scans.", len(scan_list))
             return scan_list
         if response.get("status") == "1":
@@ -62,7 +62,7 @@ class ScansClient:
                 "API returned success for list_scans but no 'data' key found."
             )
             return []
-        errors.raise_on_failed_response(
+        helpers.raise_on_failed_response(
             response, error_context="Failed to list scans"
         )
         return []
@@ -94,8 +94,8 @@ class ScansClient:
             return response["data"]
         else:
             error_msg = response.get("error", "Unknown error")
-            if errors.is_scan_not_found(error_msg):
-                errors.raise_scan_not_found(scan_code)
+            if helpers.is_scan_not_found(error_msg):
+                helpers.raise_scan_not_found(scan_code)
             raise ApiError(
                 f"Failed to get information for scan '{scan_code}': {error_msg}",
                 details=response,
@@ -143,11 +143,11 @@ class ScansClient:
             )
         else:
             error_msg = response.get("error", "Unknown API error")
-            if errors.is_scan_not_found(error_msg):
+            if helpers.is_scan_not_found(error_msg):
                 logger.warning(
                     f"Scan '{scan_code}' not found when fetching folder metrics."
                 )
-                errors.raise_scan_not_found(scan_code)
+                helpers.raise_scan_not_found(scan_code)
             else:
                 logger.error(
                     f"API error fetching folder metrics for scan '{scan_code}': {error_msg}"
@@ -186,8 +186,8 @@ class ScansClient:
             return list(data.values()) if isinstance(data, dict) else []
         else:
             error_msg = response.get("error", "Unknown error")
-            if errors.is_scan_not_found(error_msg):
-                errors.raise_scan_not_found(scan_code)
+            if helpers.is_scan_not_found(error_msg):
+                helpers.raise_scan_not_found(scan_code)
             raise ApiError(
                 f"Error retrieving identified components from scan '{scan_code}': {error_msg}",
                 details=response,
@@ -264,8 +264,8 @@ class ScansClient:
             error_msg = response.get(
                 "error", f"Unexpected response: {response}"
             )
-            if errors.is_scan_not_found(error_msg):
-                errors.raise_scan_not_found(scan_code)
+            if helpers.is_scan_not_found(error_msg):
+                helpers.raise_scan_not_found(scan_code)
             raise ApiError(
                 f"Error getting identified licenses for scan '{scan_code}': "
                 f"{error_msg}",
@@ -311,8 +311,8 @@ class ScansClient:
                     f"Dependency analysis has not been run for '{scan_code}'."
                 )
                 return []
-            elif errors.is_scan_not_found(error_msg):
-                errors.raise_scan_not_found(scan_code)
+            elif helpers.is_scan_not_found(error_msg):
+                helpers.raise_scan_not_found(scan_code)
             else:
                 raise ApiError(
                     f"Error getting dependency analysis results for scan '{scan_code}': {error_msg}",
@@ -355,7 +355,7 @@ class ScansClient:
         if detailed_dependency_info is not None:
             payload_data["detailed_dependency_info"] = detailed_dependency_info
         if include_in_report is not None:
-            payload_data["include_in_report"] = errors.flag_str(
+            payload_data["include_in_report"] = helpers.flag_str(
                 include_in_report
             )
 
@@ -373,8 +373,8 @@ class ScansClient:
             return response["data"]
 
         error_msg = response.get("error", "Unknown error")
-        if errors.is_scan_not_found(error_msg):
-            errors.raise_scan_not_found(scan_code)
+        if helpers.is_scan_not_found(error_msg):
+            helpers.raise_scan_not_found(scan_code)
         raise ApiError(
             "Failed to add dependency analysis results for "
             f"'{component_name}' {component_version!r} on scan "
@@ -420,7 +420,7 @@ class ScansClient:
         if detailed_dependency_info is not None:
             payload_data["detailed_dependency_info"] = detailed_dependency_info
         if include_in_report is not None:
-            payload_data["include_in_report"] = errors.flag_str(
+            payload_data["include_in_report"] = helpers.flag_str(
                 include_in_report
             )
 
@@ -438,8 +438,8 @@ class ScansClient:
             return response["data"]
 
         error_msg = response.get("error", "Unknown error")
-        if errors.is_scan_not_found(error_msg):
-            errors.raise_scan_not_found(scan_code)
+        if helpers.is_scan_not_found(error_msg):
+            helpers.raise_scan_not_found(scan_code)
         raise ApiError(
             "Failed to update dependency analysis results for "
             f"'{component_name}' {component_version!r} on scan "
@@ -484,8 +484,8 @@ class ScansClient:
             return True
 
         error_msg = response.get("error", "Unknown error")
-        if errors.is_scan_not_found(error_msg):
-            errors.raise_scan_not_found(scan_code)
+        if helpers.is_scan_not_found(error_msg):
+            helpers.raise_scan_not_found(scan_code)
         raise ApiError(
             "Failed to remove dependency analysis results for "
             f"'{component_name}' {component_version!r} on scan "
@@ -576,8 +576,8 @@ class ScansClient:
             return response["data"]
         else:
             error_msg = response.get("error", "Unknown error")
-            if errors.is_scan_not_found(error_msg):
-                errors.raise_scan_not_found(scan_code)
+            if helpers.is_scan_not_found(error_msg):
+                helpers.raise_scan_not_found(scan_code)
             raise ApiError(
                 f"Error getting scan policy warnings counter for '{scan_code}': {error_msg}",
                 details=response,
@@ -852,12 +852,12 @@ class ScansClient:
         response = self._api._send_request(payload)
 
         if response.get("status") == "1" and "data" in response:
-            return errors.normalize_git_status_data(response["data"])
+            return helpers.normalize_git_status_data(response["data"])
         error_msg = response.get(
             "error", f"Unexpected response: {response}"
         )
-        if errors.is_scan_not_found(error_msg):
-            errors.raise_scan_not_found(scan_code)
+        if helpers.is_scan_not_found(error_msg):
+            helpers.raise_scan_not_found(scan_code)
         raise ApiError(
             f"Failed to retrieve Git clone status for scan '{scan_code}': {error_msg}",
             details=response,
@@ -918,7 +918,7 @@ class ScansClient:
             else:
                 error_msg = response.get("error", "Unknown error")
 
-                if errors.is_remove_uploaded_filename_not_found(
+                if helpers.is_remove_uploaded_filename_not_found(
                     response, filename=filename
                 ):
                     logger.warning(
@@ -927,8 +927,8 @@ class ScansClient:
                     return True
 
                 # Handle other errors
-                if errors.is_scan_not_found(error_msg):
-                    errors.raise_scan_not_found(scan_code)
+                if helpers.is_scan_not_found(error_msg):
+                    helpers.raise_scan_not_found(scan_code)
 
                 # Build error message based on whether filename was provided
                 if filename:
@@ -997,8 +997,8 @@ class ScansClient:
             return True
         else:
             error_msg = response.get("error", "Unknown error")
-            if errors.is_scan_not_found(error_msg):
-                errors.raise_scan_not_found(scan_code)
+            if helpers.is_scan_not_found(error_msg):
+                helpers.raise_scan_not_found(scan_code)
             raise ApiError(
                 f"Archive extraction failed for scan '{scan_code}': "
                 f"{error_msg}",
@@ -1043,8 +1043,8 @@ class ScansClient:
                 return
             else:
                 error_msg = response.get("error", "Unknown error")
-                if errors.is_scan_not_found(error_msg):
-                    errors.raise_scan_not_found(scan_code)
+                if helpers.is_scan_not_found(error_msg):
+                    helpers.raise_scan_not_found(scan_code)
                 raise ApiError(
                     f"Failed to run scan '{scan_code}': {error_msg}",
                     details=response,
@@ -1176,7 +1176,7 @@ class ScansClient:
                 logger.warning(
                     f"Unexpected response type from {process_type} status API: {type(data)}"
                 )
-            return errors.normalize_check_status_data(
+            return helpers.normalize_check_status_data(
                 data,
                 process_type=process_type,
                 response=response,
@@ -1185,9 +1185,9 @@ class ScansClient:
             error_msg = response.get(
                 "error", f"Unexpected response: {response}"
             )
-            if errors.is_scan_not_found(error_msg):
+            if helpers.is_scan_not_found(error_msg):
                 if scan_code is not None:
-                    errors.raise_scan_not_found(scan_code)
+                    helpers.raise_scan_not_found(scan_code)
                 raise ScanNotFoundError(
                     f"Status check failed ({process_type}, "
                     f"process_id={process_id}): {error_msg}"
@@ -1270,8 +1270,8 @@ class ScansClient:
             error_msg = response_data.get(
                 "error", f"Unexpected response: {response_data}"
             )
-            if errors.is_scan_not_found(error_msg):
-                errors.raise_scan_not_found(scan_code)
+            if helpers.is_scan_not_found(error_msg):
+                helpers.raise_scan_not_found(scan_code)
             raise ApiError(
                 f"Failed to request report generation for "
                 f"scan '{scan_code}': {error_msg}",
@@ -1317,8 +1317,8 @@ class ScansClient:
         response = self._api._send_request(payload)
         if response.get("status") != "1":
             error_msg = response.get("error", "Unknown API error")
-            if errors.is_scan_not_found(error_msg):
-                errors.raise_scan_not_found(scan_code)
+            if helpers.is_scan_not_found(error_msg):
+                helpers.raise_scan_not_found(scan_code)
             raise ApiError(
                 f"Failed to start notice extract ({extract_type}) for "
                 f"scan '{scan_code}': {error_msg}",
@@ -1370,8 +1370,8 @@ class ScansClient:
             if isinstance(data, str):
                 return data
         error_msg = response_data.get("error", "Unknown API error")
-        if errors.is_scan_not_found(error_msg):
-            errors.raise_scan_not_found(scan_code)
+        if helpers.is_scan_not_found(error_msg):
+            helpers.raise_scan_not_found(scan_code)
         raise ApiError(
             f"Failed to download notice extract ({extract_type}) for "
             f"scan '{scan_code}': {error_msg}",
@@ -1400,8 +1400,8 @@ class ScansClient:
 
         if response.get("status") != "1":
             error_msg = response.get("error", "Unknown API error")
-            if errors.is_scan_not_found(error_msg):
-                errors.raise_scan_not_found(scan_code)
+            if helpers.is_scan_not_found(error_msg):
+                helpers.raise_scan_not_found(scan_code)
             raise ApiError(
                 f"Failed to start SBOM report import for '{scan_code}': {error_msg}",
                 details=response,

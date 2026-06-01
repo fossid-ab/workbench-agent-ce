@@ -25,37 +25,41 @@ import uuid
 import pytest
 
 from tests.api.support.contract import assert_data_contract
-from workbench_agent.api.utils.identification_helpers import (
-    find_first_match,
-    has_linked_catalog_component,
-    parse_identifying_done,
-    summarize_identification_state,
-)
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
 
-def _has_file_license(data: dict) -> bool:
-    return bool(summarize_identification_state(data).get("has_file_license"))
+def _has_file_license(identification_service, data: dict) -> bool:
+    return bool(
+        identification_service.summarize_identification_data(data).get(
+            "has_file_license"
+        )
+    )
 
 
-def _distributed_flag(data: dict):
-    status = summarize_identification_state(data).get("distribution_status")
+def _distributed_flag(identification_service, data: dict):
+    status = identification_service.summarize_identification_data(data).get(
+        "distribution_status"
+    )
     if status is None:
         return None
     return "1" if status else "0"
 
 
-def _identifying_done(data: dict):
-    marked = parse_identifying_done(data)
+def _identifying_done(identification_service, data: dict):
+    marked = identification_service.summarize_identification_data(data).get(
+        "is_marked_identified"
+    )
     if marked is None:
         return None
     return "1" if marked else "0"
 
 
 def _partial_match_id(matches: dict):
-    match = find_first_match(matches, match_type="partial")
-    return str(match["id"]) if match else None
+    for entry in matches.values():
+        if isinstance(entry, dict) and entry.get("match_type") == "partial":
+            return str(entry["id"])
+    return None
 
 
 @pytest.mark.usefixtures("scan_has_pending")
@@ -278,7 +282,7 @@ class TestAuditorWorkflowPhase2Mutations:
         after_license = identification_service.get_identification(
             test_scan_code, path
         )
-        assert _has_file_license(after_license)
+        assert _has_file_license(identification_service, after_license)
 
         copyright_result = identification_service.add_copyright_to_file(
             test_scan_code,
@@ -308,16 +312,20 @@ class TestAuditorWorkflowPhase2Mutations:
             after_component = identification_service.get_identification(
                 test_scan_code, path
             )
-            assert has_linked_catalog_component(after_component)
+            assert identification_service.summarize_identification_data(
+                after_component
+            )["has_linked_catalog_component"]
 
-            dist_before = _distributed_flag(after_component)
+            dist_before = _distributed_flag(identification_service, after_component)
             identification_service.set_distribution_status(
                 test_scan_code, path, distributed=dist_before != "1"
             )
             after_toggle = identification_service.get_identification(
                 test_scan_code, path
             )
-            assert _distributed_flag(after_toggle) != dist_before
+            assert _distributed_flag(
+                identification_service, after_toggle
+            ) != dist_before
 
             identification_service.set_distribution_status(
                 test_scan_code, path, distributed=dist_before == "1"
@@ -325,7 +333,9 @@ class TestAuditorWorkflowPhase2Mutations:
             after_restore = identification_service.get_identification(
                 test_scan_code, path
             )
-            assert _distributed_flag(after_restore) == dist_before
+            assert _distributed_flag(
+                identification_service, after_restore
+            ) == dist_before
 
             identification_service.add_file_comment(
                 test_scan_code,
@@ -350,7 +360,9 @@ class TestAuditorWorkflowPhase2Mutations:
             )
             assert edit_result.get("message")
 
-            done_before = _identifying_done(after_restore)
+            done_before = _identifying_done(
+                identification_service, after_restore
+            )
             mark_result = identification_service.mark_as_identified(
                 test_scan_code, path
             )
@@ -360,7 +372,7 @@ class TestAuditorWorkflowPhase2Mutations:
             after_mark = identification_service.get_identification(
                 test_scan_code, path
             )
-            assert _identifying_done(after_mark) == "1"
+            assert _identifying_done(identification_service, after_mark) == "1"
 
             unmark_result = identification_service.unmark_as_identified(
                 test_scan_code, path
@@ -371,7 +383,7 @@ class TestAuditorWorkflowPhase2Mutations:
             after_unmark = identification_service.get_identification(
                 test_scan_code, path
             )
-            assert _identifying_done(after_unmark) != "1"
+            assert _identifying_done(identification_service, after_unmark) != "1"
 
             ff.delete_file_comment(test_scan_code, comment_id)
             remaining = identification_service.get_file_comments(

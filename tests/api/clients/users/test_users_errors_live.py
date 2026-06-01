@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.clients.users.errors import is_user_not_found
+from workbench_agent.api.clients.users.helpers import is_user_not_found
 from workbench_agent.api.exceptions import ApiError
 from tests.api.support.error_assertions import (
     assert_api_error,

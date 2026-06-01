@@ -330,12 +330,26 @@ class TestFilesAndFoldersLiveMutations:
         test_scan_code,
         mutation_pending_path,
     ):
-        result = identification_service.set_distribution_status(
-            test_scan_code, mutation_pending_path, distributed=False
+        summary = identification_service.summarize_identification(
+            test_scan_code, mutation_pending_path
         )
+        current = summary.get("distribution_status")
+        target = False if current is not False else True
+
+        result = identification_service.set_distribution_status(
+            test_scan_code, mutation_pending_path, distributed=target
+        )
+        if not result["changed"]:
+            target = not target
+            result = identification_service.set_distribution_status(
+                test_scan_code, mutation_pending_path, distributed=target
+            )
         assert result["changed"] is True
+
         identification_service.set_distribution_status(
-            test_scan_code, mutation_pending_path, distributed=True
+            test_scan_code,
+            mutation_pending_path,
+            distributed=current if current is not None else True,
         )
 
     def test_set_copyright_on_openfastpath_directory(

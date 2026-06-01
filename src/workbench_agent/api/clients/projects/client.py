@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from workbench_agent.api.exceptions import ApiError
 
-from . import errors
+from . import helpers
 
 logger = logging.getLogger("workbench-agent")
 
@@ -56,7 +56,7 @@ class ProjectsClient:
             )
             return []
 
-        errors.raise_on_failed_response(
+        helpers.raise_on_failed_response(
             response, error_context="Failed to list projects"
         )
         return []
@@ -87,8 +87,8 @@ class ProjectsClient:
         error_msg = response.get(
             "error", f"Unexpected response: {response}"
         )
-        if errors.is_project_not_found(error_msg):
-            errors.raise_project_not_found(project_code)
+        if helpers.is_project_not_found(error_msg):
+            helpers.raise_project_not_found(project_code)
         raise ApiError(
             f"Failed to get project info for '{project_code}': {error_msg}",
             details=response,
@@ -127,7 +127,7 @@ class ProjectsClient:
         error_msg = response.get(
             "error", f"Unexpected response: {response}"
         )
-        if errors.is_project_not_found(error_msg):
+        if helpers.is_project_not_found(error_msg):
             logger.warning(f"Project code '{project_code}' not found.")
             return []
         raise ApiError(
@@ -177,7 +177,7 @@ class ProjectsClient:
                 )
             return project_code
 
-        errors.try_raise_create_parsing_request_error(
+        helpers.try_raise_create_parsing_request_error(
             response, project_name=project_name
         )
         error_msg = response.get("error", "Unknown error")
@@ -240,14 +240,14 @@ class ProjectsClient:
             )
             return int(project_id)
 
-        errors.try_raise_parsing_request_error(
+        helpers.try_raise_parsing_request_error(
             response,
             context="update",
             project_code=project_code,
         )
         error_msg = response.get("error", "Unknown error")
-        if errors.is_project_not_found(error_msg):
-            errors.raise_project_not_found(project_code)
+        if helpers.is_project_not_found(error_msg):
+            helpers.raise_project_not_found(project_code)
         raise ApiError(
             f"Failed to update project '{project_code}': {error_msg}",
             details=response,
@@ -290,8 +290,8 @@ class ProjectsClient:
         error_msg = response_data.get(
             "error", f"Unexpected response: {response_data}"
         )
-        if errors.is_project_not_found(error_msg):
-            errors.raise_project_not_found(project_code)
+        if helpers.is_project_not_found(error_msg):
+            helpers.raise_project_not_found(project_code)
         raise ApiError(
             f"Failed to request report generation for project "
             f"'{project_code}': {error_msg}",

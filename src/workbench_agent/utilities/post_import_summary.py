@@ -3,11 +3,9 @@ import logging
 from typing import TYPE_CHECKING
 
 from workbench_agent.api.exceptions import ApiError, NetworkError
-from workbench_agent.api.utils.vulnerability_helpers import (
-    summarize_vulnerability_rows,
-)
 from workbench_agent.utilities.vulnerability_display import (
     print_vulnerable_component_count,
+    summarize_vulnerability_rows,
 )
 
 if TYPE_CHECKING:

@@ -3,7 +3,7 @@
 import pytest
 import requests
 
-from workbench_agent.api.clients.uploads.errors import (
+from workbench_agent.api.clients.uploads.helpers import (
     validate_chunk_upload_response,
     validate_standard_upload_response,
 )

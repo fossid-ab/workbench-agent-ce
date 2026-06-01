@@ -7,7 +7,7 @@ import requests
 
 from workbench_agent.api.clients.vulnerabilities import VulnerabilitiesClient
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.helpers.base_api import BaseAPI
+from workbench_agent.api.base_api import BaseAPI
 
 
 @pytest.fixture
@@ -141,7 +141,7 @@ def test_create_vulnerability_exploitability(mock_send, vulnerabilities_client):
         component_id=1,
         cve="CVE-2020-1234",
         vuln_exp_status="not_affected",
-        vuln_exp_justification="component_not_present",
+        vuln_exp_justification="code_not_present",
     )
 
     assert result["id"] == 99
@@ -155,7 +155,7 @@ def test_update_vulnerability_exploitability(mock_send, vulnerabilities_client):
 
     result = vulnerabilities_client.update_vulnerability_exploitability(
         42,
-        vuln_exp_status="affected",
+        vuln_exp_status="exploitable",
     )
 
     assert result["message"] == "ok"

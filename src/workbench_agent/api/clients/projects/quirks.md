@@ -18,7 +18,7 @@ Validated via live tests in `tests/api/clients/projects/`.
 
 ## Error markers
 
-``errors.is_project_not_found()`` matches:
+``helpers.is_project_not_found()`` matches:
 
 - ``Project does not exist``
 - ``Project code does not exist``

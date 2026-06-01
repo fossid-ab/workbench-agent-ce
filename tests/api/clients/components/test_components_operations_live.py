@@ -11,7 +11,7 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.clients.components.errors import (
+from workbench_agent.api.clients.components.helpers import (
     is_missing_component_information,
 )
 from tests.api.support.contract import assert_contract, assert_data_contract

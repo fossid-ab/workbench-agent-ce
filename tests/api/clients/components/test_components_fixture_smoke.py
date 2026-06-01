@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from workbench_agent.api.clients.components import ComponentsClient
-from workbench_agent.api.helpers.base_api import BaseAPI
+from workbench_agent.api.base_api import BaseAPI
 from tests.api.support.contract import assert_contract
 from tests.api.support.version_contracts import load_fixture
 

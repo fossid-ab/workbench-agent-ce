@@ -4,9 +4,8 @@ import logging
 from typing import Any, Dict, List, Optional, Union
 
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.utils.path_encoding import encode_path
 
-from . import errors
+from . import helpers
 
 logger = logging.getLogger("workbench-agent")
 
@@ -23,8 +22,6 @@ class FilesAndFoldersClient:
         >>> info = client.get_identification(scan_code, "src/main.c")
     """
 
-    _GROUP = "files_and_folders"
-
     def __init__(self, base_api):
         """
         Initialize FilesAndFoldersClient.
@@ -35,33 +32,8 @@ class FilesAndFoldersClient:
         self._api = base_api
         logger.debug("FilesAndFoldersClient initialized")
 
-    encode_path = staticmethod(encode_path)
-
-    def _request(
-        self,
-        action: str,
-        data: Dict[str, Any],
-        *,
-        error_context: str,
-        include_message: bool = False,
-    ) -> Union[Any, Dict[str, Any]]:
-        payload = {
-            "group": self._GROUP,
-            "action": action,
-            "data": data,
-        }
-        response = self._api._send_request(payload)
-        if response.get("status") == "1":
-            if include_message:
-                return {
-                    "data": response.get("data"),
-                    "message": response.get("message"),
-                }
-            return response.get("data")
-        errors.raise_on_failed_response(
-            response, error_context=error_context
-        )
-        return None  # unreachable
+    encode_path = staticmethod(helpers.encode_path)
+    decode_path = staticmethod(helpers.decode_path)
 
     def get_folder_content(
         self,
@@ -84,27 +56,36 @@ class FilesAndFoldersClient:
         Returns a list of tree nodes (directories include ``children``; files
         include ``icon``). See ``quirks.md``.
         """
-        result = self._request(
-            "get_folder_content",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action("get_folder_content", path),
-                "show_all": errors.flag_str(show_all),
-                "source_code_only": errors.flag_str(source_code_only),
-            },
+                "group": "files_and_folders",
+                "action": "get_folder_content",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action("get_folder_content", path),
+                    "show_all": helpers.flag_str(show_all),
+                    "source_code_only": helpers.flag_str(source_code_only),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            result = response.get("data")
+            if isinstance(result, list):
+                return result
+            if result is None:
+                return []
+            raise ApiError(
+                "Unexpected get_folder_content data format",
+                details={"data": result},
+            )
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to get folder content for '{path}' "
                 f"in scan '{scan_code}'"
             ),
         )
-        if isinstance(result, list):
-            return result
-        if result is None:
-            return []
-        raise ApiError(
-            "Unexpected get_folder_content data format",
-            details={"data": result},
-        )
+        return []
 
     def get_folder_content_metrics(
         self,
@@ -118,25 +99,34 @@ class FilesAndFoldersClient:
         ``identified_files``, and ``without_matches``. See ``schema.md`` and
         ``quirks.md``.
         """
-        result = self._request(
-            "get_folder_content_metrics",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action(
-                    "get_folder_content_metrics", path
-                ),
-            },
+                "group": "files_and_folders",
+                "action": "get_folder_content_metrics",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action(
+                        "get_folder_content_metrics", path
+                    ),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            result = response.get("data")
+            if isinstance(result, dict):
+                return result
+            raise ApiError(
+                "Unexpected get_folder_content_metrics data format",
+                details={"data": result},
+            )
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to get folder content metrics for '{path}' "
                 f"in scan '{scan_code}'"
             ),
         )
-        if isinstance(result, dict):
-            return result
-        raise ApiError(
-            "Unexpected get_folder_content_metrics data format",
-            details={"data": result},
-        )
+        return {}
 
     def get_folder_components_ranking(
         self,
@@ -154,25 +144,34 @@ class FilesAndFoldersClient:
 
         Returns ``False`` when ``path`` is a file, not a folder. See ``quirks.md``.
         """
-        result = self._request(
-            "get_folder_components_ranking",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action(
-                    "get_folder_components_ranking", path
-                ),
-            },
+                "group": "files_and_folders",
+                "action": "get_folder_components_ranking",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action(
+                        "get_folder_components_ranking", path
+                    ),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            result = response.get("data")
+            if isinstance(result, list) or result is False:
+                return result
+            raise ApiError(
+                "Unexpected get_folder_components_ranking data format",
+                details={"data": result},
+            )
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to get folder components ranking for '{path}' "
                 f"in scan '{scan_code}'"
             ),
         )
-        if isinstance(result, list) or result is False:
-            return result
-        raise ApiError(
-            "Unexpected get_folder_components_ranking data format",
-            details={"data": result},
-        )
+        return False
 
     def get_folder_extensions_ranking(
         self,
@@ -198,27 +197,36 @@ class FilesAndFoldersClient:
         """
         data: Dict[str, Any] = {
             "scan_code": scan_code,
-            "path": errors.path_for_action(
+            "path": helpers.path_for_action(
                 "get_folder_extensions_ranking", path
             ),
         }
         if current_view is not None:
             data["current_view"] = current_view
 
-        result = self._request(
-            "get_folder_extensions_ranking",
-            data,
+        response = self._api._send_request(
+            {
+                "group": "files_and_folders",
+                "action": "get_folder_extensions_ranking",
+                "data": data,
+            }
+        )
+        if response.get("status") == "1":
+            result = response.get("data")
+            if isinstance(result, list) or result is False:
+                return result
+            raise ApiError(
+                "Unexpected get_folder_extensions_ranking data format",
+                details={"data": result},
+            )
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to get folder extensions ranking for '{path}' "
                 f"in scan '{scan_code}'"
             ),
         )
-        if isinstance(result, list) or result is False:
-            return result
-        raise ApiError(
-            "Unexpected get_folder_extensions_ranking data format",
-            details={"data": result},
-        )
+        return False
 
     def get_identification(
         self, scan_code: str, path: str
@@ -229,17 +237,26 @@ class FilesAndFoldersClient:
         Required: ``scan_code``, ``path`` (encoded automatically). Returns
         ``data`` only (top-level ``message`` omitted) — see ``schema.md``.
         """
-        return self._request(
-            "get_identification",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action("get_identification", path),
-            },
+                "group": "files_and_folders",
+                "action": "get_identification",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action("get_identification", path),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            return response.get("data")
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to get identification for '{path}' "
                 f"in scan '{scan_code}'"
             ),
         )
+        return {}
 
     def set_identification_copyright(
         self,
@@ -255,21 +272,32 @@ class FilesAndFoldersClient:
         Required: ``scan_code``, ``path``, ``copyright``. ``is_directory``:
         ``"0"``/``"1"`` (default file). Returns ``{"data", "message"}``.
         """
-        return self._request(
-            "set_identification_copyright",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action(
-                    "set_identification_copyright", path
-                ),
-                "is_directory": errors.flag_str(is_directory),
-                "copyright": copyright,
-            },
+                "group": "files_and_folders",
+                "action": "set_identification_copyright",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action(
+                        "set_identification_copyright", path
+                    ),
+                    "is_directory": helpers.flag_str(is_directory),
+                    "copyright": copyright,
+                },
+            }
+        )
+        if response.get("status") == "1":
+            return {
+                "data": response.get("data"),
+                "message": response.get("message"),
+            }
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to set copyright for '{path}' in scan '{scan_code}'"
             ),
-            include_message=True,
         )
+        return {}
 
     def add_license_identification(
         self,
@@ -286,23 +314,34 @@ class FilesAndFoldersClient:
         Required: ``scan_code``, ``path``, ``license_identifier``,
         ``identification_on`` (``'file'`` or ``'snippet'``), ``is_directory``.
         """
-        return self._request(
-            "add_license_identification",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action(
-                    "add_license_identification", path
-                ),
-                "license_identifier": license_identifier,
-                "identification_on": identification_on,
-                "is_directory": errors.flag_str(is_directory),
-            },
+                "group": "files_and_folders",
+                "action": "add_license_identification",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action(
+                        "add_license_identification", path
+                    ),
+                    "license_identifier": license_identifier,
+                    "identification_on": identification_on,
+                    "is_directory": helpers.flag_str(is_directory),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            return {
+                "data": response.get("data"),
+                "message": response.get("message"),
+            }
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to add license identification for '{path}' "
                 f"in scan '{scan_code}'"
             ),
-            include_message=True,
         )
+        return {}
 
     def set_identification_component(
         self,
@@ -318,42 +357,62 @@ class FilesAndFoldersClient:
         """Associate a file or folder with an existing catalog component."""
         data: Dict[str, Any] = {
             "scan_code": scan_code,
-            "path": errors.path_for_action("set_identification_component", path),
-            "is_directory": errors.flag_str(is_directory),
+            "path": helpers.path_for_action("set_identification_component", path),
+            "is_directory": helpers.flag_str(is_directory),
             "component_name": component_name,
             "component_version": component_version,
-            "preserve_existing_identifications": errors.flag_str(
+            "preserve_existing_identifications": helpers.flag_str(
                 preserve_existing_identifications
             ),
         }
         if supplier_name is not None:
             data["supplier_name"] = supplier_name
 
-        return self._request(
-            "set_identification_component",
-            data,
+        response = self._api._send_request(
+            {
+                "group": "files_and_folders",
+                "action": "set_identification_component",
+                "data": data,
+            }
+        )
+        if response.get("status") == "1":
+            return {
+                "data": response.get("data"),
+                "message": response.get("message"),
+            }
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to set component identification for '{path}' "
                 f"in scan '{scan_code}'"
             ),
-            include_message=True,
         )
+        return {}
 
     def get_fossid_results(
         self, scan_code: str, path: str
     ) -> Dict[str, Any]:
         """Get FossID scan match candidates for a file (max 10)."""
-        return self._request(
-            "get_fossid_results",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action("get_fossid_results", path),
-            },
+                "group": "files_and_folders",
+                "action": "get_fossid_results",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action("get_fossid_results", path),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            return response.get("data")
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to get FossID results for '{path}' "
                 f"in scan '{scan_code}'"
             ),
         )
+        return {}
 
     def get_matched_lines(
         self,
@@ -362,18 +421,27 @@ class FilesAndFoldersClient:
         client_result_id: str,
     ) -> Dict[str, Any]:
         """Get matched lines for a partial FossID match."""
-        return self._request(
-            "get_matched_lines",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action("get_matched_lines", path),
-                "client_result_id": client_result_id,
-            },
+                "group": "files_and_folders",
+                "action": "get_matched_lines",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action("get_matched_lines", path),
+                    "client_result_id": client_result_id,
+                },
+            }
+        )
+        if response.get("status") == "1":
+            return response.get("data")
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to get matched lines for '{path}' "
                 f"in scan '{scan_code}'"
             ),
         )
+        return {}
 
     def add_file_comment(
         self,
@@ -385,43 +453,63 @@ class FilesAndFoldersClient:
         include_in_report: Union[bool, int, str] = False,
     ) -> Dict[str, Any]:
         """Add a comment to a file."""
-        return self._request(
-            "add_file_comment",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action("add_file_comment", path),
-                "comment": comment,
-                "is_important": errors.flag_str(is_important),
-                "include_in_report": errors.flag_str(include_in_report),
-            },
+                "group": "files_and_folders",
+                "action": "add_file_comment",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action("add_file_comment", path),
+                    "comment": comment,
+                    "is_important": helpers.flag_str(is_important),
+                    "include_in_report": helpers.flag_str(include_in_report),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            return {
+                "data": response.get("data"),
+                "message": response.get("message"),
+            }
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to add comment for '{path}' in scan '{scan_code}'"
             ),
-            include_message=True,
         )
+        return {}
 
     def get_file_comments(
         self, scan_code: str, path: str
     ) -> List[Dict[str, Any]]:
         """Get comments associated with a file."""
-        result = self._request(
-            "get_file_comments",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action("get_file_comments", path),
-            },
+                "group": "files_and_folders",
+                "action": "get_file_comments",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action("get_file_comments", path),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            result = response.get("data")
+            if isinstance(result, list):
+                return result
+            if result is None:
+                return []
+            raise ApiError(
+                "Unexpected get_file_comments data format",
+                details={"data": result},
+            )
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to get comments for '{path}' in scan '{scan_code}'"
             ),
         )
-        if isinstance(result, list):
-            return result
-        if result is None:
-            return []
-        raise ApiError(
-            "Unexpected get_file_comments data format",
-            details={"data": result},
-        )
+        return []
 
     def edit_file_comment(
         self,
@@ -440,18 +528,29 @@ class FilesAndFoldersClient:
         if comment is not None:
             data["comment"] = comment
         if is_important is not None:
-            data["is_important"] = errors.flag_str(is_important)
+            data["is_important"] = helpers.flag_str(is_important)
         if include_in_report is not None:
-            data["include_in_report"] = errors.flag_str(include_in_report)
+            data["include_in_report"] = helpers.flag_str(include_in_report)
 
-        return self._request(
-            "edit_file_comment",
-            data,
+        response = self._api._send_request(
+            {
+                "group": "files_and_folders",
+                "action": "edit_file_comment",
+                "data": data,
+            }
+        )
+        if response.get("status") == "1":
+            return {
+                "data": response.get("data"),
+                "message": response.get("message"),
+            }
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to edit comment {comment_id} in scan '{scan_code}'"
             ),
-            include_message=True,
         )
+        return {}
 
     def delete_file_comment(
         self,
@@ -459,17 +558,28 @@ class FilesAndFoldersClient:
         comment_id: Union[int, str],
     ) -> Dict[str, Any]:
         """Delete a file comment."""
-        return self._request(
-            "delete_file_comment",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "comment_id": str(comment_id),
-            },
+                "group": "files_and_folders",
+                "action": "delete_file_comment",
+                "data": {
+                    "scan_code": scan_code,
+                    "comment_id": str(comment_id),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            return {
+                "data": response.get("data"),
+                "message": response.get("message"),
+            }
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to delete comment {comment_id} in scan '{scan_code}'"
             ),
-            include_message=True,
         )
+        return {}
 
     def mark_as_identified(
         self,
@@ -479,18 +589,29 @@ class FilesAndFoldersClient:
         is_directory: Union[bool, int, str] = False,
     ) -> Dict[str, Any]:
         """Mark a file or folder as identified (audit complete)."""
-        return self._request(
-            "mark_as_identified",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action("mark_as_identified", path),
-                "is_directory": errors.flag_str(is_directory),
-            },
+                "group": "files_and_folders",
+                "action": "mark_as_identified",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action("mark_as_identified", path),
+                    "is_directory": helpers.flag_str(is_directory),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            return {
+                "data": response.get("data"),
+                "message": response.get("message"),
+            }
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to mark '{path}' as identified in scan '{scan_code}'"
             ),
-            include_message=True,
         )
+        return {}
 
     def unmark_as_identified(
         self,
@@ -500,37 +621,59 @@ class FilesAndFoldersClient:
         is_directory: Union[bool, int, str] = False,
     ) -> Dict[str, Any]:
         """Unmark a file or folder as identified."""
-        return self._request(
-            "unmark_as_identified",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action("unmark_as_identified", path),
-                "is_directory": errors.flag_str(is_directory),
-            },
+                "group": "files_and_folders",
+                "action": "unmark_as_identified",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action("unmark_as_identified", path),
+                    "is_directory": helpers.flag_str(is_directory),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            return {
+                "data": response.get("data"),
+                "message": response.get("message"),
+            }
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to unmark '{path}' identified in scan '{scan_code}'"
             ),
-            include_message=True,
         )
+        return {}
 
     def change_distribution_status(
         self, scan_code: str, path: str
     ) -> Dict[str, Any]:
         """Toggle distributed / not distributed for a file."""
-        return self._request(
-            "change_distribution_status",
+        response = self._api._send_request(
             {
-                "scan_code": scan_code,
-                "path": errors.path_for_action(
-                    "change_distribution_status", path
-                ),
-            },
+                "group": "files_and_folders",
+                "action": "change_distribution_status",
+                "data": {
+                    "scan_code": scan_code,
+                    "path": helpers.path_for_action(
+                        "change_distribution_status", path
+                    ),
+                },
+            }
+        )
+        if response.get("status") == "1":
+            return {
+                "data": response.get("data"),
+                "message": response.get("message"),
+            }
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to change distribution status for '{path}' "
                 f"in scan '{scan_code}'"
             ),
-            include_message=True,
         )
+        return {}
 
     def remove_component_identification(
         self,
@@ -547,7 +690,7 @@ class FilesAndFoldersClient:
         """
         data: Dict[str, Any] = {
             "scan_code": scan_code,
-            "path": errors.path_for_action(
+            "path": helpers.path_for_action(
                 "remove_component_identification", path
             ),
         }
@@ -556,14 +699,23 @@ class FilesAndFoldersClient:
         if component_version is not None:
             data["component_version"] = component_version
 
-        result = self._request(
-            "remove_component_identification",
-            data,
+        response = self._api._send_request(
+            {
+                "group": "files_and_folders",
+                "action": "remove_component_identification",
+                "data": data,
+            }
+        )
+        if response.get("status") == "1":
+            result = response.get("data")
+            if isinstance(result, bool):
+                return result
+            return bool(result)
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to remove component identification for '{path}' "
                 f"in scan '{scan_code}'"
             ),
         )
-        if isinstance(result, bool):
-            return result
-        return bool(result)
+        return False

@@ -26,5 +26,5 @@ so ``UsersClient`` can prefix errors as ``Failed to …: <error>``.
 ## Errors
 
 All failures surface as :class:`~workbench_agent.api.exceptions.ApiError` (no
-``UserNotFoundError`` type). Use ``errors.is_user_not_found()`` to classify
+``UserNotFoundError`` type). Use ``helpers.is_user_not_found()`` to classify
 messages when needed.
