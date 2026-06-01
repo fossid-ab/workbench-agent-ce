@@ -1190,7 +1190,6 @@ class ReportService:
                 with open(filepath, write_mode) as f:
                     f.write(content_to_write)
 
-            print(f"Successfully saved to: {filepath}")
             logger.info(f"Successfully saved report to {filepath}")
             return filepath
 

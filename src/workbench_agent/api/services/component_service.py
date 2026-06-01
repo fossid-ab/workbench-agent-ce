@@ -1,5 +1,5 @@
 """
-ComponentService - Workbench component catalog orchestration.
+ComponentService - Operate on the Workbench component catalog.
 
 Shared catalog lifecycle (find, resolve, update) for identification and
 dependency analysis workflows. ``resolve`` follows the same find-or-create
@@ -55,13 +55,9 @@ class ComponentService:
         """
         Resolve a catalog component by name and version; create when absent.
 
-        Same find-or-create contract as ``ResolverService`` for projects/scans.
-        ``license_identifier`` is always required and is used when creating a
-        new catalog row (callers should supply it even when the row exists).
-
         Returns:
-            Dict with ``component_name``, ``component_version``, ``created`` bool,
-            and optional ``create_response``.
+            Dict with component_name, component_version, created bool,
+            and optional create_response.
         """
         name = component_name.strip()
         version = component_version.strip()

@@ -25,20 +25,6 @@ def test_list_dependencies_delegates(dependency_service):
     )
 
 
-def test_get_dependency_returns_match(dependency_service):
-    dependency_service._scans.get_dependency_analysis_results.return_value = [
-        {"name": "abbrev", "version": "1.1.1", "package_id": "pkg:npm/abbrev@1.1.1"},
-        {"name": "lodash", "version": "4.0.0"},
-    ]
-    row = dependency_service.get_dependency("S1", "abbrev", "1.1.1")
-    assert row["package_id"] == "pkg:npm/abbrev@1.1.1"
-
-
-def test_get_dependency_missing_returns_none(dependency_service):
-    dependency_service._scans.get_dependency_analysis_results.return_value = []
-    assert dependency_service.get_dependency("S1", "missing", "0") is None
-
-
 def test_add_dependency_resolves_catalog_then_adds(dependency_service):
     dependency_service._catalog.resolve.return_value = {"created": True}
     dependency_service._scans.add_dependency_analysis_results.return_value = {
@@ -86,16 +72,6 @@ def test_set_include_in_report_delegates(dependency_service):
         projects_and_scopes=None,
         detailed_dependency_info=None,
         include_in_report=False,
-    )
-
-
-def test_get_dependencies_aliases_list(dependency_service):
-    dependency_service._scans.get_dependency_analysis_results.return_value = [
-        {"name": "abbrev"}
-    ]
-    assert dependency_service.get_dependencies("S1") == [{"name": "abbrev"}]
-    dependency_service._scans.get_dependency_analysis_results.assert_called_once_with(
-        "S1"
     )
 
 

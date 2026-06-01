@@ -1,7 +1,7 @@
 """
-ScanContentService - Handles Workbench File Operations before processing.
+ScanContentService - Handles Workbench File Operations.
 
-Use this service to interact with files in Workbench before scan or import.
+This service interacts with files in Workbench before scan or import.
 Supports file uploads, archive extraction, file deletion, and Git operations.
 Scanning operations live in ``ScanOperationsService``.
 """
@@ -33,7 +33,6 @@ class ScanContentService:
         >>> content = ScanContentService(scans, uploads, status_check)
         >>> content.upload_scan_target(scan_code, "/path/to/source.zip")
         >>> content.extract_archives(scan_code, True, True)
-        >>> content.download_git_and_wait(scan_code, wait_retry_count=360)
     """
 
     CHUNKED_UPLOAD_THRESHOLD = 7 * 1024 * 1024  # 7MB
@@ -49,7 +48,7 @@ class ScanContentService:
         self._status_check = status_check_service
         logger.debug("ScanContentService initialized")
 
-    # ===== UPLOADS =====
+    # ===== UPLOAD HELPERS =====
 
     def _validate_upload_file(self, path: str, label: str) -> None:
         if not os.path.exists(path) or not os.path.isfile(path):
@@ -85,6 +84,8 @@ class ScanContentService:
         else:
             logger.debug("Using standard (non-chunked) upload.")
             self._uploads.upload_file_standard(path, headers)
+
+    # ===== UPLOAD FILES TO SERVER =====
 
     def upload_scan_target(self, scan_code: str, path: str) -> None:
         """Upload a scan target archive or hash file into the scan directory."""
@@ -165,7 +166,7 @@ class ScanContentService:
             wait_retry_interval=wait_retry_interval,
         )
 
-    # ===== GIT CLONE OPERATIONS =====
+    # ===== SERVER-SIDE GIT CLONING OPERATIONS =====
 
     def download_content_from_git(self, scan_code: str) -> bool:
         """Start Git clone/download for the scan's configured repository."""

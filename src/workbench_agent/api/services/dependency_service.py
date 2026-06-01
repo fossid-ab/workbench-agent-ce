@@ -1,22 +1,20 @@
 """
-DependencyService - Dependency analysis result orchestration.
+DependencyService - Manage Dependency Analysis results in Workbench.
 
-Coordinates ``ScansClient`` and ``ComponentService`` dependency analysis
-read/write operations for reviewing, adding, updating, and removing dependency
-rows.
+Use this service to review, add, update, and remove dependencies from a scan.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 logger = logging.getLogger("workbench-agent")
 
 
 class DependencyService:
     """
-    Service for scan dependency analysis workflows.
+    Service for operating on dependency analysis results.
 
     Example:
         >>> svc = DependencyService(client.scans, client.component_catalog)
@@ -41,52 +39,6 @@ class DependencyService:
         )
         return self._scans.get_dependency_analysis_results(scan_code)
 
-    def get_dependencies(self, scan_code: str) -> List[Dict[str, Any]]:
-        """Alias for ``list_dependencies`` (scan result summaries)."""
-        return self.list_dependencies(scan_code)
-
-    def get_dependency(
-        self,
-        scan_code: str,
-        component_name: str,
-        component_version: str,
-    ) -> Optional[Dict[str, Any]]:
-        """Return one dependency row by name and version, or ``None``."""
-        version = str(component_version)
-        for row in self.list_dependencies(scan_code):
-            if (
-                row.get("name") == component_name
-                and str(row.get("version", "")) == version
-            ):
-                return row
-        return None
-
-    def summarize_dependency(
-        self,
-        scan_code: str,
-        component_name: str,
-        component_version: str,
-    ) -> Dict[str, Any]:
-        """Return a compact summary for one dependency row."""
-        row = self.get_dependency(scan_code, component_name, component_version)
-        if row is None:
-            return {
-                "scan_code": scan_code,
-                "component_name": component_name,
-                "component_version": str(component_version),
-                "found": False,
-            }
-        return {
-            "scan_code": scan_code,
-            "component_name": component_name,
-            "component_version": str(component_version),
-            "found": True,
-            "package_id": row.get("package_id"),
-            "include_in_report": row.get("include_in_report")
-            in (True, 1, "1"),
-            "component_id": row.get("component_id"),
-        }
-
     # ===== WRITE =====
 
     def add_dependency(
@@ -97,13 +49,13 @@ class DependencyService:
         package_id: str,
         license_identifier: str,
         *,
-        supplier_name: Optional[str] = None,
-        projects_and_scopes: Optional[str] = None,
-        detailed_dependency_info: Optional[str] = None,
-        include_in_report: Optional[Union[bool, int, str]] = None,
+        supplier_name: str | None = None,
+        projects_and_scopes: str | None = None,
+        detailed_dependency_info: str | None = None,
+        include_in_report: bool | int | str | None = None,
     ) -> Dict[str, Any]:
         """
-        Add a dependency row to dependency analysis results.
+        Manually add a dependency to a scan's dependency analysis results.
 
         Ensures the component exists in the Workbench catalog first via
         ``ComponentService.resolve``.
@@ -143,10 +95,10 @@ class DependencyService:
         component_name: str,
         component_version: str,
         *,
-        package_id: Optional[str] = None,
-        projects_and_scopes: Optional[str] = None,
-        detailed_dependency_info: Optional[str] = None,
-        include_in_report: Optional[Union[bool, int, str]] = None,
+        package_id: str | None = None,
+        projects_and_scopes: str | None = None,
+        detailed_dependency_info: str | None = None,
+        include_in_report: bool | int | str | None = None,
     ) -> Dict[str, Any]:
         """Update an existing dependency analysis row."""
         logger.info(
@@ -172,7 +124,7 @@ class DependencyService:
         component_version: str,
         include_in_report: Union[bool, int, str],
         *,
-        package_id: Optional[str] = None,
+        package_id: str | None = None,
     ) -> Dict[str, Any]:
         """Toggle whether a dependency is included in reports."""
         return self.update_dependency(

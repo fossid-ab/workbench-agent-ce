@@ -1,5 +1,5 @@
 """
-DownloadClient - Handles file downloads from Workbench.
+DownloadClient - Download files from Workbench.
 
 """
 
@@ -18,11 +18,10 @@ class DownloadClient:
     """
     Downloads API client.
 
-    Handles all file download operations from the 'download' API group.
+    Handles download operations from the 'download' API group.
 
-    This client provides low-level download operations. For domain-specific
-    report downloads, use ReportService which provides additional business
-    logic and convenience methods.
+    This client provides low-level operations. For report downloads,
+    ReportService provides additional functionality.
 
     Example:
         >>> downloads = DownloadClient(base_api)
@@ -43,6 +42,8 @@ class DownloadClient:
         self._api = base_api
         logger.debug("DownloadClient initialized")
 
+    # ===== DOWNLOAD A REPORT =====
+
     def download_report(
         self,
         report_entity: str,
@@ -50,11 +51,10 @@ class DownloadClient:
         timeout: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
-        Download a generated report file.
+        Download a generated report.
 
-        This method handles downloading reports for both scans and
-        projects that were generated asynchronously. The report must
-        have been previously generated and the process must be complete.
+        This method handles downloading async reports from both scans and
+        projects. The report generation process must be complete.
 
         Args:
             report_entity: Either "scans" or "projects"
@@ -113,14 +113,15 @@ class DownloadClient:
 
         return self._api._send_request(payload, timeout=actual_timeout)
 
+    # ===== DOWNLOAD A PROJECT'S POLICY JSON =====
+
     def get_project_policy(self, project_code: str) -> Dict[str, Any]:
         """
         Download the project's license policy as JSON.
 
-        The server responds with a ``text/plain`` body containing a JSON array
-        of license rules (``id``, ``blocked``, ``reason``, …). ``BaseAPI``
-        surfaces that as ``{"_raw_response": ...}``; use
-        :meth:`PolicyService.download_project_policy_json` to parse it.
+        The server responds with a plain text body containing a JSON array
+        of license rules (id, blocked, reason, …).
+        Use `PolicyService.download_project_policy_json` to parse it.
 
         Args:
             project_code: Project code (not display name)

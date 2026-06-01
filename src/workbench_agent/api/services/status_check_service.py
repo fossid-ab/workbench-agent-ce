@@ -824,8 +824,7 @@ class StatusCheckService:
         Create a stateful progress callback for scan file tracking.
 
         This creates a callback that tracks and displays scan progress
-        with smart printing that only shows details on changes or periodic
-        intervals.
+        with printing that shows details on changes or periodic intervals.
 
         Args:
             scan_code: Code of the scan (for display purposes)

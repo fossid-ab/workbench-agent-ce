@@ -1,5 +1,5 @@
 """
-PolicyService - License policy warning reads for scans and projects.
+PolicyService - License policy operations for scans and projects.
 """
 
 from __future__ import annotations
@@ -15,13 +15,9 @@ logger = logging.getLogger("workbench-agent")
 
 class PolicyService:
     """
-    Read license policy warnings at scan and project scope.
+    Read and operate on license policies at scan and project scopes.
 
-    Counters (totals only) use ``get_policy_warnings`` /
-    ``ScansClient.get_policy_warnings_counter``. Scan detail (rules and
-    per-rule findings) uses ``get_scan_*_policy_warnings_info`` /
-    ``ScansClient.get_policy_warnings_info`` — each list row is a policy rule
-    (``type`` ``license_category`` or ``license``) with a ``findings`` count.
+    Supports policy warnings counting
     Project aggregates use ``get_project_*_policy_warnings`` /
     ``ProjectsClient.get_policy_warnings_info``. Full policy export uses
     ``download_project_policy_json`` / ``DownloadClient.get_project_policy``.
@@ -32,6 +28,8 @@ class PolicyService:
         self._projects = projects_client
         self._downloads = downloads_client
         logger.debug("PolicyService initialized")
+
+    # ===== SCAN-LEVEL POLICY OPERATIONS =====
 
     def get_policy_warnings(self, scan_code: str) -> Dict[str, Any]:
         """
@@ -75,6 +73,8 @@ class PolicyService:
             scan_code, warning_type="all"
         )
 
+    # ===== PROJECT-LEVEL POLICY OPERATIONS =====
+
     def get_project_identification_policy_warnings(
         self, project_code: str
     ) -> Dict[str, Any]:
@@ -103,6 +103,8 @@ class PolicyService:
         return self._projects.get_policy_warnings_info(
             project_code, warning_type="all"
         )
+
+    # ===== DOWNLOAD PROJECT POLICY JSON =====
 
     def download_project_policy_json(
         self, project_code: str

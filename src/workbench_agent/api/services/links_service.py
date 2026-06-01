@@ -1,5 +1,5 @@
 """
-LinksService - Version-aware Workbench UI deep links for a scan.
+LinksService - Create links to the Workbench UI.
 """
 
 from __future__ import annotations
@@ -18,13 +18,10 @@ NUI_MIN_VERSION = "2026.1.0"
 
 class WorkbenchLinks:
     """
-    Workbench UI links for a scan (legacy or NUI URL format).
+    Generate links to various parts of the Workbench UI.
 
-    Returned by ``LinksService.workbench_links()`` and
-    ``LinksService.get_workbench_links()``.
+    Version-aware; supports both legacy and NUI formats.
 
-    For Workbench >= 26.1.0, links use ``/nui/scans/{id}/...`` paths.
-    For older versions, ``index.html`` query-parameter format is used.
     """
 
     def __init__(
@@ -137,10 +134,10 @@ class WorkbenchLinks:
 
 class LinksService:
     """
-    Build version-aware Workbench UI deep links for scans.
+    Build links to the Workbench UI.
 
-    Not backed by a Workbench API group; uses ``api_url``, ``scan_id``, and
-    server version only. Resolves ``scan_code`` via ``ScansClient`` when needed.
+    Link creation is not backed by a Workbench API group.
+    Scan Code is resolved to an ID via ScansClient.
     """
 
     def __init__(
