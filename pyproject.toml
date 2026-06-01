@@ -3,9 +3,9 @@ requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "workbench-agent"
-version = "0.8.1"
-description = "Workbench Agent automates Workbench operations like scanning, gating, and more."
+name = "workbench-agent-ce"
+version = "0.9.0"
+description = "Workbench Agent CE provides API and CLI interaction with FossID Workbench."
 license = "MIT"
 authors = [
   {name="Cristian Pana", email="cristian.pana@fossid.com"},
