@@ -34,3 +34,11 @@ Validated via live tests in `tests/api/clients/projects/`.
 
 - Payload is caller-built (see ``ReportService.build_project_report_payload``).
 - Client passes ``data`` through unchanged.
+
+## ``get_policy_warnings_info``
+
+- ``type`` wire values: ``identifications`` (default), ``dependencies``, ``all``.
+- ``scans_list`` may be ``null`` when there are no affected scans.
+- List items use ``scan_id``, ``scan_name``, ``scan_code`` (2026.1 live).
+- Empty result sets may return ``null`` for all three top-level fields (not ``0`` / ``[]``).
+- Missing project → ``ProjectNotFoundError`` (same markers as ``get_information``).

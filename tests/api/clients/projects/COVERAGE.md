@@ -7,6 +7,7 @@ Stability target: **Workbench 2026.1** + Test Project / Test Scan (live).
 | `list_projects` | Yes | Yes | Yes | Yes | Yes | — |
 | `get_information` | Yes | Yes | Yes | Yes | Yes | Yes |
 | `get_all_scans` | Yes | Yes | Yes | Yes | Yes | Yes |
+| `get_policy_warnings_info` | Yes | — | Yes | Yes | — | — |
 | `create` | Yes | Yes | — | Yes* | Yes | Yes |
 | `update` | Yes | Yes | — | Yes* | Yes | Yes |
 | `generate_report` | Yes | pass-through | — | Yes* | Yes | Yes |

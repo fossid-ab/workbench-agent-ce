@@ -20,6 +20,7 @@ Legend: **R** = required in API `data`, **O** = optional.
 | `update` | `update()` | Yes |
 | `generate_report` | `generate_report()` | Yes |
 | `check_status` | `check_status()` | Yes |
+| `get_policy_warnings_info` | `get_policy_warnings_info()` | Yes |
 
 ---
 
@@ -65,6 +66,41 @@ Project detail dict (`id`, `project_code`, `project_name`, `owner_email`, …).
 ### Response `data`
 
 Array of scan objects (`id`, `code`, `name`, …). Unknown project → client returns `[]`.
+
+---
+
+## `get_policy_warnings_info`
+
+Operation id: `projects_get_policy_warnings_info`.
+
+### Request (`data`)
+
+| Field | API | Client param |
+|-------|-----|--------------|
+| `project_code` | **R** | `project_code` |
+| `type` | O | `warning_type` — enum: `identifications` (default), `dependencies`, `all` |
+
+### Response `data`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `scans_with_warnings` | int or null | Scans in the project with at least one warning |
+| `warnings_counter` | int or null | Total warning count for the selected `type` |
+| `scans_list` | list or null | Per-scan entries when warnings exist |
+
+### `scans_list` item
+
+| Field | Notes |
+|-------|-------|
+| `scan_id` | Scan id (2026.1 live) |
+| `scan_name` | Display name |
+| `scan_code` | Scan code |
+
+When there are no warnings for the requested `type`, counters may be ``null`` and
+``scans_list`` may be ``null`` (observed for ``dependencies`` on Test Project).
+
+Use ``PolicyService.get_project_*_policy_warnings`` for typed access; see
+[`../../services/policy_service.py`](../../services/policy_service.py).
 
 ---
 

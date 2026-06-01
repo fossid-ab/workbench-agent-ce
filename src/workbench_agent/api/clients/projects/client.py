@@ -1,7 +1,9 @@
 """ProjectsClient - project-related Workbench API operations."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
+
+PolicyWarningType = Literal["identifications", "dependencies", "all"]
 
 from workbench_agent.api.exceptions import ApiError
 
@@ -91,6 +93,69 @@ class ProjectsClient:
             helpers.raise_project_not_found(project_code)
         raise ApiError(
             f"Failed to get project info for '{project_code}': {error_msg}",
+            details=response,
+        )
+
+    def get_policy_warnings_info(
+        self,
+        project_code: str,
+        *,
+        warning_type: PolicyWarningType = "identifications",
+    ) -> Dict[str, Any]:
+        """
+        Policy warnings aggregated across scans in a project.
+
+        Args:
+            project_code: Target project code.
+            warning_type: ``identifications`` (scan file policy hits),
+                ``dependencies`` (dependency analysis), or ``all``.
+
+        Returns:
+            Dict with ``scans_with_warnings``, ``warnings_counter``, and
+            ``scans_list`` (list of scan dicts or ``null``).
+
+        Raises:
+            ProjectNotFoundError: If the project does not exist.
+            ApiError: On other API failures.
+        """
+        logger.debug(
+            "Fetching project policy warnings for '%s' (type=%s)",
+            project_code,
+            warning_type,
+        )
+        response = self._api._send_request(
+            {
+                "group": "projects",
+                "action": "get_policy_warnings_info",
+                "data": {
+                    "project_code": project_code,
+                    "type": warning_type,
+                },
+            }
+        )
+
+        if response.get("status") == "1" and "data" in response:
+            data = response["data"]
+            if isinstance(data, dict):
+                logger.debug(
+                    "Retrieved project policy warnings for '%s'",
+                    project_code,
+                )
+                return data
+            raise ApiError(
+                f"Unexpected data type for project policy warnings: "
+                f"{type(data)}",
+                details=response,
+            )
+
+        error_msg = response.get(
+            "error", f"Unexpected response: {response}"
+        )
+        if helpers.is_project_not_found(error_msg):
+            helpers.raise_project_not_found(project_code)
+        raise ApiError(
+            f"Failed to get policy warnings for project "
+            f"'{project_code}': {error_msg}",
             details=response,
         )
 

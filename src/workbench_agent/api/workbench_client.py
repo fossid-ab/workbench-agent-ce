@@ -214,7 +214,10 @@ class WorkbenchClient:
             vulnerabilities_client=self.vulnerabilities,
         )
 
-        self.policy = PolicyService(scans_client=self.scans)
+        self.policy = PolicyService(
+            scans_client=self.scans,
+            projects_client=self.projects,
+        )
 
         self.links = LinksService(
             scans_client=self.scans,

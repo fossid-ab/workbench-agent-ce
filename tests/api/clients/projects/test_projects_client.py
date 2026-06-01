@@ -154,6 +154,77 @@ def test_get_information_project_not_found(mock_send, projects_client):
         projects_client.get_information("PROJ_X")
 
 
+# --- Test get_policy_warnings_info ---
+@patch.object(BaseAPI, "_send_request")
+def test_get_policy_warnings_info_default_type(mock_send, projects_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {
+            "scans_with_warnings": 2,
+            "warnings_counter": 112,
+            "scans_list": [
+                {"id": 1, "scan_name": "one", "scan_code": "one"},
+            ],
+        },
+    }
+    data = projects_client.get_policy_warnings_info("PRJ_A")
+    assert data["warnings_counter"] == 112
+    payload = mock_send.call_args[0][0]
+    assert payload["group"] == "projects"
+    assert payload["action"] == "get_policy_warnings_info"
+    assert payload["data"]["project_code"] == "PRJ_A"
+    assert payload["data"]["type"] == "identifications"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_policy_warnings_info_all_type(mock_send, projects_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {
+            "scans_with_warnings": 0,
+            "warnings_counter": 0,
+            "scans_list": None,
+        },
+    }
+    data = projects_client.get_policy_warnings_info(
+        "PRJ_A", warning_type="all"
+    )
+    assert data["scans_list"] is None
+    assert mock_send.call_args[0][0]["data"]["type"] == "all"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_policy_warnings_info_dependencies_type(
+    mock_send, projects_client
+):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {
+            "scans_with_warnings": 1,
+            "warnings_counter": 5,
+            "scans_list": [],
+        },
+    }
+    projects_client.get_policy_warnings_info(
+        "PRJ_A", warning_type="dependencies"
+    )
+    assert (
+        mock_send.call_args[0][0]["data"]["type"] == "dependencies"
+    )
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_policy_warnings_info_project_not_found(
+    mock_send, projects_client
+):
+    mock_send.return_value = {
+        "status": "0",
+        "error": "Project does not exist",
+    }
+    with pytest.raises(ProjectNotFoundError, match="PRJ_X"):
+        projects_client.get_policy_warnings_info("PRJ_X")
+
+
 @patch.object(BaseAPI, "_send_request")
 def test_create_missing_project_code_in_response(mock_send, projects_client):
     mock_send.return_value = {"status": "1", "data": {}}

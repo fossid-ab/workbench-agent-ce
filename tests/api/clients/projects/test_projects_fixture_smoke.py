@@ -59,3 +59,19 @@ def test_get_all_scans_matches_fixture(mock_send, projects_client):
         data,
         workbench_version=WORKBENCH_VERSION,
     )
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_policy_warnings_info_matches_fixture(
+    mock_send, projects_client
+):
+    fixture = load_fixture(
+        WORKBENCH_VERSION, "projects_get_policy_warnings_info"
+    )
+    mock_send.return_value = fixture
+    data = projects_client.get_policy_warnings_info("Test_Project_723")
+    assert_data_contract(
+        "projects.get_policy_warnings_info",
+        data,
+        workbench_version=WORKBENCH_VERSION,
+    )

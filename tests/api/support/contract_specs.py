@@ -108,6 +108,14 @@ CONTRACTS: Dict[str, Dict[str, Any]] = {
         "data_shape": "list",
         "item_required_keys": {"id", "code", "name"},
     },
+    "projects.get_policy_warnings_info": {
+        "data_shape": "dict",
+        "required_keys": {
+            "scans_with_warnings",
+            "warnings_counter",
+            "scans_list",
+        },
+    },
     "projects.create": {
         "data_shape": "dict",
         "required_keys": {"project_code"},
