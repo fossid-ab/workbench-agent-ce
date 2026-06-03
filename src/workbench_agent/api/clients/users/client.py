@@ -7,8 +7,6 @@ from . import helpers
 
 logger = logging.getLogger("workbench-agent")
 
-_GROUP = "users"
-
 
 class UsersClient:
     """
@@ -35,7 +33,7 @@ class UsersClient:
         logger.debug("users.get_information: %s", searched_username)
         response = self._api._send_request(
             {
-                "group": _GROUP,
+                "group": "users",
                 "action": "get_information",
                 "data": {"searched_username": searched_username},
             }
@@ -78,7 +76,7 @@ class UsersClient:
             data = {"user_id": user_id}
 
         response = self._api._send_request(
-            {"group": _GROUP, "action": action, "data": data}
+            {"group": "users", "action": action, "data": data}
         )
 
         if response.get("status") == "1":

@@ -23,8 +23,6 @@ class ComponentsClient:
         >>> info = client.get_information("openssl", "1.1.1")
     """
 
-    _GROUP = "components"
-
     def __init__(self, base_api):
         """
         Initialize ComponentsClient.
@@ -34,25 +32,6 @@ class ComponentsClient:
         """
         self._api = base_api
         logger.debug("ComponentsClient initialized")
-
-    def _request(
-        self,
-        action: str,
-        data: Optional[Dict[str, Any]] = None,
-        *,
-        error_context: str,
-    ) -> Dict[str, Any]:
-        payload = {
-            "group": self._GROUP,
-            "action": action,
-            "data": data or {},
-        }
-        response = self._api._send_request(payload)
-        if response.get("status") == "1":
-            return response
-        helpers.raise_on_failed_response(
-            response, error_context=error_context
-        )
 
     def list_components(
         self,
@@ -97,12 +76,18 @@ class ComponentsClient:
         if direction is not None:
             data["direction"] = direction
 
-        response = self._request(
-            "list_components",
-            data,
-            error_context="Failed to list components",
+        response = self._api._send_request(
+            {
+                "group": "components",
+                "action": "list_components",
+                "data": data,
+            }
         )
-        return response.get("data")
+        if response.get("status") == "1":
+            return response.get("data")
+        helpers.raise_on_failed_response(
+            response, error_context="Failed to list components"
+        )
 
     def list_by_usage(
         self,
@@ -141,11 +126,18 @@ class ComponentsClient:
         if count_results is not None:
             data["count_results"] = 1 if count_results in (True, 1) else 0
 
-        response = self._request(
-            "list_by_usage",
-            data,
-            error_context="Failed to list components by usage",
+        response = self._api._send_request(
+            {
+                "group": "components",
+                "action": "list_by_usage",
+                "data": data,
+            }
         )
+        if response.get("status") != "1":
+            helpers.raise_on_failed_response(
+                response,
+                error_context="Failed to list components by usage",
+            )
         result = response.get("data")
         if isinstance(result, dict):
             return result
@@ -173,14 +165,21 @@ class ComponentsClient:
         if component_version is not None:
             data["component_version"] = component_version
 
-        response = self._request(
-            "get_information",
-            data,
+        response = self._api._send_request(
+            {
+                "group": "components",
+                "action": "get_information",
+                "data": data,
+            }
+        )
+        if response.get("status") == "1":
+            return response.get("data")
+        helpers.raise_on_failed_response(
+            response,
             error_context=(
                 f"Failed to get information for component '{component_name}'"
             ),
         )
-        return response.get("data")
 
     def create(
         self,
@@ -284,11 +283,18 @@ class ComponentsClient:
             if value is not None:
                 data[key] = value
 
-        response = self._request(
-            "create",
-            data,
-            error_context=f"Failed to create component '{name}' '{version}'",
+        response = self._api._send_request(
+            {
+                "group": "components",
+                "action": "create",
+                "data": data,
+            }
         )
+        if response.get("status") != "1":
+            helpers.raise_on_failed_response(
+                response,
+                error_context=f"Failed to create component '{name}' '{version}'",
+            )
         result: Dict[str, Any] = {"data": response.get("data")}
         if "message" in response:
             result["message"] = response["message"]
@@ -400,13 +406,20 @@ class ComponentsClient:
             if value is not None:
                 data[key] = value
 
-        response = self._request(
-            "update",
-            data,
-            error_context=(
-                f"Failed to update component '{name}' '{version}'"
-            ),
+        response = self._api._send_request(
+            {
+                "group": "components",
+                "action": "update",
+                "data": data,
+            }
         )
+        if response.get("status") != "1":
+            helpers.raise_on_failed_response(
+                response,
+                error_context=(
+                    f"Failed to update component '{name}' '{version}'"
+                ),
+            )
         result: Dict[str, Any] = {"data": response.get("data")}
         if "message" in response:
             result["message"] = response["message"]
@@ -419,11 +432,18 @@ class ComponentsClient:
         Returns:
             bool from API data field.
         """
-        response = self._request(
-            "delete",
-            {"name": name, "version": version},
-            error_context=f"Failed to delete component '{name}' '{version}'",
+        response = self._api._send_request(
+            {
+                "group": "components",
+                "action": "delete",
+                "data": {"name": name, "version": version},
+            }
         )
+        if response.get("status") != "1":
+            helpers.raise_on_failed_response(
+                response,
+                error_context=f"Failed to delete component '{name}' '{version}'",
+            )
         data = response.get("data")
         if isinstance(data, bool):
             return data
@@ -469,11 +489,17 @@ class ComponentsClient:
         if search_value is not None:
             data["search_value"] = search_value
 
-        response = self._request(
-            "get_usage",
-            data,
-            error_context="Failed to get component usage",
+        response = self._api._send_request(
+            {
+                "group": "components",
+                "action": "get_usage",
+                "data": data,
+            }
         )
+        if response.get("status") != "1":
+            helpers.raise_on_failed_response(
+                response, error_context="Failed to get component usage"
+            )
         result = response.get("data")
         if isinstance(result, dict):
             return result
@@ -489,13 +515,20 @@ class ComponentsClient:
         Returns:
             Dict with identifications_usage_count and dependency_usage_count.
         """
-        response = self._request(
-            "get_usage_count",
-            {"id": component_id},
-            error_context=(
-                f"Failed to get usage count for component id {component_id}"
-            ),
+        response = self._api._send_request(
+            {
+                "group": "components",
+                "action": "get_usage_count",
+                "data": {"id": component_id},
+            }
         )
+        if response.get("status") != "1":
+            helpers.raise_on_failed_response(
+                response,
+                error_context=(
+                    f"Failed to get usage count for component id {component_id}"
+                ),
+            )
         result = response.get("data")
         if isinstance(result, dict):
             return result
