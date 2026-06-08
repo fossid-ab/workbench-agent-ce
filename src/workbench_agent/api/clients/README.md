@@ -28,7 +28,12 @@ clients/<domain>/
 | `vulnerabilities/` | Raw `list_vulnerabilities`; paginated lists via `VulnerabilityService`; CVE `get_information`; VEX |
 | `uploads/` | Raw HTTP upload transport (scan target, DA, SBOM) |
 
-| Legacy flat modules (`download_api.py`, …) remain until migrated.
+Legacy flat modules remain until migrated to packaged layouts:
+
+| Module | Notes |
+|--------|--------|
+| `download_api.py` | `DownloadClient` — report and project policy downloads (`download` group) |
+| `quickscan_api.py` | `QuickScanClient` — single-file quick scan (`quick_scan` group) |
 
 Import from the package root or the domain subpackage:
 

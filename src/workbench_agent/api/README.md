@@ -99,7 +99,7 @@ helpers).
 - Orchestrate reads/writes across domains (e.g. identify a file → resolve catalog
   row → write identification)
 - Expose agent-friendly operations with stable, documented return shapes
-- Return **structured data only** — `dict`, `list`, `bool`, `int`, etc.
+- Return **structured data only** — `dict`, `list`, dataclasses, primitives
 
 **Do not:** call `print()` or format strings for terminal display. Logging via
 `logger.debug` / `logger.info` is fine.
@@ -109,6 +109,7 @@ vulns = wb.vulnerability.list_scan_vulnerabilities(scan_code)
 links = wb.links.get_workbench_links(scan_code)
 warnings = wb.policy.get_policy_warnings(scan_code)
 catalog = wb.component_catalog.resolve("abbrev", "1.1.1", "ISC")
+result = wb.resolver.find_or_create("MyProject", "MyScan", scan_data={})
 ```
 
 | `WorkbenchClient` attribute | Class | Role |
@@ -122,14 +123,15 @@ catalog = wb.component_catalog.resolve("abbrev", "1.1.1", "ISC")
 | `scan_content` | `ScanContentService` | Scan file directory: upload (target/DA/SBOM), extract, remove, Git |
 | `scan_operations` | `ScanOperationsService` | Process scan files: KB scan, DA run/import, SBOM import |
 | `scan_deletion` | `ScanDeletionService` | Queue scan delete and wait until complete |
-| `resolver` | `ResolverService` | Resolve project/scan names to codes; create if needed (machine-readable) |
-
-CE find-or-create with compatibility checks lives in
-``workbench_agent.utilities.resolve_project_scan``.
+| `resolver` | `ResolverService` | Resolve project/scan names to codes; returns `ResolvedScan` / `ResolutionResult` with listing metadata |
 | `reports` | `ReportService` | Report generation, validation, waiting, download |
 | `status_check` | `StatusCheckService` | Poll async operation status (Git, scan, reports, delete, …) |
 | `user_permissions` | `UserPermissionsService` | Permissions for the configured API user |
 | `quick_scan_service` | `QuickScanService` | Single-file quick scan wrapper over `quick_scan` client |
+
+CE orchestration (CLI params, compatibility, terminal output) lives outside
+this tree — for example ``utilities.resolve_project_scan`` (find-or-create +
+reuse checks) and ``utilities.resolve_id_reuse`` (ID reuse source lookup).
 
 Prefer **services** in application and agent code. Reach for **clients** when
 you need direct access to a single API action, contract tests, or a method not
@@ -141,9 +143,16 @@ Optional shared pure functions when logic is reused across multiple services.
 Most domain logic lives on the service itself; CLI formatting lives under
 ``workbench_agent.utilities/``.
 
-- ``scan_type`` — ``ScanType``, ``check_scan_reuse()``, structured
-  ``ScanReuseIssue`` for scan reuse rules (CE formats messages in
-  ``utilities/resolve_project_scan.py``).
+| Module | Role |
+|--------|------|
+| ``scan_type`` | ``ScanType``, ``check_scan_reuse()``, structured ``ScanReuseIssue`` (CE formats in ``utilities.resolve_project_scan``) |
+| ``report_definitions`` | Report type registry: scopes, async flags, capabilities, version gates |
+| ``process_waiter`` | ``StatusResult``, ``wait_for_completion()`` for async poll loops |
+| ``redaction`` | Sanitize payloads/responses for logging |
+| ``version`` | Workbench version string normalization |
+
+Import helpers from ``workbench_agent.api.utils.<module>`` (not re-exported from
+``workbench_agent.api`` today).
 
 ## Human-readable output (outside `api/`)
 
@@ -159,9 +168,9 @@ machine-readable; CE (or an MCP server) owns display.
 | Layer | Returns | Avoid |
 |-------|---------|--------|
 | Client | API `data` shapes (normalized), typed primitives | `print`, prose summaries |
-| Service | Domain dicts/lists documented on the method | `print`, HTML, markdown meant for users |
-| Helper | Derived dicts/lists from in-memory rows | I/O |
-| Utility | *(none — formats and prints)* | — |
+| Service | Domain dicts/lists/dataclasses documented on the method | `print`, HTML, markdown meant for users |
+| Helper | Derived dicts/lists from in-memory rows | HTTP, terminal formatting |
+| Utility (`utilities/`) | *(none — formats and prints)* | — |
 
 API messages in response bodies (e.g. VEX `"message": "…"`) are passed through
 as fields; services do not rewrite them into CLI text.
@@ -182,10 +191,10 @@ See [`tests/api/README.md`](../../../tests/api/README.md).
 
 - Older **flat** client modules (`*_api.py`) are being replaced by packaged
   `clients/<domain>/`.
-- CE project/scan resolution (compatibility, terminal output) lives in
-  ``workbench_agent.utilities.resolve_project_scan``.
-- Long-running progress display for CLI users belongs in ``utilities/`` via
-  ``progress_callback`` hooks (e.g. ``scan_workflows.create_scan_progress_callback``).
+- Shared validation/filesystem errors live in ``api.exceptions`` (``ValidationError``,
+  ``FileSystemError``); ``workbench_agent.exceptions`` re-exports them for CLI code.
+- CE orchestration lives in ``utilities/`` — e.g. ``resolve_project_scan``,
+  ``resolve_id_reuse``, ``scan_workflows`` (including scan progress callbacks).
 
 ## Related docs
 
