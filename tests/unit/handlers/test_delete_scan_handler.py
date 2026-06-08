@@ -3,6 +3,8 @@
 import argparse
 from unittest.mock import MagicMock
 
+from workbench_agent.api.services.resolver_service import ResolvedScan
+
 import pytest
 
 from workbench_agent.api.utils.process_waiter import StatusResult
@@ -29,8 +31,7 @@ def test_handle_delete_scan_success(params):
     client = MagicMock()
     client.resolver.find_project_and_scan.return_value = (
         "proj_code",
-        "sc_code",
-        1,
+        ResolvedScan(code="sc_code", id=1, info={}),
     )
     client.user_permissions.can_delete_scan.return_value = True
     client.scan_deletion.delete_scan.return_value = StatusResult(
@@ -57,8 +58,7 @@ def test_handle_delete_scan_permission_denied(params):
     client = MagicMock()
     client.resolver.find_project_and_scan.return_value = (
         "proj_code",
-        "sc_code",
-        1,
+        ResolvedScan(code="sc_code", id=1, info={}),
     )
     client.user_permissions.can_delete_scan.return_value = False
 

@@ -72,12 +72,12 @@ def handle_show_results(
     )
 
     # Use explicit resolver API (read-only)
-    project_code, scan_code, scan_id = (
-        client.resolver.find_project_and_scan(
-            params.project_name,
-            params.scan_name,
-        )
+    project_code, scan = client.resolver.find_project_and_scan(
+        params.project_name,
+        params.scan_name,
     )
+    scan_code = scan.code
+    scan_id = scan.id
     logger.debug(
         f"Found project: {project_code}, scan: {scan_code} (ID: {scan_id})"
     )

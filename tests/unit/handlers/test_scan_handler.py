@@ -32,17 +32,16 @@ def base_params():
 @pytest.fixture
 def mock_client():
     client = MagicMock()
-    client.resolver.find_or_create_project_and_scan.return_value = (
-        "proj_code",
-        "scan_code",
-        False,
-    )
     client.scan_content = MagicMock()
     client.scan_content.remove_uploaded_content.return_value = True
     client.scan_content.extract_archives.return_value = False
     return client
 
 
+@patch(
+    "workbench_agent.handlers.scan.find_or_create_project_and_scan",
+    return_value=("proj_code", "scan_code", False),
+)
 @patch(
     "workbench_agent.handlers.scan.prepare_scan_target",
     side_effect=_passthrough_prepared,
@@ -60,6 +59,7 @@ class TestScanHandlerClearBehavior:
         _mock_preflight,
         _mock_workflow,
         _mock_prep,
+        _mock_resolve,
         mock_client,
         base_params,
     ):
@@ -80,6 +80,7 @@ class TestScanHandlerClearBehavior:
         _mock_preflight,
         _mock_workflow,
         _mock_prep,
+        _mock_resolve,
         mock_client,
         base_params,
     ):
@@ -100,6 +101,7 @@ class TestScanHandlerClearBehavior:
         _mock_preflight,
         _mock_workflow,
         _mock_prep,
+        _mock_resolve,
         mock_client,
         base_params,
         capsys,
@@ -125,15 +127,12 @@ class TestScanHandlerClearBehavior:
         _mock_preflight,
         _mock_workflow,
         _mock_prep,
+        mock_resolve,
         mock_client,
         base_params,
     ):
         """New scans never clear content, with or without the flag."""
-        mock_client.resolver.find_or_create_project_and_scan.return_value = (
-            "proj_code",
-            "scan_code",
-            True,
-        )
+        mock_resolve.return_value = ("proj_code", "scan_code", True)
         base_params.incremental_upload = True
 
         handle_scan(mock_client, base_params)
@@ -150,15 +149,12 @@ class TestScanHandlerClearBehavior:
         _mock_preflight,
         _mock_workflow,
         _mock_prep,
+        mock_resolve,
         mock_client,
         base_params,
     ):
         """New scans skip clearing even without --incremental-upload."""
-        mock_client.resolver.find_or_create_project_and_scan.return_value = (
-            "proj_code",
-            "scan_code",
-            True,
-        )
+        mock_resolve.return_value = ("proj_code", "scan_code", True)
 
         handle_scan(mock_client, base_params)
 
@@ -168,6 +164,10 @@ class TestScanHandlerClearBehavior:
 class TestScanHandlerUploadWiring:
     """Confirm the handler hands the prepared path to the upload service."""
 
+    @patch(
+        "workbench_agent.handlers.scan.find_or_create_project_and_scan",
+        return_value=("proj_code", "scan_code", False),
+    )
     @patch(
         "workbench_agent.handlers.scan.execute_scan_workflow",
         return_value=True,
@@ -179,6 +179,7 @@ class TestScanHandlerUploadWiring:
         mock_prep,
         _mock_preflight,
         _mock_workflow,
+        _mock_resolve,
         mock_client,
         base_params,
     ):

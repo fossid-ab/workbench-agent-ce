@@ -15,7 +15,7 @@ Architecture:
 
 import logging
 import time
-from typing import Any, Dict, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 from workbench_agent.api.exceptions import UnsupportedStatusCheck
 from workbench_agent.api.utils.process_waiter import (
@@ -419,7 +419,9 @@ class StatusCheckService:
         wait: bool = False,
         wait_retry_count: int = 360,
         wait_retry_interval: int = 10,
-        should_track_files: bool = False,
+        progress_callback: Optional[
+            Callable[[StatusResult, int, int], None]
+        ] = None,
     ) -> StatusResult:
         """
         Check the status of a KB scan operation.
@@ -431,20 +433,14 @@ class StatusCheckService:
                 only used if wait=True)
             wait_retry_interval: Seconds between attempts when waiting
                 (default: 10, only used if wait=True)
-            should_track_files: Show detailed file progress when waiting
-                (default: False, only used if wait=True)
+            progress_callback: Optional callback for wait progress display
+                (only used if wait=True)
 
         Returns:
             StatusResult. When wait=True, duration will be populated and
             status will be terminal (FINISHED, FAILED, or CANCELLED).
         """
         if wait:
-            progress_callback = None
-            if should_track_files:
-                progress_callback = self._create_scan_progress_callback(
-                    scan_code
-                )
-
             return wait_for_completion(
                 check_function=lambda: self._get_scan_status(scan_code),
                 max_tries=wait_retry_count,
@@ -528,9 +524,8 @@ class StatusCheckService:
                     "Archive extraction status checking not supported on "
                     "this Workbench version, using fallback wait (5 seconds)"
                 )
-                print(
-                    "Using fallback wait for archive extraction "
-                    "(5 seconds)..."
+                logger.info(
+                    "Using fallback wait for archive extraction (5 seconds)..."
                 )
                 time.sleep(5)
                 return StatusResult(
@@ -814,83 +809,3 @@ class StatusCheckService:
             )
 
         return self._get_delete_scan_status(scan_code, process_id)
-
-    # =====================================================================
-    # WAITING INFRASTRUCTURE
-    # =====================================================================
-
-    def _create_scan_progress_callback(self, scan_code: str):
-        """
-        Create a stateful progress callback for scan file tracking.
-
-        This creates a callback that tracks and displays scan progress
-        with printing that shows details on changes or periodic intervals.
-
-        Args:
-            scan_code: Code of the scan (for display purposes)
-
-        Returns:
-            Callable: Progress callback function
-        """
-
-        class ScanProgressTracker:
-            """Stateful progress tracker for scan operations."""
-
-            def __init__(self):
-                self.last_status = None
-                self.last_state = None
-                self.last_step = None
-
-            def callback(self, status_result, attempt, max_tries):
-                """Progress callback that tracks file progress."""
-                # Extract progress information
-                raw_data = status_result.raw_data
-                current_state = raw_data.get("state", "")
-                current_step = raw_data.get("current_step", "")
-                percentage = raw_data.get("percentage_done", "")
-
-                # File tracking
-                total_files = raw_data.get("total_files", 0)
-                current_file = raw_data.get("current_file", 0)
-
-                # Determine if we should print details
-                should_print = (
-                    attempt == 1  # First check
-                    or attempt % 10 == 0  # Periodic (every ~minute)
-                    or status_result.status != self.last_status
-                    or current_state != self.last_state
-                    or current_step != self.last_step
-                )
-
-                if should_print:
-                    # Build detailed status message
-                    msg = f"\nScan '{scan_code}' status: "
-                    msg += status_result.status
-
-                    if current_state:
-                        msg += f" ({current_state})"
-
-                    # Show file progress if available
-                    if total_files and int(total_files) > 0:
-                        msg += f" - File {current_file}/{total_files}"
-                        if percentage:
-                            msg += f" ({percentage})"
-                    elif percentage:
-                        msg += f" - Progress: {percentage}"
-
-                    if current_step:
-                        msg += f" - Step: {current_step}"
-
-                    msg += f". Attempt {attempt}/{max_tries}"
-                    print(msg, end="", flush=True)
-
-                    # Update tracking state
-                    self.last_status = status_result.status
-                    self.last_state = current_state
-                    self.last_step = current_step
-                else:
-                    # Just show a dot for non-significant updates
-                    print(".", end="", flush=True)
-
-        tracker = ScanProgressTracker()
-        return tracker.callback

@@ -1,23 +1,19 @@
 """
 ResolverService - Resolves project and scan names to codes.
 
-This service provides logic for finding or creating
+This service provides machine-readable lookup and create operations for
 projects and scans based on user-provided names.
 
-The service provides:
-- Read-only lookups by name (``find_project``, ``find_project_and_scan``)
-- ``find_or_create_project_and_scan`` for find-or-create workflows
-- ``resolve_id_reuse`` for identification reuse name→code resolution
+CE orchestration (CLI params, compatibility, terminal output) lives in
+``workbench_agent.utilities.resolve_project_scan``.
 """
 
-import argparse
 import logging
+from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from workbench_agent.api.exceptions import (
     ApiError,
-    CompatibilityError,
-    NetworkError,
     ProjectNotFoundError,
     ScanNotFoundError,
 )
@@ -25,32 +21,45 @@ from workbench_agent.api.exceptions import (
 logger = logging.getLogger("workbench-agent")
 
 
+@dataclass(frozen=True)
+class ResolvedScan:
+    """Scan resolved by name, including listing metadata for reuse checks."""
+
+    code: str
+    id: int
+    info: dict
+
+
+@dataclass
+class ResolutionResult:
+    """Outcome of a find-or-create project and scan workflow."""
+
+    project_code: str
+    scan_code: str
+    project_created: bool
+    scan_is_new: bool
+    scan_info: Optional[dict] = None
+
+
 class ResolverService:
     """
     Service for resolving project and scan names to codes.
 
     This service orchestrates ProjectsClient and ScansClient to handle
-    the common workflow of looking up or creating projects and scans
-    by name.
+    lookup and creation by name. Returns structured data only.
 
     Public API:
 
     **Read-only (raises if not found):**
         >>> resolver.find_project("MyProject")
-        >>> pc, sc, sid = resolver.find_project_and_scan("MyProject", "MyScan")
+        >>> pc, scan = resolver.find_project_and_scan("MyProject", "MyScan")
 
-    **Find or create (may create project and/or scan):**
-        >>> project_code, scan_code, is_new = (
-        ...     resolver.find_or_create_project_and_scan(
-        ...         "MyProject", "MyScan", params
-        ...     )
-        ... )
+    **Create:**
+        >>> resolver.create_project("MyProject")
+        >>> scan = resolver.create_scan("PROJ", "MyScan", scan_data)
 
-    Usage Guidelines:
-    - Use ``find_project`` / ``find_project_and_scan`` for read-only flows
-    - Use ``find_or_create_project_and_scan()`` when creation is allowed
-      (scan, scan-git, blind-scan, import-sbom, import-da)
-    - Use ``resolve_id_reuse()`` for ID reuse parameters
+    **Find or create:**
+        >>> result = resolver.find_or_create("MyProject", "MyScan", scan_data)
     """
 
     def __init__(self, projects_client, scans_client):
@@ -71,9 +80,6 @@ class ResolverService:
         """
         Resolve a project code from its name (read-only).
 
-        Use when you only need the project code, for example
-        to download project reports or reuse project identifications.
-
         Args:
             project_name: Human-readable project name
 
@@ -86,36 +92,189 @@ class ResolverService:
         """
         return self._find_project(project_name)
 
-    def find_project_and_scan(
-        self, project_name: str, scan_name: str
-    ) -> Tuple[str, str, int]:
+    def find_scan(
+        self,
+        scan_name: str,
+        *,
+        project_name: Optional[str] = None,
+        project_code: Optional[str] = None,
+    ) -> ResolvedScan:
         """
-        Resolve project and scan names to codes in one pass.
+        Resolve a scan by name within a project (read-only).
 
-        Uses ``_find_project`` and ``_find_scan_in_project`` to resolve the
-        project and scan codes.
-
-        Args:
-            project_name: Human-readable project name
-            scan_name: Human-readable scan name within that project
+        Provide ``project_code`` to skip project lookup; otherwise pass
+        ``project_name``.
 
         Returns:
-            Tuple of ``(project_code, scan_code, scan_id)``
+            ResolvedScan with code, id, and listing metadata (``info``)
 
         Raises:
             ProjectNotFoundError: If the project does not exist
             ScanNotFoundError: If the scan does not exist in that project
-            ApiError: If there are API issues
         """
-        project_code = self._find_project(project_name)
-        scan_code, scan_id = self._find_scan_in_project(
+        return self._find_scan_in_project(
             scan_name,
             project_name=project_name,
             project_code=project_code,
         )
-        return project_code, scan_code, scan_id
+
+    def find_scan_globally(self, scan_name: str) -> ResolvedScan:
+        """
+        Resolve a scan by name across all projects (read-only, heavy).
+
+        Raises:
+            ScanNotFoundError: If no matching scan exists
+        """
+        return self._find_scan_globally(scan_name)
+
+    def find_project_and_scan(
+        self, project_name: str, scan_name: str
+    ) -> Tuple[str, ResolvedScan]:
+        """
+        Resolve project and scan names to codes in one pass.
+
+        Returns:
+            Tuple of ``(project_code, ResolvedScan)``
+        """
+        project_code = self._find_project(project_name)
+        scan = self._find_scan_in_project(
+            scan_name,
+            project_name=project_name,
+            project_code=project_code,
+        )
+        return project_code, scan
+
+    def create_project(
+        self,
+        project_name: str,
+        product_code: Optional[str] = None,
+        product_name: Optional[str] = None,
+        description: Optional[str] = None,
+        comment: Optional[str] = None,
+        limit_date: Optional[str] = None,
+        jira_project_key: Optional[str] = None,
+    ) -> str:
+        """
+        Create a new project.
+
+        Returns:
+            Project code of the created project
+        """
+        logger.debug(f"Creating project '{project_name}'...")
+        project_code = self.projects.create(
+            project_name=project_name,
+            product_code=product_code,
+            product_name=product_name,
+            description=description,
+            comment=comment,
+            limit_date=limit_date,
+            jira_project_key=jira_project_key,
+        )
+        return str(project_code)
+
+    def create_scan(
+        self,
+        project_code: str,
+        scan_name: str,
+        scan_data: dict,
+    ) -> ResolvedScan:
+        """
+        Create a new scan in a project.
+
+        Args:
+            project_code: Project code to create the scan in
+            scan_name: Name for the new scan
+            scan_data: API payload fields (excluding project_code/scan_name)
+
+        Returns:
+            ResolvedScan for the created scan
+        """
+        logger.debug(
+            f"Creating scan '{scan_name}' in project '{project_code}'..."
+        )
+
+        payload = {
+            "project_code": project_code,
+            "scan_name": scan_name,
+            **scan_data,
+        }
+        self.scans.create(payload)
+
+        scan_list = self.projects.get_all_scans(project_code)
+        scan = next(
+            (s for s in scan_list if s.get("name") == scan_name), None
+        )
+        if scan:
+            logger.debug(
+                f"Created scan '{scan_name}' with code '{scan['code']}' "
+                f"and ID {scan['id']}"
+            )
+            return self._resolved_scan_from_row(scan)
+
+        raise ApiError(
+            f"Failed to retrieve scan '{scan_name}' after creation"
+        )
+
+    def find_or_create(
+        self,
+        project_name: str,
+        scan_name: str,
+        scan_data: dict,
+    ) -> ResolutionResult:
+        """
+        Find or create a project and scan by name.
+
+        Args:
+            project_name: Name of the project
+            scan_name: Name of the scan
+            scan_data: Fields for scan creation when the scan is missing
+
+        Returns:
+            ResolutionResult with codes and creation flags
+        """
+        project_created = False
+        try:
+            project_code = self._find_project(project_name)
+        except ProjectNotFoundError:
+            project_code = self.create_project(project_name=project_name)
+            project_created = True
+
+        scan_is_new = False
+        scan_info: Optional[dict] = None
+        try:
+            resolved = self._find_scan_in_project(
+                scan_name,
+                project_name=project_name,
+                project_code=project_code,
+            )
+            scan_code = resolved.code
+            scan_info = resolved.info
+        except ScanNotFoundError:
+            resolved = self.create_scan(
+                project_code=project_code,
+                scan_name=scan_name,
+                scan_data=scan_data,
+            )
+            scan_code = resolved.code
+            scan_is_new = True
+
+        return ResolutionResult(
+            project_code=project_code,
+            scan_code=scan_code,
+            project_created=project_created,
+            scan_is_new=scan_is_new,
+            scan_info=scan_info,
+        )
 
     # ===== PRIVATE LOOKUP HELPERS =====
+
+    @staticmethod
+    def _resolved_scan_from_row(scan: dict) -> ResolvedScan:
+        return ResolvedScan(
+            code=str(scan["code"]),
+            id=int(scan["id"]),
+            info=dict(scan),
+        )
 
     def _find_project(self, project_name: str) -> str:
         """Resolve project name to code; raises ``ProjectNotFoundError``."""
@@ -142,13 +301,8 @@ class ResolverService:
         *,
         project_name: Optional[str] = None,
         project_code: Optional[str] = None,
-    ) -> Tuple[str, int]:
-        """
-        Find a scan by name within a project (read-only).
-
-        Provide ``project_code`` to skip project lookup; otherwise
-        pass ``project_name`` to find the project code automatically.
-        """
+    ) -> ResolvedScan:
+        """Find a scan by name within a project (read-only)."""
         if project_name is None and project_code is None:
             raise ValueError(
                 "_find_scan_in_project requires project_name or project_code"
@@ -177,27 +331,16 @@ class ResolverService:
                 f"Found scan '{scan_name}' with code '{scan['code']}' "
                 f"and ID {scan['id']} in project '{log_project}'"
             )
-            return scan["code"], int(scan["id"])
+            return self._resolved_scan_from_row(scan)
 
         raise ScanNotFoundError(
             f"Scan '{scan_name}' not found in project "
             f"'{project_name or project_code}'"
         )
 
-    def _find_scan_globally(self, scan_name: str) -> Tuple[str, int]:
-        """
-        Resolve a scan by name across all projects (read-only, heavy).
-
-        Used internally when resolving by scan name alone, e.g. ID reuse
-        fallback after a project-scoped miss.
-        """
-        logger.debug(
-            f"Looking up scan '{scan_name}' globally..."
-        )
-        logger.warning(
-            "The Reuse source scan was not found in the current project. "
-            "Attempting global search; this may take a while."
-        )
+    def _find_scan_globally(self, scan_name: str) -> ResolvedScan:
+        """Resolve a scan by name across all projects (read-only, heavy)."""
+        logger.debug(f"Looking up scan '{scan_name}' globally...")
         all_scans = self.scans.list_scans()
         scan = next(
             (s for s in all_scans if s.get("name") == scan_name), None
@@ -207,574 +350,6 @@ class ResolverService:
                 f"Found scan '{scan_name}' with code '{scan['code']}' "
                 f"and ID {scan['id']} (global search)"
             )
-            return scan["code"], int(scan["id"])
+            return self._resolved_scan_from_row(scan)
 
         raise ScanNotFoundError(f"Scan '{scan_name}' not found")
-
-    def find_or_create_project_and_scan(
-        self,
-        project_name: str,
-        scan_name: str,
-        params: argparse.Namespace,
-        import_from_report: bool = False,
-    ) -> Tuple[str, str, bool]:
-        """
-        Find or create a project and scan by name.
-
-        Combines project and scan resolution in one call, prints what was
-        created or found, and validates scan compatibility for existing scans.
-
-        Args:
-            project_name: Name of the project
-            scan_name: Name of the scan
-            params: Command-line parameters (used for scan creation)
-            import_from_report: Whether scan is for SBOM import
-
-        Returns:
-            Tuple[str, str, bool]: (project_code, scan_code, scan_is_new)
-                where scan_is_new indicates if the scan was just created
-
-        Raises:
-            CompatibilityError: If existing scan is incompatible with operation
-
-        Example:
-            >>> project_code, scan_code, scan_is_new = (
-            ...     resolver.find_or_create_project_and_scan(
-            ...         "MyProject", "MyScan", params
-            ...     )
-            ... )
-            # Prints: "✓ Created new Project and Scan"
-            # Or: "✓ Found existing Project, created new Scan"
-            # Or: "✓ Found existing Project and Scan"
-            # Or: "Checking scan compatibility..." +
-            #     "✓ Compatibility check passed"
-        """
-        # Try to find project
-        project_created = False
-        try:
-            project_code = self._find_project(project_name)
-        except ProjectNotFoundError:
-            project_code = self._create_project(project_name=project_name)
-            project_created = True
-
-        # Try to find scan
-        scan_is_new = False
-        try:
-            scan_code, _ = self._find_scan_in_project(
-                scan_name,
-                project_name=project_name,
-                project_code=project_code,
-            )
-        except ScanNotFoundError:
-            scan_code, _ = self._create_scan(
-                scan_name=scan_name,
-                project_code=project_code,
-                params=params,
-                import_from_report=import_from_report,
-            )
-            scan_is_new = True
-
-        # Provide user feedback based on what happened
-        # Note: "project created + scan exists" is impossible
-        # (new project is empty)
-        if project_created and scan_is_new:
-            print("✓ Created new Project and Scan")
-        elif scan_is_new:
-            print("✓ Created New Scan in Existing Project")
-        else:
-            print("✓ Found existing Project and Scan")
-
-        # Validate scan compatibility for existing scans
-        # (new scans are always compatible, so skip the check)
-        if not scan_is_new:
-            print("Checking scan compatibility...")
-            self.ensure_scan_compatible(scan_code, params.command, params)
-            print("✓ Compatibility check passed")
-        else:
-            logger.debug(
-                "Skipping compatibility check - new scan is always compatible"
-            )
-
-        return project_code, scan_code, scan_is_new
-
-    # ===== PRIVATE METHODS =====
-
-    def _create_project(
-        self,
-        project_name: str,
-        product_code: Optional[str] = None,
-        product_name: Optional[str] = None,
-        description: Optional[str] = None,
-        comment: Optional[str] = None,
-        limit_date: Optional[str] = None,
-        jira_project_key: Optional[str] = None,
-    ) -> str:
-        """
-        Internal: Create a new project.
-
-        This is a private method. Use find_or_create_project_and_scan()
-        for the standard workflow.
-
-        Args:
-            project_name: Name for the new project
-            product_code: Optional product code
-            product_name: Optional product name
-            description: Optional description
-            comment: Optional comment
-            limit_date: Optional deadline (format: "YYYY-MM-DD")
-            jira_project_key: Optional JIRA project key
-
-        Returns:
-            str: Project code of the created project
-
-        Raises:
-            ApiError: If creation fails
-        """
-        logger.debug(f"Creating project '{project_name}'...")
-        print(f"Creating project '{project_name}'...")
-
-        project_code = self.projects.create(
-            project_name=project_name,
-            product_code=product_code,
-            product_name=product_name,
-            description=description,
-            comment=comment,
-            limit_date=limit_date,
-            jira_project_key=jira_project_key,
-        )
-        return str(project_code)
-
-    def _create_scan(
-        self,
-        scan_name: str,
-        project_code: str,
-        params: argparse.Namespace,
-        import_from_report: bool = False,
-    ) -> Tuple[str, int]:
-        """
-        Internal: Create a new scan in a project.
-
-        This is a private method. Use find_or_create_project_and_scan()
-        instead.
-
-        Args:
-            scan_name: Name for the new scan
-            project_code: Project code (not name) to create scan in
-                         Caller must resolve project_name → project_code
-            params: Command-line parameters (used to extract scan config)
-            import_from_report: Whether this scan is for SBOM import
-
-        Returns:
-            Tuple[str, int]: (scan_code, scan_id) of the created scan
-
-        Raises:
-            ProjectNotFoundError: If project doesn't exist
-            ApiError: If scan creation fails
-        """
-        logger.debug(
-            f"Creating scan '{scan_name}' in project '{project_code}'..."
-        )
-        print(
-            f"Creating scan '{scan_name}' in project '{project_code}'..."
-        )
-
-        # Build scan data from parameters
-        scan_data = {
-            "project_code": project_code,
-            "scan_name": scan_name,
-        }
-
-        # Add optional parameters if provided
-        if hasattr(params, "description") and params.description:
-            scan_data["description"] = params.description
-
-        if hasattr(params, "target_path") and params.target_path:
-            scan_data["target_path"] = params.target_path
-
-        # Note: CLI parameter is --git-url (becomes params.git_url)
-        # but API expects git_repo_url
-        if hasattr(params, "git_url") and params.git_url:
-            scan_data["git_repo_url"] = params.git_url
-
-        if hasattr(params, "git_branch") and params.git_branch:
-            scan_data["git_branch"] = params.git_branch
-            scan_data["git_ref_type"] = "branch"
-        elif hasattr(params, "git_tag") and params.git_tag:
-            scan_data["git_branch"] = params.git_tag
-            scan_data["git_ref_type"] = "tag"
-        elif hasattr(params, "git_commit") and params.git_commit:
-            scan_data["git_branch"] = params.git_commit
-            scan_data["git_ref_type"] = "commit"
-
-        if hasattr(params, "git_depth") and params.git_depth is not None:
-            scan_data["git_depth"] = str(params.git_depth)
-
-        # For SBOM import, we don't need to prepare for scanning
-        if import_from_report:
-            scan_data["import_from_report"] = "1"
-
-        # Create the scan
-        self.scans.create(scan_data)
-
-        # Fetch the created scan to return its details
-        scan_list = self.projects.get_all_scans(project_code)
-        scan = next(
-            (s for s in scan_list if s.get("name") == scan_name), None
-        )
-        if scan:
-            logger.debug(
-                f"Created scan '{scan_name}' with code '{scan['code']}' "
-                f"and ID {scan['id']}"
-            )
-            return scan["code"], int(scan["id"])
-
-        raise ApiError(
-            f"Failed to retrieve scan '{scan_name}' after creation"
-        )
-
-    # ===== VALIDATION METHODS =====
-
-    def ensure_scan_compatible(
-        self, scan_code: str, operation: str, params: argparse.Namespace
-    ) -> None:
-        """
-        Validates a scan is compatible with the requested operation.
-
-        This is part of the "resolution" process - ensuring the resolved
-        scan resource is actually usable for the intended purpose.
-
-        Args:
-            scan_code: Code of the scan to validate
-            operation: Type of operation ("scan", "scan-git", "import-da",
-                "import-sbom", "blind-scan")
-            params: Command line parameters for context
-
-        Raises:
-            CompatibilityError: If scan is incompatible with the operation
-
-        Note:
-            This method is graceful - if the scan cannot be fetched or
-            API errors occur, it logs warnings and continues rather than
-            failing hard.
-        """
-        logger.debug(
-            f"Verifying scan '{scan_code}' is compatible with operation "
-            f"'{operation}'..."
-        )
-
-        # Fetch scan information
-        try:
-            existing_scan_info = self.scans.get_information(scan_code)
-        except ScanNotFoundError:
-            logger.warning(
-                f"Scan '{scan_code}' not found during compatibility check."
-            )
-            return
-        except (ApiError, NetworkError) as e:
-            logger.warning(
-                f"Error fetching scan information during compatibility "
-                f"check: {e}"
-            )
-            print(
-                f"Warning: Could not verify scan compatibility due to API "
-                f"error: {e}"
-            )
-            return
-
-        # Extract existing scan configuration
-        existing_git_repo = existing_scan_info.get(
-            "git_repo_url", existing_scan_info.get("git_url")
-        )
-        existing_git_ref_value = existing_scan_info.get("git_branch")
-        existing_git_ref_type = existing_scan_info.get("git_ref_type")
-        existing_is_from_report = existing_scan_info.get(
-            "is_from_report", "0"
-        )
-        existing_is_report_scan = existing_is_from_report in [
-            "1",
-            1,
-            True,
-            "true",
-        ]
-
-        # Extract current operation parameters
-        current_git_url = getattr(params, "git_url", None)
-        current_git_branch = getattr(params, "git_branch", None)
-        current_git_tag = getattr(params, "git_tag", None)
-        current_git_ref_type = (
-            "tag"
-            if current_git_tag
-            else ("branch" if current_git_branch else None)
-        )
-        current_git_ref_value = (
-            current_git_tag if current_git_tag else current_git_branch
-        )
-
-        error_message = None
-
-        # Validate compatibility based on operation type
-        if operation == "scan" or operation == "blind-scan":
-            if existing_is_report_scan:
-                error_message = (
-                    f"Scan '{scan_code}' was created for SBOM import and "
-                    f"cannot be reused for code upload via --path."
-                )
-            elif existing_git_repo:
-                error_message = (
-                    f"Scan '{scan_code}' was created for Git scanning "
-                    f"(Repo: {existing_git_repo}) and cannot be reused for "
-                    f"code upload via --path."
-                )
-
-        elif operation == "scan-git":
-            if existing_is_report_scan:
-                error_message = (
-                    f"Scan '{scan_code}' was created for SBOM import and "
-                    f"cannot be reused for Git scanning."
-                )
-            elif not existing_git_repo:
-                error_message = (
-                    f"Scan '{scan_code}' was created for code upload "
-                    f"(using --path) and cannot be reused for Git scanning."
-                )
-            elif existing_git_repo != current_git_url:
-                error_message = (
-                    f"Scan '{scan_code}' already exists but is configured "
-                    f"for a different Git repository "
-                    f"(Existing: '{existing_git_repo}', "
-                    f"Requested: '{current_git_url}'). "
-                    f"Please use a different --scan-name to create a new "
-                    f"scan."
-                )
-            elif (
-                current_git_ref_type
-                and existing_git_ref_type
-                and existing_git_ref_type.lower()
-                != current_git_ref_type.lower()
-            ):
-                error_message = (
-                    f"Scan '{scan_code}' exists with ref type "
-                    f"'{existing_git_ref_type}', but current command "
-                    f"specified ref type '{current_git_ref_type}'. "
-                    f"Please use a different --scan-name or use a matching "
-                    f"ref type."
-                )
-            elif existing_git_ref_value != current_git_ref_value:
-                error_message = (
-                    f"Scan '{scan_code}' already exists for "
-                    f"{existing_git_ref_type or 'ref'} "
-                    f"'{existing_git_ref_value}', "
-                    f"but current command specified "
-                    f"{current_git_ref_type or 'ref'} "
-                    f"'{current_git_ref_value}'. "
-                    f"Please use a different --scan-name or use the "
-                    f"matching ref."
-                )
-
-        elif operation == "import-da":
-            if existing_is_report_scan:
-                error_message = (
-                    f"Scan '{scan_code}' was created for SBOM import and "
-                    f"cannot be reused for dependency analysis import."
-                )
-
-        elif operation == "import-sbom":
-            if not existing_is_report_scan:
-                error_message = (
-                    f"Scan '{scan_code}' was not created for SBOM import "
-                    f"and cannot be reused for SBOM import. Only scans "
-                    f"created with 'import-sbom' can be reused for SBOM "
-                    f"operations."
-                )
-
-        # Raise error if incompatible
-        if error_message:
-            print("\nError: Incompatible scan usage detected.")
-            logger.error(
-                f"Compatibility check failed for scan '{scan_code}': "
-                f"{error_message}"
-            )
-            raise CompatibilityError(
-                f"Incompatible usage for existing scan '{scan_code}': "
-                f"{error_message}"
-            )
-
-        # Log success
-        logging.info("Compatibility check passed! Proceeding...")
-        if operation == "scan-git" and existing_git_repo:
-            ref_display = (
-                f"{existing_git_ref_type or 'ref'} "
-                f"'{existing_git_ref_value}'"
-            )
-            logger.debug(
-                f"Reusing existing scan '{scan_code}' configured for Git "
-                f"repository '{existing_git_repo}' ({ref_display})."
-            )
-        elif operation in ("scan", "blind-scan") and not existing_git_repo:
-            logger.debug(
-                f"Reusing existing scan '{scan_code}' configured for code "
-                f"upload."
-            )
-        elif operation == "import-da":
-            logger.debug(
-                f"Reusing existing scan '{scan_code}' for DA import."
-            )
-        elif operation == "import-sbom":
-            logger.debug(
-                f"Reusing existing scan '{scan_code}' for SBOM import "
-                f"(report scan: {existing_is_report_scan})."
-            )
-
-    # ===== ID REUSE RESOLUTION =====
-
-    def resolve_id_reuse(
-        self,
-        id_reuse_any: bool = False,
-        id_reuse_my: bool = False,
-        id_reuse_project_name: Optional[str] = None,
-        id_reuse_scan_name: Optional[str] = None,
-        current_project_name: Optional[str] = None,
-    ) -> tuple[Optional[str], Optional[str]]:
-        """
-        Resolve ID reuse parameters (name→code resolution).
-
-        This method handles ID reuse resolution with graceful degradation:
-        - Simple cases (any/my) need no resolution
-        - Complex cases (project/scan) automatically resolve names→codes
-        - If resolution fails, warns and returns None (allows scan to continue)
-
-        Args:
-            id_reuse_any: Reuse any existing identification from the system
-            id_reuse_my: Only reuse identifications made by the current user
-            id_reuse_project_name: Reuse IDs from specific project (by name)
-            id_reuse_scan_name: Reuse IDs from specific scan (by name)
-            current_project_name: Current project name
-                (for scan resolution optimization)
-
-        Returns:
-            Tuple of (id_reuse_type, id_reuse_specific_code):
-            - id_reuse_type: "any", "only_me", "specific_project",
-              "specific_scan", or None
-            - id_reuse_specific_code: Code for specific_project/specific_scan,
-              or None
-
-        Note:
-            Uses graceful degradation - if resolution fails, warns and
-            returns None (allows scan to continue without ID reuse).
-
-        Example:
-            >>> id_type, id_code = resolver.resolve_id_reuse(
-            ...     id_reuse_project_name="MyProject",
-            ...     current_project_name="CurrentProject"
-            ... )
-        """
-        # Simple cases - no resolution needed
-        if id_reuse_any:
-            logger.info("ID reuse: any")
-            return "any", None
-
-        if id_reuse_my:
-            logger.info("ID reuse: only_me")
-            return "only_me", None
-
-        # Complex cases - need name→code resolution
-        if id_reuse_project_name:
-            return self._resolve_project_reuse(id_reuse_project_name)
-        elif id_reuse_scan_name:
-            return self._resolve_scan_reuse(
-                id_reuse_scan_name, current_project_name
-            )
-
-        # No ID reuse requested
-        return None, None
-
-    def _resolve_project_reuse(
-        self, project_name: str
-    ) -> tuple[Optional[str], Optional[str]]:
-        """
-        Resolve project reuse - warn and return None if fails.
-
-        Uses graceful degradation: if resolution fails, logs warning and
-        returns None rather than blocking the scan.
-        """
-        try:
-            project_code = self._find_project(project_name)
-            logger.info(
-                f"ID reuse: project '{project_name}' → '{project_code}'"
-            )
-            print(
-                f"✓ Successfully validated ID reuse project '{project_name}'"
-            )
-            return "specific_project", project_code
-        except Exception as e:
-            self._handle_reuse_failure("project", project_name, e)
-            return None, None
-
-    def _resolve_scan_reuse(
-        self,
-        scan_name: str,
-        current_project_name: Optional[str],
-    ) -> tuple[Optional[str], Optional[str]]:
-        """
-        Resolve scan reuse - warn and return None if fails.
-
-        Resolves by scan name within ``current_project_name`` first; if the
-        scan is not in that project, falls back to a global ``list_scans``
-        search (same pattern as other cross-project scan-by-name cases).
-        Uses graceful degradation: if resolution fails, logs warning and
-        returns None rather than blocking the scan.
-        """
-        try:
-            # Try current project first (efficient - common case)
-            # Most ID reuse is within the same project
-            if current_project_name:
-                logger.debug(
-                    f"Looking for ID reuse source scan '{scan_name}' "
-                    f"(checking project '{current_project_name}' first, "
-                    f"then global if needed)"
-                )
-                try:
-                    scan_code, _ = self._find_scan_in_project(
-                        scan_name,
-                        project_name=current_project_name,
-                    )
-                    logger.info(
-                        f"Found ID reuse source scan '{scan_name}' in current "
-                        f"project '{current_project_name}'."
-                    )
-                except ScanNotFoundError:
-                    # Not in current project, try global search
-                    logger.debug(
-                        f"Scan '{scan_name}' not found in project "
-                        f"'{current_project_name}', trying global search..."
-                    )
-                    scan_code, _ = self._find_scan_globally(scan_name)
-                    logger.info(
-                        f"Found ID reuse source scan '{scan_name}' via global "
-                        f"search (scan is in a different project)"
-                    )
-            else:
-                # No current project - try global search directly
-                scan_code, _ = self._find_scan_globally(scan_name)
-
-            logger.info(f"ID reuse: scan '{scan_name}' → '{scan_code}'")
-            print(f"✓ Successfully validated ID reuse scan '{scan_name}'")
-            return "specific_scan", scan_code
-        except Exception as e:
-            self._handle_reuse_failure("scan", scan_name, e)
-            return None, None
-
-    def _handle_reuse_failure(
-        self, reuse_type: str, name: str, error: Exception
-    ) -> None:
-        """
-        Handle ID reuse resolution failure with consistent messaging.
-
-        Logs warning and prints user-friendly message. Does NOT raise
-        exception - allows scan to continue without ID reuse.
-        """
-        logger.warning(
-            f"Could not find ID Reuse source: {reuse_type} '{name}' - "
-            f"{type(error).__name__}: {error}. "
-            "\nContinuing without ID reuse."
-        )

@@ -14,6 +14,9 @@ from workbench_agent.utilities.post_import_summary import print_import_summary
 from workbench_agent.utilities.pre_flight_checks import (
     import_da_pre_flight_check,
 )
+from workbench_agent.utilities.resolve_project_scan import (
+    find_or_create_project_and_scan,
+)
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -66,10 +69,9 @@ def handle_import_da(
     # Resolve project and scan (find or create)
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    _, scan_code, scan_is_new = client.resolver.find_or_create_project_and_scan(
-        project_name=params.project_name,
-        scan_name=params.scan_name,
-        params=params,
+    _, scan_code, scan_is_new = find_or_create_project_and_scan(
+        client,
+        params,
     )
 
     # Ensure scan is idle before starting dependency analysis import

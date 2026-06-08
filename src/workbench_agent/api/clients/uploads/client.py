@@ -10,8 +10,7 @@ from typing import Generator
 
 import requests
 
-from workbench_agent.api.exceptions import ApiError, NetworkError
-from workbench_agent.exceptions import FileSystemError
+from workbench_agent.api.exceptions import ApiError, FileSystemError, NetworkError
 
 from . import helpers
 
@@ -123,7 +122,7 @@ class UploadsClient:
                         >= last_printed_progress
                         + self.PROGRESS_UPDATE_INTERVAL
                     ):
-                        print(f"Upload progress: {progress}%")
+                        logger.info("Upload progress: %s%%", progress)
                         last_printed_progress = progress
         except Exception:
             logger.error("Error during chunked upload for %s", filename)

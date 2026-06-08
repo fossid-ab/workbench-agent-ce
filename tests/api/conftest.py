@@ -30,11 +30,11 @@ def _resolve_scan_code(
     project_name: str,
     scan_name: str,
 ) -> str:
-    _, scan_code, _ = workbench_client.resolver.find_project_and_scan(
+    _, scan = workbench_client.resolver.find_project_and_scan(
         project_name,
         scan_name,
     )
-    return scan_code
+    return scan.code
 
 
 def _scan_code_fixture(

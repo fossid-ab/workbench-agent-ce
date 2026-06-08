@@ -44,10 +44,11 @@ def handle_delete_scan(
         params.scan_name,
         params.project_name,
     )
-    _, scan_code, _ = client.resolver.find_project_and_scan(
+    _, scan = client.resolver.find_project_and_scan(
         params.project_name,
         params.scan_name,
     )
+    scan_code = scan.code
     logger.debug("Resolved scan_code=%s", scan_code)
 
     if not client.user_permissions.can_delete_scan(scan_code):

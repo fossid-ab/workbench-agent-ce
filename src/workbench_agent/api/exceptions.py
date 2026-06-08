@@ -166,3 +166,19 @@ class CompatibilityError(WorkbenchApiError):
         ...     "reused for code upload operations."
         ... )
     """
+
+
+class ValidationError(WorkbenchApiError):
+    """Raised when SDK input validation fails.
+
+    Includes invalid parameters, unsupported option combinations, and
+    local validation before API calls.
+    """
+
+
+class FileSystemError(WorkbenchApiError):
+    """Raised for local file or directory errors during SDK operations.
+
+    Includes missing paths, permission failures, and other filesystem issues
+    encountered while preparing uploads or report output.
+    """

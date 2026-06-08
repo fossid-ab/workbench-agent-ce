@@ -307,7 +307,9 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
             NetworkError,
             ProcessError,  # Covers ProcessTimeoutError
             CompatibilityError,
-            WorkbenchAgentError,  # Covers ValidationError, ConfigurationError, FileSystemError
+            ValidationError,
+            FileSystemError,
+            WorkbenchAgentError,  # Covers ConfigurationError
         ) as e:
             # Expected exceptions - log and re-raise for main.py to format
             logger.debug(

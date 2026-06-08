@@ -63,9 +63,9 @@ class ScanOperationsService:
         """
         Start a KB scan with resolved ID reuse parameters.
 
-        This method converts Python-friendly parameter names/types to API
-        format and delegates to ScansClient. ID reuse should be resolved
-        beforehand using resolver.resolve_id_reuse().
+        This method converts parameter names/types to API format and delegates 
+        to ScansClient. ID reuse should be resolved beforehand.
+        (e.g. ``utilities.resolve_id_reuse.resolve_id_reuse``).
 
         Args:
             scan_code: The code of the scan to run
@@ -93,9 +93,9 @@ class ScanOperationsService:
             NetworkError: If there are network issues
 
         Example:
-            >>> # Resolve ID reuse first
-            >>> id_type, id_code = resolver.resolve_id_reuse(...)
-            >>> # Start scan with Python-friendly parameter names
+            >>> # Resolve ID reuse source before starting scan
+            >>> from workbench_agent.utilities.resolve_id_reuse import resolve_id_reuse
+            >>> id_type, id_code = resolve_id_reuse(client, params)
             >>> scan_ops.start_scan(
             ...     scan_code="SCAN123",
             ...     limit=10,

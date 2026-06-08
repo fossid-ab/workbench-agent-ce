@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 from workbench_agent.api.exceptions import ProcessError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.pre_flight_checks import scan_pre_flight_check
+from workbench_agent.utilities.resolve_project_scan import (
+    find_or_create_project_and_scan,
+)
 from workbench_agent.utilities.scan_workflows import (
     execute_scan_workflow,
 )
@@ -67,12 +70,9 @@ def handle_scan(
     # ===== STEP 1: Resolve project and scan =====
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    _, scan_code, scan_is_new = (
-        client.resolver.find_or_create_project_and_scan(
-            project_name=params.project_name,
-            scan_name=params.scan_name,
-            params=params,
-        )
+    _, scan_code, scan_is_new = find_or_create_project_and_scan(
+        client,
+        params,
     )
 
     # ===== STEP 2: Pre-Flight Checks =====

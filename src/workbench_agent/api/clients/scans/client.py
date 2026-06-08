@@ -1100,7 +1100,7 @@ class ScansClient:
         try:
             response = self._api._send_request(payload)
             if response.get("status") == "1":
-                print(f"KB Scan initiated for scan '{scan_code}'.")
+                logger.info("KB Scan initiated for scan '%s'.", scan_code)
                 return
             else:
                 error_msg = response.get("error", "Unknown error")

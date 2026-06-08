@@ -14,7 +14,7 @@ import os
 from typing import TYPE_CHECKING, Dict, Optional
 
 from workbench_agent.api.utils.process_waiter import StatusResult
-from workbench_agent.exceptions import FileSystemError
+from workbench_agent.api.exceptions import FileSystemError
 
 if TYPE_CHECKING:
     from workbench_agent.api.clients.scans import ScansClient

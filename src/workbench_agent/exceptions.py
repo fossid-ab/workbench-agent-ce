@@ -1,13 +1,14 @@
 """
 Custom exceptions for Workbench Agent.
 
-This module defines the exception hierarchy for the Workbench Agent.
-All application-level exceptions inherit from WorkbenchAgentError.
-
-Note: API/SDK-level exceptions are defined in workbench_agent.api.exceptions.
+This module defines the exception hierarchy for the Workbench Agent CLI.
+Shared SDK exceptions are defined in ``workbench_agent.api.exceptions``
+and re-exported here for backward compatibility.
 """
 
 from typing import Optional
+
+from workbench_agent.api.exceptions import FileSystemError, ValidationError
 
 
 class WorkbenchAgentError(Exception):
@@ -34,20 +35,6 @@ class WorkbenchAgentError(Exception):
         super().__init__(self.message)
 
 
-class ValidationError(WorkbenchAgentError):
-    """Raised when input validation fails.
-
-    This includes invalid file formats, unsupported options, and other
-    validation-related errors.
-
-    Example:
-        try:
-            validate_input_file(file_path)
-        except ValidationError as e:
-            logger.error(f"Validation error: {e.message}")
-    """
-
-
 class ConfigurationError(WorkbenchAgentError):
     """Raised for invalid configuration or command-line arguments.
 
@@ -62,14 +49,9 @@ class ConfigurationError(WorkbenchAgentError):
     """
 
 
-class FileSystemError(WorkbenchAgentError):
-    """Raised for errors related to local file/directory operations.
-
-    Includes file not found, permission denied, and other filesystem errors.
-
-    Example:
-        try:
-            process_directory(path)
-        except FileSystemError as e:
-            logger.error(f"File system error: {e.message}")
-    """
+__all__ = [
+    "WorkbenchAgentError",
+    "ValidationError",
+    "ConfigurationError",
+    "FileSystemError",
+]

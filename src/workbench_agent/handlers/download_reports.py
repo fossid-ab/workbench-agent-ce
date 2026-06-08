@@ -83,10 +83,11 @@ def handle_download_reports(
     scan_code = None
 
     if params.report_scope == "scan":
-        project_code, scan_code, _ = client.resolver.find_project_and_scan(
+        project_code, scan = client.resolver.find_project_and_scan(
             params.project_name,
             params.scan_name,
         )
+        scan_code = scan.code
     elif params.report_scope == "project":
         project_code = client.resolver.find_project(params.project_name)
 

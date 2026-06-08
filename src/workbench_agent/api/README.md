@@ -122,7 +122,10 @@ catalog = wb.component_catalog.resolve("abbrev", "1.1.1", "ISC")
 | `scan_content` | `ScanContentService` | Scan file directory: upload (target/DA/SBOM), extract, remove, Git |
 | `scan_operations` | `ScanOperationsService` | Process scan files: KB scan, DA run/import, SBOM import |
 | `scan_deletion` | `ScanDeletionService` | Queue scan delete and wait until complete |
-| `resolver` | `ResolverService` | Resolve project/scan names to codes; create if needed |
+| `resolver` | `ResolverService` | Resolve project/scan names to codes; create if needed (machine-readable) |
+
+CE find-or-create with compatibility checks lives in
+``workbench_agent.utilities.resolve_project_scan``.
 | `reports` | `ReportService` | Report generation, validation, waiting, download |
 | `status_check` | `StatusCheckService` | Poll async operation status (Git, scan, reports, delete, …) |
 | `user_permissions` | `UserPermissionsService` | Permissions for the configured API user |
@@ -137,6 +140,10 @@ yet wrapped by a service.
 Optional shared pure functions when logic is reused across multiple services.
 Most domain logic lives on the service itself; CLI formatting lives under
 ``workbench_agent.utilities/``.
+
+- ``scan_type`` — ``ScanType``, ``check_scan_reuse()``, structured
+  ``ScanReuseIssue`` for scan reuse rules (CE formats messages in
+  ``utilities/resolve_project_scan.py``).
 
 ## Human-readable output (outside `api/`)
 
@@ -175,9 +182,10 @@ See [`tests/api/README.md`](../../../tests/api/README.md).
 
 - Older **flat** client modules (`*_api.py`) are being replaced by packaged
   `clients/<domain>/`.
-- Some **legacy services** still emit CLI `print()` during long-running
-  workflows (`resolver`, `status_check`). New service code should not add
-  prints; `--show-*` orchestration lives in `workbench_agent.utilities`.
+- CE project/scan resolution (compatibility, terminal output) lives in
+  ``workbench_agent.utilities.resolve_project_scan``.
+- Long-running progress display for CLI users belongs in ``utilities/`` via
+  ``progress_callback`` hooks (e.g. ``scan_workflows.create_scan_progress_callback``).
 
 ## Related docs
 

@@ -68,22 +68,22 @@ def mock_main_dependencies():
         # Set up common API methods that handlers might use
         # Note: These are now accessed via client composition (e.g., workbench.resolver, workbench.scans, etc.)
         mocks["workbench_instance"].resolver = MagicMock()
-        mocks[
-            "workbench_instance"
-        ].resolver.find_or_create_project_and_scan.return_value = (
-            "TEST_PROJECT_CODE",
-            "TEST_SCAN_CODE",
-            False,
-        )
         mocks["workbench_instance"].resolver.find_project.return_value = (
             "TEST_PROJECT_CODE"
+        )
+        from workbench_agent.api.services.resolver_service import ResolvedScan
+
+        mock_scan = ResolvedScan(
+            code="TEST_SCAN_CODE", id=123, info={}
+        )
+        mocks["workbench_instance"].resolver.find_scan.return_value = (
+            mock_scan
         )
         mocks[
             "workbench_instance"
         ].resolver.find_project_and_scan.return_value = (
             "TEST_PROJECT_CODE",
-            "TEST_SCAN_CODE",
-            123,
+            mock_scan,
         )
 
         mocks["workbench_instance"].scans = MagicMock()

@@ -484,10 +484,12 @@ def handle_evaluate_gates(
 
     # Resolve project and scan (find only - don't create)
     print("\nResolving scan for gate evaluation...")
-    _, scan_code, scan_id = client.resolver.find_project_and_scan(
+    _, scan = client.resolver.find_project_and_scan(
         params.project_name,
         params.scan_name,
     )
+    scan_code = scan.code
+    scan_id = scan.id
 
     # Ensure scan processes are idle before evaluating gates
     try:

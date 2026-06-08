@@ -9,7 +9,7 @@ The official [Workbench Agent](https://github.com/fossid-ab/workbench-agent) is 
 This repo publishes container images to [GitHub Container Registry](https://github.com/fossid-ab/workbench-agent-ce/pkgs/container/workbench-agent-ce) (`ghcr.io/fossid-ab/workbench-agent-ce`) with several tags:
 
 - **latest** - the latest stable release - use this tag when you want to run the newest stable release
-- **version tag** - a tagged release (for example `0.8.0`) - use this tag in CI for reproducibility
+- **version tag** - a tagged release (for example `0.9.0`) - use this tag in CI for reproducibility
 - **edge** - the latest and greatest in between releases - use this tag carefully, as it may break between releases
 
 ## General Usage

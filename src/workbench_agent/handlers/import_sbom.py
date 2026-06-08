@@ -15,6 +15,9 @@ from workbench_agent.utilities.post_import_summary import print_import_summary
 from workbench_agent.utilities.pre_flight_checks import (
     import_sbom_pre_flight_check,
 )
+from workbench_agent.utilities.resolve_project_scan import (
+    find_or_create_project_and_scan,
+)
 from workbench_agent.utilities.sbom_validator import SBOMValidator
 from workbench_agent.utilities.upload_data_prep import cleanup_temp_path
 
@@ -191,13 +194,10 @@ def handle_import_sbom(
         # Resolve project and scan (find or create)
         print("\n--- Project and Scan Checks ---")
         print("Checking target Project and Scan...")
-        _, scan_code, scan_is_new = (
-            client.resolver.find_or_create_project_and_scan(
-                project_name=params.project_name,
-                scan_name=params.scan_name,
-                params=params,
-                import_from_report=True,
-            )
+        _, scan_code, scan_is_new = find_or_create_project_and_scan(
+            client,
+            params,
+            import_from_report=True,
         )
 
         # Ensure scan is idle before starting SBOM import

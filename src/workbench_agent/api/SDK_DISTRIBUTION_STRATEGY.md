@@ -11,7 +11,7 @@ This document describes how the Workbench HTTP client layer under `src/workbench
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  Workbench Agent CE CLI (distribution: workbench-agent)   │
-│  - Version: semantic (e.g. 0.8.x) — product / CE cadence  │
+│  - Version: semantic (e.g. 0.9.x) — product / CE cadence  │
 │  - Depends on: workbench-sdk>=… (once split)             │
 │  - Owns: cli/, handlers/, utilities/, main, Docker      │
 └───────────────────┬─────────────────────────────────────┘
@@ -37,7 +37,7 @@ This document describes how the Workbench HTTP client layer under `src/workbench
 
 **Current behavior**
 
-- The **CE package** version is the semver in root `pyproject.toml` (e.g. `0.8.0`). It is **not** the same numbering scheme as FossID Workbench server releases.
+- The **CE package** version is the semver in root `pyproject.toml` (e.g. `0.9.0`). It is **not** the same numbering scheme as FossID Workbench server releases.
 - `WorkbenchClient` performs a **minimum Workbench server version** check using a constant in `workbench_client.py` (`MINIMUM_VERSION`, currently `24.3.0`), via `get_workbench_config()` and `packaging.version`.
 - There is **no** `workbench-sdk` entry in `dependencies` today; the strategy sections below describe a **future** split.
 
@@ -75,19 +75,14 @@ workbench-agent-ce/
 - Under `src/workbench_agent/api/`, **no** imports from `workbench_agent.cli`, `workbench_agent.handlers`, or `workbench_agent.utilities`.
 - The API layer is the right place for REST clients, orchestration services, and `WorkbenchClient`.
 
-### Outward boundary (must fix before a clean SDK wheel)
+### Outward boundary
 
-The API package **does** import application-level exceptions from `workbench_agent.exceptions` in several modules, for example:
+The API package no longer imports from ``workbench_agent.cli``,
+``workbench_agent.handlers``, or ``workbench_agent.utilities``.
 
-- `FileSystemError` — `uploads` client transport, `scan_content_service.py`, `report_service.py`
-- `ValidationError` — `download_api.py`, `report_service.py`
-
-`WorkbenchAgentError` and subclasses live outside `api/` today. For a standalone `workbench-sdk` wheel, either:
-
-- **Move** shared types into the SDK (e.g. `workbench_sdk.errors` with thin subclasses), and have the CLI re-export or wrap them, or  
-- **Define** SDK-local I/O/validation exceptions and map them at the CLI boundary.
-
-Until one of these is done, the claim “SDK has no dependencies on non-SDK code” is **false**.
+Shared validation and filesystem errors (``ValidationError``,
+``FileSystemError``) live in ``api/exceptions.py`` and are re-exported from
+``workbench_agent.exceptions`` for CLI backward compatibility.
 
 ### Minor coupling
 
@@ -144,7 +139,7 @@ workbench-agent-ce/
 
 Rough phases for planning (ordering matters):
 
-1. **Decouple exceptions** — Remove `from workbench_agent.exceptions import …` from `api/` (small, blocking).
+1. **Decouple exceptions** — Done: ``ValidationError`` and ``FileSystemError`` in ``api/exceptions.py``.
 2. **Mechanical rename** — `workbench_agent.api` → `workbench_sdk` (or keep `workbench_agent.api` as a thin re-export shim for one release — optional migration path).
 3. **Split packaging** — Second `pyproject.toml` (second package in monorepo *or* new repo), setuptools package discovery, optional `[tool.setuptools.packages.find]` boundaries.
 4. **Wire CE to SDK** — Add `workbench-sdk` dependency; delete or shrink in-tree `api/`; run full test suite.
@@ -204,7 +199,7 @@ client = WorkbenchClient(url, user, token)
 After a split, a plausible timeline (numbers are examples only):
 
 ```
-CE 0.8.x ships with workbench-sdk 1.2.x (supports Workbench >= 24.3)
+CE 0.9.x ships with workbench-sdk 1.2.x (supports Workbench >= 24.3)
 CE 0.9.x bumps to workbench-sdk 1.3.x when new API surface is required
 ```
 

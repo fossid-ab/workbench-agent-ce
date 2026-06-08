@@ -43,7 +43,7 @@ class BaseAPI:
         # Ensure the API URL ends with api.php
         if not api_url.endswith("/api.php"):
             self.api_url = api_url.rstrip("/") + "/api.php"
-            print(f"Warning: API URL adjusted to: {self.api_url}")
+            logger.warning("API URL adjusted to: %s", self.api_url)
         else:
             self.api_url = api_url
         self.api_user = api_user

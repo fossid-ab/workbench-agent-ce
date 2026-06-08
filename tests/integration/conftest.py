@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, Mock, call, patch
 import pytest
 import requests
 
+from workbench_agent.api.exceptions import ScanNotFoundError
+
 # Add a fallback mocker fixture for environments where pytest-mock is not installed
 try:
     import pytest_mock
@@ -386,19 +388,18 @@ def mock_workbench_api(mocker):
 
     # --- Mock Resolver Service ---
     mock_client.resolver = MagicMock()
-    mock_client.resolver.find_or_create_project_and_scan.return_value = (
-        "PRJ-MOCK",
-        "SCN-MOCK",
-        False,
-    )
     mock_client.resolver.find_project.return_value = "PRJ-MOCK"
+    from workbench_agent.api.services.resolver_service import ResolvedScan
+
+    mock_scan = ResolvedScan(code="SCN-MOCK", id=12345, info={})
+    mock_client.resolver.find_scan.side_effect = ScanNotFoundError(
+        "Scan not found"
+    )
+    mock_client.resolver.create_scan.return_value = mock_scan
     mock_client.resolver.find_project_and_scan.return_value = (
         "PRJ-MOCK",
-        "SCN-MOCK",
-        12345,
+        mock_scan,
     )
-    mock_client.resolver.resolve_id_reuse.return_value = (None, None)
-    mock_client.resolver.ensure_scan_compatible = MagicMock()
 
     # --- Mock Scans Client ---
     mock_client.scans = MagicMock()

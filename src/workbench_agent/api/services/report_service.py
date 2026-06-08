@@ -19,7 +19,7 @@ from packaging import version as packaging_version
 
 from workbench_agent.api.utils import report_definitions
 from workbench_agent.api.utils.process_waiter import StatusResult
-from workbench_agent.exceptions import FileSystemError, ValidationError
+from workbench_agent.api.exceptions import FileSystemError, ValidationError
 
 logger = logging.getLogger("workbench-agent")
 

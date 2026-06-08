@@ -9,8 +9,10 @@ import argparse
 import pytest
 
 from workbench_agent.api.utils.process_waiter import StatusResult
+from workbench_agent.api.exceptions import ScanNotFoundError
 from workbench_agent.utilities.scan_workflows import (
     _determine_scans_to_run,
+    create_scan_progress_callback,
     execute_scan_workflow,
 )
 
@@ -54,9 +56,7 @@ def scan_workflow_params():
 @pytest.fixture
 def mock_client(mocker):
     """Create a mock Workbench client for scan workflow tests."""
-    client = mocker.MagicMock()
-    client.resolver.resolve_id_reuse.return_value = (None, None)
-    return client
+    return mocker.MagicMock()
 
 
 # ============================================================================
@@ -129,7 +129,7 @@ class TestExecuteScanWorkflow:
     ):
         """Successful KB scan should run once."""
         mocker.patch(
-            "workbench_agent.utilities.scan_workflows._print_scan_summary"
+            "workbench_agent.utilities.post_scan_summary.print_scan_summary"
         )
         mock_client.status_check.check_scan_status.return_value = (
             StatusResult(
@@ -155,6 +155,36 @@ class TestExecuteScanWorkflow:
             is False
         )
         mock_client.scan_operations.scan_failed_files.assert_not_called()
+        wait_kwargs = mock_client.status_check.check_scan_status.call_args.kwargs
+        assert wait_kwargs["wait"] is True
+        assert callable(wait_kwargs["progress_callback"])
+
+    def test_create_scan_progress_callback_prints_status(
+        self, capsys
+    ):
+        callback = create_scan_progress_callback("SCAN123")
+        raw_data = {
+            "state": "scanning",
+            "total_files": 10,
+            "current_file": 3,
+            "percentage_done": "30%",
+        }
+        callback(
+            StatusResult(status="RUNNING", raw_data=raw_data),
+            1,
+            100,
+        )
+        output = capsys.readouterr().out
+        assert "SCAN123" in output
+        assert "RUNNING" in output
+        assert "File 3/10" in output
+
+        callback(
+            StatusResult(status="RUNNING", raw_data=raw_data),
+            2,
+            100,
+        )
+        assert capsys.readouterr().out == "."
 
     def test_kb_scan_failure_retries_failed_files_once(
         self,
@@ -164,7 +194,7 @@ class TestExecuteScanWorkflow:
     ):
         """Failed KB scan should retry once with scan_failed_only."""
         mocker.patch(
-            "workbench_agent.utilities.scan_workflows._print_scan_summary"
+            "workbench_agent.utilities.post_scan_summary.print_scan_summary"
         )
         mock_client.status_check.check_scan_status.side_effect = [
             StatusResult(
@@ -206,7 +236,7 @@ class TestExecuteScanWorkflow:
     ):
         """User-cancelled KB scan should not trigger failed-file retry."""
         mocker.patch(
-            "workbench_agent.utilities.scan_workflows._print_scan_summary"
+            "workbench_agent.utilities.post_scan_summary.print_scan_summary"
         )
         mock_client.status_check.check_scan_status.return_value = (
             StatusResult(
@@ -240,7 +270,7 @@ class TestExecuteScanWorkflow:
     ):
         """Failed retry should not trigger a third KB scan run."""
         mocker.patch(
-            "workbench_agent.utilities.scan_workflows._print_scan_summary"
+            "workbench_agent.utilities.post_scan_summary.print_scan_summary"
         )
         mock_client.status_check.check_scan_status.side_effect = [
             StatusResult(
@@ -265,3 +295,4 @@ class TestExecuteScanWorkflow:
         assert result is True
         assert mock_client.scan_operations.start_scan.call_count == 1
         mock_client.scan_operations.scan_failed_files.assert_called_once()
+

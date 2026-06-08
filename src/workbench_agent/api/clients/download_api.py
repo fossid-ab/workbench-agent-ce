@@ -6,7 +6,7 @@ DownloadClient - Download files from Workbench.
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from workbench_agent.exceptions import ValidationError
+from workbench_agent.api.exceptions import ValidationError
 
 if TYPE_CHECKING:
     from workbench_agent.api.base_api import BaseAPI

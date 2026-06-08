@@ -268,9 +268,11 @@ def wait_for_completion(
                 # Default progress reporting
                 if attempts % 6 == 0:  # Every minute if interval=10
                     elapsed = attempts * wait_interval
-                    print(
-                        f"{operation_name} in progress... "
-                        f"({elapsed}s elapsed, status: {result.status})"
+                    logger.info(
+                        "%s in progress... (%ss elapsed, status: %s)",
+                        operation_name,
+                        elapsed,
+                        result.status,
                     )
 
                 # Check if complete (terminal state)

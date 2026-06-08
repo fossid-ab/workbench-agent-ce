@@ -92,10 +92,8 @@ class WorkbenchClient:
         ... )
         >>>
         >>> # High-level workflows via services
-        >>> p_code, s_code, is_new = (
-        ...     workbench.resolver.find_or_create_project_and_scan(
-        ...         "MyProject", "MyScan", params
-        ...     )
+        >>> result = workbench.resolver.find_or_create(
+        ...     "MyProject", "MyScan", scan_data={}
         ... )
         >>> process_id = workbench.reports.generate_project_report(
         ...     project_code, "xlsx"
