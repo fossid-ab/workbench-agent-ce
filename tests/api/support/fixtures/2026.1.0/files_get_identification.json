@@ -1,0 +1,10 @@
+{
+  "operation": "files_and_folders_get_identification",
+  "status": "1",
+  "data": {
+    "component_identification": [],
+    "licenses": false,
+    "copyright": null
+  },
+  "message": "Success"
+}

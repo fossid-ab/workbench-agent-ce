@@ -4,18 +4,20 @@ API Clients - Domain-specific API operation handlers.
 Each client handles operations for a specific domain (projects, scans, etc.).
 """
 
+from .components import ComponentsClient
 from .download_api import DownloadClient
-from .internal_api import InternalClient
-from .projects_api import ProjectsClient
+from .files_and_folders import FilesAndFoldersClient
+from .projects import ProjectsClient
 from .quickscan_api import QuickScanClient
-from .scans_api import ScansClient
-from .upload_api import UploadsClient
-from .users_api import UsersClient
-from .vulnerabilities_api import VulnerabilitiesClient
+from .scans import ScansClient
+from .uploads import UploadsClient
+from .users import UsersClient
+from .vulnerabilities import VulnerabilitiesClient
 
 __all__ = [
+    "ComponentsClient",
     "DownloadClient",
-    "InternalClient",
+    "FilesAndFoldersClient",
     "ProjectsClient",
     "QuickScanClient",
     "ScansClient",

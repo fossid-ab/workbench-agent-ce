@@ -29,6 +29,9 @@ reports/
 # Coverage
 .coverage*
 
+# API contract recordings (optional WORKBENCH_RECORD_CONTRACTS=1)
+tests/api/recorded/
+
 # Pytest
 .pytest_cache/
 __pycache__/

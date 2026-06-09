@@ -44,18 +44,14 @@ class TestBlindScanWorkflow:
         6. Delete scan (cleanup on Workbench)
         """
         signatures_src = fixtures_dir / "signatures"
-        assert signatures_src.is_file(), (
-            f"Missing fixture: {signatures_src}"
-        )
+        assert signatures_src.is_file(), f"Missing fixture: {signatures_src}"
         fossid_path = Path(temp_source_dir) / "signatures.fossid"
         shutil.copy(signatures_src, fossid_path)
 
         scan_created = False
         try:
             # Step 1: Blind-Scan
-            print(
-                f"\n[BLIND-SCAN] Step 1: Performing blind scan '{unique_scan_name}'"
-            )
+            print(f"\n[BLIND-SCAN] Step 1: Performing blind scan '{unique_scan_name}'")
             result = subprocess.run(
                 [
                     "workbench-agent",
@@ -154,9 +150,7 @@ class TestBlindScanWorkflow:
                 f"STDOUT: {result.stdout}\n"
                 f"STDERR: {result.stderr}"
             )
-            print(
-                "[BLIND-SCAN] Step 4: ✓ Project reports downloaded successfully"
-            )
+            print("[BLIND-SCAN] Step 4: ✓ Project reports downloaded successfully")
 
             # Step 5: Download Reports (Scan Scope)
             print("[BLIND-SCAN] Step 5: Downloading scan-level reports")
@@ -185,9 +179,7 @@ class TestBlindScanWorkflow:
                 f"STDOUT: {result.stdout}\n"
                 f"STDERR: {result.stderr}"
             )
-            print(
-                f"[BLIND-SCAN] Step 5: ✓ Scan reports downloaded successfully"
-            )
+            print(f"[BLIND-SCAN] Step 5: ✓ Scan reports downloaded successfully")
             print(f"[BLIND-SCAN] ✓ Complete workflow passed!")
         finally:
             if scan_created:

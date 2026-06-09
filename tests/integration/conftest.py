@@ -1,14 +1,15 @@
 # tests/integration/conftest.py
 
+import importlib.util
 from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 import requests
 
+from workbench_agent.api.exceptions import ScanNotFoundError
+
 # Add a fallback mocker fixture for environments where pytest-mock is not installed
-try:
-    import pytest_mock
-except ImportError:
+if importlib.util.find_spec("pytest_mock") is None:
 
     @pytest.fixture
     def mocker():
@@ -99,12 +100,8 @@ def mock_api_post(mocker):
             if state["expected_responses"]:
                 # For scan status responses, check if the predefined response matches
                 if group == "scans" and action == "get_scan_status":
-                    for idx, resp in enumerate(
-                        state["expected_responses"]
-                    ):
-                        resp_data = resp.get("json_data", {}).get(
-                            "data", {}
-                        )
+                    for idx, resp in enumerate(state["expected_responses"]):
+                        resp_data = resp.get("json_data", {}).get("data", {})
                         if resp_data.get("status") in [
                             "RUNNING",
                             "FINISHED",
@@ -124,9 +121,7 @@ def mock_api_post(mocker):
                             "data": [
                                 {
                                     "name": project_name,
-                                    "code": state["projects"][
-                                        project_name
-                                    ],
+                                    "code": state["projects"][project_name],
                                 }
                             ],
                         }
@@ -137,12 +132,9 @@ def mock_api_post(mocker):
                 # List all projects
                 else:
                     projects_list = [
-                        {"name": name, "code": code}
-                        for name, code in state["projects"].items()
+                        {"name": name, "code": code} for name, code in state["projects"].items()
                     ]
-                    return {
-                        "json_data": {"status": "1", "data": projects_list}
-                    }
+                    return {"json_data": {"status": "1", "data": projects_list}}
 
             # Projects.create - register the project
             elif group == "projects" and action == "create":
@@ -177,9 +169,7 @@ def mock_api_post(mocker):
                     scans_for_project = []
                     scan_idx = 0
 
-                    for (proj_code, scan_name), scan_id in state[
-                        "scans"
-                    ].items():
+                    for (proj_code, scan_name), scan_id in state["scans"].items():
                         if proj_code == project_code:
                             scans_for_project.append(
                                 {
@@ -228,10 +218,7 @@ def mock_api_post(mocker):
                         }
 
                     # For normal scan status, check the scan_id
-                    if scan_id and any(
-                        scan_id == s_id
-                        for (_, _), s_id in state["scans"].items()
-                    ):
+                    if scan_id and any(scan_id == s_id for (_, _), s_id in state["scans"].items()):
                         # Default to NEW for new scans
                         return {
                             "json_data": {
@@ -310,35 +297,25 @@ def mock_api_post(mocker):
             body=json.dumps(request_payload) if request_payload else None
         )
 
-        headers = response_config.get(
-            "headers", {"content-type": "application/json"}
-        )
+        headers = response_config.get("headers", {"content-type": "application/json"})
         mock_response.headers = headers
 
         if headers.get("content-type") == "application/json":
-            json_data = response_config.get(
-                "json_data", {"status": "1", "data": {}}
-            )
+            json_data = response_config.get("json_data", {"status": "1", "data": {}})
             mock_response.json = MagicMock(return_value=json_data)
             mock_response.text = json.dumps(json_data)
             mock_response.content = mock_response.text.encode("utf-8")
         else:
             content_data = response_config.get("content", b"")
             mock_response.content = content_data
-            mock_response.text = content_data.decode(
-                "utf-8", errors="ignore"
-            )
-            mock_response.json.side_effect = (
-                requests.exceptions.JSONDecodeError("Not JSON", "", 0)
-            )
+            mock_response.text = content_data.decode("utf-8", errors="ignore")
+            mock_response.json.side_effect = requests.exceptions.JSONDecodeError("Not JSON", "", 0)
 
         # Raise for status simulation
         if 400 <= mock_response.status_code < 600:
-            mock_response.raise_for_status.side_effect = (
-                requests.exceptions.HTTPError(
-                    f"{mock_response.status_code} Client/Server Error",
-                    response=mock_response,
-                )
+            mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+                f"{mock_response.status_code} Client/Server Error",
+                response=mock_response,
             )
         else:
             mock_response.raise_for_status = MagicMock()
@@ -346,9 +323,7 @@ def mock_api_post(mocker):
         return mock_response
 
     # Patch requests.Session.post globally for the test
-    patcher = patch(
-        "requests.Session.post", side_effect=mock_post_side_effect
-    )
+    patcher = patch("requests.Session.post", side_effect=mock_post_side_effect)
     mock_post = patcher.start()
 
     yield setup_responses  # Provide the setup function to the test
@@ -358,9 +333,7 @@ def mock_api_post(mocker):
     # Debug output after test finishes
     if state["debug_mode"]:
         if state["expected_responses"]:
-            print(
-                "\nWarning: Not all expected API responses were consumed."
-            )
+            print("\nWarning: Not all expected API responses were consumed.")
             print("Remaining responses:", state["expected_responses"])
 
         print("\n[DEBUG] Final state:")
@@ -386,19 +359,16 @@ def mock_workbench_api(mocker):
 
     # --- Mock Resolver Service ---
     mock_client.resolver = MagicMock()
-    mock_client.resolver.find_or_create_project_and_scan.return_value = (
-        "PRJ-MOCK",
-        "SCN-MOCK",
-        False,
-    )
     mock_client.resolver.find_project.return_value = "PRJ-MOCK"
+    from workbench_agent.api.services.resolver_service import ResolvedScan
+
+    mock_scan = ResolvedScan(code="SCN-MOCK", id=12345, info={})
+    mock_client.resolver.find_scan.side_effect = ScanNotFoundError("Scan not found")
+    mock_client.resolver.create_scan.return_value = mock_scan
     mock_client.resolver.find_project_and_scan.return_value = (
         "PRJ-MOCK",
-        "SCN-MOCK",
-        12345,
+        mock_scan,
     )
-    mock_client.resolver.resolve_id_reuse.return_value = (None, None)
-    mock_client.resolver.ensure_scan_compatible = MagicMock()
 
     # --- Mock Scans Client ---
     mock_client.scans = MagicMock()
@@ -410,9 +380,7 @@ def mock_workbench_api(mocker):
     }
     mock_client.scans.get_dependency_analysis_results.return_value = {}
     mock_client.scans.get_scan_identified_licenses.return_value = []
-    mock_client.scans.get_all_scans.return_value = (
-        []
-    )  # Empty list for scan lookup
+    mock_client.scans.get_all_scans.return_value = []  # Empty list for scan lookup
     mock_client.scans.create.return_value = {"scan_id": 12345}
 
     mock_client.quick_scan = MagicMock()
@@ -420,16 +388,8 @@ def mock_workbench_api(mocker):
 
     # --- Mock Projects Client ---
     mock_client.projects = MagicMock()
-    mock_client.projects.list.return_value = (
-        []
-    )  # Empty list for project lookup
+    mock_client.projects.list.return_value = []  # Empty list for project lookup
     mock_client.projects.create.return_value = {"project_code": "PRJ-MOCK"}
-
-    # --- Mock Upload Service ---
-    mock_client.upload_service = MagicMock()
-    mock_client.upload_service.upload_scan_target.return_value = None
-    mock_client.upload_service.upload_da_results.return_value = None
-    mock_client.upload_service.upload_sbom_file.return_value = None
 
     # --- Mock Vulnerabilities Client ---
     mock_client.vulnerabilities = MagicMock()
@@ -437,12 +397,10 @@ def mock_workbench_api(mocker):
 
     # --- Mock Status Check Service ---
     mock_client.status_check = MagicMock()
-    mock_client.status_check.check_git_clone_status.return_value = (
-        StatusResult(
-            status="FINISHED",
-            is_finished=True,
-            raw_data={"status": "FINISHED", "is_finished": "1"},
-        )
+    mock_client.status_check.check_git_clone_status.return_value = StatusResult(
+        status="FINISHED",
+        is_finished=True,
+        raw_data={"status": "FINISHED", "is_finished": "1"},
     )
     mock_client.status_check.check_scan_status.return_value = StatusResult(
         status="FINISHED",
@@ -464,14 +422,13 @@ def mock_workbench_api(mocker):
         duration=2.0,
         success=True,
     )
-    mock_client.scan_content.check_git_clone_status.return_value = (
-        _git_clone_done
-    )
-    mock_client.scan_content.download_git_and_wait.return_value = (
-        _git_clone_done
-    )
+    mock_client.scan_content.download_git_and_wait.return_value = _git_clone_done
     mock_client.scan_content.download_content_from_git.return_value = True
     mock_client.scan_content.remove_uploaded_content.return_value = True
+    mock_client.scan_content.upload_scan_target.return_value = None
+    mock_client.scan_content.upload_da_results.return_value = None
+    mock_client.scan_content.upload_sbom_file.return_value = None
+    mock_client.scan_content.extract_archives.return_value = True
 
     mock_client.quick_scan_service = MagicMock()
     mock_client.quick_scan_service.scan_one_file.return_value = []
@@ -495,36 +452,28 @@ def mock_workbench_api(mocker):
     mock_client.user_permissions = MagicMock()
     mock_client.user_permissions.can_delete_scan.return_value = True
 
-    # --- Mock Results Service ---
-    mock_client.results = MagicMock()
-    mock_client.results.fetch_results.return_value = {
-        "dependency_analysis": {},
-        "kb_licenses": [],
-        "vulnerabilities": [],
-    }
-    mock_client.results.links = MagicMock()
-    mock_client.results.get_pending_files.return_value = {}
-    mock_client.results.get_policy_warnings.return_value = {
-        "policy_warnings_total": 0
-    }
-    mock_client.results.get_vulnerabilities.return_value = []
+    # --- Mock Policy / Links / domain services for gates and summaries ---
+    mock_client.policy = MagicMock()
+    mock_client.policy.get_policy_warnings.return_value = {"policy_warnings_total": 0}
+    mock_client.links = MagicMock()
+    mock_client.identification = MagicMock()
+    mock_client.identification.get_pending_files.return_value = {}
+    mock_client.vulnerability = MagicMock()
+    mock_client.vulnerability.list_scan_vulnerabilities.return_value = []
 
     # --- Mock Reports Service ---
     mock_client.reports = MagicMock()
     mock_client.reports.resolve_report_types.return_value = {"spdx"}
 
     # --- Mock Internal Client (for version check) ---
-    mock_client.internal = MagicMock()
-    mock_client.internal.get_config.return_value = {"version": "24.3.0"}
+    mock_client.get_workbench_config = MagicMock(return_value={"version": "24.3.0"})
 
     # Patch WorkbenchClient to return our mock when instantiated
     # Use patch.object with context manager for proper cleanup
     import workbench_agent.api.workbench_client
 
     # Store the original __new__ before patching
-    original_new = (
-        workbench_agent.api.workbench_client.WorkbenchClient.__new__
-    )
+    original_new = workbench_agent.api.workbench_client.WorkbenchClient.__new__
 
     def mock_new(cls, *args, **kwargs):
         """Return the mock client instead of creating a real instance."""

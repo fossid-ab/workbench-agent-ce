@@ -79,17 +79,13 @@ class TestScanOperationsParser:
         parser = create_scan_operations_parser()
 
         # Test --run-dependency-analysis with --no-wait
-        args1 = parser.parse_args(
-            ["--run-dependency-analysis", "--no-wait"]
-        )
+        args1 = parser.parse_args(["--run-dependency-analysis", "--no-wait"])
         assert args1.run_dependency_analysis is True
         assert args1.dependency_analysis_only is False
         assert args1.no_wait is True
 
         # Test --dependency-analysis-only with --no-wait
-        args2 = parser.parse_args(
-            ["--dependency-analysis-only", "--no-wait"]
-        )
+        args2 = parser.parse_args(["--dependency-analysis-only", "--no-wait"])
         assert args2.run_dependency_analysis is False
         assert args2.dependency_analysis_only is True
         assert args2.no_wait is True
@@ -99,9 +95,7 @@ class TestScanOperationsParser:
         parser = create_scan_operations_parser()
 
         # parser should accept both flags - validation handles conflicts
-        args = parser.parse_args(
-            ["--run-dependency-analysis", "--dependency-analysis-only"]
-        )
+        args = parser.parse_args(["--run-dependency-analysis", "--dependency-analysis-only"])
         assert args.run_dependency_analysis is True
         assert args.dependency_analysis_only is True
         # Validation logic elsewhere should catch this conflict

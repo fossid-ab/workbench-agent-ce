@@ -1,0 +1,15 @@
+{
+  "operation": "projects_get_policy_warnings_info",
+  "status": "1",
+  "data": {
+    "scans_with_warnings": 1,
+    "warnings_counter": 3,
+    "scans_list": [
+      {
+        "scan_id": 2304,
+        "scan_name": "Identified Test Scan",
+        "scan_code": "Identified_Test_Scan_2297"
+      }
+    ]
+  }
+}

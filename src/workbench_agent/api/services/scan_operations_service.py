@@ -1,14 +1,8 @@
 """
-ScanOperationsService - Handles scan execution operations.
+ScanOperationsService - Control all Scanning-related Operations in Workbench.
 
-This service provides:
-- Scan execution with validation and version awareness
-- Archive extraction orchestration
-- Dependency analysis orchestration
-
-The service handles business logic and payload construction:
-- Service layer: Payload building, orchestration
-- Client layer: Raw HTTP API calls
+Supports KB scanning, dependency analysis run/import, and SBOM import.
+File upload, extraction, and Git ops live in ``ScanContentService``.
 """
 
 import logging
@@ -23,32 +17,14 @@ class ScanOperationsService:
 
     This service handles business logic for:
     - Running KB scans with ID reuse resolution
-    - Extracting archives
-    - Starting dependency analysis
-    - ID reuse name→code resolution
-
-    Architecture:
-    - Service layer: Payload building, orchestration
-    - Client layer: Raw HTTP API calls
+    - Dependency analysis (run or import-only)
+    - SBOM report import
 
     Example:
         >>> scan_ops = ScanOperationsService(scans_client, resolver_service)
-        >>>
-        >>> # Start a scan (ID reuse resolution happens automatically)
-        >>> scan_ops.start_scan(
-        ...     scan_code="scan_code",
-        ...     limit=10,
-        ...     sensitivity=6,
-        ...     autoid_file_licenses=True,
-        ...     id_reuse_project_name="MyProject"  # Resolved automatically
-        ... )
-        >>>
-        >>> # Start archive extraction
-        >>> scan_ops.start_archive_extraction(
-        ...     scan_code="scan_code",
-        ...     recursively_extract_archives=True,
-        ...     jar_file_extraction=True
-        ... )
+        >>> scan_ops.start_scan(scan_code="S1", limit=10, sensitivity=6, ...)
+        >>> scan_ops.start_da_import(scan_code="S1")
+        >>> scan_ops.start_sbom_import(scan_code="S1")
     """
 
     def __init__(self, scans_client, resolver_service):
@@ -63,7 +39,7 @@ class ScanOperationsService:
         self._resolver = resolver_service
         logger.debug("ScanOperationsService initialized")
 
-    # ===== PUBLIC API =====
+    # ===== SCANNING OPERATIONS =====
 
     def start_scan(
         self,
@@ -87,9 +63,9 @@ class ScanOperationsService:
         """
         Start a KB scan with resolved ID reuse parameters.
 
-        This method converts Python-friendly parameter names/types to API
-        format and delegates to ScansClient. ID reuse should be resolved
-        beforehand using resolver.resolve_id_reuse().
+        This method converts parameter names/types to API format and delegates
+        to ScansClient. ID reuse should be resolved beforehand.
+        (e.g. ``utilities.resolve_id_reuse.resolve_id_reuse``).
 
         Args:
             scan_code: The code of the scan to run
@@ -117,9 +93,9 @@ class ScanOperationsService:
             NetworkError: If there are network issues
 
         Example:
-            >>> # Resolve ID reuse first
-            >>> id_type, id_code = resolver.resolve_id_reuse(...)
-            >>> # Start scan with Python-friendly parameter names
+            >>> # Resolve ID reuse source before starting scan
+            >>> from workbench_agent.utilities.resolve_id_reuse import resolve_id_reuse
+            >>> id_type, id_code = resolve_id_reuse(client, params)
             >>> scan_ops.start_scan(
             ...     scan_code="SCAN123",
             ...     limit=10,
@@ -136,24 +112,14 @@ class ScanOperationsService:
             "scan_code": scan_code,
             "limit": str(limit),
             "sensitivity": str(sensitivity),
-            "auto_identification_detect_declaration": (
-                "1" if autoid_file_licenses else "0"
-            ),
-            "auto_identification_detect_copyright": (
-                "1" if autoid_file_copyrights else "0"
-            ),
-            "auto_identification_resolve_pending_ids": (
-                "1" if autoid_pending_ids else "0"
-            ),
+            "auto_identification_detect_declaration": ("1" if autoid_file_licenses else "0"),
+            "auto_identification_detect_copyright": ("1" if autoid_file_copyrights else "0"),
+            "auto_identification_resolve_pending_ids": ("1" if autoid_pending_ids else "0"),
             "delta_only": "1" if delta_scan else "0",
-            "replace_existing_identifications": (
-                "1" if replace_existing_identifications else "0"
-            ),
+            "replace_existing_identifications": ("1" if replace_existing_identifications else "0"),
             "scan_failed_only": "1" if scan_failed_only else "0",
             "full_file_only": "1" if full_file_only else "0",
-            "advanced_match_scoring": (
-                "1" if advanced_match_scoring else "0"
-            ),
+            "advanced_match_scoring": ("1" if advanced_match_scoring else "0"),
         }
 
         # Add ID reuse parameters (already resolved)
@@ -165,23 +131,18 @@ class ScanOperationsService:
 
         # Add dependency analysis parameter if specified
         if run_dependency_analysis is not None:
-            payload_data["run_dependency_analysis"] = (
-                "1" if run_dependency_analysis else "0"
-            )
+            payload_data["run_dependency_analysis"] = "1" if run_dependency_analysis else "0"
 
         # Add match filtering threshold if specified
         if match_filtering_threshold is not None:
-            payload_data["match_filtering_threshold"] = str(
-                match_filtering_threshold
-            )
+            payload_data["match_filtering_threshold"] = str(match_filtering_threshold)
 
         # Add scan_host parameter if provided
         if scan_host is not None:
             payload_data["scan_host"] = scan_host
 
         logger.debug(
-            f"Built run scan payload with {len(payload_data)} parameters "
-            f"for scan '{scan_code}'"
+            f"Built run scan payload with {len(payload_data)} parameters " f"for scan '{scan_code}'"
         )
 
         # Delegate to client for API call
@@ -210,9 +171,7 @@ class ScanOperationsService:
 
         This wraps start_scan with scan_failed_only on.
         """
-        logger.info(
-            f"Starting failed-file scan retry for '{scan_code}'..."
-        )
+        logger.info(f"Starting failed-file scan retry for '{scan_code}'...")
         return self.start_scan(
             scan_code=scan_code,
             limit=limit,
@@ -224,70 +183,13 @@ class ScanOperationsService:
             id_reuse_type=id_reuse_type,
             id_reuse_specific_code=id_reuse_specific_code,
             run_dependency_analysis=run_dependency_analysis,
-            replace_existing_identifications=(
-                replace_existing_identifications
-            ),
+            replace_existing_identifications=(replace_existing_identifications),
             scan_failed_only=True,
             full_file_only=full_file_only,
             advanced_match_scoring=advanced_match_scoring,
             match_filtering_threshold=match_filtering_threshold,
             scan_host=scan_host,
         )
-
-    def start_archive_extraction(
-        self,
-        scan_code: str,
-        recursively_extract_archives: bool,
-        jar_file_extraction: bool,
-        extract_to_directory: bool = False,
-        filename: Optional[str] = None,
-    ) -> bool:
-        """
-        Start archive extraction for a scan with validation.
-
-        This method builds the payload and delegates to ScansClient.
-
-        Args:
-            scan_code: Code of the scan to extract archives for
-            recursively_extract_archives: Whether to recursively extract
-            jar_file_extraction: Whether to extract JAR files
-            extract_to_directory: Whether to extract to a directory
-                (default: False - extracts to flat structure)
-            filename: Specific filename to extract (optional, extracts
-                all if not specified)
-
-        Returns:
-            True if extraction was triggered successfully
-
-        Raises:
-            ApiError: If there are API issues
-            ScanNotFoundError: If the scan doesn't exist
-            NetworkError: If there are network issues
-        """
-        logger.info(f"Extracting archives for scan '{scan_code}'...")
-
-        # Build payload
-        payload_data = {
-            "scan_code": scan_code,
-            "recursively_extract_archives": (
-                str(recursively_extract_archives).lower()
-            ),
-            "jar_file_extraction": str(jar_file_extraction).lower(),
-            "extract_to_directory": "1" if extract_to_directory else "0",
-        }
-
-        # Add optional filename parameter if provided
-        if filename is not None:
-            payload_data["filename"] = filename
-
-        logger.debug(
-            f"Built extract archives payload with "
-            f"{len(payload_data)} parameters for scan '{scan_code}'"
-        )
-
-        # Delegate to client
-        result: bool = self._scans.extract_archives(payload_data)
-        return result
 
     def start_da_only(self, scan_code: str):
         """
@@ -311,12 +213,12 @@ class ScanOperationsService:
             "import_only": "0",
         }
 
-        logger.debug(
-            f"Built dependency analysis payload for scan '{scan_code}'"
-        )
+        logger.debug(f"Built dependency analysis payload for scan '{scan_code}'")
 
         # Delegate to client
         return self._scans.run_dependency_analysis(payload_data)
+
+    # ===== IMPORT OPERATIONS =====
 
     def start_da_import(self, scan_code: str):
         """
@@ -337,18 +239,14 @@ class ScanOperationsService:
         Example:
             >>> scan_ops.start_da_import("SCAN123")
         """
-        logger.info(
-            f"Importing dependency analysis results for '{scan_code}'..."
-        )
+        logger.info(f"Importing dependency analysis results for '{scan_code}'...")
 
         payload_data = {
             "scan_code": scan_code,
             "import_only": "1",
         }
 
-        logger.debug(
-            f"Built dependency analysis import payload for scan '{scan_code}'"
-        )
+        logger.debug(f"Built dependency analysis import payload for scan '{scan_code}'")
 
         # Delegate to client
         return self._scans.run_dependency_analysis(payload_data)

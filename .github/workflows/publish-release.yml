@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Semver without v prefix (must match pyproject.toml), e.g. 0.8.0"
+        description: "Semver without v prefix (must match pyproject.toml), e.g. 0.9.0"
         required: true
         type: string
 

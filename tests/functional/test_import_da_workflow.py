@@ -44,9 +44,7 @@ class TestImportDAWorkflow:
         scan_created = False
         try:
             # Step 1: Import-DA
-            print(
-                f"\n[IMPORT-DA] Step 1: Importing DA results '{unique_scan_name}'"
-            )
+            print(f"\n[IMPORT-DA] Step 1: Importing DA results '{unique_scan_name}'")
             result = subprocess.run(
                 [
                     "workbench-agent",
@@ -145,9 +143,7 @@ class TestImportDAWorkflow:
                 f"STDOUT: {result.stdout}\n"
                 f"STDERR: {result.stderr}"
             )
-            print(
-                f"[IMPORT-DA] Step 4: ✓ Project reports downloaded successfully"
-            )
+            print(f"[IMPORT-DA] Step 4: ✓ Project reports downloaded successfully")
 
             # Step 5: Download Reports (Scan Scope)
             print(f"[IMPORT-DA] Step 5: Downloading scan-level reports")
@@ -176,9 +172,7 @@ class TestImportDAWorkflow:
                 f"STDOUT: {result.stdout}\n"
                 f"STDERR: {result.stderr}"
             )
-            print(
-                f"[IMPORT-DA] Step 5: ✓ Scan reports downloaded successfully"
-            )
+            print(f"[IMPORT-DA] Step 5: ✓ Scan reports downloaded successfully")
             print(f"[IMPORT-DA] ✓ Complete workflow passed!")
         finally:
             if scan_created:

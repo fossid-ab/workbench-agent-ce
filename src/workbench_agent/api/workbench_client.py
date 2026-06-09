@@ -6,13 +6,15 @@ Functionality is organized into domain-specific clients and services.
 """
 
 import logging
-import re
+from typing import Any, Dict
 
 from packaging import version as packaging_version
 
+from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.clients import (
+    ComponentsClient,
     DownloadClient,
-    InternalClient,
+    FilesAndFoldersClient,
     ProjectsClient,
     QuickScanClient,
     ScansClient,
@@ -20,20 +22,24 @@ from workbench_agent.api.clients import (
     UsersClient,
     VulnerabilitiesClient,
 )
-from workbench_agent.api.exceptions import CompatibilityError
-from workbench_agent.api.helpers.base_api import BaseAPI
+from workbench_agent.api.exceptions import ApiError, CompatibilityError
 from workbench_agent.api.services import (
+    ComponentService,
+    DependencyService,
+    IdentificationService,
+    LinksService,
+    PolicyService,
     QuickScanService,
     ReportService,
     ResolverService,
-    ResultsService,
     ScanContentService,
     ScanDeletionService,
     ScanOperationsService,
     StatusCheckService,
-    UploadService,
     UserPermissionsService,
+    VulnerabilityService,
 )
+from workbench_agent.api.utils.version import normalize_workbench_version
 
 logger = logging.getLogger("workbench-agent")
 
@@ -51,19 +57,28 @@ class WorkbenchClient:
     - `vulnerabilities`: Vulnerability queries
     - `quick_scan`: Quick file scanning
     - `users`: User lookup and listing permissions for a user
-    - `internal`: Internal/config operations
+    - `components`: Component catalog (list, create, update, usage)
+    - `component_catalog`: Catalog orchestration (find, resolve, update)
+    - `files_and_folders`: File identification and audit operations
 
     **Services (High-level orchestration):**
     - `resolver`: Resolve project/scan names to codes, create if needed
     - `status_check`: Check status of async operations (specialized methods)
-    - `scan_content`: Manages scan content on the Workbench Server
+    - `scan_content`: Scan file directory (upload, extract, remove, Git)
     - `reports`: Report generation with validation and waiting
-    - `results`: Fetch and aggregate scan results
+    - `policy`: License policy warning counts for a scan
+    - `links`: Version-aware Workbench UI deep links
     - `scan_operations`: Scan execution with standardized behavior
     - `scan_deletion`: Queue scan delete and wait until complete
     - `user_permissions`: Check Workbench permissions for the API user
-    - `upload_service`: File upload operations
     - `quick_scan_service`: Quick single-file scan
+    - `dependencies`: Dependency analysis result read/write workflows
+    - `identification`: Scan file identification read/write workflows
+    - `vulnerability`: CVE listing and VEX create/update
+
+    **Client lifecycle:**
+    - `get_workbench_config()`: Server config from ``internal.getConfig``
+    - `get_workbench_version()`: Normalized version (cached after init check)
 
     Example:
         >>> workbench = WorkbenchClient(api_url, api_user, api_token)
@@ -71,15 +86,13 @@ class WorkbenchClient:
         >>> # Direct API operations via clients
         >>> all_projects = workbench.projects.list_projects()
         >>> scan_info = workbench.scans.get_information(scan_code)
-        >>> workbench.upload_service.upload_scan_target(
+        >>> workbench.scan_content.upload_scan_target(
         ...     scan_code, "./source.zip"
         ... )
         >>>
         >>> # High-level workflows via services
-        >>> p_code, s_code, is_new = (
-        ...     workbench.resolver.find_or_create_project_and_scan(
-        ...         "MyProject", "MyScan", params
-        ...     )
+        >>> result = workbench.resolver.find_or_create(
+        ...     "MyProject", "MyScan", scan_data={}
         ... )
         >>> process_id = workbench.reports.generate_project_report(
         ...     project_code, "xlsx"
@@ -125,14 +138,9 @@ class WorkbenchClient:
 
         # Core infrastructure - BaseAPI handles all HTTP communication
         self._base_api = BaseAPI(api_url, api_user, api_token)
-        logger.debug(
-            f"BaseAPI initialized with URL: {self._base_api.api_url}"
-        )
+        logger.debug(f"BaseAPI initialized with URL: {self._base_api.api_url}")
 
-        # Initialize InternalClient first (needed for version check)
-        self.internal = InternalClient(self._base_api)
-
-        # Check Workbench server version compatibility (also caches version)
+        self._workbench_config: Dict[str, Any] = {}
         self._workbench_version = ""
         self._check_version_compatibility()
 
@@ -147,6 +155,10 @@ class WorkbenchClient:
         self.vulnerabilities = VulnerabilitiesClient(self._base_api)
         self.quick_scan = QuickScanClient(self._base_api)
         self.users = UsersClient(self._base_api)
+        self.components = ComponentsClient(self._base_api)
+        self.files_and_folders = FilesAndFoldersClient(self._base_api)
+
+        self.component_catalog = ComponentService(components_client=self.components)
 
         logger.debug("API clients initialized.")
 
@@ -154,9 +166,7 @@ class WorkbenchClient:
         # Services coordinate multiple clients for complex workflows
         logger.debug("Initializing Services...")
 
-        self.resolver = ResolverService(
-            projects_client=self.projects, scans_client=self.scans
-        )
+        self.resolver = ResolverService(projects_client=self.projects, scans_client=self.scans)
 
         self.status_check = StatusCheckService(
             scans_client=self.scans, projects_client=self.projects
@@ -164,12 +174,11 @@ class WorkbenchClient:
 
         self.scan_content = ScanContentService(
             scans_client=self.scans,
+            uploads_client=self.uploads,
             status_check_service=self.status_check,
         )
 
-        self.quick_scan_service = QuickScanService(
-            quick_scan_client=self.quick_scan
-        )
+        self.quick_scan_service = QuickScanService(quick_scan_client=self.quick_scan)
 
         self.reports = ReportService(
             projects_client=self.projects,
@@ -179,9 +188,30 @@ class WorkbenchClient:
             workbench_version=self._workbench_version,
         )
 
-        self.results = ResultsService(
+        self.dependencies = DependencyService(
             scans_client=self.scans,
+            component_catalog=self.component_catalog,
+        )
+
+        self.identification = IdentificationService(
+            files_and_folders_client=self.files_and_folders,
+            component_catalog=self.component_catalog,
+            scans_client=self.scans,
+        )
+
+        self.vulnerability = VulnerabilityService(
             vulnerabilities_client=self.vulnerabilities,
+        )
+
+        self.policy = PolicyService(
+            scans_client=self.scans,
+            projects_client=self.projects,
+            downloads_client=self.downloads,
+        )
+
+        self.links = LinksService(
+            scans_client=self.scans,
+            api_url=self._base_api.api_url,
             workbench_version=self._workbench_version,
         )
 
@@ -193,8 +223,6 @@ class WorkbenchClient:
             scans_client=self.scans,
             status_check_service=self.status_check,
         )
-
-        self.upload_service = UploadService(uploads_client=self.uploads)
 
         self.user_permissions = UserPermissionsService(
             users_client=self.users,
@@ -221,10 +249,8 @@ class WorkbenchClient:
         MINIMUM_VERSION = "24.3.0"
 
         try:
-            logger.info(
-                "Checking Workbench version compatibility..."
-            )
-            config_data = self.internal.get_config()
+            logger.info("Checking Workbench version compatibility...")
+            config_data = self.get_workbench_config()
             workbench_version = config_data.get("version", "Unknown")
 
             if workbench_version == "Unknown":
@@ -235,23 +261,13 @@ class WorkbenchClient:
                     details={"config_data": config_data},
                 )
 
-            logger.debug(
-                f"Detected Workbench version: {workbench_version}"
-            )
+            logger.debug(f"Detected Workbench version: {workbench_version}")
 
             # Parse and compare versions
             try:
-                # Handle version strings that might have extra info
-                # (e.g., "2025.2.0#19347124129", "2026.1.0.v11#24448141686")
-                # Extract the leading MAJOR.MINOR.PATCH portion
-                version_str = workbench_version.split()[0]
-                version_str = version_str.split("-")[0]
-                version_str = version_str.split("#")[0]
-
-                match = re.match(r"(\d+\.\d+\.\d+)", version_str)
-                if match:
-                    version_str = match.group(1)
-
+                version_str = normalize_workbench_version(workbench_version)
+                if not version_str:
+                    raise packaging_version.InvalidVersion(workbench_version)
                 self._workbench_version = version_str
 
                 parsed_version = packaging_version.parse(version_str)
@@ -324,6 +340,46 @@ class WorkbenchClient:
 
     # ===== PUBLIC METHODS =====
 
+    def get_workbench_config(self) -> Dict[str, Any]:
+        """
+        Return Workbench configuration from ``internal.getConfig``.
+
+        Includes ``version``, ``server_name``, and other server settings.
+        Cached after the first successful fetch (including during init).
+
+        Returns:
+            Configuration dict from the API ``data`` object.
+
+        Raises:
+            ApiError: If the API returns an error or unexpected shape.
+            NetworkError: On connection failures.
+        """
+        if self._workbench_config:
+            return self._workbench_config
+
+        logger.debug("Getting Workbench configuration...")
+        response = self._base_api._send_request(
+            {"group": "internal", "action": "getConfig", "data": {}}
+        )
+
+        if response.get("status") == "1" and "data" in response:
+            data = response["data"]
+            if isinstance(data, dict):
+                self._workbench_config = data
+                logger.debug("Successfully retrieved Workbench configuration.")
+                return data
+            logger.warning(
+                "API returned success for getConfig but 'data' was not " "a dict: %s",
+                type(data),
+            )
+            return {}
+
+        error_msg = response.get("error", f"Unexpected response: {response}")
+        raise ApiError(
+            f"Failed to get configuration: {error_msg}",
+            details=response,
+        )
+
     def get_workbench_version(self) -> str:
         """
         Get the Workbench server version.
@@ -344,8 +400,10 @@ class WorkbenchClient:
         """
         if self._workbench_version:
             return self._workbench_version
-        config_data = self.internal.get_config()
-        return config_data.get("version", "Unknown")
+        config_data = self.get_workbench_config()
+        raw = config_data.get("version", "Unknown")
+        normalized = normalize_workbench_version(str(raw))
+        return normalized or str(raw)
 
     @property
     def api_token(self) -> str:

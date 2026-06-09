@@ -20,9 +20,7 @@ def create_dummy_path(tmp_path, is_dir=False, content="dummy content"):
 class TestScanIntegration:
     """Integration tests for the scan command"""
 
-    def test_scan_success_flow_simple(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_scan_success_flow_simple(self, mock_workbench_api, tmp_path, capsys):
         """
         Integration test for a successful 'scan' command flow.
         Uses the mock_workbench_api fixture for the new WorkbenchClient structure.
@@ -59,20 +57,14 @@ class TestScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code == 0
-                ), "Command should exit with success code"
+                assert return_code == 0, "Command should exit with success code"
 
             # Verify we got a success message in the output
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
-            assert (
-                "Workbench Agent finished successfully" in combined_output
-            )
+            assert "Workbench Agent finished successfully" in combined_output
 
-    def test_scan_with_autoid_flags(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_scan_with_autoid_flags(self, mock_workbench_api, tmp_path, capsys):
         """
         Test scan command with AutoID flags enabled.
         """
@@ -117,9 +109,7 @@ class TestScanIntegration:
             combined_output = captured.out + captured.err
             assert "SCAN" in combined_output
 
-    def test_scan_with_dependency_analysis(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_scan_with_dependency_analysis(self, mock_workbench_api, tmp_path, capsys):
         """
         Test scan command with dependency analysis enabled.
         """

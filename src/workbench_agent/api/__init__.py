@@ -8,6 +8,7 @@ from workbench_agent.api.exceptions import (
     ApiError,
     AuthenticationError,
     CompatibilityError,
+    FileSystemError,
     NetworkError,
     NotFoundError,
     ProcessError,
@@ -15,6 +16,7 @@ from workbench_agent.api.exceptions import (
     ProjectNotFoundError,
     ScanNotFoundError,
     UnsupportedStatusCheck,
+    ValidationError,
     WorkbenchApiError,
 )
 from workbench_agent.api.workbench_client import WorkbenchClient
@@ -33,4 +35,6 @@ __all__ = [
     "ProcessTimeoutError",
     "UnsupportedStatusCheck",
     "CompatibilityError",
+    "ValidationError",
+    "FileSystemError",
 ]

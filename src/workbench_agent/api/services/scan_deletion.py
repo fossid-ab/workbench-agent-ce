@@ -1,7 +1,7 @@
 """
 ScanDeletionService - Queue scan deletion and wait until the job completes.
 
-Orchestrates :class:`~workbench_agent.api.clients.scans_api.ScansClient`
+Orchestrates :class:`~workbench_agent.api.clients.scans.ScansClient`
 ``delete`` with :class:`~workbench_agent.api.services.status_check_service.StatusCheckService`
 ``check_delete_scan_status`` (polling).
 
@@ -32,10 +32,7 @@ def _is_delete_scan_not_found_error(details: Optional[Dict[str, Any]]) -> bool:
         return True
     mp = details.get("message_parameters")
     if isinstance(mp, dict):
-        return (
-            mp.get("table") == "scans"
-            and mp.get("rowidentifier") == "scan_code"
-        )
+        return mp.get("table") == "scans" and mp.get("rowidentifier") == "scan_code"
     return False
 
 
@@ -113,9 +110,7 @@ class ScanDeletionService:
             raise
 
         process_id = _process_id_from_delete_response(response)
-        logger.debug(
-            f"Delete job queued for '{scan_code}', process_id={process_id}"
-        )
+        logger.debug(f"Delete job queued for '{scan_code}', process_id={process_id}")
 
         return self._status_check.check_delete_scan_status(
             scan_code,

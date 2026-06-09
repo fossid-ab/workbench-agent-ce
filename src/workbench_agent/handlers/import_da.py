@@ -14,6 +14,9 @@ from workbench_agent.utilities.post_import_summary import print_import_summary
 from workbench_agent.utilities.pre_flight_checks import (
     import_da_pre_flight_check,
 )
+from workbench_agent.utilities.resolve_project_scan import (
+    find_or_create_project_and_scan,
+)
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -22,9 +25,7 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_import_da(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> bool:
+def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     """
     Handler for the 'import-da' command.
 
@@ -66,10 +67,9 @@ def handle_import_da(
     # Resolve project and scan (find or create)
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    _, scan_code, scan_is_new = client.resolver.find_or_create_project_and_scan(
-        project_name=params.project_name,
-        scan_name=params.scan_name,
-        params=params,
+    _, scan_code, scan_is_new = find_or_create_project_and_scan(
+        client,
+        params,
     )
 
     # Ensure scan is idle before starting dependency analysis import
@@ -78,14 +78,11 @@ def handle_import_da(
     # Upload dependency analysis file
     print("\n--- Uploading Dependency Analysis File ---")
     try:
-        client.upload_service.upload_da_results(
-            scan_code=scan_code, path=params.path
-        )
+        client.scan_content.upload_da_results(scan_code=scan_code, path=params.path)
         print("Dependency analysis results uploaded successfully!")
     except Exception as e:
         logger.error(
-            f"Failed to upload dependency analysis file for "
-            f"'{scan_code}': {e}",
+            f"Failed to upload dependency analysis file for " f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(
@@ -101,8 +98,7 @@ def handle_import_da(
         print("Dependency analysis import initiated successfully.")
     except Exception as e:
         logger.error(
-            f"Failed to start dependency analysis import for "
-            f"'{scan_code}': {e}",
+            f"Failed to start dependency analysis import for " f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(
@@ -128,22 +124,19 @@ def handle_import_da(
 
     except ProcessTimeoutError:
         logger.error(
-            f"Error during dependency analysis import for "
-            f"'{scan_code}': timeout",
+            f"Error during dependency analysis import for " f"'{scan_code}': timeout",
             exc_info=True,
         )
         raise
     except ProcessError:
         logger.error(
-            f"Error during dependency analysis import for "
-            f"'{scan_code}': process error",
+            f"Error during dependency analysis import for " f"'{scan_code}': process error",
             exc_info=True,
         )
         raise
     except Exception as e:
         logger.error(
-            f"Unexpected error during dependency analysis import for "
-            f"'{scan_code}': {e}",
+            f"Unexpected error during dependency analysis import for " f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(

@@ -14,6 +14,11 @@ from typing import TYPE_CHECKING, Any, Dict
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
 
+from workbench_agent.api.exceptions import ApiError, NetworkError
+from workbench_agent.utilities.vulnerability_display import (
+    print_vulnerability_results,
+)
+
 logger = logging.getLogger("workbench-agent")
 
 
@@ -25,9 +30,8 @@ def fetch_results(
     """
     Fetches requested scan results based on --show-* flags.
 
-    This delegates to ResultsService.fetch_results() for
-    fetching multiple result types. It allows partial
-    results to be returned even if some fetches fail.
+    Orchestrates domain services on the Workbench client. Partial
+    results are returned even if some fetches fail.
 
     Args:
         workbench: WorkbenchClient instance
@@ -49,9 +53,7 @@ def fetch_results(
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
     should_fetch_metrics = getattr(params, "show_scan_metrics", False)
     should_fetch_policy = getattr(params, "show_policy_warnings", False)
-    should_fetch_vulnerabilities = getattr(
-        params, "show_vulnerabilities", False
-    )
+    should_fetch_vulnerabilities = getattr(params, "show_vulnerabilities", False)
 
     if not any(
         [
@@ -64,18 +66,91 @@ def fetch_results(
         ]
     ):
         print("\n=== No Results Requested ===")
-        print(
-            "Add flags like --show-licenses, --show-vulnerabilities, etc. to see results."
-        )
+        print("Add flags like --show-licenses, --show-vulnerabilities, etc. to see results.")
         return {}
 
-    # Delegate to ResultsService.fetch_results()
-    return workbench.results.fetch_results(scan_code, params)
+    logger.debug(
+        "Fetching requested results for scan '%s' based on --show-* flags",
+        scan_code,
+    )
+    collected_results: Dict[str, Any] = {}
+
+    if should_fetch_licenses or should_fetch_dependencies:
+        try:
+            da_results = workbench.dependencies.list_dependencies(scan_code)
+            if da_results:
+                collected_results["dependency_analysis"] = da_results
+                logger.info(
+                    "Fetched %d dependency analysis results",
+                    len(da_results),
+                )
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch Dependency Analysis results: %s", e)
+            print(f"Warning: Could not fetch Dependency Analysis results: {e}")
+
+    if should_fetch_licenses:
+        try:
+            kb_licenses = workbench.identification.get_unique_identified_licenses(scan_code)
+            if kb_licenses:
+                collected_results["kb_licenses"] = sorted(
+                    kb_licenses,
+                    key=lambda x: x.get("identifier", "").lower(),
+                )
+                logger.info("Fetched %d KB licenses", len(kb_licenses))
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch KB Identified Licenses: %s", e)
+            print(f"Warning: Could not fetch KB Identified Licenses: {e}")
+
+    if should_fetch_components:
+        try:
+            kb_components = workbench.identification.get_identified_components(scan_code)
+            if kb_components:
+                collected_results["kb_components"] = sorted(
+                    kb_components,
+                    key=lambda x: (
+                        x.get("name", "").lower(),
+                        x.get("version", ""),
+                    ),
+                )
+                logger.info("Fetched %d KB components", len(kb_components))
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch KB Identified Scan Components: %s", e)
+            print("Warning: Could not fetch KB Identified Scan Components: " f"{e}")
+
+    if should_fetch_metrics:
+        try:
+            metrics = workbench.identification.get_scan_metrics(scan_code)
+            if metrics:
+                collected_results["scan_metrics"] = metrics
+                logger.info("Fetched scan metrics")
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch Scan File Metrics: %s", e)
+            print(f"Warning: Could not fetch Scan File Metrics: {e}")
+
+    if should_fetch_policy:
+        try:
+            warnings = workbench.policy.get_policy_warnings(scan_code)
+            if warnings:
+                collected_results["policy_warnings"] = warnings
+                logger.info("Fetched policy warnings counter")
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch Scan Policy Warnings: %s", e)
+            print(f"Warning: Could not fetch Scan Policy Warnings: {e}")
+
+    if should_fetch_vulnerabilities:
+        try:
+            vulnerabilities = workbench.vulnerability.list_scan_vulnerabilities(scan_code)
+            if vulnerabilities:
+                collected_results["vulnerabilities"] = vulnerabilities
+                logger.info("Fetched %d vulnerabilities", len(vulnerabilities))
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch Vulnerabilities: %s", e)
+            print(f"Warning: Could not fetch Vulnerabilities: {e}")
+
+    return collected_results
 
 
-def display_results(
-    collected_results: Dict[str, Any], params: argparse.Namespace
-) -> bool:
+def display_results(collected_results: Dict[str, Any], params: argparse.Namespace) -> bool:
     """
     Displays results based on the collected data.
     """
@@ -84,9 +159,7 @@ def display_results(
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
     should_fetch_metrics = getattr(params, "show_scan_metrics", False)
     should_fetch_policy = getattr(params, "show_policy_warnings", False)
-    should_fetch_vulnerabilities = getattr(
-        params, "show_vulnerabilities", False
-    )
+    should_fetch_vulnerabilities = getattr(params, "show_vulnerabilities", False)
 
     da_results_data = collected_results.get("dependency_analysis")
     kb_licenses_data = collected_results.get("kb_licenses")
@@ -104,9 +177,7 @@ def display_results(
         displayed_something = True
         if scan_metrics_data:
             total = scan_metrics_data.get("total", "N/A")
-            pending = scan_metrics_data.get(
-                "pending_identification", "N/A"
-            )
+            pending = scan_metrics_data.get("pending_identification", "N/A")
             identified = scan_metrics_data.get("identified_files", "N/A")
             no_match = scan_metrics_data.get("without_matches", "N/A")
             print(f"  - Total Files Scanned: {total}")
@@ -161,9 +232,7 @@ def display_results(
         if kb_components_data:
             print("From Signature Scanning:")
             for comp in kb_components_data:
-                print(
-                    f"  - {comp.get('name', 'N/A')} : {comp.get('version', 'N/A')}"
-                )
+                print(f"  - {comp.get('name', 'N/A')} : {comp.get('version', 'N/A')}")
             print("-" * 25)
         else:
             print("No KB Scan Components found to report.")
@@ -173,9 +242,7 @@ def display_results(
         print("\n=== Dependency Analysis Results ===")
         displayed_something = True
         if da_results_data:
-            print(
-                "Component, Version, Scope, and License of Dependencies:"
-            )
+            print("Component, Version, Scope, and License of Dependencies:")
             da_results_data.sort(
                 key=lambda x: (
                     x.get("name", "").lower(),
@@ -202,9 +269,7 @@ def display_results(
                         AttributeError,
                         TypeError,
                     ) as scope_err:
-                        logger.debug(
-                            f"Could not parse scope for {comp.get('name')}: {scope_err}"
-                        )
+                        logger.debug(f"Could not parse scope for {comp.get('name')}: {scope_err}")
                 print(
                     f"  - {comp.get('name', 'N/A')} : {comp.get('version', 'N/A')} "
                     f"(Scope: {scopes_display}, License: {comp.get('license_identifier', 'N/A')})"
@@ -219,17 +284,9 @@ def display_results(
         displayed_something = True
         if policy_warnings_data is not None:
             # Check if we have real data with non-zero values
-            total_warnings = int(
-                policy_warnings_data.get("policy_warnings_total", 0)
-            )
-            files_with_warnings = int(
-                policy_warnings_data.get(
-                    "identified_files_with_warnings", 0
-                )
-            )
-            deps_with_warnings = int(
-                policy_warnings_data.get("dependencies_with_warnings", 0)
-            )
+            total_warnings = int(policy_warnings_data.get("policy_warnings_total", 0))
+            files_with_warnings = int(policy_warnings_data.get("identified_files_with_warnings", 0))
+            deps_with_warnings = int(policy_warnings_data.get("dependencies_with_warnings", 0))
 
             if total_warnings > 0:
                 print(
@@ -240,107 +297,16 @@ def display_results(
             else:
                 print("No policy warnings found.")
         else:
-            print(
-                "Policy warnings counter could not be fetched."
-            )
+            print("Policy warnings counter could not be fetched.")
         print("-" * 25)
 
     # Display Vulnerability Summary
     if should_fetch_vulnerabilities:
-        print("\n=== Vulnerability Summary ===")
         displayed_something = True
-        if vulnerabilities_data:
-            num_cves = len(vulnerabilities_data)
-            unique_components = set()
-            severity_counts = {
-                "CRITICAL": 0,
-                "HIGH": 0,
-                "MEDIUM": 0,
-                "LOW": 0,
-                "UNKNOWN": 0,
-            }
-
-            for vuln in vulnerabilities_data:
-                comp_name = vuln.get("component_name", "Unknown")
-                comp_version = vuln.get("component_version", "Unknown")
-                unique_components.add(f"{comp_name}:{comp_version}")
-                severity = vuln.get("severity", "UNKNOWN").upper()
-                severity_counts[severity] = (
-                    severity_counts.get(severity, 0) + 1
-                )
-
-            num_unique_components = len(unique_components)
-            print(
-                f"{num_cves} CVEs affect {num_unique_components} components."
-            )
-            print(
-                f"By CVSS Score, "
-                f"{severity_counts['CRITICAL']} are Critical, "
-                f"{severity_counts['HIGH']} are High, "
-                f"{severity_counts['MEDIUM']} are Medium, and "
-                f"{severity_counts['LOW']} are Low."
-            )
-
-            if severity_counts["UNKNOWN"] > 0:
-                print(f"  - Unknown:  {severity_counts['UNKNOWN']}")
-
-        if vulnerabilities_data:
-            print("\n=== Top Vulnerable Components ===")
-            components_vulns = {}
-            # Group vulnerabilities by component:version
-            for vuln in vulnerabilities_data:
-                comp_name = vuln.get("component_name", "UnknownComponent")
-                comp_version = vuln.get(
-                    "component_version", "UnknownVersion"
-                )
-                comp_key = f"{comp_name}:{comp_version}"
-                if comp_key not in components_vulns:
-                    components_vulns[comp_key] = []
-                components_vulns[comp_key].append(vuln)
-
-            # Sort components by the number of vulnerabilities (descending)
-            sorted_components = sorted(
-                components_vulns.items(),
-                key=lambda item: len(item[1]),
-                reverse=True,
-            )
-
-            # Define severity order for sorting vulnerabilities
-            severity_order = {
-                "CRITICAL": 4,
-                "HIGH": 3,
-                "MEDIUM": 2,
-                "LOW": 1,
-                "UNKNOWN": 0,
-            }
-
-            for comp_key, vulns_list in sorted_components:
-                print(f"\n{comp_key} - {len(vulns_list)} vulnerabilities")
-
-                # Sort vulnerabilities within this component by severity
-                sorted_vulns_list = sorted(
-                    vulns_list,
-                    key=lambda v: severity_order.get(
-                        v.get("severity", "UNKNOWN").upper(), 0
-                    ),
-                    reverse=True,
-                )
-
-                # Display top 5 vulnerabilities for each component
-                for vuln in sorted_vulns_list[:5]:
-                    severity = vuln.get("severity", "UNKNOWN").upper()
-                    cve = vuln.get("cve", "NO_CVE_ID")
-                    print(f"  - [{severity}] {cve}")
-                if len(sorted_vulns_list) > 5:
-                    print(f"  ... and {len(sorted_vulns_list) - 5} more.")
-        else:
-            print("No vulnerabilities found.")
-        print("-" * 25)
+        print_vulnerability_results(vulnerabilities_data)
 
     if not displayed_something:
-        print(
-            "No results were successfully fetched."
-        )
+        print("No results were successfully fetched.")
     print("------------------------------------")
 
     return displayed_something
@@ -394,6 +360,4 @@ def fetch_display_save_results(
             print(f"\nSaving collected results to '{save_path}'...")
             save_results_to_file(save_path, collected_results)
         else:
-            print(
-                "\nNo results were successfully collected, skipping save."
-            )
+            print("\nNo results were successfully collected, skipping save.")

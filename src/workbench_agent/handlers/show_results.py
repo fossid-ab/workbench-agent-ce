@@ -4,14 +4,6 @@ import argparse
 import logging
 from typing import TYPE_CHECKING
 
-from workbench_agent.api.exceptions import (
-    ApiError,
-    NetworkError,
-    ProcessError,
-    ProcessTimeoutError,
-    UnsupportedStatusCheck,
-)
-from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.pre_flight_checks import (
     show_results_pre_flight_check,
@@ -27,9 +19,7 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_show_results(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> bool:
+def handle_show_results(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     """
     Handler for the 'show-results' command.
 
@@ -66,21 +56,16 @@ def handle_show_results(
 
     # Resolve project and scan (find only - don't create)
     print("\nResolving scan for results display...")
-    logger.info(
-        f"Looking for scan '{params.scan_name}' in project "
-        f"'{params.project_name}'"
-    )
+    logger.info(f"Looking for scan '{params.scan_name}' in project " f"'{params.project_name}'")
 
     # Use explicit resolver API (read-only)
-    project_code, scan_code, scan_id = (
-        client.resolver.find_project_and_scan(
-            params.project_name,
-            params.scan_name,
-        )
+    project_code, scan = client.resolver.find_project_and_scan(
+        params.project_name,
+        params.scan_name,
     )
-    logger.debug(
-        f"Found project: {project_code}, scan: {scan_code} (ID: {scan_id})"
-    )
+    scan_code = scan.code
+    scan_id = scan.id
+    logger.debug(f"Found project: {project_code}, scan: {scan_code} (ID: {scan_id})")
 
     # Ensure scan processes are idle before fetching results
     show_results_pre_flight_check(client, scan_code, params)

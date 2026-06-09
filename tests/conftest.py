@@ -1,4 +1,5 @@
 import argparse
+import importlib.util
 from unittest.mock import MagicMock, Mock, call, mock_open, patch
 
 import pytest
@@ -8,9 +9,7 @@ import requests
 from workbench_agent.api import WorkbenchClient
 
 # Add a fallback mocker fixture for environments where pytest-mock is not installed
-try:
-    import pytest_mock
-except ImportError:
+if importlib.util.find_spec("pytest_mock") is None:
 
     @pytest.fixture
     def mocker():
@@ -88,8 +87,7 @@ def workbench_inst(mock_session, mocker):
         )
         # Replace the session with our mock
         wb._base_api.session = mock_session
-        # Mock the internal client's get_config for any version checks
-        wb.internal.get_config = mock_get_config
+        wb.get_workbench_config = mock_get_config
         return wb
 
 

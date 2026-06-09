@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 from workbench_agent.api.exceptions import ProcessError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.pre_flight_checks import scan_pre_flight_check
+from workbench_agent.utilities.resolve_project_scan import (
+    find_or_create_project_and_scan,
+)
 from workbench_agent.utilities.scan_workflows import (
     execute_scan_workflow,
 )
@@ -19,9 +22,7 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_scan(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> bool:
+def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     """
     Handler for the 'scan' command.
 
@@ -67,12 +68,9 @@ def handle_scan(
     # ===== STEP 1: Resolve project and scan =====
     print("\n--- Project and Scan Checks ---")
     print("Checking target Project and Scan...")
-    _, scan_code, scan_is_new = (
-        client.resolver.find_or_create_project_and_scan(
-            project_name=params.project_name,
-            scan_name=params.scan_name,
-            params=params,
-        )
+    _, scan_code, scan_is_new = find_or_create_project_and_scan(
+        client,
+        params,
     )
 
     # ===== STEP 2: Pre-Flight Checks =====
@@ -86,12 +84,8 @@ def handle_scan(
             client.scan_content.remove_uploaded_content(scan_code, "")
             print("Successfully cleared existing scan content.")
         except Exception as e:
-            logger.warning(
-                f"Failed to clear existing scan content: {e}"
-            )
-            print(
-                f"Warning: Could not clear existing scan content: {e}"
-            )
+            logger.warning(f"Failed to clear existing scan content: {e}")
+            print(f"Warning: Could not clear existing scan content: {e}")
             print("Continuing with upload...")
     elif params.incremental_upload and not scan_is_new:
         print("Incremental Upload - existing content will be kept.")
@@ -102,48 +96,34 @@ def handle_scan(
     print("\n--- Preparing Scan Target ---")
     with prepare_scan_target(params.path) as upload_path:
         print("\nUploading Code to Workbench...")
-        client.upload_service.upload_scan_target(scan_code, upload_path)
+        client.scan_content.upload_scan_target(scan_code, upload_path)
 
     # ===== STEP 5: Extract archives =====
     print("\nExtracting Uploaded Archive...")
-    extraction_triggered = (
-        client.scan_operations.start_archive_extraction(
-            scan_code=scan_code,
-            recursively_extract_archives=(
-                params.recursively_extract_archives
-            ),
-            jar_file_extraction=params.jar_file_extraction,
-        )
+    extraction_triggered = client.scan_content.extract_archives(
+        scan_code=scan_code,
+        recursively_extract_archives=(params.recursively_extract_archives),
+        jar_file_extraction=params.jar_file_extraction,
     )
 
     if extraction_triggered:
-        extraction_result = (
-            client.status_check.check_extract_archives_status(
-                scan_code,
-                wait=True,
-                wait_retry_count=params.scan_number_of_tries,
-                wait_retry_interval=5,
-            )
+        extraction_result = client.status_check.check_extract_archives_status(
+            scan_code,
+            wait=True,
+            wait_retry_count=params.scan_number_of_tries,
+            wait_retry_interval=5,
         )
-        durations["extraction_duration"] = (
-            extraction_result.duration or 0.0
-        )
+        durations["extraction_duration"] = extraction_result.duration or 0.0
 
         if extraction_result.status in {"FAILED", "CANCELLED"}:
             error_msg = (
                 extraction_result.error_message
-                or "Archive extraction failed. "
-                "Scan can not continue."
+                or "Archive extraction failed. " "Scan can not continue."
             )
-            raise ProcessError(
-                f"Archive extraction failed for scan "
-                f"'{scan_code}': {error_msg}"
-            )
+            raise ProcessError(f"Archive extraction failed for scan " f"'{scan_code}': {error_msg}")
     else:
         print("No archives to extract. Continuing with scan...")
 
     # ===== STEP 6: Run Scans =====
     print("\n--- Running Scans ---")
-    return execute_scan_workflow(
-        client, params, scan_code, durations
-    )
+    return execute_scan_workflow(client, params, scan_code, durations)

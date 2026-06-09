@@ -72,12 +72,8 @@ class QuickScanClient:
 
         response = self._api._send_request(payload)
         if response.get("status") != "1":
-            error_msg = response.get(
-                "error", f"Unexpected response: {response}"
-            )
-            raise ApiError(
-                f"Quick scan failed: {error_msg}", details=response
-            )
+            error_msg = response.get("error", f"Unexpected response: {response}")
+            raise ApiError(f"Quick scan failed: {error_msg}", details=response)
 
         results_raw = response.get("data", [])
         if not isinstance(results_raw, list):
@@ -95,28 +91,18 @@ class QuickScanClient:
                 try:
                     result = json.loads(item)
                 except json.JSONDecodeError:
-                    logger.warning(
-                        "Failed to parse quick scan result item as JSON; "
-                        "skipping"
-                    )
+                    logger.warning("Failed to parse quick scan result item as JSON; " "skipping")
                     continue
             else:
                 continue
 
             # Normalize legacy format: convert "classification" to "noise"
             if "classification" in result and "noise" not in result:
-                logger.debug(
-                    "Normalizing legacy quick scan response "
-                    "(classification → noise)"
-                )
+                logger.debug("Normalizing legacy quick scan response " "(classification → noise)")
                 # Convert legacy "classification" to "noise"
-                result["noise"] = {
-                    "classification": result.pop("classification")
-                }
+                result["noise"] = {"classification": result.pop("classification")}
 
             parsed_results.append(result)
 
-        logger.debug(
-            "Quick scan returned %d parsed results", len(parsed_results)
-        )
+        logger.debug("Quick scan returned %d parsed results", len(parsed_results))
         return parsed_results

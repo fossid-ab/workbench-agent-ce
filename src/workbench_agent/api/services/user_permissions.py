@@ -1,9 +1,7 @@
 """
 UserPermissionsService - Resolve if the API user can perform operations.
 
-Uses :class:`~workbench_agent.api.clients.users_api.UsersClient` and
-:class:`~workbench_agent.api.clients.scans_api.ScansClient` so handlers can
-check permissions (e.g. ``can_delete_scan``) before running an operation.
+Uses API clients to check permissions - use as needed before operations.
 """
 
 import logging
@@ -17,10 +15,7 @@ PERMISSION_SCAN_DELETE_ANY = "SCAN_DELETE_ANY"
 
 class UserPermissionsService:
     """
-    Service to check permissions for the configured API user.
-
-    Permissions are fetched lazily via ``get_user_permissions_list`` using
-    ``searched_username`` (the same string as ``--api-user``).
+    Check permissions for the configured API user.
 
     Example:
         >>> svc = UserPermissionsService(users, scans, api_user="alice@corp")
@@ -71,16 +66,14 @@ class UserPermissionsService:
 
     def can_delete_scan(self, scan_code: str) -> bool:
         """
-        Return True if the API user may delete this scan.
+        Checks if the API user can delete a scan.
 
         **Yes** if **either** is true:
 
-        1. ``scans/get_information`` → ``username`` equals the configured API
-           user (``--api-user``), after stripping whitespace.
-        2. The user has global scan delete permission (``SCAN_DELETE_ANY``).
+        1. `scans/get_information` → `username` equals the API user.
+        2. The user has global scan delete permission (SCAN_DELETE_ANY).
 
-        Owner match is checked first so typical ``own scan`` deletes need only
-        one API call (``get_information``) and never load permission rows.
+        Scan ownership is checked first for efficiency.
 
         Raises:
             ScanNotFoundError: If ``scan_code`` does not exist.

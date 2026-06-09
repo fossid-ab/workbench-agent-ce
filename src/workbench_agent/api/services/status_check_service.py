@@ -15,7 +15,7 @@ Architecture:
 
 import logging
 import time
-from typing import Any, Dict, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 from workbench_agent.api.exceptions import UnsupportedStatusCheck
 from workbench_agent.api.utils.process_waiter import (
@@ -85,9 +85,7 @@ class StatusCheckService:
     # STATUS ACCESSOR METHODS
     # =====================================================================
 
-    def _git_status_accessor(
-        self, data: Union[Dict[str, Any], str]
-    ) -> str:
+    def _git_status_accessor(self, data: Union[Dict[str, Any], str]) -> str:
         """
         Status accessor for git clone operations.
 
@@ -126,18 +124,12 @@ class StatusCheckService:
 
             # Treat "NOT STARTED" as NEW (process hasn't been requested)
             if raw_status == "NOT STARTED":
-                logger.debug(
-                    "Git operation status is NOT STARTED - "
-                    "treating as NEW"
-                )
+                logger.debug("Git operation status is NOT STARTED - " "treating as NEW")
                 return "NEW"
 
             # Normalize "NOT FINISHED" to "RUNNING" for consistency
             if raw_status == "NOT FINISHED":
-                logger.debug(
-                    "Git operation status is NOT FINISHED - "
-                    "treating as RUNNING"
-                )
+                logger.debug("Git operation status is NOT FINISHED - " "treating as RUNNING")
                 return "RUNNING"
 
             return raw_status
@@ -184,9 +176,7 @@ class StatusCheckService:
                 progress_state_upper = str(progress_state).upper()
                 # Preserve NEW state (don't normalize to FINISHED)
                 if progress_state_upper == "NEW":
-                    logger.debug(
-                        "Scan progress_state is NEW - preserving NEW state"
-                    )
+                    logger.debug("Scan progress_state is NEW - preserving NEW state")
                     return "NEW"
                 return progress_state_upper
 
@@ -195,8 +185,7 @@ class StatusCheckService:
             if is_finished is not None:
                 # Handle both boolean and string representations
                 if (isinstance(is_finished, bool) and is_finished) or (
-                    isinstance(is_finished, str)
-                    and is_finished.lower() in ("1", "true")
+                    isinstance(is_finished, str) and is_finished.lower() in ("1", "true")
                 ):
                     # is_finished=true, but we need to check if it's a failure
                     status_field = data.get("status", "").upper()
@@ -219,9 +208,7 @@ class StatusCheckService:
                 return status_upper
 
             # No status information found
-            logger.warning(
-                f"No status information found in scan data: {data}"
-            )
+            logger.warning(f"No status information found in scan data: {data}")
             return "UNKNOWN"
 
         except Exception as e:
@@ -254,23 +241,16 @@ class StatusCheckService:
                 progress_state_upper = str(progress_state).upper()
                 # Preserve NEW state (don't normalize to FINISHED)
                 if progress_state_upper == "NEW":
-                    logger.debug(
-                        "Project report progress_state is NEW - "
-                        "preserving NEW state"
-                    )
+                    logger.debug("Project report progress_state is NEW - " "preserving NEW state")
                     return "NEW"
                 return progress_state_upper
 
             # No progress_state found
-            logger.warning(
-                f"No progress_state in project report data: {data}"
-            )
+            logger.warning(f"No progress_state in project report data: {data}")
             return "UNKNOWN"
 
         except Exception as e:
-            logger.warning(
-                f"Error processing project report status data: {e}"
-            )
+            logger.warning(f"Error processing project report status data: {e}")
             return "ACCESS_ERROR"
 
     # =====================================================================
@@ -279,9 +259,7 @@ class StatusCheckService:
 
     def _get_git_clone_status(self, scan_code: str) -> StatusResult:
         """Collect git clone status without waiting."""
-        status_data = self._scans.check_status_download_content_from_git(
-            scan_code
-        )
+        status_data = self._scans.check_status_download_content_from_git(scan_code)
         normalized_status = self._git_status_accessor(status_data)
         return StatusResult(
             status=normalized_status,
@@ -297,13 +275,9 @@ class StatusCheckService:
             raw_data=status_data,
         )
 
-    def _get_dependency_analysis_status(
-        self, scan_code: str
-    ) -> StatusResult:
+    def _get_dependency_analysis_status(self, scan_code: str) -> StatusResult:
         """Collect dependency analysis status without waiting."""
-        status_data = self._scans.check_status(
-            scan_code, "DEPENDENCY_ANALYSIS"
-        )
+        status_data = self._scans.check_status(scan_code, "DEPENDENCY_ANALYSIS")
         normalized_status = self._standard_scan_status_accessor(status_data)
         return StatusResult(
             status=normalized_status,
@@ -328,9 +302,7 @@ class StatusCheckService:
             raw_data=status_data,
         )
 
-    def _get_scan_report_status(
-        self, scan_code: str, process_id: int
-    ) -> StatusResult:
+    def _get_scan_report_status(self, scan_code: str, process_id: int) -> StatusResult:
         """Collect scan report generation status without waiting."""
         status_data = self._scans.check_status(
             scan_code, "REPORT_GENERATION", process_id=str(process_id)
@@ -341,33 +313,25 @@ class StatusCheckService:
             raw_data=status_data,
         )
 
-    def _get_project_report_status(
-        self, process_id: int, project_code: str
-    ) -> StatusResult:
+    def _get_project_report_status(self, process_id: int, project_code: str) -> StatusResult:
         """Collect project report generation status without waiting."""
         raw_status_data = self._projects.check_status(
             process_id=int(process_id), process_type="REPORT_GENERATION"
         )
-        normalized_status = self._project_report_status_accessor(
-            raw_status_data
-        )
+        normalized_status = self._project_report_status_accessor(raw_status_data)
         return StatusResult(
             status=normalized_status,
             raw_data=raw_status_data,
         )
 
-    def _get_delete_scan_status(
-        self, scan_code: str, process_id: int
-    ) -> StatusResult:
+    def _get_delete_scan_status(self, scan_code: str, process_id: int) -> StatusResult:
         """Collect scan deletion status without waiting.
 
         Uses ``process_id`` and omits ``scan_code`` in the payload.
         After deletion the scan no longer exists and including ``scan_code``
         causes ``row_not_found`` on ``check_status``.
         """
-        status_data = self._scans.check_status(
-            None, "DELETE_SCAN", process_id=process_id
-        )
+        status_data = self._scans.check_status(None, "DELETE_SCAN", process_id=process_id)
         normalized_status = self._standard_scan_status_accessor(status_data)
         return StatusResult(
             status=normalized_status,
@@ -419,7 +383,7 @@ class StatusCheckService:
         wait: bool = False,
         wait_retry_count: int = 360,
         wait_retry_interval: int = 10,
-        should_track_files: bool = False,
+        progress_callback: Optional[Callable[[StatusResult, int, int], None]] = None,
     ) -> StatusResult:
         """
         Check the status of a KB scan operation.
@@ -431,20 +395,14 @@ class StatusCheckService:
                 only used if wait=True)
             wait_retry_interval: Seconds between attempts when waiting
                 (default: 10, only used if wait=True)
-            should_track_files: Show detailed file progress when waiting
-                (default: False, only used if wait=True)
+            progress_callback: Optional callback for wait progress display
+                (only used if wait=True)
 
         Returns:
             StatusResult. When wait=True, duration will be populated and
             status will be terminal (FINISHED, FAILED, or CANCELLED).
         """
         if wait:
-            progress_callback = None
-            if should_track_files:
-                progress_callback = self._create_scan_progress_callback(
-                    scan_code
-                )
-
             return wait_for_completion(
                 check_function=lambda: self._get_scan_status(scan_code),
                 max_tries=wait_retry_count,
@@ -478,9 +436,7 @@ class StatusCheckService:
         """
         if wait:
             return wait_for_completion(
-                check_function=lambda: self._get_dependency_analysis_status(
-                    scan_code
-                ),
+                check_function=lambda: self._get_dependency_analysis_status(scan_code),
                 max_tries=wait_retry_count,
                 wait_interval=wait_retry_interval,
                 operation_name=f"Dependency Analysis '{scan_code}'",
@@ -512,9 +468,7 @@ class StatusCheckService:
         try:
             if wait:
                 return wait_for_completion(
-                    check_function=lambda: self._get_extract_archives_status(
-                        scan_code
-                    ),
+                    check_function=lambda: self._get_extract_archives_status(scan_code),
                     max_tries=wait_retry_count,
                     wait_interval=wait_retry_interval,
                     operation_name=f"Extract Archives '{scan_code}'",
@@ -528,10 +482,7 @@ class StatusCheckService:
                     "Archive extraction status checking not supported on "
                     "this Workbench version, using fallback wait (5 seconds)"
                 )
-                print(
-                    "Using fallback wait for archive extraction "
-                    "(5 seconds)..."
-                )
+                logger.info("Using fallback wait for archive extraction (5 seconds)...")
                 time.sleep(5)
                 return StatusResult(
                     status="FINISHED",
@@ -566,9 +517,7 @@ class StatusCheckService:
         """
         if wait:
             return wait_for_completion(
-                check_function=lambda: self._get_report_import_status(
-                    scan_code
-                ),
+                check_function=lambda: self._get_report_import_status(scan_code),
                 max_tries=wait_retry_count,
                 wait_interval=wait_retry_interval,
                 operation_name=f"Report Import '{scan_code}'",
@@ -578,9 +527,7 @@ class StatusCheckService:
 
     # --- NOTICE EXTRACTION OPERATIONS ---
 
-    def _get_notice_extract_status_oneshot(
-        self, scan_code: str, notice_type: str
-    ) -> StatusResult:
+    def _get_notice_extract_status_oneshot(self, scan_code: str, notice_type: str) -> StatusResult:
         """Single check_status poll for a NOTICE_EXTRACT_* process type."""
         status_data = self._scans.check_status(scan_code, notice_type)
         normalized_status = self._standard_scan_status_accessor(status_data)
@@ -605,13 +552,9 @@ class StatusCheckService:
                 ),
                 max_tries=wait_retry_count,
                 wait_interval=wait_retry_interval,
-                operation_name=(
-                    f"Notice Extract '{notice_type}' on '{scan_code}'"
-                ),
+                operation_name=(f"Notice Extract '{notice_type}' on '{scan_code}'"),
             )
-        return self._get_notice_extract_status_oneshot(
-            scan_code, notice_type
-        )
+        return self._get_notice_extract_status_oneshot(scan_code, notice_type)
 
     def check_notice_extract_file_status(
         self,
@@ -733,9 +676,7 @@ class StatusCheckService:
         """
         if wait:
             return wait_for_completion(
-                check_function=lambda: self._get_scan_report_status(
-                    scan_code, process_id
-                ),
+                check_function=lambda: self._get_scan_report_status(scan_code, process_id),
                 max_tries=wait_retry_count,
                 wait_interval=wait_retry_interval,
                 operation_name=f"Scan Report '{scan_code}'",
@@ -768,9 +709,7 @@ class StatusCheckService:
         """
         if wait:
             return wait_for_completion(
-                check_function=lambda: self._get_project_report_status(
-                    process_id, project_code
-                ),
+                check_function=lambda: self._get_project_report_status(process_id, project_code),
                 max_tries=wait_retry_count,
                 wait_interval=wait_retry_interval,
                 operation_name=f"Project Report '{project_code}'",
@@ -805,93 +744,10 @@ class StatusCheckService:
         """
         if wait:
             return wait_for_completion(
-                check_function=lambda: self._get_delete_scan_status(
-                    scan_code, process_id
-                ),
+                check_function=lambda: self._get_delete_scan_status(scan_code, process_id),
                 max_tries=wait_retry_count,
                 wait_interval=wait_retry_interval,
                 operation_name=f"Delete Scan '{scan_code}'",
             )
 
         return self._get_delete_scan_status(scan_code, process_id)
-
-    # =====================================================================
-    # WAITING INFRASTRUCTURE
-    # =====================================================================
-
-    def _create_scan_progress_callback(self, scan_code: str):
-        """
-        Create a stateful progress callback for scan file tracking.
-
-        This creates a callback that tracks and displays scan progress
-        with smart printing that only shows details on changes or periodic
-        intervals.
-
-        Args:
-            scan_code: Code of the scan (for display purposes)
-
-        Returns:
-            Callable: Progress callback function
-        """
-
-        class ScanProgressTracker:
-            """Stateful progress tracker for scan operations."""
-
-            def __init__(self):
-                self.last_status = None
-                self.last_state = None
-                self.last_step = None
-
-            def callback(self, status_result, attempt, max_tries):
-                """Progress callback that tracks file progress."""
-                # Extract progress information
-                raw_data = status_result.raw_data
-                current_state = raw_data.get("state", "")
-                current_step = raw_data.get("current_step", "")
-                percentage = raw_data.get("percentage_done", "")
-
-                # File tracking
-                total_files = raw_data.get("total_files", 0)
-                current_file = raw_data.get("current_file", 0)
-
-                # Determine if we should print details
-                should_print = (
-                    attempt == 1  # First check
-                    or attempt % 10 == 0  # Periodic (every ~minute)
-                    or status_result.status != self.last_status
-                    or current_state != self.last_state
-                    or current_step != self.last_step
-                )
-
-                if should_print:
-                    # Build detailed status message
-                    msg = f"\nScan '{scan_code}' status: "
-                    msg += status_result.status
-
-                    if current_state:
-                        msg += f" ({current_state})"
-
-                    # Show file progress if available
-                    if total_files and int(total_files) > 0:
-                        msg += f" - File {current_file}/{total_files}"
-                        if percentage:
-                            msg += f" ({percentage})"
-                    elif percentage:
-                        msg += f" - Progress: {percentage}"
-
-                    if current_step:
-                        msg += f" - Step: {current_step}"
-
-                    msg += f". Attempt {attempt}/{max_tries}"
-                    print(msg, end="", flush=True)
-
-                    # Update tracking state
-                    self.last_status = status_result.status
-                    self.last_state = current_state
-                    self.last_step = current_step
-                else:
-                    # Just show a dot for non-significant updates
-                    print(".", end="", flush=True)
-
-        tracker = ScanProgressTracker()
-        return tracker.callback

@@ -1,15 +1,15 @@
 """
-DownloadClient - Handles file downloads from Workbench.
+DownloadClient - Download files from Workbench.
 
 """
 
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from workbench_agent.exceptions import ValidationError
+from workbench_agent.api.exceptions import ValidationError
 
 if TYPE_CHECKING:
-    from workbench_agent.api.helpers.base_api import BaseAPI
+    from workbench_agent.api.base_api import BaseAPI
 
 logger = logging.getLogger("workbench-agent")
 
@@ -18,11 +18,10 @@ class DownloadClient:
     """
     Downloads API client.
 
-    Handles all file download operations from the 'download' API group.
+    Handles download operations from the 'download' API group.
 
-    This client provides low-level download operations. For domain-specific
-    report downloads, use ReportService which provides additional business
-    logic and convenience methods.
+    This client provides low-level operations. For report downloads,
+    ReportService provides additional functionality.
 
     Example:
         >>> downloads = DownloadClient(base_api)
@@ -43,6 +42,8 @@ class DownloadClient:
         self._api = base_api
         logger.debug("DownloadClient initialized")
 
+    # ===== DOWNLOAD A REPORT =====
+
     def download_report(
         self,
         report_entity: str,
@@ -50,11 +51,10 @@ class DownloadClient:
         timeout: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
-        Download a generated report file.
+        Download a generated report.
 
-        This method handles downloading reports for both scans and
-        projects that were generated asynchronously. The report must
-        have been previously generated and the process must be complete.
+        This method handles downloading async reports from both scans and
+        projects. The report generation process must be complete.
 
         Args:
             report_entity: Either "scans" or "projects"
@@ -90,10 +90,7 @@ class DownloadClient:
                 f"either 'scans' or 'projects'."
             )
 
-        logger.debug(
-            f"Downloading {report_entity} report for process ID "
-            f"{process_id}..."
-        )
+        logger.debug(f"Downloading {report_entity} report for process ID " f"{process_id}...")
 
         payload = {
             "group": "download",
@@ -105,10 +102,39 @@ class DownloadClient:
         }
 
         # Use extended timeout for large file downloads
-        actual_timeout = (
-            timeout
-            if timeout is not None
-            else self.DEFAULT_DOWNLOAD_TIMEOUT
-        )
+        actual_timeout = timeout if timeout is not None else self.DEFAULT_DOWNLOAD_TIMEOUT
 
         return self._api._send_request(payload, timeout=actual_timeout)
+
+    # ===== DOWNLOAD A PROJECT'S POLICY JSON =====
+
+    def get_project_policy(self, project_code: str) -> Dict[str, Any]:
+        """
+        Download the project's license policy as JSON.
+
+        The server responds with a plain text body containing a JSON array
+        of license rules (id, blocked, reason, …).
+        Use `PolicyService.download_project_policy_json` to parse it.
+
+        Args:
+            project_code: Project code (not display name)
+
+        Returns:
+            Dict with ``_raw_response`` (``requests.Response``) on success
+
+        Raises:
+            ApiError: If the download fails
+            NetworkError: If there are network issues
+        """
+        logger.debug(
+            "Downloading license policy JSON for project '%s'",
+            project_code,
+        )
+        payload = {
+            "group": "download",
+            "action": "licenses_policy_info",
+            "data": {
+                "project_code": project_code,
+            },
+        }
+        return self._api._send_request(payload)

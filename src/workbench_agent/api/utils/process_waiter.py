@@ -123,9 +123,7 @@ class StatusResult:
         if self.is_failed and not self.error_message:
             self.error_message = self.raw_data.get(
                 "error",
-                self.raw_data.get(
-                    "message", self.raw_data.get("info", "")
-                ),
+                self.raw_data.get("message", self.raw_data.get("info", "")),
             )
 
         # Auto-extract progress information
@@ -166,14 +164,8 @@ def extract_server_duration(raw_data: Any) -> Optional[float]:
 
     # Check if this is a git operation response format
     # Git responses look like: {"data": "FINISHED"}
-    if (
-        len(raw_data) == 1
-        and "data" in raw_data
-        and isinstance(raw_data["data"], str)
-    ):
-        logger.debug(
-            "Git operation detected - no server duration available"
-        )
+    if len(raw_data) == 1 and "data" in raw_data and isinstance(raw_data["data"], str):
+        logger.debug("Git operation detected - no server duration available")
         return None
 
     started = raw_data.get("started")
@@ -206,9 +198,7 @@ def wait_for_completion(
     max_tries: int,
     wait_interval: int,
     operation_name: str,
-    progress_callback: Optional[
-        Callable[[StatusResult, int, int], None]
-    ] = None,
+    progress_callback: Optional[Callable[[StatusResult, int, int], None]] = None,
 ) -> StatusResult:
     """
     Generic waiting engine for async operations.
@@ -268,9 +258,11 @@ def wait_for_completion(
                 # Default progress reporting
                 if attempts % 6 == 0:  # Every minute if interval=10
                     elapsed = attempts * wait_interval
-                    print(
-                        f"{operation_name} in progress... "
-                        f"({elapsed}s elapsed, status: {result.status})"
+                    logger.info(
+                        "%s in progress... (%ss elapsed, status: %s)",
+                        operation_name,
+                        elapsed,
+                        result.status,
                     )
 
                 # Check if complete (terminal state)
@@ -291,10 +283,7 @@ def wait_for_completion(
                         operation_name,
                         duration,
                     )
-                    logger.info(
-                        f"\n{operation_name} completed successfully "
-                        f"({duration:.1f}s)"
-                    )
+                    logger.info(f"\n{operation_name} completed successfully " f"({duration:.1f}s)")
                 else:
                     logger.info("%s completed successfully", operation_name)
                     logger.info(f"\n{operation_name} completed successfully")
@@ -310,19 +299,13 @@ def wait_for_completion(
             # Re-raise so caller can handle
             raise
         except Exception as e:
-            logger.warning(
-                f"Error checking {operation_name} status "
-                f"(attempt {attempts}): {e}"
-            )
+            logger.warning(f"Error checking {operation_name} status " f"(attempt {attempts}): {e}")
             if attempts >= max_tries:
-                raise ProcessError(
-                    f"Failed to check {operation_name} status: {e}"
-                ) from e
+                raise ProcessError(f"Failed to check {operation_name} status: {e}") from e
             time.sleep(wait_interval)
 
     # Timeout
     timeout_seconds = max_tries * wait_interval
     raise ProcessTimeoutError(
-        f"{operation_name} did not complete within "
-        f"{timeout_seconds}s ({max_tries} attempts)"
+        f"{operation_name} did not complete within " f"{timeout_seconds}s ({max_tries} attempts)"
     )

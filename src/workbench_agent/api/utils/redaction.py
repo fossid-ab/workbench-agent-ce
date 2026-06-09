@@ -78,9 +78,7 @@ def redact_text(text: str, *sensitive_values: str) -> str:
     redacted_text = text
     for sensitive_value in sensitive_values:
         if sensitive_value:
-            redacted_text = redacted_text.replace(
-                sensitive_value, REDACTED_VALUE
-            )
+            redacted_text = redacted_text.replace(sensitive_value, REDACTED_VALUE)
     return redacted_text
 
 

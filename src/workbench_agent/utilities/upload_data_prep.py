@@ -37,9 +37,7 @@ def cleanup_temp_path(path: Optional[str]) -> None:
         return
 
     if not path.startswith(tempfile.gettempdir()):
-        logger.debug(
-            f"Skipping cleanup of non-temp path: {path}"
-        )
+        logger.debug(f"Skipping cleanup of non-temp path: {path}")
         return
 
     try:
@@ -49,9 +47,7 @@ def cleanup_temp_path(path: Optional[str]) -> None:
             os.unlink(path)
         logger.debug(f"Cleaned up temporary path: {path}")
     except OSError as e:
-        logger.warning(
-            f"Failed to clean up temporary path {path}: {e}"
-        )
+        logger.warning(f"Failed to clean up temporary path {path}: {e}")
 
 
 @contextmanager
@@ -68,7 +64,7 @@ def prepare_scan_target(path: str) -> Iterator[str]:
         path: Source path (directory or file) to prepare for upload.
 
     Yields:
-        str: A file path safe to hand to ``UploadService.upload_scan_target``.
+        str: A file path safe to hand to ``ScanContentService.upload_scan_target``.
     """
     if os.path.isdir(path):
         print("The path provided is a directory. Compressing...")
@@ -105,9 +101,7 @@ class UploadArchivePrep:
     }
 
     @staticmethod
-    def should_exclude_file(
-        file_path: str, exclusions: Optional[Set[str]] = None
-    ) -> bool:
+    def should_exclude_file(file_path: str, exclusions: Optional[Set[str]] = None) -> bool:
         """
         Determines if a file should be excluded from the archive.
 
@@ -131,8 +125,7 @@ class UploadArchivePrep:
         # Check filename patterns (basic wildcard support)
         filename = path_obj.name
         return any(
-            pattern.startswith("*") and filename.endswith(pattern[1:])
-            for pattern in exclusions
+            pattern.startswith("*") and filename.endswith(pattern[1:]) for pattern in exclusions
         )
 
     @staticmethod
@@ -159,9 +152,7 @@ class UploadArchivePrep:
             try:
                 stat_info = os.stat(file_path)
                 # Allow empty files, but not special files with zero size
-                if stat_info.st_size == 0 and not os.path.isfile(
-                    file_path
-                ):
+                if stat_info.st_size == 0 and not os.path.isfile(file_path):
                     return False
             except OSError:
                 return False
@@ -194,9 +185,7 @@ class UploadArchivePrep:
             FileSystemError: If archive creation fails
         """
         if not os.path.isdir(source_path):
-            raise FileSystemError(
-                f"Source path is not a directory: {source_path}"
-            )
+            raise FileSystemError(f"Source path is not a directory: {source_path}")
 
         try:
             # Create temporary directory for the archive
@@ -204,9 +193,7 @@ class UploadArchivePrep:
 
             # Generate archive name if not provided
             if archive_name is None:
-                source_basename = os.path.basename(
-                    os.path.abspath(source_path)
-                )
+                source_basename = os.path.basename(os.path.abspath(source_path))
                 archive_name = f"{source_basename}_upload.zip"
             elif not archive_name.endswith(".zip"):
                 archive_name = f"{archive_name}.zip"
@@ -217,29 +204,21 @@ class UploadArchivePrep:
             logger.debug(f"Source directory: {source_path}")
 
             # Parse gitignore patterns for intelligent exclusions
-            gitignore_patterns = UploadArchivePrep._parse_gitignore(
-                source_path
-            )
+            gitignore_patterns = UploadArchivePrep._parse_gitignore(source_path)
             has_gitignore = len(gitignore_patterns) > 0
 
             files_added = 0
             files_excluded = 0
 
-            with zipfile.ZipFile(
-                archive_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6
-            ) as zipf:
+            with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zipf:
                 abs_path = os.path.abspath(source_path)
 
-                print(
-                    "Creating ZIP (respecting .gitignore)..."
-                )
+                print("Creating ZIP (respecting .gitignore)...")
 
                 for root, dirs, files in os.walk(abs_path):
                     # Get relative path from source directory
                     rel_root = os.path.relpath(root, abs_path)
-                    normalized_rel_root = (
-                        "" if rel_root == "." else rel_root
-                    )
+                    normalized_rel_root = "" if rel_root == "." else rel_root
 
                     # Filter out excluded directories early
                     dirs_to_remove = []
@@ -247,9 +226,7 @@ class UploadArchivePrep:
                         dir_path = os.path.join(root, d)
 
                         # Check default exclusions
-                        if UploadArchivePrep.should_exclude_file(
-                            dir_path, exclusions
-                        ):
+                        if UploadArchivePrep.should_exclude_file(dir_path, exclusions):
                             dirs_to_remove.append(d)
                             files_excluded += 1
                             continue
@@ -257,9 +234,7 @@ class UploadArchivePrep:
                         # Check gitignore patterns
                         if has_gitignore:
                             relative_dir_path = (
-                                os.path.join(normalized_rel_root, d)
-                                if normalized_rel_root
-                                else d
+                                os.path.join(normalized_rel_root, d) if normalized_rel_root else d
                             )
                             if UploadArchivePrep._is_excluded_by_gitignore(
                                 relative_dir_path,
@@ -276,37 +251,24 @@ class UploadArchivePrep:
                     # Process files
                     for file in files:
                         file_path = os.path.join(root, file)
-                        rel_file_path = os.path.relpath(
-                            file_path, abs_path
-                        )
+                        rel_file_path = os.path.relpath(file_path, abs_path)
 
                         # Check default exclusions
-                        if UploadArchivePrep.should_exclude_file(
-                            file_path, exclusions
-                        ):
+                        if UploadArchivePrep.should_exclude_file(file_path, exclusions):
                             files_excluded += 1
-                            logger.debug(
-                                f"Excluded from archive: {rel_file_path}"
-                            )
+                            logger.debug(f"Excluded from archive: {rel_file_path}")
                             continue
 
                         # Check gitignore patterns
-                        if (
-                            has_gitignore
-                            and UploadArchivePrep._is_excluded_by_gitignore(
-                                rel_file_path, gitignore_patterns
-                            )
+                        if has_gitignore and UploadArchivePrep._is_excluded_by_gitignore(
+                            rel_file_path, gitignore_patterns
                         ):
                             files_excluded += 1
-                            logger.debug(
-                                f"Excluded by .gitignore: {rel_file_path}"
-                            )
+                            logger.debug(f"Excluded by .gitignore: {rel_file_path}")
                             continue
 
                         # Validate file
-                        if not UploadArchivePrep.validate_file_for_archive(
-                            file_path
-                        ):
+                        if not UploadArchivePrep.validate_file_for_archive(file_path):
                             files_excluded += 1
                             logger.warning(
                                 f"Skipped invalid file: {rel_file_path} "
@@ -319,36 +281,23 @@ class UploadArchivePrep:
                             files_added += 1
 
                             if files_added % 100 == 0:  # Progress logging
-                                logger.debug(
-                                    f"Archived {files_added} files..."
-                                )
+                                logger.debug(f"Archived {files_added} files...")
 
                         except Exception as e:
                             files_excluded += 1
-                            logger.warning(
-                                f"Failed to archive {rel_file_path}: {e}"
-                            )
+                            logger.warning(f"Failed to archive {rel_file_path}: {e}")
                             continue
 
-                print(
-                    f"{files_added} files archived, {files_excluded} excluded)"
-                )
+                print(f"{files_added} files archived, {files_excluded} excluded)")
 
             # Verify the archive was created successfully
-            if (
-                not os.path.exists(archive_path)
-                or os.path.getsize(archive_path) == 0
-            ):
-                raise FileSystemError(
-                    "Archive creation failed - file is missing or empty"
-                )
+            if not os.path.exists(archive_path) or os.path.getsize(archive_path) == 0:
+                raise FileSystemError("Archive creation failed - file is missing or empty")
 
             archive_size_mb = os.path.getsize(archive_path) / (1024 * 1024)
             logger.info(f"Archive created successfully: {archive_path}")
             logger.info(f"Archive size: {archive_size_mb:.1f}MB")
-            logger.info(
-                f"Files added: {files_added}, Files excluded: {files_excluded}"
-            )
+            logger.info(f"Files added: {files_added}, Files excluded: {files_excluded}")
 
             return archive_path
 
@@ -362,9 +311,7 @@ class UploadArchivePrep:
                 try:
                     shutil.rmtree(temp_dir, ignore_errors=True)
                 except Exception as cleanup_err:
-                    logger.warning(
-                        f"Failed to cleanup temp directory: {cleanup_err}"
-                    )
+                    logger.warning(f"Failed to cleanup temp directory: {cleanup_err}")
             raise FileSystemError(f"Archive creation failed: {e}") from e
 
     @staticmethod
@@ -391,9 +338,7 @@ class UploadArchivePrep:
                     # Skip empty lines and comments
                     if line and not line.startswith("#"):
                         patterns.append(line)
-            logger.debug(
-                f"Parsed {len(patterns)} patterns from .gitignore"
-            )
+            logger.debug(f"Parsed {len(patterns)} patterns from .gitignore")
         except (OSError, UnicodeDecodeError) as e:
             logger.warning(f"Could not read .gitignore file: {e}")
 
@@ -469,9 +414,7 @@ class UploadArchivePrep:
                 for p in gitignore_patterns
             )
         ):
-            logger.debug(
-                f"Excluded '{path}' - matched common directory pattern"
-            )
+            logger.debug(f"Excluded '{path}' - matched common directory pattern")
             return True
 
         for pattern in gitignore_patterns:
@@ -485,9 +428,7 @@ class UploadArchivePrep:
             if (
                 is_dir
                 and pattern.endswith("/")
-                and (
-                    dir_path.endswith(pattern) or dir_path == pattern[:-1]
-                )
+                and (dir_path.endswith(pattern) or dir_path == pattern[:-1])
             ):
                 return True
 
@@ -495,11 +436,7 @@ class UploadArchivePrep:
             if not pattern.startswith("/") and (
                 basename == pattern
                 or path.endswith("/" + pattern)
-                or (
-                    is_dir
-                    and pattern.endswith("/")
-                    and dir_path.endswith("/" + pattern)
-                )
+                or (is_dir and pattern.endswith("/") and dir_path.endswith("/" + pattern))
             ):
                 return True
 

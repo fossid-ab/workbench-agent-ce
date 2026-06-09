@@ -4,7 +4,6 @@ Configuration display utility to render the configuration at startup.
 
 from typing import Any, Dict
 
-
 # ===== Parameter groups =====
 # Each frozenset names the params owned by a single section.
 
@@ -89,9 +88,7 @@ _REPORT_GENERATION_PARAMS = frozenset(
 )
 
 # Params surfaced separately (connection block) or never displayed.
-_SKIPPED_PARAMS = frozenset(
-    {"command", "api_url", "api_user", "api_token"}
-)
+_SKIPPED_PARAMS = frozenset({"command", "api_url", "api_user", "api_token"})
 
 _KNOWN_PARAMS = (
     _AGENT_CONFIG_PARAMS
@@ -144,71 +141,43 @@ def _print_section(title: str, items: Dict[str, Any]) -> None:
 
 def _print_agent_config(params: Any) -> None:
     """Render the Agent Configuration section."""
-    items = {
-        k: v
-        for k, v in _user_params(params).items()
-        if k in _AGENT_CONFIG_PARAMS
-    }
+    items = {k: v for k, v in _user_params(params).items() if k in _AGENT_CONFIG_PARAMS}
     _print_section("⚙️  Agent Configuration:", items)
 
 
 def _print_scan_target(params: Any) -> None:
     """Render the Scan Target section."""
-    items = {
-        k: v
-        for k, v in _user_params(params).items()
-        if k in _SCAN_TARGET_PARAMS
-    }
+    items = {k: v for k, v in _user_params(params).items() if k in _SCAN_TARGET_PARAMS}
     _print_section("🎯 Scan Target:", items)
 
 
 def _print_scan_operation_settings(params: Any) -> None:
     """Render the Scan Operation Settings section."""
-    items = {
-        k: v
-        for k, v in _user_params(params).items()
-        if k in _SCAN_OPERATION_PARAMS
-    }
+    items = {k: v for k, v in _user_params(params).items() if k in _SCAN_OPERATION_PARAMS}
     _print_section("🔬 Scan Operation Settings:", items)
 
 
 def _print_identification_settings(params: Any) -> None:
     """Render the Identification Settings section."""
-    items = {
-        k: v
-        for k, v in _user_params(params).items()
-        if k in _IDENTIFICATION_PARAMS
-    }
+    items = {k: v for k, v in _user_params(params).items() if k in _IDENTIFICATION_PARAMS}
     _print_section("🔍 Identification Settings:", items)
 
 
 def _print_result_display(params: Any) -> None:
     """Render the Result Display section."""
-    items = {
-        k: v
-        for k, v in _user_params(params).items()
-        if k in _RESULT_DISPLAY_PARAMS
-    }
+    items = {k: v for k, v in _user_params(params).items() if k in _RESULT_DISPLAY_PARAMS}
     _print_section("📊 Result Display:", items)
 
 
 def _print_report_generation(params: Any) -> None:
     """Render the Report Generation section."""
-    items = {
-        k: v
-        for k, v in _user_params(params).items()
-        if k in _REPORT_GENERATION_PARAMS
-    }
+    items = {k: v for k, v in _user_params(params).items() if k in _REPORT_GENERATION_PARAMS}
     _print_section("📄 Report Generation:", items)
 
 
 def _print_other_parameters(params: Any) -> None:
     """Render any params not claimed by a named group."""
-    items = {
-        k: v
-        for k, v in _user_params(params).items()
-        if k not in _KNOWN_PARAMS
-    }
+    items = {k: v for k, v in _user_params(params).items() if k not in _KNOWN_PARAMS}
     _print_section("📋 Other Parameters:", items)
 
 
@@ -230,7 +199,7 @@ def _print_connection_info(params: Any, workbench_api: Any) -> None:
     status = "⚠ Could not retrieve server info"
 
     try:
-        config_data = workbench_api.internal.get_config()
+        config_data = workbench_api.get_workbench_config()
         if config_data:
             server_name = config_data.get("server_name", "Unknown")
             version = config_data.get("version", "Unknown")
@@ -246,6 +215,7 @@ def _print_connection_info(params: Any, workbench_api: Any) -> None:
 
 
 # ===== Orchestration =====
+
 
 def print_configuration(params: Any, workbench_api: Any) -> None:
     """

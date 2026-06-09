@@ -3,6 +3,10 @@ import logging
 from typing import TYPE_CHECKING
 
 from workbench_agent.api.exceptions import ApiError, NetworkError
+from workbench_agent.utilities.vulnerability_display import (
+    print_vulnerable_component_count,
+    summarize_vulnerability_rows,
+)
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -36,7 +40,7 @@ def print_import_summary(
     if not show_summary:
         # Just show the link and return
         try:
-            links = workbench.results.get_workbench_links(scan_code)
+            links = workbench.links.get_workbench_links(scan_code)
             print("\n🔗 View this Scan in Workbench:\n")
             print(f"{links.scan['url']}")
         except Exception as e:
@@ -58,33 +62,37 @@ def print_import_summary(
     # Fetch dependencies (if import was completed)
     if import_completed:
         try:
-            dependencies = workbench.results.get_dependencies(scan_code)
+            dependencies = workbench.dependencies.list_dependencies(scan_code)
         except (ApiError, NetworkError) as e:
             logger.debug(f"Could not fetch dependencies: {e}")
 
     # Fetch KB components and licenses for SBOM imports
     if is_sbom_import and import_completed:
         try:
-            kb_components = workbench.results.get_identified_components(scan_code)
+            kb_components = workbench.identification.get_identified_components(scan_code)
         except (ApiError, NetworkError) as e:
             logger.debug(f"Could not fetch KB components: {e}")
 
         try:
-            kb_licenses = workbench.results.get_unique_identified_licenses(scan_code)
+            kb_licenses = workbench.identification.get_unique_identified_licenses(scan_code)
         except (ApiError, NetworkError) as e:
             logger.debug(f"Could not fetch KB licenses: {e}")
 
     # Fetch policy warnings
     try:
-        policy_warnings = workbench.results.get_policy_warnings(scan_code)
+        policy_warnings = workbench.policy.get_policy_warnings(scan_code)
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch policy warnings: {e}")
 
     # Fetch vulnerabilities
     try:
-        vulnerabilities = workbench.results.get_vulnerabilities(scan_code)
+        vulnerabilities = workbench.vulnerability.list_scan_vulnerabilities(scan_code)
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch vulnerabilities: {e}")
+
+    vulnerability_summary = None
+    if vulnerabilities:
+        vulnerability_summary = summarize_vulnerability_rows(vulnerabilities)
 
     # --- Identified Components Summary (SBOM imports only) ---
     if is_sbom_import and import_completed:
@@ -127,12 +135,8 @@ def print_import_summary(
     # Policy warnings count
     if policy_warnings is not None:
         total_warnings = int(policy_warnings.get("policy_warnings_total", 0))
-        files_with_warnings = int(
-            policy_warnings.get("identified_files_with_warnings", 0)
-        )
-        deps_with_warnings = int(
-            policy_warnings.get("dependencies_with_warnings", 0)
-        )
+        files_with_warnings = int(policy_warnings.get("identified_files_with_warnings", 0))
+        deps_with_warnings = int(policy_warnings.get("dependencies_with_warnings", 0))
         print(f"  - Policy Warnings: {total_warnings}")
         if total_warnings > 0:
             print(f"    - In Identified Files: {files_with_warnings}")
@@ -140,23 +144,16 @@ def print_import_summary(
     else:
         print("  - Could not check Policy Warnings - are Policies set?")
 
-    # Vulnerable components count
-    if vulnerabilities:
-        unique_vulnerable_components = set()
-        for vuln in vulnerabilities:
-            comp_name = vuln.get("component_name", "Unknown")
-            comp_version = vuln.get("component_version", "Unknown")
-            unique_vulnerable_components.add(f"{comp_name}:{comp_version}")
-        num_vulnerable_components = len(unique_vulnerable_components)
-        print(f"  - Components with CVEs: {num_vulnerable_components}")
-    else:
-        print("  - No CVEs found for Components or Dependencies.")
+    print_vulnerable_component_count(
+        vulnerability_summary or {"total_cves": 0, "vulnerable_component_count": 0},
+        empty_message=("  - No CVEs found for Components or Dependencies."),
+    )
 
     print("------------------------------------")
 
     # Always show Workbench link
     try:
-        links = workbench.results.get_workbench_links(scan_code)
+        links = workbench.links.get_workbench_links(scan_code)
         print("\n🔗 View this Scan in Workbench:\n")
         print(f"{links.scan['url']}")
     except Exception as e:

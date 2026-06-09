@@ -1,7 +1,7 @@
 # tests/integration/test_scan_git_integration.py
 
 import sys
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -12,9 +12,7 @@ from workbench_agent.main import main
 class TestScanGitIntegration:
     """Integration tests for the scan-git command"""
 
-    def test_scan_git_success_flow_branch(
-        self, mock_workbench_api, capsys
-    ):
+    def test_scan_git_success_flow_branch(self, mock_workbench_api, capsys):
         """
         Integration test for a successful 'scan-git' command flow with git branch.
         """
@@ -39,9 +37,7 @@ class TestScanGitIntegration:
 
         with patch.object(sys, "argv", args):
             return_code = main()
-            assert (
-                return_code == 0
-            ), "Command should exit with success code"
+            assert return_code == 0, "Command should exit with success code"
 
         captured = capsys.readouterr()
         combined_output = captured.out + captured.err
@@ -78,9 +74,7 @@ class TestScanGitIntegration:
         combined_output = captured.out + captured.err
         assert "SCAN-GIT" in combined_output
 
-    def test_scan_git_with_dependency_analysis(
-        self, mock_workbench_api, capsys
-    ):
+    def test_scan_git_with_dependency_analysis(self, mock_workbench_api, capsys):
         """
         Test scan-git command with dependency analysis enabled.
         """
@@ -112,9 +106,7 @@ class TestScanGitIntegration:
         combined_output = captured.out + captured.err
         assert "SCAN-GIT" in combined_output
 
-    def test_scan_git_dependency_analysis_only(
-        self, mock_workbench_api, capsys
-    ):
+    def test_scan_git_dependency_analysis_only(self, mock_workbench_api, capsys):
         """
         Test scan-git command with dependency analysis only (no KB scan).
         """
@@ -146,9 +138,7 @@ class TestScanGitIntegration:
         combined_output = captured.out + captured.err
         assert "SCAN-GIT" in combined_output
 
-    def test_scan_git_with_id_reuse(
-        self, mock_workbench_api, mocker, capsys
-    ):
+    def test_scan_git_with_id_reuse(self, mock_workbench_api, mocker, capsys):
         """
         Test scan-git command with ID reuse enabled.
         """
@@ -177,18 +167,14 @@ class TestScanGitIntegration:
 
         with patch.object(sys, "argv", args):
             return_code = main()
-            assert (
-                return_code == 0
-            ), "Scan-git with ID reuse should succeed"
+            assert return_code == 0, "Scan-git with ID reuse should succeed"
 
-    def test_scan_git_failure_invalid_git_url(
-        self, mock_workbench_api, capsys
-    ):
+    def test_scan_git_failure_invalid_git_url(self, mock_workbench_api, capsys):
         """
         Test scan-git command with invalid git URL (should fail).
         """
-        mock_workbench_api.scan_content.download_git_and_wait.side_effect = (
-            ProcessError("Git clone failed: Repository not found")
+        mock_workbench_api.scan_content.download_git_and_wait.side_effect = ProcessError(
+            "Git clone failed: Repository not found"
         )
 
         args = [
@@ -218,9 +204,7 @@ class TestScanGitIntegration:
         combined_output = captured.out + captured.err
         assert "failed" in combined_output.lower()
 
-    def test_scan_git_failure_conflicting_refs(
-        self, mock_workbench_api, capsys
-    ):
+    def test_scan_git_failure_conflicting_refs(self, mock_workbench_api, capsys):
         """
         Test scan-git command with conflicting git references (should fail validation).
         """
@@ -254,9 +238,7 @@ class TestScanGitIntegration:
         assert e.type == SystemExit
         assert e.value.code == 2
 
-    def test_scan_git_failure_missing_git_ref(
-        self, mock_workbench_api, capsys
-    ):
+    def test_scan_git_failure_missing_git_ref(self, mock_workbench_api, capsys):
         """
         Test scan-git command with missing git reference (should fail validation).
         """

@@ -10,6 +10,9 @@ from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.pre_flight_checks import (
     blind_scan_pre_flight_check,
 )
+from workbench_agent.utilities.resolve_project_scan import (
+    find_or_create_project_and_scan,
+)
 from workbench_agent.utilities.scan_workflows import (
     execute_scan_workflow,
 )
@@ -67,14 +70,10 @@ def validate_fossid_file(file_path: str) -> None:
             f"fossid-toolbox or re-encode it as UTF-8."
         ) from e
     except Exception as e:
-        raise ValidationError(
-            f"Failed to read .fossid file '{file_path}': {e}"
-        ) from e
+        raise ValidationError(f"Failed to read .fossid file '{file_path}': {e}") from e
 
     if not lines or all(line.strip() == "" for line in lines):
-        raise ValidationError(
-            f"The .fossid file '{file_path}' is empty."
-        )
+        raise ValidationError(f"The .fossid file '{file_path}' is empty.")
 
     required_fields = {"path": str, "size": int, "hashes_ffm": list}
 
@@ -87,20 +86,16 @@ def validate_fossid_file(file_path: str) -> None:
             entry = json.loads(line)
         except json.JSONDecodeError as e:
             raise ValidationError(
-                f"Invalid JSON on line {line_num} of "
-                f"'{file_path}': {e}"
+                f"Invalid JSON on line {line_num} of " f"'{file_path}': {e}"
             ) from e
 
         if not isinstance(entry, dict):
-            raise ValidationError(
-                f"Line {line_num} of '{file_path}' is not a JSON object."
-            )
+            raise ValidationError(f"Line {line_num} of '{file_path}' is not a JSON object.")
 
         for field, expected_type in required_fields.items():
             if field not in entry:
                 raise ValidationError(
-                    f"Line {line_num} of '{file_path}' is missing "
-                    f"required field '{field}'."
+                    f"Line {line_num} of '{file_path}' is missing " f"required field '{field}'."
                 )
             if not isinstance(entry[field], expected_type):
                 raise ValidationError(
@@ -111,8 +106,7 @@ def validate_fossid_file(file_path: str) -> None:
         for i, hash_entry in enumerate(entry["hashes_ffm"]):
             if not isinstance(hash_entry, dict):
                 raise ValidationError(
-                    f"Line {line_num} of '{file_path}': "
-                    f"'hashes_ffm[{i}]' must be an object."
+                    f"Line {line_num} of '{file_path}': " f"'hashes_ffm[{i}]' must be an object."
                 )
             if "format" not in hash_entry or "data" not in hash_entry:
                 raise ValidationError(
@@ -122,15 +116,11 @@ def validate_fossid_file(file_path: str) -> None:
                 )
 
     non_empty = sum(1 for line in lines if line.strip())
-    logger.info(
-        f"Validated .fossid file '{file_path}': {non_empty} entries."
-    )
+    logger.info(f"Validated .fossid file '{file_path}': {non_empty} entries.")
 
 
 @handler_error_wrapper
-def handle_blind_scan(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> bool:
+def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     """
     Handler for the 'blind-scan' command.
 
@@ -174,10 +164,7 @@ def handle_blind_scan(
 
     # ===== STEP 1: Detect input type =====
     # Path existence is validated at CLI layer (cli/validators.py)
-    is_pregenerated = (
-        os.path.isfile(params.path)
-        and params.path.endswith(".fossid")
-    )
+    is_pregenerated = os.path.isfile(params.path) and params.path.endswith(".fossid")
 
     hash_file_path = None
     should_cleanup = False
@@ -195,9 +182,7 @@ def handle_blind_scan(
                 toolbox_path=resolve_fossid_toolbox_path(
                     getattr(params, "fossid_toolbox_path", None)
                 ),
-                timeout=str(
-                    getattr(params, "fossid_toolbox_timeout", 300)
-                ),
+                timeout=str(getattr(params, "fossid_toolbox_timeout", 300)),
             )
 
             version = toolbox_wrapper.get_version()
@@ -206,9 +191,7 @@ def handle_blind_scan(
             print("\nHashing Target Path with Toolbox...")
             hash_file_path = toolbox_wrapper.generate_hashes(
                 path=params.path,
-                run_dependency_analysis=getattr(
-                    params, "run_dependency_analysis", False
-                ),
+                run_dependency_analysis=getattr(params, "run_dependency_analysis", False),
             )
             should_cleanup = True
 
@@ -219,17 +202,12 @@ def handle_blind_scan(
         # ===== STEP 3: Resolve/create project and scan =====
         print("\n--- Project and Scan Checks ---")
         print("Checking target Project and Scan...")
-        _, scan_code, scan_is_new = (
-            client.resolver.find_or_create_project_and_scan(
-                project_name=params.project_name,
-                scan_name=params.scan_name,
-                params=params,
-            )
+        _, scan_code, scan_is_new = find_or_create_project_and_scan(
+            client,
+            params,
         )
 
-        blind_scan_pre_flight_check(
-            client, scan_code, scan_is_new, params
-        )
+        blind_scan_pre_flight_check(client, scan_code, scan_is_new, params)
 
         if not scan_is_new:
             print("\nClearing existing scan content...")
@@ -237,26 +215,18 @@ def handle_blind_scan(
                 client.scan_content.remove_uploaded_content(scan_code, "")
                 print("Successfully cleared existing scan content.")
             except Exception as e:
-                logger.warning(
-                    f"Failed to clear existing scan content: {e}"
-                )
+                logger.warning(f"Failed to clear existing scan content: {e}")
                 print("Continuing with hash upload...")
         else:
-            logger.debug(
-                "Skipping content clear - new scan is empty"
-            )
+            logger.debug("Skipping content clear - new scan is empty")
 
         # ===== STEP 4: Upload hash file =====
         print("\nUploading hashes to Workbench...")
-        client.upload_service.upload_scan_target(
-            scan_code, hash_file_path
-        )
+        client.scan_content.upload_scan_target(scan_code, hash_file_path)
         print("Hashes uploaded successfully!")
 
         # ===== STEP 5: Run scans, wait, display results =====
-        return execute_scan_workflow(
-            client, params, scan_code, durations
-        )
+        return execute_scan_workflow(client, params, scan_code, durations)
 
     finally:
         # ===== STEP 6: Clean up temporary hash file =====

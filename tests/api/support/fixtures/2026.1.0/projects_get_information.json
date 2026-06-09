@@ -1,0 +1,27 @@
+{
+  "operation": "projects_get_information",
+  "status": "1",
+  "data": {
+    "id": "723",
+    "creator": "3",
+    "project_code": "Test_Project_723",
+    "project_name": "Test Project",
+    "limit_date": null,
+    "product_code": "",
+    "product_name": "",
+    "description": "",
+    "comment": "",
+    "is_archived": "0",
+    "jira_project_key": "",
+    "created": "2026-05-30 11:16:11",
+    "updated": "2026-05-30 11:16:11",
+    "owner_username": "tomas.gonzalez@fossid.com",
+    "owner_name": "Tomas",
+    "owner_surname": "Gonzalez",
+    "owner_email": "tomas.gonzalez@fossid.com",
+    "creation_date": "2026-05-30",
+    "date_limit_date": null,
+    "user_id": "3"
+  },
+  "message": "Success"
+}

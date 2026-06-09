@@ -38,13 +38,9 @@ class TestSBOMValidatorWithFixtures:
 
     def test_validate_cyclonedx_from_file(self, cyclonedx_sbom_path):
         """Test successful validation of a real CycloneDX file."""
-        assert os.path.exists(
-            cyclonedx_sbom_path
-        ), "Fixture file is missing"
+        assert os.path.exists(cyclonedx_sbom_path), "Fixture file is missing"
 
-        format_name, version, metadata, doc = (
-            SBOMValidator.validate_sbom_file(cyclonedx_sbom_path)
-        )
+        format_name, version, metadata, doc = SBOMValidator.validate_sbom_file(cyclonedx_sbom_path)
 
         assert format_name == "cyclonedx"
         assert version == "1.5"
@@ -52,12 +48,8 @@ class TestSBOMValidatorWithFixtures:
         assert "serial_number" in metadata
         assert doc is not None
 
-    @patch(
-        "workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx"
-    )
-    def test_validate_spdx_from_file(
-        self, mock_validate_spdx, spdx_sbom_path
-    ):
+    @patch("workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx")
+    def test_validate_spdx_from_file(self, mock_validate_spdx, spdx_sbom_path):
         """Test successful validation of a real SPDX file."""
         assert os.path.exists(spdx_sbom_path), "Fixture file is missing"
 
@@ -70,9 +62,7 @@ class TestSBOMValidatorWithFixtures:
             mock_doc,
         )
 
-        format_name, version, metadata, doc = (
-            SBOMValidator.validate_sbom_file(spdx_sbom_path)
-        )
+        format_name, version, metadata, doc = SBOMValidator.validate_sbom_file(spdx_sbom_path)
 
         assert format_name == "spdx"
         assert version == "2.3"
@@ -82,22 +72,14 @@ class TestSBOMValidatorWithFixtures:
 
     def test_prepare_cyclonedx_no_conversion(self, cyclonedx_sbom_path):
         """CycloneDX should not require conversion."""
-        format_name, version, metadata, doc = (
-            SBOMValidator.validate_sbom_file(cyclonedx_sbom_path)
-        )
+        format_name, version, metadata, doc = SBOMValidator.validate_sbom_file(cyclonedx_sbom_path)
 
-        upload_path = SBOMValidator.prepare_sbom_for_upload(
-            cyclonedx_sbom_path, format_name, doc
-        )
+        upload_path = SBOMValidator.prepare_sbom_for_upload(cyclonedx_sbom_path, format_name, doc)
 
         assert upload_path == cyclonedx_sbom_path
 
-    @patch(
-        "workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx"
-    )
-    def test_prepare_spdx_rdf_no_conversion(
-        self, mock_validate_spdx, spdx_sbom_path
-    ):
+    @patch("workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx")
+    def test_prepare_spdx_rdf_no_conversion(self, mock_validate_spdx, spdx_sbom_path):
         """SPDX RDF should not require conversion."""
         # Mock the SPDX validation to return expected values
         mock_doc = MagicMock()
@@ -108,13 +90,9 @@ class TestSBOMValidatorWithFixtures:
             mock_doc,
         )
 
-        format_name, version, metadata, doc = (
-            SBOMValidator.validate_sbom_file(spdx_sbom_path)
-        )
+        format_name, version, metadata, doc = SBOMValidator.validate_sbom_file(spdx_sbom_path)
 
-        upload_path = SBOMValidator.prepare_sbom_for_upload(
-            spdx_sbom_path, format_name, doc
-        )
+        upload_path = SBOMValidator.prepare_sbom_for_upload(spdx_sbom_path, format_name, doc)
 
         assert upload_path == spdx_sbom_path
         mock_validate_spdx.assert_called_once_with(spdx_sbom_path)
@@ -157,9 +135,7 @@ class TestCycloneDXValidationErrors:
         json_content = json.dumps(invalid_json)
 
         with patch("builtins.open", mock_open(read_data=json_content)):
-            with pytest.raises(
-                ValidationError, match="missing specVersion field"
-            ):
+            with pytest.raises(ValidationError, match="missing specVersion field"):
                 SBOMValidator._validate_cyclonedx("/path/to/file.json")
 
     def test_validate_cyclonedx_unsupported_version(self):
@@ -172,9 +148,7 @@ class TestCycloneDXValidationErrors:
         json_content = json.dumps(invalid_json)
 
         with patch("builtins.open", mock_open(read_data=json_content)):
-            with pytest.raises(
-                ValidationError, match="Unknown CycloneDX version"
-            ):
+            with pytest.raises(ValidationError, match="Unknown CycloneDX version"):
                 SBOMValidator._validate_cyclonedx("/path/to/file.json")
 
     def test_validate_cyclonedx_unsupported_upload_version(self):
@@ -217,68 +191,46 @@ class TestCycloneDXValidationErrors:
                     [MagicMock(message="Validation Error")]
                 )
                 mock_validator_class.return_value = mock_validator
-                with pytest.raises(
-                    ValidationError, match="CycloneDX validation failed"
-                ):
+                with pytest.raises(ValidationError, match="CycloneDX validation failed"):
                     SBOMValidator._validate_cyclonedx("/path/to/file.json")
 
     def test_validate_cyclonedx_invalid_json(self):
         """Test CycloneDX validation fails for invalid JSON."""
-        with patch(
-            "builtins.open", mock_open(read_data="{ 'bad': json }")
-        ):
-            with pytest.raises(
-                ValidationError, match="Invalid JSON format"
-            ):
+        with patch("builtins.open", mock_open(read_data="{ 'bad': json }")):
+            with pytest.raises(ValidationError, match="Invalid JSON format"):
                 SBOMValidator._validate_cyclonedx("/path/to/file.json")
 
     def test_validate_cyclonedx_file_not_found(self):
         """Test CycloneDX validation fails for non-existent file."""
         with patch("builtins.open", side_effect=FileNotFoundError):
-            with pytest.raises(
-                FileSystemError, match="SBOM file not found"
-            ):
+            with pytest.raises(FileSystemError, match="SBOM file not found"):
                 SBOMValidator._validate_cyclonedx("/nonexistent/file.json")
 
 
 class TestSPDXValidationErrors:
     """Test cases for SPDX validation error conditions."""
 
-    @patch(
-        "workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx"
-    )
+    @patch("workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx")
     def test_validate_spdx_invalid_document(self, mock_validate_spdx):
         """Test SPDX validation fails if file is not a valid SPDX document."""
-        mock_validate_spdx.side_effect = ValidationError(
-            "does not contain a valid SPDX document"
-        )
+        mock_validate_spdx.side_effect = ValidationError("does not contain a valid SPDX document")
 
-        with pytest.raises(
-            ValidationError, match="does not contain a valid SPDX document"
-        ):
+        with pytest.raises(ValidationError, match="does not contain a valid SPDX document"):
             SBOMValidator._validate_spdx("/path/to/file.rdf")
 
         mock_validate_spdx.assert_called_once_with("/path/to/file.rdf")
 
-    @patch(
-        "workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx"
-    )
+    @patch("workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx")
     def test_validate_spdx_validation_errors(self, mock_validate_spdx):
         """Test SPDX validation fails with schema errors."""
-        mock_validate_spdx.side_effect = ValidationError(
-            "SPDX document validation failed"
-        )
+        mock_validate_spdx.side_effect = ValidationError("SPDX document validation failed")
 
-        with pytest.raises(
-            ValidationError, match="SPDX document validation failed"
-        ):
+        with pytest.raises(ValidationError, match="SPDX document validation failed"):
             SBOMValidator._validate_spdx("/path/to/file.rdf")
 
         mock_validate_spdx.assert_called_once_with("/path/to/file.rdf")
 
-    @patch(
-        "workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx"
-    )
+    @patch("workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx")
     def test_validate_spdx_unsupported_version(self, mock_validate_spdx):
         """Test SPDX validation fails for unsupported version."""
         mock_validate_spdx.side_effect = ValidationError(
@@ -293,14 +245,10 @@ class TestSPDXValidationErrors:
 
         mock_validate_spdx.assert_called_once_with("/path/to/file.rdf")
 
-    @patch(
-        "workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx"
-    )
+    @patch("workbench_agent.utilities.sbom_validator.SBOMValidator._validate_spdx")
     def test_validate_spdx_file_not_found(self, mock_validate_spdx):
         """Test SPDX validation fails for non-existent file."""
-        mock_validate_spdx.side_effect = FileSystemError(
-            "SBOM file not found"
-        )
+        mock_validate_spdx.side_effect = FileSystemError("SBOM file not found")
 
         with pytest.raises(FileSystemError, match="SBOM file not found"):
             SBOMValidator._validate_spdx("/nonexistent/file.rdf")
@@ -352,9 +300,7 @@ class TestSBOMPreparation:
 
         assert result == "/path/to/file.json"  # Original file returned
 
-    @patch(
-        "workbench_agent.utilities.sbom_validator.SBOMValidator._prepare_spdx_for_upload"
-    )
+    @patch("workbench_agent.utilities.sbom_validator.SBOMValidator._prepare_spdx_for_upload")
     def test_prepare_spdx_rdf_no_conversion(self, mock_prepare_spdx):
         """Test that SPDX RDF files don't need conversion."""
         # Mock the SPDX preparation to return the original file (no conversion needed)
@@ -362,18 +308,12 @@ class TestSBOMPreparation:
 
         parsed_document = MagicMock()
 
-        result = SBOMValidator.prepare_sbom_for_upload(
-            "/path/to/file.rdf", "spdx", parsed_document
-        )
+        result = SBOMValidator.prepare_sbom_for_upload("/path/to/file.rdf", "spdx", parsed_document)
 
         assert result == "/path/to/file.rdf"  # Original file returned
-        mock_prepare_spdx.assert_called_once_with(
-            "/path/to/file.rdf", parsed_document, ""
-        )
+        mock_prepare_spdx.assert_called_once_with("/path/to/file.rdf", parsed_document, "")
 
-    @patch(
-        "workbench_agent.utilities.sbom_validator.SBOMValidator._prepare_spdx_for_upload"
-    )
+    @patch("workbench_agent.utilities.sbom_validator.SBOMValidator._prepare_spdx_for_upload")
     def test_prepare_spdx_json_with_conversion(self, mock_prepare_spdx):
         """Test that SPDX JSON files are converted to RDF on older Workbench."""
         mock_prepare_spdx.return_value = "/tmp/spdx_converted_abc123.rdf"
@@ -388,18 +328,12 @@ class TestSBOMPreparation:
         )
 
         assert result == "/tmp/spdx_converted_abc123.rdf"
-        mock_prepare_spdx.assert_called_once_with(
-            "/path/to/file.json", parsed_document, "2025.1.9"
-        )
+        mock_prepare_spdx.assert_called_once_with("/path/to/file.json", parsed_document, "2025.1.9")
 
     def test_prepare_unknown_format_error(self):
         """Test that unknown formats raise an error."""
-        with pytest.raises(
-            ValidationError, match="Unknown SBOM format: unknown"
-        ):
-            SBOMValidator.prepare_sbom_for_upload(
-                "/path/to/file.json", "unknown", {}
-            )
+        with pytest.raises(ValidationError, match="Unknown SBOM format: unknown"):
+            SBOMValidator.prepare_sbom_for_upload("/path/to/file.json", "unknown", {})
 
 
 class TestSupportsNativeSpdxJson:
@@ -416,13 +350,8 @@ class TestSupportsNativeSpdxJson:
             ("garbage", False),
         ],
     )
-    def test_supports_native_spdx_json(
-        self, workbench_version, expected
-    ):
-        assert (
-            SBOMValidator._supports_native_spdx_json(workbench_version)
-            is expected
-        )
+    def test_supports_native_spdx_json(self, workbench_version, expected):
+        assert SBOMValidator._supports_native_spdx_json(workbench_version) is expected
 
 
 class TestSpdxJsonVersionGating:
@@ -433,9 +362,7 @@ class TestSpdxJsonVersionGating:
         """SPDX JSON is not converted on Workbench >= 2025.2.0."""
         parsed_document = MagicMock()
 
-        with patch(
-            "workbench_agent.utilities.sbom_validator.write_file"
-        ) as mock_write:
+        with patch("workbench_agent.utilities.sbom_validator.write_file") as mock_write:
             result = SBOMValidator._prepare_spdx_for_upload(
                 "/path/to/spdx.json",
                 parsed_document,
@@ -450,9 +377,7 @@ class TestSpdxJsonVersionGating:
         ["2025.1.9", "24.3.0", ""],
     )
     @patch("workbench_agent.utilities.sbom_validator.write_file")
-    def test_spdx_json_converts_on_legacy_workbench(
-        self, mock_write, workbench_version
-    ):
+    def test_spdx_json_converts_on_legacy_workbench(self, mock_write, workbench_version):
         """SPDX JSON is converted to RDF on older or unknown Workbench."""
         parsed_document = MagicMock()
         mock_write.return_value = None
@@ -475,9 +400,7 @@ class TestSpdxJsonVersionGating:
         """SPDX RDF files are never converted."""
         parsed_document = MagicMock()
 
-        with patch(
-            "workbench_agent.utilities.sbom_validator.write_file"
-        ) as mock_write:
+        with patch("workbench_agent.utilities.sbom_validator.write_file") as mock_write:
             result = SBOMValidator._prepare_spdx_for_upload(
                 "/path/to/file.rdf",
                 parsed_document,

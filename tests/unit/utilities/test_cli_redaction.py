@@ -11,7 +11,6 @@ from workbench_agent.utilities.redaction import (
     redact_cli_args_for_logging,
 )
 
-
 # --- Module constants ---
 
 

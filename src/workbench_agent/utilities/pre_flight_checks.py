@@ -40,9 +40,7 @@ def scan_pre_flight_check(
     """
     # Skip idle checks for new scans (they're guaranteed to be idle)
     if scan_is_new:
-        logger.debug(
-            "Skipping idle checks - new scan is guaranteed to be idle"
-        )
+        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
         return
 
     print("\nEnsuring the Scan is Idle...")
@@ -50,9 +48,7 @@ def scan_pre_flight_check(
     # Check each process type individually
     try:
         # Check if extraction is active
-        extract_status = client.status_check.check_extract_archives_status(
-            scan_code
-        )
+        extract_status = client.status_check.check_extract_archives_status(scan_code)
         if extract_status.is_active:
             print(
                 "\nA prior Archive Extraction operation is in progress, "
@@ -71,10 +67,7 @@ def scan_pre_flight_check(
         # Check if scan is active
         scan_status = client.status_check.check_scan_status(scan_code)
         if scan_status.is_active:
-            print(
-                "\nA prior Scan operation is in progress, "
-                "waiting for it to complete."
-            )
+            print("\nA prior Scan operation is in progress, " "waiting for it to complete.")
             client.status_check.check_scan_status(
                 scan_code,
                 wait=True,
@@ -86,9 +79,7 @@ def scan_pre_flight_check(
 
     try:
         # Check if DA is active
-        da_status = client.status_check.check_dependency_analysis_status(
-            scan_code
-        )
+        da_status = client.status_check.check_dependency_analysis_status(scan_code)
         if da_status.is_active:
             print(
                 "\nA prior Dependency Analysis operation is in progress, "
@@ -130,9 +121,7 @@ def scan_git_pre_flight_check(
     """
     # Skip idle checks for new scans (they're guaranteed to be idle)
     if scan_is_new:
-        logger.debug(
-            "Skipping idle checks - new scan is guaranteed to be idle"
-        )
+        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
         return
 
     print("Ensuring the Scan is Idle...")
@@ -140,13 +129,10 @@ def scan_git_pre_flight_check(
     # Check each process type individually
     try:
         # Check if git clone is active
-        git_status = client.scan_content.check_git_clone_status(scan_code)
+        git_status = client.status_check.check_git_clone_status(scan_code)
         if git_status.is_active:
-            print(
-                "\nA prior Git Clone operation is in progress, "
-                "waiting for it to complete..."
-            )
-            client.scan_content.check_git_clone_status(
+            print("\nA prior Git Clone operation is in progress, " "waiting for it to complete...")
+            client.status_check.check_git_clone_status(
                 scan_code,
                 wait=True,
                 wait_retry_count=params.scan_number_of_tries,
@@ -159,10 +145,7 @@ def scan_git_pre_flight_check(
         # Check if scan is active
         scan_status = client.status_check.check_scan_status(scan_code)
         if scan_status.is_active:
-            print(
-                "\nA prior Scan operation is in progress, "
-                "waiting for it to complete."
-            )
+            print("\nA prior Scan operation is in progress, " "waiting for it to complete.")
             client.status_check.check_scan_status(
                 scan_code,
                 wait=True,
@@ -174,9 +157,7 @@ def scan_git_pre_flight_check(
 
     try:
         # Check if DA is active
-        da_status = client.status_check.check_dependency_analysis_status(
-            scan_code
-        )
+        da_status = client.status_check.check_dependency_analysis_status(scan_code)
         if da_status.is_active:
             print(
                 "\nA prior Dependency Analysis operation is in progress, "
@@ -217,9 +198,7 @@ def blind_scan_pre_flight_check(
     """
     # Skip idle checks for new scans (they're guaranteed to be idle)
     if scan_is_new:
-        logger.debug(
-            "Skipping idle checks - new scan is guaranteed to be idle"
-        )
+        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
         return
 
     print("\nEnsuring the Scan is Idle...")
@@ -229,10 +208,7 @@ def blind_scan_pre_flight_check(
         # Check if scan is active
         scan_status = client.status_check.check_scan_status(scan_code)
         if scan_status.is_active:
-            print(
-                "\nA prior Scan operation is in progress, "
-                "waiting for it to complete."
-            )
+            print("\nA prior Scan operation is in progress, " "waiting for it to complete.")
             client.status_check.check_scan_status(
                 scan_code,
                 wait=True,
@@ -244,9 +220,7 @@ def blind_scan_pre_flight_check(
 
     try:
         # Check if DA is active
-        da_status = client.status_check.check_dependency_analysis_status(
-            scan_code
-        )
+        da_status = client.status_check.check_dependency_analysis_status(scan_code)
         if da_status.is_active:
             print(
                 "\nA prior Dependency Analysis operation is in "
@@ -285,18 +259,14 @@ def import_da_pre_flight_check(
     """
     # Skip idle checks for new scans (they're guaranteed to be idle)
     if scan_is_new:
-        logger.debug(
-            "Skipping idle checks - new scan is guaranteed to be idle"
-        )
+        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
         return
 
     print("\nEnsuring Scan is Idle...")
 
     try:
         # Check if DA is active and wait if needed
-        da_status = client.status_check.check_dependency_analysis_status(
-            scan_code
-        )
+        da_status = client.status_check.check_dependency_analysis_status(scan_code)
         if da_status.is_active:
             client.status_check.check_dependency_analysis_status(
                 scan_code,
@@ -331,18 +301,14 @@ def import_sbom_pre_flight_check(
     """
     # Skip idle checks for new scans (they're guaranteed to be idle)
     if scan_is_new:
-        logger.debug(
-            "Skipping idle checks - new scan is guaranteed to be idle"
-        )
+        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
         return
 
     print("\nEnsuring the Scan is Idle...")
 
     try:
         # Check if report import is active and wait if needed
-        import_status = client.status_check.check_report_import_status(
-            scan_code
-        )
+        import_status = client.status_check.check_report_import_status(scan_code)
         if import_status.is_active:
             client.status_check.check_report_import_status(
                 scan_code,
@@ -386,10 +352,7 @@ def show_results_pre_flight_check(
             # Check if scan is active
             scan_status = client.status_check.check_scan_status(scan_code)
             if scan_status.is_active:
-                print(
-                    "\nKB Scan is still in progress, "
-                    "waiting for it to complete..."
-                )
+                print("\nKB Scan is still in progress, " "waiting for it to complete...")
                 client.status_check.check_scan_status(
                     scan_code,
                     wait=True,
@@ -404,13 +367,10 @@ def show_results_pre_flight_check(
         logger.debug("Checking dependency analysis completion status...")
         try:
             # Check if DA is active
-            da_status = client.status_check.check_dependency_analysis_status(
-                scan_code
-            )
+            da_status = client.status_check.check_dependency_analysis_status(scan_code)
             if da_status.is_active:
                 print(
-                    "\nDependency Analysis is still in progress, "
-                    "waiting for it to complete..."
+                    "\nDependency Analysis is still in progress, " "waiting for it to complete..."
                 )
                 client.status_check.check_dependency_analysis_status(
                     scan_code,
@@ -424,13 +384,9 @@ def show_results_pre_flight_check(
 
     except Exception as e:
         logger.warning(
-            f"Could not verify scan completion for '{scan_code}': {e}. "
-            f"Proceeding anyway."
+            f"Could not verify scan completion for '{scan_code}': {e}. " f"Proceeding anyway."
         )
-        print(
-            "\nWarning: Could not verify scan completion status. "
-            "Results may be incomplete."
-        )
+        print("\nWarning: Could not verify scan completion status. " "Results may be incomplete.")
 
 
 def evaluate_gates_pre_flight_check(
@@ -467,10 +423,7 @@ def evaluate_gates_pre_flight_check(
     # for translating them into the right exit status.
     scan_status = client.status_check.check_scan_status(scan_code)
     if scan_status.is_active:
-        print(
-            "KB Scan is still in progress, "
-            "waiting for it to complete..."
-        )
+        print("KB Scan is still in progress, " "waiting for it to complete...")
         client.status_check.check_scan_status(
             scan_code,
             wait=True,
@@ -478,14 +431,9 @@ def evaluate_gates_pre_flight_check(
             wait_retry_interval=params.scan_wait_time,
         )
 
-    da_status = client.status_check.check_dependency_analysis_status(
-        scan_code
-    )
+    da_status = client.status_check.check_dependency_analysis_status(scan_code)
     if da_status.is_active:
-        print(
-            "Dependency Analysis is still in progress, "
-            "waiting for it to complete..."
-        )
+        print("Dependency Analysis is still in progress, " "waiting for it to complete...")
         client.status_check.check_dependency_analysis_status(
             scan_code,
             wait=True,
@@ -493,9 +441,7 @@ def evaluate_gates_pre_flight_check(
             wait_retry_interval=params.scan_wait_time,
         )
 
-    logger.info(
-        "Verified all scans are idle. Checking gates..."
-    )
+    logger.info("Verified all scans are idle. Checking gates...")
 
 
 def download_reports_pre_flight_check(
@@ -530,10 +476,7 @@ def download_reports_pre_flight_check(
     try:
         scan_status = client.status_check.check_scan_status(scan_code)
         if scan_status.is_active:
-            print(
-                "\nKB Scan is still in progress, "
-                "waiting for it to complete..."
-            )
+            print("\nKB Scan is still in progress, " "waiting for it to complete...")
             client.status_check.check_scan_status(
                 scan_code,
                 wait=True,
@@ -545,20 +488,14 @@ def download_reports_pre_flight_check(
         print(f"\nWarning: KB Scan did not complete in time: {e}")
         print("Reports may be incomplete.")
         logger.warning(
-            f"Generating reports for scan '{scan_code}' with "
-            f"incomplete KB scan: {e}"
+            f"Generating reports for scan '{scan_code}' with " f"incomplete KB scan: {e}"
         )
 
     # Wait for dependency analysis
     try:
-        da_status = client.status_check.check_dependency_analysis_status(
-            scan_code
-        )
+        da_status = client.status_check.check_dependency_analysis_status(scan_code)
         if da_status.is_active:
-            print(
-                "\nDependency Analysis is still in progress, "
-                "waiting for it to complete..."
-            )
+            print("\nDependency Analysis is still in progress, " "waiting for it to complete...")
             client.status_check.check_dependency_analysis_status(
                 scan_code,
                 wait=True,
@@ -567,11 +504,6 @@ def download_reports_pre_flight_check(
             )
         print("Dependency Analysis has completed successfully.")
     except Exception as e:
-        print(
-            f"\nWarning: Dependency Analysis did not complete in time: {e}"
-        )
+        print(f"\nWarning: Dependency Analysis did not complete in time: {e}")
         print("Reports may have incomplete dependency information.")
-        logger.warning(
-            f"Generating reports for scan '{scan_code}' with "
-            f"incomplete DA: {e}"
-        )
+        logger.warning(f"Generating reports for scan '{scan_code}' with " f"incomplete DA: {e}")

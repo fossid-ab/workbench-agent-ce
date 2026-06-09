@@ -1,0 +1,19 @@
+{
+  "operation": "files_and_folders_get_folder_content",
+  "status": "1",
+  "data": [
+    {
+      "id": "Li9BbmRyb2lkLUJsdWV0b290aA==",
+      "text": "Android-Bluetooth",
+      "is_directory": "1",
+      "children": "1"
+    },
+    {
+      "id": "Li9jb25maWd1cmUuYWM=",
+      "icon": "images/common_file.png",
+      "is_directory": "0",
+      "text": "configure.ac"
+    }
+  ],
+  "message": "Success"
+}
