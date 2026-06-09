@@ -12,6 +12,7 @@ from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.clients.users import UsersClient
 from workbench_agent.api.clients.users.helpers import is_user_not_found
 
+
 @pytest.fixture
 def users_client(mock_session):
     api = BaseAPI(
