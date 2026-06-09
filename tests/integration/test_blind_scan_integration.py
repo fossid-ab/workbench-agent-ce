@@ -9,9 +9,7 @@ import pytest
 
 from workbench_agent.main import main
 
-FIXTURES_DIR = os.path.join(
-    os.path.dirname(__file__), os.pardir, "fixtures"
-)
+FIXTURES_DIR = os.path.join(os.path.dirname(__file__), os.pardir, "fixtures")
 # Real toolbox-style JSONL (no ``.fossid`` extension in-repo; tests copy it).
 SIGNATURES_FIXTURE = os.path.join(FIXTURES_DIR, "signatures")
 
@@ -24,12 +22,8 @@ def create_dummy_directory(tmp_path, content="dummy content"):
 
     # Add some files to make it look like a real project
     (dummy_dir / "main.py").write_text("print('Hello, World!')")
-    (dummy_dir / "requirements.txt").write_text(
-        "requests==2.28.0\nflask==2.2.0"
-    )
-    (dummy_dir / "README.md").write_text(
-        "# Test Project\nThis is a test project."
-    )
+    (dummy_dir / "requirements.txt").write_text("requests==2.28.0\nflask==2.2.0")
+    (dummy_dir / "README.md").write_text("# Test Project\nThis is a test project.")
 
     # Create a subdirectory
     sub_dir = dummy_dir / "src"
@@ -64,9 +58,7 @@ class TestBlindScanIntegration:
             pytest.skip("fossid-toolbox not available on system PATH")
         return toolbox_path
 
-    def test_blind_scan_success_flow(
-        self, mock_workbench_api, tmp_path, capsys, toolbox_available
-    ):
+    def test_blind_scan_success_flow(self, mock_workbench_api, tmp_path, capsys, toolbox_available):
         """
         Integration test for a successful 'blind-scan' command flow.
         Tests the complete workflow from hash generation to scan completion.
@@ -107,9 +99,7 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code == 0
-                ), "Command should exit with success code"
+                assert return_code == 0, "Command should exit with success code"
 
             # Verify we got success messages in the output
             captured = capsys.readouterr()
@@ -118,9 +108,7 @@ class TestBlindScanIntegration:
             assert "Validating FossID Toolbox" in combined_output
             assert "Hashing Target Path" in combined_output
 
-    def test_blind_scan_with_dependency_analysis(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_blind_scan_with_dependency_analysis(self, mock_workbench_api, tmp_path, capsys):
         """
         Test blind-scan command with dependency analysis enabled.
         """
@@ -128,12 +116,10 @@ class TestBlindScanIntegration:
 
         # Mock ToolboxWrapper
         mock_toolbox = MagicMock()
-        mock_toolbox.get_version.return_value = (
-            "FossID Toolbox version 2023.2.1"
-        )
+        mock_toolbox.get_version.return_value = "FossID Toolbox version 2023.2.1"
         mock_fossid = tmp_path / "mock_toolbox_out.fossid"
-        mock_toolbox.generate_hashes.return_value = (
-            copy_signatures_fixture_as_mock_fossid(mock_fossid)
+        mock_toolbox.generate_hashes.return_value = copy_signatures_fixture_as_mock_fossid(
+            mock_fossid
         )
 
         with (
@@ -170,17 +156,13 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code == 0
-                ), "Command should exit with success code"
+                assert return_code == 0, "Command should exit with success code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
             assert "DEPENDENCY_ANALYSIS" in combined_output
 
-    def test_blind_scan_no_wait_mode(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_blind_scan_no_wait_mode(self, mock_workbench_api, tmp_path, capsys):
         """
         Test blind-scan command with --no-wait flag.
         """
@@ -188,12 +170,10 @@ class TestBlindScanIntegration:
 
         # Mock ToolboxWrapper
         mock_toolbox = MagicMock()
-        mock_toolbox.get_version.return_value = (
-            "FossID Toolbox version 2023.2.1"
-        )
+        mock_toolbox.get_version.return_value = "FossID Toolbox version 2023.2.1"
         mock_fossid = tmp_path / "mock_toolbox_out_nowait.fossid"
-        mock_toolbox.generate_hashes.return_value = (
-            copy_signatures_fixture_as_mock_fossid(mock_fossid)
+        mock_toolbox.generate_hashes.return_value = copy_signatures_fixture_as_mock_fossid(
+            mock_fossid
         )
 
         with (
@@ -230,20 +210,13 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code == 0
-                ), "Command should exit with success code"
+                assert return_code == 0, "Command should exit with success code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
-            assert (
-                "--no-wait" in combined_output
-                or "no-wait" in combined_output.lower()
-            )
+            assert "--no-wait" in combined_output or "no-wait" in combined_output.lower()
 
-    def test_blind_scan_invalid_path(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_blind_scan_invalid_path(self, mock_workbench_api, tmp_path, capsys):
         """
         Test blind-scan command with an invalid path.
         """
@@ -270,17 +243,13 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code != 0
-                ), "Command should exit with error code"
+                assert return_code != 0, "Command should exit with error code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
             assert "does not exist" in combined_output
 
-    def test_blind_scan_non_fossid_file_rejected(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_blind_scan_non_fossid_file_rejected(self, mock_workbench_api, tmp_path, capsys):
         """
         Test blind-scan rejects non-.fossid files (only directories
         and .fossid files are accepted).
@@ -313,20 +282,13 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code != 0
-                ), "Command should exit with error code"
+                assert return_code != 0, "Command should exit with error code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
-            assert (
-                "must be a directory or a .fossid file"
-                in combined_output
-            )
+            assert "must be a directory or a .fossid file" in combined_output
 
-    def test_blind_scan_with_pregenerated_fossid_file(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_blind_scan_with_pregenerated_fossid_file(self, mock_workbench_api, tmp_path, capsys):
         """
         Test blind-scan accepts a .fossid file,
         skips Toolbox hashing, and uploads it directly.
@@ -359,9 +321,7 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code == 0
-                ), "Command should exit with success code"
+                assert return_code == 0, "Command should exit with success code"
 
             # Toolbox should never be instantiated
             mock_toolbox_cls.assert_not_called()
@@ -372,9 +332,7 @@ class TestBlindScanIntegration:
             assert "Skipping hash generation" in combined_output
             assert "Validating FossID Toolbox" not in combined_output
 
-    def test_blind_scan_with_invalid_fossid_file(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_blind_scan_with_invalid_fossid_file(self, mock_workbench_api, tmp_path, capsys):
         """
         Test blind-scan rejects a .fossid file with invalid schema.
         """
@@ -401,17 +359,13 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code != 0
-                ), "Command should exit with error code"
+                assert return_code != 0, "Command should exit with error code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
             assert "Invalid JSON" in combined_output
 
-    def test_blind_scan_with_empty_fossid_file(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_blind_scan_with_empty_fossid_file(self, mock_workbench_api, tmp_path, capsys):
         """
         Test blind-scan rejects an empty .fossid file.
         """
@@ -438,17 +392,13 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code != 0
-                ), "Command should exit with error code"
+                assert return_code != 0, "Command should exit with error code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
             assert "empty" in combined_output.lower()
 
-    def test_blind_scan_cli_version_warning(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_blind_scan_cli_version_warning(self, mock_workbench_api, tmp_path, capsys):
         """
         Test blind-scan fails when Toolbox version check fails.
         """
@@ -456,12 +406,8 @@ class TestBlindScanIntegration:
 
         # Mock ToolboxWrapper with version failure
         mock_toolbox = MagicMock()
-        mock_toolbox.get_version.side_effect = Exception(
-            "Version check failed"
-        )
-        mock_toolbox.generate_hashes.return_value = (
-            "/tmp/blind_scan_result_TESTRAND.fossid"
-        )
+        mock_toolbox.get_version.side_effect = Exception("Version check failed")
+        mock_toolbox.generate_hashes.return_value = "/tmp/blind_scan_result_TESTRAND.fossid"
 
         with (
             patch(
@@ -496,20 +442,13 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code != 0
-                ), "Command should fail when version check fails"
+                assert return_code != 0, "Command should fail when version check fails"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
-            assert (
-                "Version check failed" in combined_output
-                or "Toolbox" in combined_output
-            )
+            assert "Version check failed" in combined_output or "Toolbox" in combined_output
 
-    def test_blind_scan_dependency_analysis_only(
-        self, mock_workbench_api, tmp_path, capsys
-    ):
+    def test_blind_scan_dependency_analysis_only(self, mock_workbench_api, tmp_path, capsys):
         """
         Test blind-scan command with dependency analysis only (no KB scan).
         """
@@ -517,12 +456,10 @@ class TestBlindScanIntegration:
 
         # Mock ToolboxWrapper
         mock_toolbox = MagicMock()
-        mock_toolbox.get_version.return_value = (
-            "FossID Toolbox version 2023.2.1"
-        )
+        mock_toolbox.get_version.return_value = "FossID Toolbox version 2023.2.1"
         mock_fossid = tmp_path / "mock_toolbox_out_daonly.fossid"
-        mock_toolbox.generate_hashes.return_value = (
-            copy_signatures_fixture_as_mock_fossid(mock_fossid)
+        mock_toolbox.generate_hashes.return_value = copy_signatures_fixture_as_mock_fossid(
+            mock_fossid
         )
 
         with (
@@ -559,9 +496,7 @@ class TestBlindScanIntegration:
 
             with patch.object(sys, "argv", args):
                 return_code = main()
-                assert (
-                    return_code == 0
-                ), "Command should exit with success code"
+                assert return_code == 0, "Command should exit with success code"
 
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err

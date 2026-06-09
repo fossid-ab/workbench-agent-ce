@@ -22,9 +22,7 @@ def validate_standard_upload_response(response: requests.Response) -> None:
     Successful uploads return HTTP 200 with optional JSON ``status: "1"``.
     """
     if response.status_code != 200:
-        raise ApiError(
-            f"Upload failed with status {response.status_code}: {response.text}"
-        )
+        raise ApiError(f"Upload failed with status {response.status_code}: {response.text}")
     try:
         response_data: Dict[str, Any] = response.json()
     except ValueError:
@@ -55,17 +53,13 @@ def validate_chunk_upload_response(
 
     if retry_count < max_retries:
         logger.warning(
-            "Chunk %s returned status %s, retrying... "
-            "(attempt %s/%s)",
+            "Chunk %s returned status %s, retrying... " "(attempt %s/%s)",
             chunk_number,
             response.status_code,
             retry_count + 1,
             max_retries + 1,
         )
-        raise ApiError(
-            f"Chunk {chunk_number} upload failed with status "
-            f"{response.status_code}"
-        )
+        raise ApiError(f"Chunk {chunk_number} upload failed with status " f"{response.status_code}")
 
     logger.error(
         "Chunk %s failed after %s attempts with status %s",

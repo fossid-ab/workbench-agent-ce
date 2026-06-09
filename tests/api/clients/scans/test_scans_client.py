@@ -5,13 +5,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
+from workbench_agent.api.base_api import BaseAPI
+
 # Import from the new client structure
 from workbench_agent.api.clients.scans import ScansClient
 from workbench_agent.api.exceptions import (
     ApiError,
     ScanNotFoundError,
 )
-from workbench_agent.api.base_api import BaseAPI
 
 
 # --- Fixtures ---
@@ -69,10 +70,7 @@ def test_create_scan_with_git_branch(mock_send, scans_client):
     result = scans_client.create(data)
     assert result == 999  # Returns scan_id as int
     payload = mock_send.call_args[0][0]
-    assert (
-        payload["data"]["git_repo_url"]
-        == "https://github.com/example/repo.git"
-    )
+    assert payload["data"]["git_repo_url"] == "https://github.com/example/repo.git"
     assert payload["data"]["git_branch"] == "main"
     assert payload["data"]["git_ref_type"] == "branch"
 
@@ -90,13 +88,8 @@ def test_create_scan_with_git_tag(mock_send, scans_client):
     result = scans_client.create(data)
     assert result == 999  # Returns scan_id as int
     payload = mock_send.call_args[0][0]
-    assert (
-        payload["data"]["git_repo_url"]
-        == "https://github.com/example/repo.git"
-    )
-    assert (
-        payload["data"]["git_branch"] == "v1.0.0"
-    )  # API uses git_branch field for both values
+    assert payload["data"]["git_repo_url"] == "https://github.com/example/repo.git"
+    assert payload["data"]["git_branch"] == "v1.0.0"  # API uses git_branch field for both values
     assert payload["data"]["git_ref_type"] == "tag"
 
 
@@ -113,10 +106,7 @@ def test_create_scan_with_git_commit(mock_send, scans_client):
     result = scans_client.create(data)
     assert result == 999  # Returns scan_id as int
     payload = mock_send.call_args[0][0]
-    assert (
-        payload["data"]["git_repo_url"]
-        == "https://github.com/example/repo.git"
-    )
+    assert payload["data"]["git_repo_url"] == "https://github.com/example/repo.git"
     assert payload["data"]["git_branch"] == "abc123def456"
     assert payload["data"]["git_ref_type"] == "commit"
 
@@ -202,9 +192,7 @@ def test_check_status_download_content_from_git(mock_send, scans_client):
         "status": "1",
         "data": {"status": "RUNNING", "other_info": "test"},
     }
-    status_data = scans_client.check_status_download_content_from_git(
-        "scan1"
-    )
+    status_data = scans_client.check_status_download_content_from_git("scan1")
     assert status_data == {"status": "RUNNING", "other_info": "test"}
     mock_send.assert_called_once()
     payload = mock_send.call_args[0][0]
@@ -233,15 +221,11 @@ def test_remove_uploaded_content_file_not_found(mock_send, scans_client):
     mock_send.return_value = {
         "status": "0",
         "error": "RequestData.Base.issues_while_parsing_request",
-        "data": [
-            {"code": "RequestData.Traits.PathTrait.filename_is_not_valid"}
-        ],
+        "data": [{"code": "RequestData.Traits.PathTrait.filename_is_not_valid"}],
     }
 
     # Should return True since the end goal (file not present) is satisfied
-    result = scans_client.remove_uploaded_content(
-        "scan1", "nonexistent.txt"
-    )
+    result = scans_client.remove_uploaded_content("scan1", "nonexistent.txt")
     assert result is True
     mock_send.assert_called_once()
 
@@ -286,9 +270,7 @@ def test_extract_archives_api_error(mock_send, scans_client):
         "recursively_extract_archives": "true",
         "jar_file_extraction": "true",
     }
-    with pytest.raises(
-        ApiError, match="Archive extraction failed for scan 'scan1'"
-    ):
+    with pytest.raises(ApiError, match="Archive extraction failed for scan 'scan1'"):
         scans_client.extract_archives(payload_data)
 
 
@@ -382,9 +364,7 @@ def test_run_scan_with_id_reuse_project(mock_send, scans_client):
     scans_client.run(payload_data)
     payload = mock_send.call_args[0][0]
     assert payload["data"]["reuse_identification"] == "1"
-    assert (
-        payload["data"]["identification_reuse_type"] == "specific_project"
-    )
+    assert payload["data"]["identification_reuse_type"] == "specific_project"
     assert payload["data"]["specific_code"] == "PROJECT_CODE"
 
 
@@ -521,7 +501,8 @@ def test_check_status_delete_scan_omits_scan_code(mock_send, scans_client):
 
 @patch.object(BaseAPI, "_send_request")
 def test_check_status_delete_scan_data_bool_true_means_finished(
-    mock_send, scans_client,
+    mock_send,
+    scans_client,
 ):
     """API may return data=true with message when deletion is complete."""
     mock_send.return_value = {
@@ -753,9 +734,7 @@ def test_update_dependency_analysis_results(mock_send, scans_client):
 @patch.object(BaseAPI, "_send_request")
 def test_remove_dependency_analysis_results(mock_send, scans_client):
     mock_send.return_value = {"status": "1", "data": True}
-    assert scans_client.remove_dependency_analysis_results(
-        "scan1", "abbrev", "1.1.1"
-    )
+    assert scans_client.remove_dependency_analysis_results("scan1", "abbrev", "1.1.1")
     payload = mock_send.call_args[0][0]
     assert payload["action"] == "remove_dependency_analysis_results"
     assert payload["data"] == {
@@ -861,9 +840,7 @@ def test_run_scan_api_failure(mock_send_request, scans_client, caplog):
         "sensitivity": 10,
     }
 
-    with pytest.raises(
-        ApiError, match="Failed to run scan 'scan1': API failure"
-    ):
+    with pytest.raises(ApiError, match="Failed to run scan 'scan1': API failure"):
         scans_client.run(payload_data)
 
     mock_send_request.assert_called_once()
@@ -934,9 +911,7 @@ def test_list_scans_unexpected_format(mock_send, scans_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_check_status_requires_process_id_for_report_generation(
-    mock_send, scans_client
-):
+def test_check_status_requires_process_id_for_report_generation(mock_send, scans_client):
     # The new implementation doesn't validate process_id upfront - it will fail with ApiError
     # when the API returns an error. Let's test that it calls the API without process_id
     mock_send.return_value = {
@@ -948,9 +923,7 @@ def test_check_status_requires_process_id_for_report_generation(
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_check_status_unsupported_maps_to_exception(
-    mock_send, scans_client
-):
+def test_check_status_unsupported_maps_to_exception(mock_send, scans_client):
     # The new implementation doesn't convert ApiError to UnsupportedStatusCheck
     # It just raises ApiError directly
     mock_send.side_effect = ApiError("Field_not_valid_option: type")
@@ -962,12 +935,8 @@ def test_check_status_unsupported_maps_to_exception(
 @patch.object(BaseAPI, "_send_request")
 def test_check_status_api_error_generic(mock_send, scans_client):
     mock_send.return_value = {"status": "0", "error": "Bad request"}
-    with pytest.raises(
-        ApiError, match="Failed to retrieve REPORT_GENERATION status"
-    ):
-        scans_client.check_status(
-            "scan1", "REPORT_GENERATION", process_id="99"
-        )
+    with pytest.raises(ApiError, match="Failed to retrieve REPORT_GENERATION status"):
+        scans_client.check_status("scan1", "REPORT_GENERATION", process_id="99")
 
 
 @patch.object(BaseAPI, "_send_request")
@@ -985,9 +954,7 @@ def test_get_pending_files_status0_returns_empty(mock_send, scans_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_policy_warnings_counter_scan_not_found(
-    mock_send, scans_client
-):
+def test_get_policy_warnings_counter_scan_not_found(mock_send, scans_client):
     mock_send.return_value = {"status": "0", "error": "row_not_found"}
     with pytest.raises(ScanNotFoundError):
         scans_client.get_policy_warnings_counter("scan1")
@@ -1001,9 +968,7 @@ def test_get_policy_warnings_counter_api_error(mock_send, scans_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_scan_identified_components_scan_not_found(
-    mock_send, scans_client
-):
+def test_get_scan_identified_components_scan_not_found(mock_send, scans_client):
     mock_send.return_value = {"status": "0", "error": "Scan not found"}
     with pytest.raises(ScanNotFoundError):
         scans_client.get_scan_identified_components("scan1")
@@ -1017,27 +982,21 @@ def test_get_scan_identified_components_api_error(mock_send, scans_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_scan_identified_licenses_no_data_key_returns_empty(
-    mock_send, scans_client
-):
+def test_get_scan_identified_licenses_no_data_key_returns_empty(mock_send, scans_client):
     mock_send.return_value = {"status": "1"}
     licenses = scans_client.get_scan_identified_licenses("scan1")
     assert licenses == []
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_scan_folder_metrics_unexpected_data_format(
-    mock_send, scans_client
-):
+def test_get_scan_folder_metrics_unexpected_data_format(mock_send, scans_client):
     mock_send.return_value = {"status": "1", "data": [1, 2, 3]}
     with pytest.raises(ApiError, match="Unexpected data format"):
         scans_client.get_scan_folder_metrics("scan1")
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_check_status_download_content_from_git_failure(
-    mock_send, scans_client
-):
+def test_check_status_download_content_from_git_failure(mock_send, scans_client):
     mock_send.return_value = {"status": "0", "error": "Not available"}
     with pytest.raises(ApiError):
         scans_client.check_status_download_content_from_git("scan1")

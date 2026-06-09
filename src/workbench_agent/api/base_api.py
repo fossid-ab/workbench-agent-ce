@@ -81,9 +81,7 @@ class BaseAPI:
         redacted_req_body = json.dumps(redact_sensitive_data(payload))
         logger.debug("API URL: %s", self.api_url)
         if LOG_HEADERS:
-            logger.debug(
-                "Request Headers: %s", redact_sensitive_data(headers)
-            )
+            logger.debug("Request Headers: %s", redact_sensitive_data(headers))
         logger.debug("Request Body: %s", redacted_req_body)
 
         try:
@@ -100,23 +98,16 @@ class BaseAPI:
                     redact_sensitive_data(dict(response.headers)),
                 )
             # Log first part of text regardless of JSON success/failure
-            response_text = (
-                response.text if hasattr(response, "text") else "(No text)"
-            )
+            response_text = response.text if hasattr(response, "text") else "(No text)"
             redacted_response_text = redact_response_text(
                 response_text,
                 self.api_token,
             )
-            logger.debug(
-                f"Response Text (first 500 chars): "
-                f"{redacted_response_text[:500]}"
-            )
+            logger.debug(f"Response Text (first 500 chars): " f"{redacted_response_text[:500]}")
 
             # Handle authentication errors
             if response.status_code == 401:
-                raise AuthenticationError(
-                    "Invalid credentials or expired token"
-                )
+                raise AuthenticationError("Invalid credentials or expired token")
 
             response.raise_for_status()
 
@@ -125,13 +116,8 @@ class BaseAPI:
                 try:
                     parsed_json = response.json()
                     # Check for API-level errors indicated by status='0'
-                    if (
-                        isinstance(parsed_json, dict)
-                        and parsed_json.get("status") == "0"
-                    ):
-                        error_msg = parsed_json.get(
-                            "error", "Unknown API error"
-                        )
+                    if isinstance(parsed_json, dict) and parsed_json.get("status") == "0":
+                        error_msg = parsed_json.get("error", "Unknown API error")
                         logger.debug(
                             f"API returned status 0 JSON: {error_msg} | "
                             f"Payload: {redact_sensitive_data(payload)}"
@@ -140,8 +126,7 @@ class BaseAPI:
                         is_invalid_type_probe = False
                         if (
                             payload.get("action") == "check_status"
-                            and error_msg
-                            == "RequestData.Base.issues_while_parsing_request"
+                            and error_msg == "RequestData.Base.issues_while_parsing_request"
                             and isinstance(parsed_json.get("data"), list)
                             and len(parsed_json["data"]) > 0
                             and isinstance(parsed_json["data"][0], dict)
@@ -154,37 +139,36 @@ class BaseAPI:
                         ):
                             is_invalid_type_probe = True
                             logger.debug(
-                                "Detected 'invalid type option' error during "
-                                "check_status probe."
+                                "Detected 'invalid type option' error during " "check_status probe."
                             )
 
                         # Determine if this error is expected and non-fatal
                         # Domain clients interpret status "0" themselves
                         is_client_handled_status_zero = (
-                            payload.get("group") == "projects"
-                            and payload.get("action")
-                            in (
-                                "get_information",
-                                "get_all_scans",
-                                "create",
-                                "update",
-                                "generate_report",
+                            (
+                                payload.get("group") == "projects"
+                                and payload.get("action")
+                                in (
+                                    "get_information",
+                                    "get_all_scans",
+                                    "create",
+                                    "update",
+                                    "generate_report",
+                                )
                             )
-                        ) or (
-                            payload.get("group") == "users"
-                            and payload.get("action")
-                            in (
-                                "get_information",
-                                "get_user_permissions_list",
+                            or (
+                                payload.get("group") == "users"
+                                and payload.get("action")
+                                in (
+                                    "get_information",
+                                    "get_user_permissions_list",
+                                )
                             )
-                        ) or (payload.get("group") == "components") or (
-                            payload.get("group") == "files_and_folders"
+                            or (payload.get("group") == "components")
+                            or (payload.get("group") == "files_and_folders")
                         )
 
-                        if (
-                            is_invalid_type_probe
-                            or is_client_handled_status_zero
-                        ):
+                        if is_invalid_type_probe or is_client_handled_status_zero:
                             # Don't raise an exception for these expected cases
                             return parsed_json
                         else:
@@ -200,10 +184,7 @@ class BaseAPI:
                     raise ApiError(f"Invalid JSON response: {e}")
             else:
                 # Handle non-JSON responses (like file downloads)
-                logger.debug(
-                    "Non-JSON response received "
-                    f"(Content-Type: {content_type})"
-                )
+                logger.debug("Non-JSON response received " f"(Content-Type: {content_type})")
                 return {"_raw_response": response}
 
         except requests.exceptions.Timeout:
@@ -212,13 +193,9 @@ class BaseAPI:
             raise NetworkError(f"Connection error: {e}")
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 401:
-                raise AuthenticationError(
-                    "Invalid credentials or expired token"
-                )
+                raise AuthenticationError("Invalid credentials or expired token")
             raise NetworkError(f"HTTP error {e.response.status_code}: {e}")
         except Exception as e:
-            if isinstance(
-                e, (ApiError, AuthenticationError, NetworkError)
-            ):
+            if isinstance(e, (ApiError, AuthenticationError, NetworkError)):
                 raise
             raise NetworkError(f"Unexpected request error: {e}")

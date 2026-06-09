@@ -110,9 +110,7 @@ def check_scan_reuse(
     if required is not None and actual != required:
         details: dict[str, str] = {}
         if actual == ScanType.GIT:
-            git_repo = scan_info.get(
-                "git_repo_url", scan_info.get("git_url")
-            )
+            git_repo = scan_info.get("git_repo_url", scan_info.get("git_url"))
             if git_repo:
                 details["git_repo"] = str(git_repo)
         return ScanReuseIssue(
@@ -131,9 +129,7 @@ def check_scan_reuse(
                 code=ScanReuseIssueCode.GIT_REPO_MISMATCH,
                 actual=actual,
                 required=required,
-                git=GitTargetComparison(
-                    existing=existing, requested=requested
-                ),
+                git=GitTargetComparison(existing=existing, requested=requested),
                 details={
                     "existing_repo": str(existing.url or ""),
                     "requested_repo": str(requested.url or ""),
@@ -149,9 +145,7 @@ def check_scan_reuse(
                 code=ScanReuseIssueCode.GIT_REF_TYPE_MISMATCH,
                 actual=actual,
                 required=required,
-                git=GitTargetComparison(
-                    existing=existing, requested=requested
-                ),
+                git=GitTargetComparison(existing=existing, requested=requested),
                 details={
                     "existing_ref_type": str(existing.ref_type),
                     "requested_ref_type": str(requested.ref_type),
@@ -163,9 +157,7 @@ def check_scan_reuse(
                 code=ScanReuseIssueCode.GIT_REF_VALUE_MISMATCH,
                 actual=actual,
                 required=required,
-                git=GitTargetComparison(
-                    existing=existing, requested=requested
-                ),
+                git=GitTargetComparison(existing=existing, requested=requested),
                 details={
                     "existing_ref_type": str(existing.ref_type or "ref"),
                     "existing_ref_value": str(existing.ref_value or ""),

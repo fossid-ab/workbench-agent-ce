@@ -98,11 +98,7 @@ def _component_identification_record(
     components = identification.get("component_identification")
     if isinstance(components, dict) and components:
         return components
-    if (
-        isinstance(components, list)
-        and components
-        and isinstance(components[0], Mapping)
-    ):
+    if isinstance(components, list) and components and isinstance(components[0], Mapping):
         return components[0]
     return None
 
@@ -247,15 +243,9 @@ def _summarize_identification_state(
     record = _component_identification_record(identification)
     return {
         "has_identification_record": _has_identification_record(identification),
-        "has_component_identification": _has_identification_record(
-            identification
-        ),
-        "has_linked_catalog_component": _has_linked_catalog_component(
-            identification
-        ),
-        "linked_catalog_components": _parse_linked_catalog_components(
-            identification
-        ),
+        "has_component_identification": _has_identification_record(identification),
+        "has_linked_catalog_component": _has_linked_catalog_component(identification),
+        "linked_catalog_components": _parse_linked_catalog_components(identification),
         "has_file_license": _has_file_license(identification),
         "has_copyright": _has_copyright(identification),
         "is_marked_identified": _parse_identifying_done(identification),
@@ -303,63 +293,37 @@ class IdentificationService:
         Maps scan file id → relative path. Use **values** as paths for file
         APIs (auditor workflow entry point).
         """
-        logger.debug(
-            "Fetching pending files for scan '%s'", scan_code
-        )
+        logger.debug("Fetching pending files for scan '%s'", scan_code)
         return self._scans.get_pending_files(scan_code)
 
     def get_scan_metrics(self, scan_code: str) -> Dict[str, Any]:
         """Return scan-level file metrics (total, pending, identified, …)."""
-        logger.debug(
-            "Fetching scan metrics for scan '%s'", scan_code
-        )
+        logger.debug("Fetching scan metrics for scan '%s'", scan_code)
         return self._scans.get_scan_folder_metrics(scan_code)
 
-    def get_identified_components(
-        self, scan_code: str
-    ) -> List[Dict[str, Any]]:
+    def get_identified_components(self, scan_code: str) -> List[Dict[str, Any]]:
         """Return KB-identified components for a scan."""
-        logger.debug(
-            "Fetching identified components for scan '%s'", scan_code
-        )
+        logger.debug("Fetching identified components for scan '%s'", scan_code)
         return self._scans.get_scan_identified_components(scan_code)
 
-    def get_unique_identified_licenses(
-        self, scan_code: str
-    ) -> List[Dict[str, Any]]:
+    def get_unique_identified_licenses(self, scan_code: str) -> List[Dict[str, Any]]:
         """Return unique identified licenses (identifier + name) for a scan."""
-        logger.debug(
-            "Fetching unique identified licenses for scan '%s'", scan_code
-        )
-        return self._scans.get_scan_identified_licenses(
-            scan_code, unique=True
-        )
+        logger.debug("Fetching unique identified licenses for scan '%s'", scan_code)
+        return self._scans.get_scan_identified_licenses(scan_code, unique=True)
 
-    def get_all_identified_licenses(
-        self, scan_code: str
-    ) -> List[Dict[str, Any]]:
+    def get_all_identified_licenses(self, scan_code: str) -> List[Dict[str, Any]]:
         """Return all identified licenses including file paths for a scan."""
-        logger.debug(
-            "Fetching all identified licenses for scan '%s'", scan_code
-        )
-        return self._scans.get_scan_identified_licenses(
-            scan_code, unique=False
-        )
+        logger.debug("Fetching all identified licenses for scan '%s'", scan_code)
+        return self._scans.get_scan_identified_licenses(scan_code, unique=False)
 
     # ===== FILE-LEVEL READ / REVIEW =====
 
-    def get_identification(
-        self, scan_code: str, path: str
-    ) -> Dict[str, Any]:
+    def get_identification(self, scan_code: str, path: str) -> Dict[str, Any]:
         """Return current identification data for a scan file."""
-        logger.debug(
-            "Getting identification for '%s' in scan '%s'", path, scan_code
-        )
+        logger.debug("Getting identification for '%s' in scan '%s'", path, scan_code)
         return self._files.get_identification(scan_code, path)
 
-    def summarize_identification_data(
-        self, identification: Mapping[str, Any]
-    ) -> Dict[str, Any]:
+    def summarize_identification_data(self, identification: Mapping[str, Any]) -> Dict[str, Any]:
         """
         Summarize identification fields from raw ``get_identification`` data.
 
@@ -367,9 +331,7 @@ class IdentificationService:
         """
         return _summarize_identification_state(identification)
 
-    def summarize_identification(
-        self, scan_code: str, path: str
-    ) -> Dict[str, Any]:
+    def summarize_identification(self, scan_code: str, path: str) -> Dict[str, Any]:
         """Return a summary of identification state for a file."""
         data = self.get_identification(scan_code, path)
         summary = self.summarize_identification_data(data)
@@ -379,9 +341,7 @@ class IdentificationService:
 
     def get_matches(self, scan_code: str, path: str) -> Dict[str, Any]:
         """Return FossID match candidates for a file (max 10)."""
-        logger.debug(
-            "Getting FossID matches for '%s' in scan '%s'", path, scan_code
-        )
+        logger.debug("Getting FossID matches for '%s' in scan '%s'", path, scan_code)
         return self._files.get_fossid_results(scan_code, path)
 
     def get_matched_content(
@@ -391,13 +351,9 @@ class IdentificationService:
         client_result_id: str,
     ) -> Dict[str, Any]:
         """Return matched lines for a partial FossID match."""
-        return self._files.get_matched_lines(
-            scan_code, path, client_result_id
-        )
+        return self._files.get_matched_lines(scan_code, path, client_result_id)
 
-    def get_file_comments(
-        self, scan_code: str, path: str
-    ) -> list:
+    def get_file_comments(self, scan_code: str, path: str) -> list:
         """Return auditor comments attached to a scan file."""
         return self._files.get_file_comments(scan_code, path)
 
@@ -415,12 +371,8 @@ class IdentificationService:
         ``get_folder_components_ranking`` for a single folder path.
         """
         view = "pending_items" if pending_only else "show_all"
-        components = self._files.get_folder_components_ranking(
-            scan_code, path
-        )
-        extensions = self._files.get_folder_extensions_ranking(
-            scan_code, path, current_view=view
-        )
+        components = self._files.get_folder_components_ranking(scan_code, path)
+        extensions = self._files.get_folder_extensions_ranking(scan_code, path, current_view=view)
         return {
             "path": path,
             "scan_code": scan_code,
@@ -454,9 +406,7 @@ class IdentificationService:
 
         Creates the catalog entry when missing; returns field metadata either way.
         """
-        fields = _fossid_match_to_component_fields(
-            match, license_identifier=license_identifier
-        )
+        fields = _fossid_match_to_component_fields(match, license_identifier=license_identifier)
         return self.resolve_component(**fields)
 
     def resolve_component(
@@ -552,9 +502,7 @@ class IdentificationService:
         name = fields["component_name"]
         version = fields["component_version"]
         if not name or not version:
-            raise ValueError(
-                "Match is missing artifact name or version for whole-file ID"
-            )
+            raise ValueError("Match is missing artifact name or version for whole-file ID")
         license_id = fields.get("license_identifier") or ""
         if not license_id:
             raise ValueError(
@@ -581,9 +529,7 @@ class IdentificationService:
         )
         license_result = None
         if add_file_license:
-            license_result = self.add_file_license_to_file(
-                scan_code, path, license_id
-            )
+            license_result = self.add_file_license_to_file(scan_code, path, license_id)
         return {
             "fields": fields,
             "catalog": resolved,
@@ -601,12 +547,8 @@ class IdentificationService:
         matches = self.get_matches(scan_code, path)
         match = _find_first_match(matches, match_type="full")
         if match is None:
-            raise ValueError(
-                f"No full-file FossID match available for '{path}'"
-            )
-        result = self.identify_whole_file_from_match(
-            scan_code, path, match, **kwargs
-        )
+            raise ValueError(f"No full-file FossID match available for '{path}'")
+        result = self.identify_whole_file_from_match(scan_code, path, match, **kwargs)
         result["match"] = match
         return result
 
@@ -683,9 +625,7 @@ class IdentificationService:
 
         Fetches matched lines from Workbench to build the comment text.
         """
-        matched_lines = self.get_matched_content(
-            scan_code, path, client_result_id
-        )
+        matched_lines = self.get_matched_content(scan_code, path, client_result_id)
         comment = _build_snippet_comment(match, matched_lines)
         license_result = self._files.add_license_identification(
             scan_code,
@@ -694,9 +634,7 @@ class IdentificationService:
             "snippet",
             is_directory=False,
         )
-        comment_result = self._files.add_file_comment(
-            scan_code, path, comment
-        )
+        comment_result = self._files.add_file_comment(scan_code, path, comment)
         return {
             "license": license_result,
             "comment": comment_result,
@@ -732,9 +670,7 @@ class IdentificationService:
         is_directory: bool = False,
     ) -> Dict[str, Any]:
         """Mark a file or folder as identified."""
-        result = self._files.mark_as_identified(
-            scan_code, path, is_directory=is_directory
-        )
+        result = self._files.mark_as_identified(scan_code, path, is_directory=is_directory)
         result["is_marked_identified"] = _parse_identifying_done(
             self.get_identification(scan_code, path)
         )
@@ -748,9 +684,7 @@ class IdentificationService:
         is_directory: bool = False,
     ) -> Dict[str, Any]:
         """Remove identified status from a file or folder."""
-        result = self._files.unmark_as_identified(
-            scan_code, path, is_directory=is_directory
-        )
+        result = self._files.unmark_as_identified(scan_code, path, is_directory=is_directory)
         result["is_marked_identified"] = _parse_identifying_done(
             self.get_identification(scan_code, path)
         )
@@ -779,14 +713,10 @@ class IdentificationService:
             }
 
         result = self._files.change_distribution_status(scan_code, path)
-        after = _parse_distribution_status(
-            self.get_identification(scan_code, path)
-        )
+        after = _parse_distribution_status(self.get_identification(scan_code, path))
         if after is not None and after != distributed:
             result = self._files.change_distribution_status(scan_code, path)
-            after = _parse_distribution_status(
-                self.get_identification(scan_code, path)
-            )
+            after = _parse_distribution_status(self.get_identification(scan_code, path))
 
         return {
             "changed": True,

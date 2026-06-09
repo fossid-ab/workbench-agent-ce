@@ -73,18 +73,16 @@ class TestVulnerabilitiesLiveMutations:
             vuln_exp_id = create_response["data"]["id"]
 
         try:
-            update_response = (
-                workbench_client.vulnerabilities._api._send_request(
-                    {
-                        "group": "vulnerabilities",
-                        "action": "vulnerability_exploitability_update",
-                        "data": {
-                            "vuln_exp_id": vuln_exp_id,
-                            "vuln_exp_status": "not_affected",
-                            "vuln_exp_details": "api live test updated",
-                        },
-                    }
-                )
+            update_response = workbench_client.vulnerabilities._api._send_request(
+                {
+                    "group": "vulnerabilities",
+                    "action": "vulnerability_exploitability_update",
+                    "data": {
+                        "vuln_exp_id": vuln_exp_id,
+                        "vuln_exp_status": "not_affected",
+                        "vuln_exp_details": "api live test updated",
+                    },
+                }
             )
             assert_contract(
                 "vulnerabilities.vulnerability_exploitability_update",
@@ -97,8 +95,7 @@ class TestVulnerabilitiesLiveMutations:
             matching = [
                 r
                 for r in vex_rows
-                if str(r.get("cve")) == cve
-                and int(r.get("component_id", 0)) == component_id
+                if str(r.get("cve")) == cve and int(r.get("component_id", 0)) == component_id
             ]
             assert matching, "Expected VEX row after create/update"
         finally:
@@ -117,9 +114,7 @@ class TestVulnerabilitiesLiveMutations:
         scan_has_vulnerabilities,
     ):
         if scan_has_vulnerabilities["scan_code"] != identified_test_scan_code:
-            pytest.skip(
-                "VEX import probe requires vulnerabilities on Identified Test Scan"
-            )
+            pytest.skip("VEX import probe requires vulnerabilities on Identified Test Scan")
 
         response = workbench_client.vulnerabilities._api._send_request(
             {

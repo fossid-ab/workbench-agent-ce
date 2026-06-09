@@ -29,6 +29,4 @@ def test_validate_chunk_upload_retries_on_non_200():
     response = requests.Response()
     response.status_code = 500
     with pytest.raises(ApiError, match="Chunk 2 upload failed"):
-        validate_chunk_upload_response(
-            response, 2, 0, max_retries=3
-        )
+        validate_chunk_upload_response(response, 2, 0, max_retries=3)

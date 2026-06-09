@@ -1,7 +1,7 @@
 """
 ScanOperationsService - Control all Scanning-related Operations in Workbench.
 
-Supports KB scanning, dependency analysis run/import, and SBOM import. 
+Supports KB scanning, dependency analysis run/import, and SBOM import.
 File upload, extraction, and Git ops live in ``ScanContentService``.
 """
 
@@ -63,7 +63,7 @@ class ScanOperationsService:
         """
         Start a KB scan with resolved ID reuse parameters.
 
-        This method converts parameter names/types to API format and delegates 
+        This method converts parameter names/types to API format and delegates
         to ScansClient. ID reuse should be resolved beforehand.
         (e.g. ``utilities.resolve_id_reuse.resolve_id_reuse``).
 
@@ -112,24 +112,14 @@ class ScanOperationsService:
             "scan_code": scan_code,
             "limit": str(limit),
             "sensitivity": str(sensitivity),
-            "auto_identification_detect_declaration": (
-                "1" if autoid_file_licenses else "0"
-            ),
-            "auto_identification_detect_copyright": (
-                "1" if autoid_file_copyrights else "0"
-            ),
-            "auto_identification_resolve_pending_ids": (
-                "1" if autoid_pending_ids else "0"
-            ),
+            "auto_identification_detect_declaration": ("1" if autoid_file_licenses else "0"),
+            "auto_identification_detect_copyright": ("1" if autoid_file_copyrights else "0"),
+            "auto_identification_resolve_pending_ids": ("1" if autoid_pending_ids else "0"),
             "delta_only": "1" if delta_scan else "0",
-            "replace_existing_identifications": (
-                "1" if replace_existing_identifications else "0"
-            ),
+            "replace_existing_identifications": ("1" if replace_existing_identifications else "0"),
             "scan_failed_only": "1" if scan_failed_only else "0",
             "full_file_only": "1" if full_file_only else "0",
-            "advanced_match_scoring": (
-                "1" if advanced_match_scoring else "0"
-            ),
+            "advanced_match_scoring": ("1" if advanced_match_scoring else "0"),
         }
 
         # Add ID reuse parameters (already resolved)
@@ -141,23 +131,18 @@ class ScanOperationsService:
 
         # Add dependency analysis parameter if specified
         if run_dependency_analysis is not None:
-            payload_data["run_dependency_analysis"] = (
-                "1" if run_dependency_analysis else "0"
-            )
+            payload_data["run_dependency_analysis"] = "1" if run_dependency_analysis else "0"
 
         # Add match filtering threshold if specified
         if match_filtering_threshold is not None:
-            payload_data["match_filtering_threshold"] = str(
-                match_filtering_threshold
-            )
+            payload_data["match_filtering_threshold"] = str(match_filtering_threshold)
 
         # Add scan_host parameter if provided
         if scan_host is not None:
             payload_data["scan_host"] = scan_host
 
         logger.debug(
-            f"Built run scan payload with {len(payload_data)} parameters "
-            f"for scan '{scan_code}'"
+            f"Built run scan payload with {len(payload_data)} parameters " f"for scan '{scan_code}'"
         )
 
         # Delegate to client for API call
@@ -186,9 +171,7 @@ class ScanOperationsService:
 
         This wraps start_scan with scan_failed_only on.
         """
-        logger.info(
-            f"Starting failed-file scan retry for '{scan_code}'..."
-        )
+        logger.info(f"Starting failed-file scan retry for '{scan_code}'...")
         return self.start_scan(
             scan_code=scan_code,
             limit=limit,
@@ -200,9 +183,7 @@ class ScanOperationsService:
             id_reuse_type=id_reuse_type,
             id_reuse_specific_code=id_reuse_specific_code,
             run_dependency_analysis=run_dependency_analysis,
-            replace_existing_identifications=(
-                replace_existing_identifications
-            ),
+            replace_existing_identifications=(replace_existing_identifications),
             scan_failed_only=True,
             full_file_only=full_file_only,
             advanced_match_scoring=advanced_match_scoring,
@@ -232,9 +213,7 @@ class ScanOperationsService:
             "import_only": "0",
         }
 
-        logger.debug(
-            f"Built dependency analysis payload for scan '{scan_code}'"
-        )
+        logger.debug(f"Built dependency analysis payload for scan '{scan_code}'")
 
         # Delegate to client
         return self._scans.run_dependency_analysis(payload_data)
@@ -260,18 +239,14 @@ class ScanOperationsService:
         Example:
             >>> scan_ops.start_da_import("SCAN123")
         """
-        logger.info(
-            f"Importing dependency analysis results for '{scan_code}'..."
-        )
+        logger.info(f"Importing dependency analysis results for '{scan_code}'...")
 
         payload_data = {
             "scan_code": scan_code,
             "import_only": "1",
         }
 
-        logger.debug(
-            f"Built dependency analysis import payload for scan '{scan_code}'"
-        )
+        logger.debug(f"Built dependency analysis import payload for scan '{scan_code}'")
 
         # Delegate to client
         return self._scans.run_dependency_analysis(payload_data)

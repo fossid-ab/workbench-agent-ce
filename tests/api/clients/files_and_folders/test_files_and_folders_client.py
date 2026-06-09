@@ -5,13 +5,13 @@ from unittest.mock import patch
 
 import pytest
 
+from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.clients.files_and_folders import FilesAndFoldersClient
 from workbench_agent.api.clients.files_and_folders.helpers import (
     encode_path,
     path_for_action,
 )
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.base_api import BaseAPI
 
 
 @pytest.fixture
@@ -233,9 +233,7 @@ def test_get_matched_lines(mock_send, files_client):
         "status": "1",
         "data": {"local_file": {"7": 7}, "mirror_file": {"7": 7}},
     }
-    result = files_client.get_matched_lines(
-        "SCAN1", "file.c", client_result_id="35471"
-    )
+    result = files_client.get_matched_lines("SCAN1", "file.c", client_result_id="35471")
     assert "local_file" in result
 
 
@@ -252,10 +250,7 @@ def test_get_file_comments_list(mock_send, files_client):
 @patch.object(BaseAPI, "_send_request")
 def test_remove_component_identification_plain_path(mock_send, files_client):
     mock_send.return_value = {"status": "1", "data": True}
-    assert (
-        files_client.remove_component_identification("SCAN1", "src/main.c")
-        is True
-    )
+    assert files_client.remove_component_identification("SCAN1", "src/main.c") is True
     data = mock_send.call_args[0][0]["data"]
     assert data["path"] == "src/main.c"
     assert data["path"] != files_client.encode_path("src/main.c")

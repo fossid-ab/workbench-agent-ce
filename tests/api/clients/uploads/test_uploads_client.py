@@ -5,9 +5,10 @@ from unittest.mock import patch
 import pytest
 import requests
 
+from workbench_agent.api.base_api import BaseAPI
+
 # Import from the new client structure
 from workbench_agent.api.clients.uploads import UploadsClient
-from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.exceptions import FileSystemError
 
 
@@ -44,26 +45,20 @@ def uploads_client(base_api):
 # These are marked as skipped based on the original test file structure.
 
 
-@pytest.mark.skip(
-    reason="Upload file tests require more complex mocking than is feasible"
-)
+@pytest.mark.skip(reason="Upload file tests require more complex mocking than is feasible")
 def test_upload_file_success():
     # This test is skipped because it requires complex mocking of file I/O operations
     # and needs access to the internal implementation of the upload_file method
     pass
 
 
-@pytest.mark.skip(
-    reason="Upload file tests require more complex mocking than is feasible"
-)
+@pytest.mark.skip(reason="Upload file tests require more complex mocking than is feasible")
 def test_upload_file_chunked_success():
     # This test would verify chunked upload functionality for large files
     pass
 
 
-@pytest.mark.skip(
-    reason="Upload file tests require more complex mocking than is feasible"
-)
+@pytest.mark.skip(reason="Upload file tests require more complex mocking than is feasible")
 def test_upload_file_network_error():
     # This test would verify proper handling of network errors during upload
     pass

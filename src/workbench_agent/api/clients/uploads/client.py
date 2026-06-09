@@ -53,9 +53,7 @@ class UploadsClient:
 
         filename = os.path.basename(file_path)
         file_size = os.path.getsize(file_path)
-        logger.debug(
-            "Uploading %s (%.2f MB)", filename, file_size / (1024 * 1024)
-        )
+        logger.debug("Uploading %s (%.2f MB)", filename, file_size / (1024 * 1024))
 
         try:
             with open(file_path, "rb") as f:
@@ -68,12 +66,8 @@ class UploadsClient:
                 auth=(self._api.api_user, self._api.api_token),
                 timeout=self.UPLOAD_TIMEOUT_SECONDS,
             )
-            logger.debug(
-                "Standard upload response code: %s", response.status_code
-            )
-            logger.debug(
-                "Standard upload response: %s", response.text[:500]
-            )
+            logger.debug("Standard upload response code: %s", response.status_code)
+            logger.debug("Standard upload response: %s", response.text[:500])
             helpers.validate_standard_upload_response(response)
         except requests.exceptions.RequestException as e:
             logger.error("Network error during standard upload: %s", e)
@@ -109,18 +103,14 @@ class UploadsClient:
 
         try:
             with open(file_path, "rb") as f:
-                for i, chunk in enumerate(
-                    self._read_in_chunks(f, self.CHUNK_SIZE), start=1
-                ):
+                for i, chunk in enumerate(self._read_in_chunks(f, self.CHUNK_SIZE), start=1):
                     logger.debug("Uploading chunk %s/%s", i, total_chunks)
                     self._upload_single_chunk(chunk, i, headers_copy)
 
                     progress = int((i / total_chunks) * 100)
                     if (
                         show_progress
-                        or progress
-                        >= last_printed_progress
-                        + self.PROGRESS_UPDATE_INTERVAL
+                        or progress >= last_printed_progress + self.PROGRESS_UPDATE_INTERVAL
                     ):
                         logger.info("Upload progress: %s%%", progress)
                         last_printed_progress = progress
@@ -141,9 +131,7 @@ class UploadsClient:
                 break
             yield data
 
-    def _upload_single_chunk(
-        self, chunk: bytes, chunk_number: int, headers: dict
-    ) -> None:
+    def _upload_single_chunk(self, chunk: bytes, chunk_number: int, headers: dict) -> None:
         retry_count = 0
 
         while retry_count <= self.MAX_CHUNK_RETRIES:
@@ -159,9 +147,7 @@ class UploadsClient:
                 if "Content-Length" in prepped.headers:
                     del prepped.headers["Content-Length"]
 
-                resp_chunk = self._api.session.send(
-                    prepped, timeout=self.UPLOAD_TIMEOUT_SECONDS
-                )
+                resp_chunk = self._api.session.send(prepped, timeout=self.UPLOAD_TIMEOUT_SECONDS)
                 helpers.validate_chunk_upload_response(
                     resp_chunk,
                     chunk_number,

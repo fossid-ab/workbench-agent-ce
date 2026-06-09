@@ -44,9 +44,9 @@ class SBOMValidator:
         if not workbench_version:
             return False
         try:
-            return packaging_version.parse(
-                workbench_version
-            ) >= packaging_version.parse(SPDX_JSON_NATIVE_MIN_VERSION)
+            return packaging_version.parse(workbench_version) >= packaging_version.parse(
+                SPDX_JSON_NATIVE_MIN_VERSION
+            )
         except packaging_version.InvalidVersion:
             return False
 
@@ -95,9 +95,7 @@ class SBOMValidator:
             return SBOMValidator._validate_spdx(file_path)
 
         # This case is defensive, as _detect_sbom_format should raise an error
-        raise ValidationError(
-            f"Unable to determine SBOM format for file: {file_path}"
-        )
+        raise ValidationError(f"Unable to determine SBOM format for file: {file_path}")
 
     @staticmethod
     def prepare_sbom_for_upload(
@@ -158,8 +156,8 @@ class SBOMValidator:
             ValidationError: If SBOM is invalid or unsupported format/version
         """
         # Validate the SBOM file
-        sbom_format, version, metadata, parsed_document = (
-            SBOMValidator.validate_sbom_file(file_path)
+        sbom_format, version, metadata, parsed_document = SBOMValidator.validate_sbom_file(
+            file_path
         )
 
         # Prepare for upload
@@ -194,15 +192,9 @@ class SBOMValidator:
         content_lower = content_preview.lower()
 
         # Check for CycloneDX markers
-        if (
-            '"bomformat"' in content_lower
-            and '"cyclonedx"' in content_lower
-        ):
+        if '"bomformat"' in content_lower and '"cyclonedx"' in content_lower:
             return "cyclonedx"
-        if (
-            '"bomFormat"' in content_preview
-            and '"CycloneDX"' in content_preview
-        ):
+        if '"bomFormat"' in content_preview and '"CycloneDX"' in content_preview:
             return "cyclonedx"
 
         # Check for SPDX markers
@@ -223,14 +215,10 @@ class SBOMValidator:
             return "spdx"
 
         # Additional checks for XML/RDF SPDX
-        if (
-            "<rdf:" in content_lower or "<RDF:" in content_lower
-        ) and "spdx" in content_lower:
+        if ("<rdf:" in content_lower or "<RDF:" in content_lower) and "spdx" in content_lower:
             return "spdx"
 
-        raise ValidationError(
-            "Unable to detect CycloneDX or SPDX SBOM format."
-        )
+        raise ValidationError("Unable to detect CycloneDX or SPDX SBOM format.")
 
     @staticmethod
     def _validate_cyclonedx(
@@ -251,20 +239,13 @@ class SBOMValidator:
             bom_data = json.loads(content)
 
             # Check if it looks like a CycloneDX BOM
-            if (
-                "bomFormat" not in bom_data
-                or bom_data.get("bomFormat") != "CycloneDX"
-            ):
-                raise ValidationError(
-                    "File does not appear to be a CycloneDX SBOM."
-                )
+            if "bomFormat" not in bom_data or bom_data.get("bomFormat") != "CycloneDX":
+                raise ValidationError("File does not appear to be a CycloneDX SBOM.")
 
             # Get spec version
             spec_version = bom_data.get("specVersion", "")
             if not spec_version:
-                raise ValidationError(
-                    "CycloneDX BOM is missing specVersion field"
-                )
+                raise ValidationError("CycloneDX BOM is missing specVersion field")
 
             # Map spec version to SchemaVersion enum
             version_mapping = {
@@ -291,18 +272,14 @@ class SBOMValidator:
                 result = validator.validate_str(content, all_errors=True)
                 if result is not None:
                     validation_errors = list(result)
-                    error_messages = [
-                        str(error) for error in validation_errors[:5]
-                    ]
+                    error_messages = [str(error) for error in validation_errors[:5]]
                     raise ValidationError(
                         f"CycloneDX validation failed: {'; '.join(error_messages)}"
                     )
             except ValidationError:
                 raise
             except Exception as validation_error:
-                logger.warning(
-                    f"CycloneDX validator encountered an issue: {validation_error}"
-                )
+                logger.warning(f"CycloneDX validator encountered an issue: {validation_error}")
 
             # Check if version is supported for upload (1.4-1.6)
             supported_upload_versions = ["1.4", "1.5", "1.6"]
@@ -311,9 +288,7 @@ class SBOMValidator:
                     f"Valid CycloneDX {spec_version} SBOM detected, but only versions {', '.join(supported_upload_versions)} are supported for import. Please convert your SBOM to a supported version."
                 )
 
-            logger.debug(
-                f"Successfully validated CycloneDX file, version {spec_version}"
-            )
+            logger.debug(f"Successfully validated CycloneDX file, version {spec_version}")
 
             # Extract metadata
             metadata = {
@@ -336,9 +311,7 @@ class SBOMValidator:
                 f"Error validating CycloneDX SBOM '{file_path}': {e}",
                 exc_info=True,
             )
-            raise ValidationError(
-                f"Failed to validate CycloneDX file: {e}"
-            ) from e
+            raise ValidationError(f"Failed to validate CycloneDX file: {e}") from e
 
     @staticmethod
     def _validate_spdx(
@@ -355,16 +328,12 @@ class SBOMValidator:
             document = parse_file(file_path)
 
             if not isinstance(document, Document):
-                raise ValidationError(
-                    "File does not contain a valid SPDX document"
-                )
+                raise ValidationError("File does not contain a valid SPDX document")
 
             # Validate the document
             validation_messages = validate_full_spdx_document(document)
             if validation_messages:
-                error_messages = [
-                    msg.validation_message for msg in validation_messages
-                ]
+                error_messages = [msg.validation_message for msg in validation_messages]
                 raise ValidationError(
                     f"SPDX validation failed: {'; '.join(error_messages[:5])}"
                 )  # Show first 5 errors
@@ -383,20 +352,14 @@ class SBOMValidator:
                     f"SPDX {version_str} is not supported. Supported versions: {', '.join(supported_versions)}"
                 )
 
-            logger.debug(
-                f"Successfully validated SPDX file, version {version_str}"
-            )
+            logger.debug(f"Successfully validated SPDX file, version {version_str}")
 
             metadata = {
                 "spdx_version": version_str,
                 "name": document.creation_info.name,
                 "document_namespace": document.creation_info.document_namespace,
-                "packages_count": (
-                    len(document.packages) if document.packages else 0
-                ),
-                "files_count": (
-                    len(document.files) if document.files else 0
-                ),
+                "packages_count": (len(document.packages) if document.packages else 0),
+                "files_count": (len(document.files) if document.files else 0),
             }
 
             return "spdx", version_str, metadata, document
@@ -410,9 +373,7 @@ class SBOMValidator:
                 f"Unexpected error validating SPDX file '{file_path}': {e}",
                 exc_info=True,
             )
-            raise ValidationError(
-                f"Failed to validate SPDX file: {e}"
-            ) from e
+            raise ValidationError(f"Failed to validate SPDX file: {e}") from e
 
     @staticmethod
     def _prepare_spdx_for_upload(
@@ -435,32 +396,23 @@ class SBOMValidator:
         if file_ext == ".json":
             if SBOMValidator._supports_native_spdx_json(workbench_version):
                 logger.debug(
-                    "Workbench %s+ supports native SPDX JSON; "
-                    "uploading original file",
+                    "Workbench %s+ supports native SPDX JSON; " "uploading original file",
                     SPDX_JSON_NATIVE_MIN_VERSION,
                 )
                 return file_path
 
             # Convert JSON SPDX to RDF for pre-2025.2 or unknown Workbench
-            logger.debug(
-                "Converting SPDX JSON to RDF format for Workbench compatibility"
-            )
+            logger.debug("Converting SPDX JSON to RDF format for Workbench compatibility")
 
             # Create temporary RDF file
-            temp_fd, temp_path = tempfile.mkstemp(
-                suffix=".rdf", prefix="spdx_converted_"
-            )
+            temp_fd, temp_path = tempfile.mkstemp(suffix=".rdf", prefix="spdx_converted_")
             try:
                 os.close(temp_fd)  # Close the file descriptor
 
                 # Write document as RDF
-                write_file(
-                    document, temp_path, validate=False
-                )  # Already validated above
+                write_file(document, temp_path, validate=False)  # Already validated above
 
-                logger.debug(
-                    f"Successfully converted SPDX to RDF format: {temp_path}"
-                )
+                logger.debug(f"Successfully converted SPDX to RDF format: {temp_path}")
                 return temp_path
 
             except Exception as e:
@@ -469,9 +421,7 @@ class SBOMValidator:
                     os.unlink(temp_path)
                 except Exception:
                     pass
-                raise ValidationError(
-                    f"Failed to convert SPDX JSON to RDF format: {e}"
-                ) from e
+                raise ValidationError(f"Failed to convert SPDX JSON to RDF format: {e}") from e
         else:
             # Already in RDF/XML format, use original file
             return file_path
@@ -515,7 +465,5 @@ class SBOMValidator:
         logger.warning(
             "This validate_sbom_file method is deprecated. Use the new validate_sbom_file or validate_and_prepare_sbom instead."
         )
-        format_name, version, metadata, _ = (
-            SBOMValidator.validate_sbom_file(file_path)
-        )
+        format_name, version, metadata, _ = SBOMValidator.validate_sbom_file(file_path)
         return format_name, version, metadata

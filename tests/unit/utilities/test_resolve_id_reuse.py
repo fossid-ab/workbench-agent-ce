@@ -40,16 +40,12 @@ def test_resolve_id_reuse_project(mock_client, mock_params):
 
 def test_resolve_id_reuse_scan_in_project(mock_client, mock_params):
     mock_params.reuse_scan_ids = "SourceScan"
-    mock_client.resolver.find_scan.return_value = ResolvedScan(
-        code="SCAN999", id=1, info={}
-    )
+    mock_client.resolver.find_scan.return_value = ResolvedScan(code="SCAN999", id=1, info={})
     result = resolve_id_reuse(mock_client, mock_params)
     assert result == ("specific_scan", "SCAN999")
 
 
-def test_resolve_id_reuse_scan_global_fallback(
-    mock_client, mock_params, capsys
-):
+def test_resolve_id_reuse_scan_global_fallback(mock_client, mock_params, capsys):
     mock_params.reuse_scan_ids = "SourceScan"
     mock_client.resolver.find_scan.side_effect = ScanNotFoundError("missing")
     mock_client.resolver.find_scan_globally.return_value = ResolvedScan(
@@ -61,6 +57,4 @@ def test_resolve_id_reuse_scan_global_fallback(
     assert result == ("specific_scan", "SCAN888")
     output = capsys.readouterr().out
     assert "Searching globally" in output
-    mock_client.resolver.find_scan_globally.assert_called_once_with(
-        "SourceScan"
-    )
+    mock_client.resolver.find_scan_globally.assert_called_once_with("SourceScan")

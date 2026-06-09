@@ -13,9 +13,7 @@ pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
 
 class TestFilesAndFoldersErrorsLive:
-    def test_get_identification_invalid_path(
-        self, workbench_client, test_scan_code
-    ):
+    def test_get_identification_invalid_path(self, workbench_client, test_scan_code):
         err = assert_api_error(
             lambda: workbench_client.files_and_folders.get_identification(
                 test_scan_code,

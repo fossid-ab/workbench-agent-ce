@@ -62,9 +62,7 @@ class VulnerabilitiesClient:
         )
         if response.get("status") == "1":
             return response.get("data")
-        helpers.raise_on_failed_response(
-            response, error_context="Failed to list vulnerabilities"
-        )
+        helpers.raise_on_failed_response(response, error_context="Failed to list vulnerabilities")
 
     def get_information(self, cve: str) -> Dict[str, Any]:
         """
@@ -185,9 +183,7 @@ class VulnerabilitiesClient:
             }
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to update vulnerability exploitability id {vuln_exp_id}"
-            ),
+            error_context=(f"Failed to update vulnerability exploitability id {vuln_exp_id}"),
         )
 
     def import_vulnerability_exploitability_from_scan(

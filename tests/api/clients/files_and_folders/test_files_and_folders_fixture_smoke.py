@@ -4,11 +4,11 @@ from unittest.mock import patch
 
 import pytest
 
-from workbench_agent.api.clients.files_and_folders import FilesAndFoldersClient
-from workbench_agent.api.base_api import BaseAPI
-from workbench_agent.api.clients.files_and_folders.helpers import encode_path
 from tests.api.support.contract import assert_contract
 from tests.api.support.version_contracts import load_fixture
+from workbench_agent.api.base_api import BaseAPI
+from workbench_agent.api.clients.files_and_folders import FilesAndFoldersClient
+from workbench_agent.api.clients.files_and_folders.helpers import encode_path
 
 WORKBENCH_VERSION = "2026.1.0"
 SCAN = "Test_Scan"
@@ -29,9 +29,7 @@ def files_client(mock_session):
 
 @patch.object(BaseAPI, "_send_request")
 def test_get_folder_extensions_ranking_fixture(mock_send, files_client):
-    fixture = load_fixture(
-        WORKBENCH_VERSION, "files_get_folder_extensions_ranking"
-    )
+    fixture = load_fixture(WORKBENCH_VERSION, "files_get_folder_extensions_ranking")
     mock_send.return_value = fixture
     data = files_client.get_folder_extensions_ranking(SCAN, FOLDER)
     assert_contract(
@@ -47,9 +45,7 @@ def test_get_folder_extensions_ranking_fixture(mock_send, files_client):
 
 @patch.object(BaseAPI, "_send_request")
 def test_get_folder_components_ranking_fixture(mock_send, files_client):
-    fixture = load_fixture(
-        WORKBENCH_VERSION, "files_get_folder_components_ranking"
-    )
+    fixture = load_fixture(WORKBENCH_VERSION, "files_get_folder_components_ranking")
     mock_send.return_value = fixture
     data = files_client.get_folder_components_ranking(SCAN, FOLDER)
     assert_contract(

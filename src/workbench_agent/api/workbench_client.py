@@ -10,8 +10,7 @@ from typing import Any, Dict
 
 from packaging import version as packaging_version
 
-from workbench_agent.api.utils.version import normalize_workbench_version
-
+from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.clients import (
     ComponentsClient,
     DownloadClient,
@@ -24,15 +23,14 @@ from workbench_agent.api.clients import (
     VulnerabilitiesClient,
 )
 from workbench_agent.api.exceptions import ApiError, CompatibilityError
-from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.services import (
     ComponentService,
     DependencyService,
     IdentificationService,
-    QuickScanService,
-    ReportService,
     LinksService,
     PolicyService,
+    QuickScanService,
+    ReportService,
     ResolverService,
     ScanContentService,
     ScanDeletionService,
@@ -41,6 +39,7 @@ from workbench_agent.api.services import (
     UserPermissionsService,
     VulnerabilityService,
 )
+from workbench_agent.api.utils.version import normalize_workbench_version
 
 logger = logging.getLogger("workbench-agent")
 
@@ -139,9 +138,7 @@ class WorkbenchClient:
 
         # Core infrastructure - BaseAPI handles all HTTP communication
         self._base_api = BaseAPI(api_url, api_user, api_token)
-        logger.debug(
-            f"BaseAPI initialized with URL: {self._base_api.api_url}"
-        )
+        logger.debug(f"BaseAPI initialized with URL: {self._base_api.api_url}")
 
         self._workbench_config: Dict[str, Any] = {}
         self._workbench_version = ""
@@ -161,9 +158,7 @@ class WorkbenchClient:
         self.components = ComponentsClient(self._base_api)
         self.files_and_folders = FilesAndFoldersClient(self._base_api)
 
-        self.component_catalog = ComponentService(
-            components_client=self.components
-        )
+        self.component_catalog = ComponentService(components_client=self.components)
 
         logger.debug("API clients initialized.")
 
@@ -171,9 +166,7 @@ class WorkbenchClient:
         # Services coordinate multiple clients for complex workflows
         logger.debug("Initializing Services...")
 
-        self.resolver = ResolverService(
-            projects_client=self.projects, scans_client=self.scans
-        )
+        self.resolver = ResolverService(projects_client=self.projects, scans_client=self.scans)
 
         self.status_check = StatusCheckService(
             scans_client=self.scans, projects_client=self.projects
@@ -185,9 +178,7 @@ class WorkbenchClient:
             status_check_service=self.status_check,
         )
 
-        self.quick_scan_service = QuickScanService(
-            quick_scan_client=self.quick_scan
-        )
+        self.quick_scan_service = QuickScanService(quick_scan_client=self.quick_scan)
 
         self.reports = ReportService(
             projects_client=self.projects,
@@ -258,9 +249,7 @@ class WorkbenchClient:
         MINIMUM_VERSION = "24.3.0"
 
         try:
-            logger.info(
-                "Checking Workbench version compatibility..."
-            )
+            logger.info("Checking Workbench version compatibility...")
             config_data = self.get_workbench_config()
             workbench_version = config_data.get("version", "Unknown")
 
@@ -272,9 +261,7 @@ class WorkbenchClient:
                     details={"config_data": config_data},
                 )
 
-            logger.debug(
-                f"Detected Workbench version: {workbench_version}"
-            )
+            logger.debug(f"Detected Workbench version: {workbench_version}")
 
             # Parse and compare versions
             try:
@@ -379,13 +366,10 @@ class WorkbenchClient:
             data = response["data"]
             if isinstance(data, dict):
                 self._workbench_config = data
-                logger.debug(
-                    "Successfully retrieved Workbench configuration."
-                )
+                logger.debug("Successfully retrieved Workbench configuration.")
                 return data
             logger.warning(
-                "API returned success for getConfig but 'data' was not "
-                "a dict: %s",
+                "API returned success for getConfig but 'data' was not " "a dict: %s",
                 type(data),
             )
             return {}

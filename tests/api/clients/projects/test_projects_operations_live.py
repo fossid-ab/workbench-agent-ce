@@ -11,13 +11,13 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.clients.projects.helpers import is_project_not_found
-from workbench_agent.api.exceptions import ApiError, ProjectNotFoundError
 from tests.api.support.contract import assert_contract, assert_data_contract
 from tests.api.support.error_assertions import (
     assert_api_error,
     assert_api_error_details_status_zero,
 )
+from workbench_agent.api.clients.projects.helpers import is_project_not_found
+from workbench_agent.api.exceptions import ProjectNotFoundError
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
@@ -37,9 +37,7 @@ class TestProjectsLiveRawProbes:
         )
         assert response.get("status") == "0", response
         error = response.get("error", "")
-        assert is_project_not_found(error), (
-            f"Expected not-found marker in error, got: {error!r}"
-        )
+        assert is_project_not_found(error), f"Expected not-found marker in error, got: {error!r}"
 
     def test_raw_get_all_scans_not_found(self, workbench_client):
         response = workbench_client.projects._api._send_request(
@@ -51,9 +49,7 @@ class TestProjectsLiveRawProbes:
         )
         assert response.get("status") == "0", response
         error = response.get("error", "")
-        assert is_project_not_found(error), (
-            f"Expected not-found marker in error, got: {error!r}"
-        )
+        assert is_project_not_found(error), f"Expected not-found marker in error, got: {error!r}"
 
     def test_list_projects_field_types(self, workbench_client):
         """Document whether numeric fields are strings on this server."""
@@ -63,9 +59,7 @@ class TestProjectsLiveRawProbes:
         assert "id" in sample and "project_code" in sample
         # Workbench 2026.1: id/scans often strings
         id_val = sample.get("id")
-        assert isinstance(id_val, (str, int)), (
-            f"Unexpected id type: {type(id_val)}"
-        )
+        assert isinstance(id_val, (str, int)), f"Unexpected id type: {type(id_val)}"
 
 
 class TestProjectsErrorsLiveExtended:
@@ -76,18 +70,14 @@ class TestProjectsErrorsLiveExtended:
     def test_get_all_scans_returns_empty_list(self, workbench_client):
         assert workbench_client.projects.get_all_scans(INVALID_CODE) == []
 
-    def test_update_nonexistent_raises_project_not_found(
-        self, workbench_client
-    ):
+    def test_update_nonexistent_raises_project_not_found(self, workbench_client):
         with pytest.raises(ProjectNotFoundError, match="not found"):
             workbench_client.projects.update(
                 INVALID_CODE,
                 "Should Not Exist",
             )
 
-    def test_generate_report_nonexistent_raises_project_not_found(
-        self, workbench_client
-    ):
+    def test_generate_report_nonexistent_raises_project_not_found(self, workbench_client):
         with pytest.raises(ProjectNotFoundError, match="not found"):
             workbench_client.projects.generate_report(
                 {
@@ -261,22 +251,22 @@ class TestProjectsLiveMutationsFullCycle:
             workbench_version=workbench_version,
         )
 
-        status = workbench_client.projects.check_status(
-            process_id, "REPORT_GENERATION"
-        )
+        status = workbench_client.projects.check_status(process_id, "REPORT_GENERATION")
         assert isinstance(status, dict)
-        assert status.get("status") in (
-            "FINISHED",
-            "RUNNING",
-            "PENDING",
-            "QUEUED",
-            "FAILED",
-            None,
-        ) or "status" in status
+        assert (
+            status.get("status")
+            in (
+                "FINISHED",
+                "RUNNING",
+                "PENDING",
+                "QUEUED",
+                "FAILED",
+                None,
+            )
+            or "status" in status
+        )
 
-    def test_check_status_invalid_process_raises(
-        self, workbench_client, ephemeral_project
-    ):
+    def test_check_status_invalid_process_raises(self, workbench_client, ephemeral_project):
         err = assert_api_error(
             lambda: workbench_client.projects.check_status(
                 999999999,

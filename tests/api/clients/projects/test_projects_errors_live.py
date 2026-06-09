@@ -14,9 +14,7 @@ class TestProjectsErrorsLive:
         with pytest.raises(ProjectNotFoundError, match="not found"):
             workbench_client.projects.get_information(INVALID_CODE)
 
-    def test_get_all_scans_invalid_project_code_returns_empty(
-        self, workbench_client
-    ):
+    def test_get_all_scans_invalid_project_code_returns_empty(self, workbench_client):
         """Missing project returns [] (not ProjectNotFoundError)."""
         scans = workbench_client.projects.get_all_scans(INVALID_CODE)
         assert scans == []

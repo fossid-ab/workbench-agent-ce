@@ -21,10 +21,7 @@ def is_missing_component_information(response: Dict[str, Any]) -> bool:
 
     Workbench 2026.1 returns status "1" with data null for unknown components.
     """
-    return (
-        response.get("status") == "1"
-        and response.get("data") is None
-    )
+    return response.get("status") == "1" and response.get("data") is None
 
 
 def optional_str(value: Any) -> Optional[str]:

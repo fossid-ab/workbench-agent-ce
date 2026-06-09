@@ -9,7 +9,6 @@ import argparse
 import pytest
 
 from workbench_agent.api.utils.process_waiter import StatusResult
-from workbench_agent.api.exceptions import ScanNotFoundError
 from workbench_agent.utilities.scan_workflows import (
     _determine_scans_to_run,
     create_scan_progress_callback,
@@ -128,15 +127,11 @@ class TestExecuteScanWorkflow:
         scan_workflow_params,
     ):
         """Successful KB scan should run once."""
-        mocker.patch(
-            "workbench_agent.utilities.post_scan_summary.print_scan_summary"
-        )
-        mock_client.status_check.check_scan_status.return_value = (
-            StatusResult(
-                status="FINISHED",
-                raw_data={},
-                duration=12.0,
-            )
+        mocker.patch("workbench_agent.utilities.post_scan_summary.print_scan_summary")
+        mock_client.status_check.check_scan_status.return_value = StatusResult(
+            status="FINISHED",
+            raw_data={},
+            duration=12.0,
         )
 
         result = execute_scan_workflow(
@@ -148,20 +143,13 @@ class TestExecuteScanWorkflow:
 
         assert result is True
         assert mock_client.scan_operations.start_scan.call_count == 1
-        assert (
-            mock_client.scan_operations.start_scan.call_args.kwargs[
-                "scan_failed_only"
-            ]
-            is False
-        )
+        assert mock_client.scan_operations.start_scan.call_args.kwargs["scan_failed_only"] is False
         mock_client.scan_operations.scan_failed_files.assert_not_called()
         wait_kwargs = mock_client.status_check.check_scan_status.call_args.kwargs
         assert wait_kwargs["wait"] is True
         assert callable(wait_kwargs["progress_callback"])
 
-    def test_create_scan_progress_callback_prints_status(
-        self, capsys
-    ):
+    def test_create_scan_progress_callback_prints_status(self, capsys):
         callback = create_scan_progress_callback("SCAN123")
         raw_data = {
             "state": "scanning",
@@ -193,9 +181,7 @@ class TestExecuteScanWorkflow:
         scan_workflow_params,
     ):
         """Failed KB scan should retry once with scan_failed_only."""
-        mocker.patch(
-            "workbench_agent.utilities.post_scan_summary.print_scan_summary"
-        )
+        mocker.patch("workbench_agent.utilities.post_scan_summary.print_scan_summary")
         mock_client.status_check.check_scan_status.side_effect = [
             StatusResult(
                 status="FAILED",
@@ -222,9 +208,7 @@ class TestExecuteScanWorkflow:
         first_call = mock_client.scan_operations.start_scan.call_args
         assert first_call.kwargs["scan_failed_only"] is False
         mock_client.scan_operations.scan_failed_files.assert_called_once()
-        retry_kwargs = (
-            mock_client.scan_operations.scan_failed_files.call_args.kwargs
-        )
+        retry_kwargs = mock_client.scan_operations.scan_failed_files.call_args.kwargs
         assert retry_kwargs["scan_code"] == "SCAN123"
         assert durations["kb_scan"] == 20.0
 
@@ -235,20 +219,16 @@ class TestExecuteScanWorkflow:
         scan_workflow_params,
     ):
         """User-cancelled KB scan should not trigger failed-file retry."""
-        mocker.patch(
-            "workbench_agent.utilities.post_scan_summary.print_scan_summary"
-        )
-        mock_client.status_check.check_scan_status.return_value = (
-            StatusResult(
-                status="FAILED",
-                raw_data={
-                    "status": "FAILED",
-                    "state": "FAILED",
-                    "info": "The process was cancelled",
-                    "comment": "The process was cancelled",
-                },
-                duration=12.0,
-            )
+        mocker.patch("workbench_agent.utilities.post_scan_summary.print_scan_summary")
+        mock_client.status_check.check_scan_status.return_value = StatusResult(
+            status="FAILED",
+            raw_data={
+                "status": "FAILED",
+                "state": "FAILED",
+                "info": "The process was cancelled",
+                "comment": "The process was cancelled",
+            },
+            duration=12.0,
         )
 
         result = execute_scan_workflow(
@@ -269,9 +249,7 @@ class TestExecuteScanWorkflow:
         scan_workflow_params,
     ):
         """Failed retry should not trigger a third KB scan run."""
-        mocker.patch(
-            "workbench_agent.utilities.post_scan_summary.print_scan_summary"
-        )
+        mocker.patch("workbench_agent.utilities.post_scan_summary.print_scan_summary")
         mock_client.status_check.check_scan_status.side_effect = [
             StatusResult(
                 status="FAILED",
@@ -295,4 +273,3 @@ class TestExecuteScanWorkflow:
         assert result is True
         assert mock_client.scan_operations.start_scan.call_count == 1
         mock_client.scan_operations.scan_failed_files.assert_called_once()
-

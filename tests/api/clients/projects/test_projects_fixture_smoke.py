@@ -4,10 +4,10 @@ from unittest.mock import patch
 
 import pytest
 
-from workbench_agent.api.clients.projects import ProjectsClient
-from workbench_agent.api.base_api import BaseAPI
 from tests.api.support.contract import assert_contract, assert_data_contract
 from tests.api.support.version_contracts import load_fixture
+from workbench_agent.api.base_api import BaseAPI
+from workbench_agent.api.clients.projects import ProjectsClient
 
 WORKBENCH_VERSION = "2026.1.0"
 
@@ -62,12 +62,8 @@ def test_get_all_scans_matches_fixture(mock_send, projects_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_policy_warnings_info_matches_fixture(
-    mock_send, projects_client
-):
-    fixture = load_fixture(
-        WORKBENCH_VERSION, "projects_get_policy_warnings_info"
-    )
+def test_get_policy_warnings_info_matches_fixture(mock_send, projects_client):
+    fixture = load_fixture(WORKBENCH_VERSION, "projects_get_policy_warnings_info")
     mock_send.return_value = fixture
     data = projects_client.get_policy_warnings_info("Test_Project_723")
     assert_data_contract(

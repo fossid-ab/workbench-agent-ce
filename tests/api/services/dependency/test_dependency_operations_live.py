@@ -15,9 +15,7 @@ def _catalog_license(workbench_client, name: str, version: str) -> str:
         license_id = info.get("license_identifier") or info.get("license_name")
         if license_id:
             return str(license_id)
-    raise AssertionError(
-        f"Could not resolve catalog license for {name!r} {version!r}"
-    )
+    raise AssertionError(f"Could not resolve catalog license for {name!r} {version!r}")
 
 
 def _find_dependency_row(deps, name: str, version: str):
@@ -40,9 +38,7 @@ class TestDependencyServiceLiveReadOnly:
         dependency_analysis_test_scan_code,
         scan_has_da_results,
     ):
-        deps = dependency_service.list_dependencies(
-            dependency_analysis_test_scan_code
-        )
+        deps = dependency_service.list_dependencies(dependency_analysis_test_scan_code)
         assert deps == scan_has_da_results
         assert len(deps) >= 1
 
@@ -78,9 +74,7 @@ class TestDependencyServiceLiveMutations:
             )
             assert result["include_in_report"] is new_included
 
-            deps = dependency_service.list_dependencies(
-                dependency_analysis_test_scan_code
-            )
+            deps = dependency_service.list_dependencies(dependency_analysis_test_scan_code)
             row = _find_dependency_row(deps, name, version)
             assert row is not None
             assert _include_in_report(row) is new_included
@@ -92,9 +86,7 @@ class TestDependencyServiceLiveMutations:
                 original_included,
                 package_id=package_id,
             )
-            deps = dependency_service.list_dependencies(
-                dependency_analysis_test_scan_code
-            )
+            deps = dependency_service.list_dependencies(dependency_analysis_test_scan_code)
             row = _find_dependency_row(deps, name, version)
             assert row is not None
             assert _include_in_report(row) == original_included
@@ -120,9 +112,7 @@ class TestDependencyServiceLiveMutations:
             assert dependency_service.remove_dependency(
                 dependency_analysis_test_scan_code, name, version
             )
-            deps = dependency_service.list_dependencies(
-                dependency_analysis_test_scan_code
-            )
+            deps = dependency_service.list_dependencies(dependency_analysis_test_scan_code)
             assert _find_dependency_row(deps, name, version) is None
 
             restored = dependency_service.add_dependency(
@@ -139,16 +129,12 @@ class TestDependencyServiceLiveMutations:
                 workbench_version=workbench_version,
             )
 
-            deps = dependency_service.list_dependencies(
-                dependency_analysis_test_scan_code
-            )
+            deps = dependency_service.list_dependencies(dependency_analysis_test_scan_code)
             row = _find_dependency_row(deps, name, version)
             assert row is not None
             assert row.get("package_id") == package_id
         finally:
-            deps = dependency_service.list_dependencies(
-                dependency_analysis_test_scan_code
-            )
+            deps = dependency_service.list_dependencies(dependency_analysis_test_scan_code)
             if _find_dependency_row(deps, name, version) is None:
                 dependency_service.add_dependency(
                     dependency_analysis_test_scan_code,
@@ -172,9 +158,7 @@ class TestDependencyServiceLiveMutations:
         license_identifier = "MIT"
 
         try:
-            deps = dependency_service.list_dependencies(
-                dependency_analysis_test_scan_code
-            )
+            deps = dependency_service.list_dependencies(dependency_analysis_test_scan_code)
             assert _find_dependency_row(deps, name, version) is None
 
             added = dependency_service.add_dependency(
@@ -191,9 +175,7 @@ class TestDependencyServiceLiveMutations:
                 workbench_version=workbench_version,
             )
 
-            deps = dependency_service.list_dependencies(
-                dependency_analysis_test_scan_code
-            )
+            deps = dependency_service.list_dependencies(dependency_analysis_test_scan_code)
             row = _find_dependency_row(deps, name, version)
             assert row is not None
             assert row.get("package_id") == package_id
@@ -201,14 +183,10 @@ class TestDependencyServiceLiveMutations:
             assert dependency_service.remove_dependency(
                 dependency_analysis_test_scan_code, name, version
             )
-            deps = dependency_service.list_dependencies(
-                dependency_analysis_test_scan_code
-            )
+            deps = dependency_service.list_dependencies(dependency_analysis_test_scan_code)
             assert _find_dependency_row(deps, name, version) is None
         finally:
-            deps = dependency_service.list_dependencies(
-                dependency_analysis_test_scan_code
-            )
+            deps = dependency_service.list_dependencies(dependency_analysis_test_scan_code)
             if _find_dependency_row(deps, name, version) is not None:
                 dependency_service.remove_dependency(
                     dependency_analysis_test_scan_code, name, version

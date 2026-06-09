@@ -41,39 +41,27 @@ FULL_MATCH = {
 
 
 def test_get_identification_delegates(identification_service):
-    identification_service._files.get_identification.return_value = {
-        "licenses": False
-    }
+    identification_service._files.get_identification.return_value = {"licenses": False}
     result = identification_service.get_identification("S1", "src/a.c")
     assert result["licenses"] is False
-    identification_service._files.get_identification.assert_called_once_with(
-        "S1", "src/a.c"
-    )
+    identification_service._files.get_identification.assert_called_once_with("S1", "src/a.c")
 
 
 def test_get_pending_files_delegates(identification_service):
-    identification_service._scans.get_pending_files.return_value = {
-        "1": "src/a.c"
-    }
+    identification_service._scans.get_pending_files.return_value = {"1": "src/a.c"}
     pending = identification_service.get_pending_files("S1")
     assert pending == {"1": "src/a.c"}
-    identification_service._scans.get_pending_files.assert_called_once_with(
-        "S1"
-    )
+    identification_service._scans.get_pending_files.assert_called_once_with("S1")
 
 
 def test_get_scan_metrics_delegates(identification_service):
-    identification_service._scans.get_scan_folder_metrics.return_value = {
-        "total": 10
-    }
+    identification_service._scans.get_scan_folder_metrics.return_value = {"total": 10}
     metrics = identification_service.get_scan_metrics("S1")
     assert metrics["total"] == 10
 
 
 def test_get_identified_components_delegates(identification_service):
-    identification_service._scans.get_scan_identified_components.return_value = [
-        {"name": "ofp"}
-    ]
+    identification_service._scans.get_scan_identified_components.return_value = [{"name": "ofp"}]
     components = identification_service.get_identified_components("S1")
     assert len(components) == 1
 
@@ -83,9 +71,7 @@ def test_explore_folder_delegates(identification_service):
     identification_service._files.get_folder_extensions_ranking.return_value = []
     identification_service._files.get_folder_components_ranking.return_value = []
 
-    snapshot = identification_service.explore_folder(
-        "S1", "OpenFastPath", pending_only=True
-    )
+    snapshot = identification_service.explore_folder("S1", "OpenFastPath", pending_only=True)
 
     assert snapshot["path"] == "OpenFastPath"
     identification_service._files.get_folder_content.assert_called_once()
@@ -118,12 +104,8 @@ def test_identify_whole_file_from_match_orchestrates(identification_service):
         "supplier_name": "OpenFastPath",
         "created": True,
     }
-    identification_service._files.set_identification_component.return_value = {
-        "message": "ok"
-    }
-    identification_service._files.add_license_identification.return_value = {
-        "message": "ok"
-    }
+    identification_service._files.set_identification_component.return_value = {"message": "ok"}
+    identification_service._files.add_license_identification.return_value = {"message": "ok"}
 
     result = identification_service.identify_whole_file_from_match(
         "S1", "src/ofp_uma.c", FULL_MATCH
@@ -145,12 +127,8 @@ def test_identify_from_best_full_match_picks_full(identification_service):
         "component_version": "1.1",
         "created": False,
     }
-    identification_service._files.set_identification_component.return_value = {
-        "message": "ok"
-    }
-    identification_service._files.add_license_identification.return_value = {
-        "message": "ok"
-    }
+    identification_service._files.set_identification_component.return_value = {"message": "ok"}
+    identification_service._files.add_license_identification.return_value = {"message": "ok"}
 
     result = identification_service.identify_from_best_full_match(
         "S1", "src/ofp_uma.c", add_file_license=False
@@ -174,9 +152,7 @@ def test_identify_snippet_in_file_orchestrates(identification_service):
     identification_service._files.add_license_identification.return_value = {
         "data": {"identification_id": 1}
     }
-    identification_service._files.add_file_comment.return_value = {
-        "message": "ok"
-    }
+    identification_service._files.add_file_comment.return_value = {"message": "ok"}
 
     result = identification_service.identify_snippet_in_file(
         "S1", "src/local.c", "BSD-3-Clause", match, "74"
@@ -192,17 +168,13 @@ def test_set_distribution_status_noop_when_already_set(identification_service):
         "component_identification": {"is_distributed": "1"},
         "licenses": False,
     }
-    result = identification_service.set_distribution_status(
-        "S1", "src/a.c", distributed=True
-    )
+    result = identification_service.set_distribution_status("S1", "src/a.c", distributed=True)
     assert result["changed"] is False
     identification_service._files.change_distribution_status.assert_not_called()
 
 
 def test_mark_as_identified_includes_parsed_state(identification_service):
-    identification_service._files.mark_as_identified.return_value = {
-        "message": "ok"
-    }
+    identification_service._files.mark_as_identified.return_value = {"message": "ok"}
     identification_service._files.get_identification.return_value = {
         "component_identification": {"identifying_done": "1"},
         "licenses": False,
@@ -295,4 +267,3 @@ def test_summarize_identification_data_empty_licenses(
     )
     assert summary["license_identifiers"] == []
     assert summary["has_identification_record"] is False
-

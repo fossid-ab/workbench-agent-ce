@@ -117,9 +117,7 @@ class TestProjectsPolicyWarningsLive:
         workbench_version,
         test_project_code,
     ):
-        data = workbench_client.policy.get_project_policy_warnings_all(
-            test_project_code
-        )
+        data = workbench_client.policy.get_project_policy_warnings_all(test_project_code)
         assert_data_contract(
             "projects.get_policy_warnings_info",
             data,

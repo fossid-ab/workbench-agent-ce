@@ -5,9 +5,9 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 
+from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.clients.download_api import DownloadClient
 from workbench_agent.api.exceptions import ApiError, NetworkError
-from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.exceptions import ValidationError
 
 
@@ -61,9 +61,7 @@ class TestDownloadClientInitialization:
 class TestDownloadReport:
     """Test cases for download_report method."""
 
-    def test_download_report_scan_success(
-        self, downloads_client, base_api
-    ):
+    def test_download_report_scan_success(self, downloads_client, base_api):
         """Test successful scan report download."""
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
@@ -73,9 +71,7 @@ class TestDownloadReport:
             "content-disposition": 'attachment; filename="scan_report.xlsx"',
         }
 
-        base_api._send_request = MagicMock(
-            return_value={"_raw_response": mock_response}
-        )
+        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
 
         result = downloads_client.download_report("scans", 12345)
 
@@ -96,9 +92,7 @@ class TestDownloadReport:
         # Check return value
         assert result == {"_raw_response": mock_response}
 
-    def test_download_report_project_success(
-        self, downloads_client, base_api
-    ):
+    def test_download_report_project_success(self, downloads_client, base_api):
         """Test successful project report download."""
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
@@ -108,9 +102,7 @@ class TestDownloadReport:
             "content-disposition": 'attachment; filename="project_report.xlsx"',
         }
 
-        base_api._send_request = MagicMock(
-            return_value={"_raw_response": mock_response}
-        )
+        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
 
         result = downloads_client.download_report("projects", 67890)
 
@@ -131,16 +123,12 @@ class TestDownloadReport:
         # Check return value
         assert result == {"_raw_response": mock_response}
 
-    def test_download_report_custom_timeout(
-        self, downloads_client, base_api
-    ):
+    def test_download_report_custom_timeout(self, downloads_client, base_api):
         """Test download with custom timeout."""
         mock_response = MagicMock(spec=requests.Response)
         mock_response.status_code = 200
 
-        base_api._send_request = MagicMock(
-            return_value={"_raw_response": mock_response}
-        )
+        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
 
         downloads_client.download_report("scans", 12345, timeout=3600)
 
@@ -150,29 +138,21 @@ class TestDownloadReport:
 
     def test_download_report_invalid_entity(self, downloads_client):
         """Test that invalid report_entity raises ValidationError."""
-        with pytest.raises(
-            ValidationError, match="Invalid report_entity 'invalid'"
-        ):
+        with pytest.raises(ValidationError, match="Invalid report_entity 'invalid'"):
             downloads_client.download_report("invalid", 12345)
 
     def test_download_report_api_error(self, downloads_client, base_api):
         """Test that API errors are propagated."""
         base_api._send_request = MagicMock(
-            side_effect=ApiError(
-                "Report not found", details={"error": "not_found"}
-            )
+            side_effect=ApiError("Report not found", details={"error": "not_found"})
         )
 
         with pytest.raises(ApiError, match="Report not found"):
             downloads_client.download_report("scans", 12345)
 
-    def test_download_report_network_error(
-        self, downloads_client, base_api
-    ):
+    def test_download_report_network_error(self, downloads_client, base_api):
         """Test that network errors are propagated."""
-        base_api._send_request = MagicMock(
-            side_effect=NetworkError("Connection timeout")
-        )
+        base_api._send_request = MagicMock(side_effect=NetworkError("Connection timeout"))
 
         with pytest.raises(NetworkError, match="Connection timeout"):
             downloads_client.download_report("projects", 67890)
@@ -181,14 +161,10 @@ class TestDownloadReport:
 class TestDownloadClientIntegration:
     """Integration-style tests for DownloadClient."""
 
-    def test_process_id_string_conversion(
-        self, downloads_client, base_api
-    ):
+    def test_process_id_string_conversion(self, downloads_client, base_api):
         """Test that process_id is converted to string in payload."""
         mock_response = MagicMock(spec=requests.Response)
-        base_api._send_request = MagicMock(
-            return_value={"_raw_response": mock_response}
-        )
+        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
 
         # Pass integer process_id
         downloads_client.download_report("scans", 99999)
@@ -203,9 +179,7 @@ class TestDownloadClientIntegration:
     def test_payload_structure(self, downloads_client, base_api):
         """Test that the payload has the correct structure."""
         mock_response = MagicMock(spec=requests.Response)
-        base_api._send_request = MagicMock(
-            return_value={"_raw_response": mock_response}
-        )
+        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
 
         downloads_client.download_report("scans", 12345)
 
@@ -232,9 +206,7 @@ class TestGetProjectPolicy:
         mock_response.content = b'[{"id":"MIT","blocked":false,"reason":""}]'
         mock_response.headers = {"content-type": "text/plain; charset=utf-8"}
 
-        base_api._send_request = MagicMock(
-            return_value={"_raw_response": mock_response}
-        )
+        base_api._send_request = MagicMock(return_value={"_raw_response": mock_response})
 
         result = downloads_client.get_project_policy("Test_Project_723")
 
@@ -247,9 +219,7 @@ class TestGetProjectPolicy:
 
     def test_get_project_policy_api_error(self, downloads_client, base_api):
         """Test that API errors are propagated."""
-        base_api._send_request = MagicMock(
-            side_effect=ApiError("Project not found")
-        )
+        base_api._send_request = MagicMock(side_effect=ApiError("Project not found"))
 
         with pytest.raises(ApiError, match="Project not found"):
             downloads_client.get_project_policy("missing")

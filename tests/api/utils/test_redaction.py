@@ -11,7 +11,6 @@ from workbench_agent.api.utils.redaction import (
     redact_text,
 )
 
-
 # --- Module constants ---
 
 
@@ -115,10 +114,7 @@ class TestRedactText:
 
     def test_replaces_token_substring(self):
         text = "Hello secret-token world"
-        assert (
-            redact_text(text, "secret-token")
-            == f"Hello {REDACTED_VALUE} world"
-        )
+        assert redact_text(text, "secret-token") == f"Hello {REDACTED_VALUE} world"
 
     def test_replaces_multiple_sensitive_values(self):
         text = "user=alice pwd=hunter2 token=abc"

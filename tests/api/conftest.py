@@ -17,12 +17,8 @@ DEFAULT_IDENTIFIED_SCAN_NAME = "Identified Test Scan"
 DEFAULT_DEPENDENCY_ANALYSIS_SCAN_NAME = "Dependency Analysis Test Scan"
 
 # Substrings for known test-data layout (same Project Sample Mix on both scans).
-SNIPPET_PATH_MARKER = os.environ.get(
-    "WORKBENCH_TEST_SNIPPET_PATH_MARKER", "Snippet"
-)
-OPENFASTPATH_MARKER = os.environ.get(
-    "WORKBENCH_TEST_OPENFASTPATH_MARKER", "OpenFastPath"
-)
+SNIPPET_PATH_MARKER = os.environ.get("WORKBENCH_TEST_SNIPPET_PATH_MARKER", "Snippet")
+OPENFASTPATH_MARKER = os.environ.get("WORKBENCH_TEST_OPENFASTPATH_MARKER", "OpenFastPath")
 
 
 def _resolve_scan_code(
@@ -200,9 +196,7 @@ def test_scan_code(workbench_client, test_project_name, test_scan_name):
 
 
 @pytest.fixture(scope="session")
-def identified_test_scan_code(
-    workbench_client, test_project_name, identified_test_scan_name
-):
+def identified_test_scan_code(workbench_client, test_project_name, identified_test_scan_name):
     """Identified Test Scan code — stable identified components and licenses."""
     return _scan_code_fixture(
         workbench_client,
@@ -353,9 +347,7 @@ def scan_has_pending(workbench_client, test_scan_code):
 @pytest.fixture(scope="session")
 def scan_has_identified(workbench_client, identified_test_scan_code):
     """Ensure Identified Test Scan has at least one identified file."""
-    metrics = workbench_client.identification.get_scan_metrics(
-        identified_test_scan_code
-    )
+    metrics = workbench_client.identification.get_scan_metrics(identified_test_scan_code)
     identified = int(metrics.get("identified_files", 0) or 0)
     if identified < 1:
         pytest.skip(
@@ -395,9 +387,7 @@ def scan_has_vulnerabilities(
         identified_test_scan_code,
         dependency_analysis_test_scan_code,
     ):
-        vulnerabilities = workbench_client.vulnerability.list_scan_vulnerabilities(
-            scan_code
-        )
+        vulnerabilities = workbench_client.vulnerability.list_scan_vulnerabilities(scan_code)
         if vulnerabilities:
             return {
                 "scan_code": scan_code,

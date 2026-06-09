@@ -80,10 +80,7 @@ class FilesAndFoldersClient:
             )
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to get folder content for '{path}' "
-                f"in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to get folder content for '{path}' " f"in scan '{scan_code}'"),
         )
         return []
 
@@ -105,9 +102,7 @@ class FilesAndFoldersClient:
                 "action": "get_folder_content_metrics",
                 "data": {
                     "scan_code": scan_code,
-                    "path": helpers.path_for_action(
-                        "get_folder_content_metrics", path
-                    ),
+                    "path": helpers.path_for_action("get_folder_content_metrics", path),
                 },
             }
         )
@@ -122,8 +117,7 @@ class FilesAndFoldersClient:
         helpers.raise_on_failed_response(
             response,
             error_context=(
-                f"Failed to get folder content metrics for '{path}' "
-                f"in scan '{scan_code}'"
+                f"Failed to get folder content metrics for '{path}' " f"in scan '{scan_code}'"
             ),
         )
         return {}
@@ -150,9 +144,7 @@ class FilesAndFoldersClient:
                 "action": "get_folder_components_ranking",
                 "data": {
                     "scan_code": scan_code,
-                    "path": helpers.path_for_action(
-                        "get_folder_components_ranking", path
-                    ),
+                    "path": helpers.path_for_action("get_folder_components_ranking", path),
                 },
             }
         )
@@ -167,8 +159,7 @@ class FilesAndFoldersClient:
         helpers.raise_on_failed_response(
             response,
             error_context=(
-                f"Failed to get folder components ranking for '{path}' "
-                f"in scan '{scan_code}'"
+                f"Failed to get folder components ranking for '{path}' " f"in scan '{scan_code}'"
             ),
         )
         return False
@@ -197,9 +188,7 @@ class FilesAndFoldersClient:
         """
         data: Dict[str, Any] = {
             "scan_code": scan_code,
-            "path": helpers.path_for_action(
-                "get_folder_extensions_ranking", path
-            ),
+            "path": helpers.path_for_action("get_folder_extensions_ranking", path),
         }
         if current_view is not None:
             data["current_view"] = current_view
@@ -222,15 +211,12 @@ class FilesAndFoldersClient:
         helpers.raise_on_failed_response(
             response,
             error_context=(
-                f"Failed to get folder extensions ranking for '{path}' "
-                f"in scan '{scan_code}'"
+                f"Failed to get folder extensions ranking for '{path}' " f"in scan '{scan_code}'"
             ),
         )
         return False
 
-    def get_identification(
-        self, scan_code: str, path: str
-    ) -> Dict[str, Any]:
+    def get_identification(self, scan_code: str, path: str) -> Dict[str, Any]:
         """
         Get identification information for a file.
 
@@ -251,10 +237,7 @@ class FilesAndFoldersClient:
             return response.get("data")
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to get identification for '{path}' "
-                f"in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to get identification for '{path}' " f"in scan '{scan_code}'"),
         )
         return {}
 
@@ -278,9 +261,7 @@ class FilesAndFoldersClient:
                 "action": "set_identification_copyright",
                 "data": {
                     "scan_code": scan_code,
-                    "path": helpers.path_for_action(
-                        "set_identification_copyright", path
-                    ),
+                    "path": helpers.path_for_action("set_identification_copyright", path),
                     "is_directory": helpers.flag_str(is_directory),
                     "copyright": copyright,
                 },
@@ -293,9 +274,7 @@ class FilesAndFoldersClient:
             }
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to set copyright for '{path}' in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to set copyright for '{path}' in scan '{scan_code}'"),
         )
         return {}
 
@@ -320,9 +299,7 @@ class FilesAndFoldersClient:
                 "action": "add_license_identification",
                 "data": {
                     "scan_code": scan_code,
-                    "path": helpers.path_for_action(
-                        "add_license_identification", path
-                    ),
+                    "path": helpers.path_for_action("add_license_identification", path),
                     "license_identifier": license_identifier,
                     "identification_on": identification_on,
                     "is_directory": helpers.flag_str(is_directory),
@@ -337,8 +314,7 @@ class FilesAndFoldersClient:
         helpers.raise_on_failed_response(
             response,
             error_context=(
-                f"Failed to add license identification for '{path}' "
-                f"in scan '{scan_code}'"
+                f"Failed to add license identification for '{path}' " f"in scan '{scan_code}'"
             ),
         )
         return {}
@@ -383,15 +359,12 @@ class FilesAndFoldersClient:
         helpers.raise_on_failed_response(
             response,
             error_context=(
-                f"Failed to set component identification for '{path}' "
-                f"in scan '{scan_code}'"
+                f"Failed to set component identification for '{path}' " f"in scan '{scan_code}'"
             ),
         )
         return {}
 
-    def get_fossid_results(
-        self, scan_code: str, path: str
-    ) -> Dict[str, Any]:
+    def get_fossid_results(self, scan_code: str, path: str) -> Dict[str, Any]:
         """Get FossID scan match candidates for a file (max 10)."""
         response = self._api._send_request(
             {
@@ -407,10 +380,7 @@ class FilesAndFoldersClient:
             return response.get("data")
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to get FossID results for '{path}' "
-                f"in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to get FossID results for '{path}' " f"in scan '{scan_code}'"),
         )
         return {}
 
@@ -436,10 +406,7 @@ class FilesAndFoldersClient:
             return response.get("data")
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to get matched lines for '{path}' "
-                f"in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to get matched lines for '{path}' " f"in scan '{scan_code}'"),
         )
         return {}
 
@@ -473,15 +440,11 @@ class FilesAndFoldersClient:
             }
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to add comment for '{path}' in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to add comment for '{path}' in scan '{scan_code}'"),
         )
         return {}
 
-    def get_file_comments(
-        self, scan_code: str, path: str
-    ) -> List[Dict[str, Any]]:
+    def get_file_comments(self, scan_code: str, path: str) -> List[Dict[str, Any]]:
         """Get comments associated with a file."""
         response = self._api._send_request(
             {
@@ -505,9 +468,7 @@ class FilesAndFoldersClient:
             )
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to get comments for '{path}' in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to get comments for '{path}' in scan '{scan_code}'"),
         )
         return []
 
@@ -546,9 +507,7 @@ class FilesAndFoldersClient:
             }
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to edit comment {comment_id} in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to edit comment {comment_id} in scan '{scan_code}'"),
         )
         return {}
 
@@ -575,9 +534,7 @@ class FilesAndFoldersClient:
             }
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to delete comment {comment_id} in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to delete comment {comment_id} in scan '{scan_code}'"),
         )
         return {}
 
@@ -607,9 +564,7 @@ class FilesAndFoldersClient:
             }
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to mark '{path}' as identified in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to mark '{path}' as identified in scan '{scan_code}'"),
         )
         return {}
 
@@ -639,15 +594,11 @@ class FilesAndFoldersClient:
             }
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to unmark '{path}' identified in scan '{scan_code}'"
-            ),
+            error_context=(f"Failed to unmark '{path}' identified in scan '{scan_code}'"),
         )
         return {}
 
-    def change_distribution_status(
-        self, scan_code: str, path: str
-    ) -> Dict[str, Any]:
+    def change_distribution_status(self, scan_code: str, path: str) -> Dict[str, Any]:
         """Toggle distributed / not distributed for a file."""
         response = self._api._send_request(
             {
@@ -655,9 +606,7 @@ class FilesAndFoldersClient:
                 "action": "change_distribution_status",
                 "data": {
                     "scan_code": scan_code,
-                    "path": helpers.path_for_action(
-                        "change_distribution_status", path
-                    ),
+                    "path": helpers.path_for_action("change_distribution_status", path),
                 },
             }
         )
@@ -669,8 +618,7 @@ class FilesAndFoldersClient:
         helpers.raise_on_failed_response(
             response,
             error_context=(
-                f"Failed to change distribution status for '{path}' "
-                f"in scan '{scan_code}'"
+                f"Failed to change distribution status for '{path}' " f"in scan '{scan_code}'"
             ),
         )
         return {}
@@ -690,9 +638,7 @@ class FilesAndFoldersClient:
         """
         data: Dict[str, Any] = {
             "scan_code": scan_code,
-            "path": helpers.path_for_action(
-                "remove_component_identification", path
-            ),
+            "path": helpers.path_for_action("remove_component_identification", path),
         }
         if component_name is not None:
             data["component_name"] = component_name
@@ -714,8 +660,7 @@ class FilesAndFoldersClient:
         helpers.raise_on_failed_response(
             response,
             error_context=(
-                f"Failed to remove component identification for '{path}' "
-                f"in scan '{scan_code}'"
+                f"Failed to remove component identification for '{path}' " f"in scan '{scan_code}'"
             ),
         )
         return False

@@ -90,10 +90,7 @@ class DownloadClient:
                 f"either 'scans' or 'projects'."
             )
 
-        logger.debug(
-            f"Downloading {report_entity} report for process ID "
-            f"{process_id}..."
-        )
+        logger.debug(f"Downloading {report_entity} report for process ID " f"{process_id}...")
 
         payload = {
             "group": "download",
@@ -105,11 +102,7 @@ class DownloadClient:
         }
 
         # Use extended timeout for large file downloads
-        actual_timeout = (
-            timeout
-            if timeout is not None
-            else self.DEFAULT_DOWNLOAD_TIMEOUT
-        )
+        actual_timeout = timeout if timeout is not None else self.DEFAULT_DOWNLOAD_TIMEOUT
 
         return self._api._send_request(payload, timeout=actual_timeout)
 

@@ -275,9 +275,7 @@ Examples:
     )
     delete_scan_parser.add_argument(
         "--delete-identifications",
-        help=(
-            "When set, deletes identifications from this scan."
-        ),
+        help=("When set, deletes identifications from this scan."),
         action="store_true",
         default=False,
     )
@@ -364,16 +362,12 @@ Examples:
     )
     download_reports_parser.add_argument(
         "--project-name",
-        help=(
-            "The Project to download reports from."
-        ),
+        help=("The Project to download reports from."),
         metavar="NAME",
     )
     download_reports_parser.add_argument(
         "--scan-name",
-        help=(
-            "The Scan to download reports from. Required for scan reports."
-        ),
+        help=("The Scan to download reports from. Required for scan reports."),
         metavar="NAME",
     )
     download_reports_parser.add_argument(
@@ -397,9 +391,7 @@ Examples:
         metavar="PATH",
     )
 
-    gen_opts = download_reports_parser.add_argument_group(
-        "Report Generation Options"
-    )
+    gen_opts = download_reports_parser.add_argument_group("Report Generation Options")
     gen_opts.add_argument(
         "--selection-type",
         help="Filter licenses included in the report.",

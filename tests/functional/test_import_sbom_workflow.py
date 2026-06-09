@@ -44,9 +44,7 @@ class TestImportSBOMWorkflow:
         scan_created = False
         try:
             # Step 1: Import-SBOM
-            print(
-                f"\n[IMPORT-SBOM] Step 1: Importing SBOM '{unique_scan_name}'"
-            )
+            print(f"\n[IMPORT-SBOM] Step 1: Importing SBOM '{unique_scan_name}'")
             result = subprocess.run(
                 [
                     "workbench-agent",
@@ -145,9 +143,7 @@ class TestImportSBOMWorkflow:
                 f"STDOUT: {result.stdout}\n"
                 f"STDERR: {result.stderr}"
             )
-            print(
-                f"[IMPORT-SBOM] Step 4: ✓ Project reports downloaded successfully"
-            )
+            print(f"[IMPORT-SBOM] Step 4: ✓ Project reports downloaded successfully")
 
             # Step 5: Download Reports (Scan Scope)
             print(f"[IMPORT-SBOM] Step 5: Downloading scan-level reports")
@@ -176,9 +172,7 @@ class TestImportSBOMWorkflow:
                 f"STDOUT: {result.stdout}\n"
                 f"STDERR: {result.stderr}"
             )
-            print(
-                f"[IMPORT-SBOM] Step 5: ✓ Scan reports downloaded successfully"
-            )
+            print(f"[IMPORT-SBOM] Step 5: ✓ Scan reports downloaded successfully")
             print(f"[IMPORT-SBOM] ✓ Complete workflow passed!")
         finally:
             if scan_created:

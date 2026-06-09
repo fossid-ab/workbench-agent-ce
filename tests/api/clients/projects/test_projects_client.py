@@ -1,15 +1,15 @@
 # tests/unit/api/clients/test_projects_client.py
 
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import requests
 
+from workbench_agent.api.base_api import BaseAPI
+
 # Import from the new client structure
 from workbench_agent.api.clients.projects import ProjectsClient
 from workbench_agent.api.exceptions import ApiError, ProjectNotFoundError
-from workbench_agent.api.base_api import BaseAPI
 
 
 # --- Fixtures ---
@@ -94,9 +94,7 @@ def test_list_projects_empty(mock_send, projects_client):
 @patch.object(BaseAPI, "_send_request")
 def test_list_projects_api_error(mock_send, projects_client):
     mock_send.return_value = {"status": "0", "error": "API error"}
-    with pytest.raises(
-        ApiError, match="Failed to list projects: API error"
-    ):
+    with pytest.raises(ApiError, match="Failed to list projects: API error"):
         projects_client.list_projects()
 
 
@@ -186,17 +184,13 @@ def test_get_policy_warnings_info_all_type(mock_send, projects_client):
             "scans_list": None,
         },
     }
-    data = projects_client.get_policy_warnings_info(
-        "PRJ_A", warning_type="all"
-    )
+    data = projects_client.get_policy_warnings_info("PRJ_A", warning_type="all")
     assert data["scans_list"] is None
     assert mock_send.call_args[0][0]["data"]["type"] == "all"
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_policy_warnings_info_dependencies_type(
-    mock_send, projects_client
-):
+def test_get_policy_warnings_info_dependencies_type(mock_send, projects_client):
     mock_send.return_value = {
         "status": "1",
         "data": {
@@ -205,18 +199,12 @@ def test_get_policy_warnings_info_dependencies_type(
             "scans_list": [],
         },
     }
-    projects_client.get_policy_warnings_info(
-        "PRJ_A", warning_type="dependencies"
-    )
-    assert (
-        mock_send.call_args[0][0]["data"]["type"] == "dependencies"
-    )
+    projects_client.get_policy_warnings_info("PRJ_A", warning_type="dependencies")
+    assert mock_send.call_args[0][0]["data"]["type"] == "dependencies"
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_policy_warnings_info_project_not_found(
-    mock_send, projects_client
-):
+def test_get_policy_warnings_info_project_not_found(mock_send, projects_client):
     mock_send.return_value = {
         "status": "0",
         "error": "Project does not exist",
@@ -271,9 +259,7 @@ def test_update_invalid_limit_date(mock_send, projects_client):
         ],
     }
     with pytest.raises(ApiError, match="Invalid date format"):
-        projects_client.update(
-            "PROJ_A", "Project A", limit_date="not-a-date"
-        )
+        projects_client.update("PROJ_A", "Project A", limit_date="not-a-date")
 
 
 @patch.object(BaseAPI, "_send_request")
@@ -348,9 +334,7 @@ def test_check_status_success(mock_send, projects_client):
         "status": "1",
         "data": {"status": "FINISHED", "progress": 100},
     }
-    status = projects_client.check_status(
-        process_id=12345, process_type="REPORT_GENERATION"
-    )
+    status = projects_client.check_status(process_id=12345, process_type="REPORT_GENERATION")
     assert status["status"] == "FINISHED"
     assert status["progress"] == 100
     mock_send.assert_called_once()

@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional
 
 CONTRACTS_DIR = Path(__file__).parent / "contracts"
 FIXTURES_DIR = Path(__file__).parent / "fixtures"

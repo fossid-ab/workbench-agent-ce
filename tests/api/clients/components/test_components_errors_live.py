@@ -4,11 +4,11 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.exceptions import ApiError
 from tests.api.support.error_assertions import (
     assert_api_error,
     assert_api_error_details_status_zero,
 )
+from workbench_agent.api.exceptions import ApiError
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
@@ -44,9 +44,7 @@ class TestComponentsErrorsLive:
         except ApiError:
             pass
 
-    def test_get_information_missing_component_returns_null_not_error(
-        self, workbench_client
-    ):
+    def test_get_information_missing_component_returns_null_not_error(self, workbench_client):
         """
         Workbench returns status 1 with data null for unknown components
         (not an ApiError).

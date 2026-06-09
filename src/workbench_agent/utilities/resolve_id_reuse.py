@@ -63,12 +63,8 @@ def _resolve_project_id_reuse(
 ) -> Tuple[Optional[str], Optional[str]]:
     try:
         project_code = client.resolver.find_project(project_name)
-        logger.info(
-            f"ID reuse: project '{project_name}' → '{project_code}'"
-        )
-        print(
-            f"✓ Successfully validated ID reuse project '{project_name}'"
-        )
+        logger.info(f"ID reuse: project '{project_name}' → '{project_code}'")
+        print(f"✓ Successfully validated ID reuse project '{project_name}'")
         return "specific_project", project_code
     except Exception as e:
         _handle_id_reuse_failure("project", project_name, e)
@@ -125,9 +121,7 @@ def _resolve_scan_id_reuse(
         return None, None
 
 
-def _handle_id_reuse_failure(
-    reuse_type: str, name: str, error: Exception
-) -> None:
+def _handle_id_reuse_failure(reuse_type: str, name: str, error: Exception) -> None:
     logger.warning(
         f"Could not find ID Reuse source: {reuse_type} '{name}' - "
         f"{type(error).__name__}: {error}. "

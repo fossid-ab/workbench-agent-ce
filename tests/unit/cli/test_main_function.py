@@ -8,9 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Add src to path
-sys.path.insert(
-    0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
-)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 from workbench_agent.api.exceptions import (
     ApiError,
@@ -52,9 +50,7 @@ class TestMainFunctionSuccess:
             api_token=mock_args.api_token,
         )
 
-    def test_main_success_with_scan_git_handler(
-        self, mock_main_dependencies
-    ):
+    def test_main_success_with_scan_git_handler(self, mock_main_dependencies):
         """Test successful main() execution with scan-git handler."""
         mock_args = MagicMock(command="scan-git", log="INFO")
         mock_main_dependencies["handle_scan_git"].return_value = True
@@ -68,9 +64,7 @@ class TestMainFunctionSuccess:
         assert result == 0
         mock_main_dependencies["handle_scan_git"].assert_called_once()
 
-    def test_main_success_with_import_da_handler(
-        self, mock_main_dependencies
-    ):
+    def test_main_success_with_import_da_handler(self, mock_main_dependencies):
         """Test successful main() execution with import-da handler."""
         mock_args = MagicMock(command="import-da", log="INFO")
         mock_main_dependencies["handle_import_da"].return_value = True
@@ -84,9 +78,7 @@ class TestMainFunctionSuccess:
         assert result == 0
         mock_main_dependencies["handle_import_da"].assert_called_once()
 
-    def test_main_success_with_import_sbom_handler(
-        self, mock_main_dependencies
-    ):
+    def test_main_success_with_import_sbom_handler(self, mock_main_dependencies):
         """Test successful main() execution with import-sbom handler."""
         mock_args = MagicMock(command="import-sbom", log="INFO")
         mock_main_dependencies["handle_import_sbom"].return_value = True
@@ -100,14 +92,10 @@ class TestMainFunctionSuccess:
         assert result == 0
         mock_main_dependencies["handle_import_sbom"].assert_called_once()
 
-    def test_main_success_with_show_results_handler(
-        self, mock_main_dependencies
-    ):
+    def test_main_success_with_show_results_handler(self, mock_main_dependencies):
         """Test successful main() execution with show-results handler."""
         mock_args = MagicMock(command="show-results", log="INFO")
-        mock_args.result_save_path = (
-            None  # Don't trigger save functionality
-        )
+        mock_args.result_save_path = None  # Don't trigger save functionality
         mock_main_dependencies["handle_show_results"].return_value = True
 
         with patch(
@@ -119,14 +107,10 @@ class TestMainFunctionSuccess:
         assert result == 0
         mock_main_dependencies["handle_show_results"].assert_called_once()
 
-    def test_main_success_with_download_reports_handler(
-        self, mock_main_dependencies
-    ):
+    def test_main_success_with_download_reports_handler(self, mock_main_dependencies):
         """Test successful main() execution with download-reports handler."""
         mock_args = MagicMock(command="download-reports", log="INFO")
-        mock_main_dependencies["handle_download_reports"].return_value = (
-            True
-        )
+        mock_main_dependencies["handle_download_reports"].return_value = True
 
         with patch(
             "workbench_agent.main.parse_cmdline_args",
@@ -135,9 +119,7 @@ class TestMainFunctionSuccess:
             result = main()
 
         assert result == 0
-        mock_main_dependencies[
-            "handle_download_reports"
-        ].assert_called_once()
+        mock_main_dependencies["handle_download_reports"].assert_called_once()
 
 
 class TestMainFunctionExceptionHandling:
@@ -145,12 +127,8 @@ class TestMainFunctionExceptionHandling:
 
     def test_main_validation_error_during_parsing(self):
         """Test main() handling validation error during argument parsing."""
-        with patch(
-            "workbench_agent.main.parse_cmdline_args"
-        ) as mock_parse:
-            mock_parse.side_effect = ValidationError(
-                "Test validation error"
-            )
+        with patch("workbench_agent.main.parse_cmdline_args") as mock_parse:
+            mock_parse.side_effect = ValidationError("Test validation error")
 
             result = main()
 
@@ -167,9 +145,7 @@ class TestMainFunctionExceptionHandling:
             ),
             patch("workbench_agent.main.WorkbenchClient") as mock_client,
         ):
-            mock_client.side_effect = ConfigurationError(
-                "Test config error"
-            )
+            mock_client.side_effect = ConfigurationError("Test config error")
 
             result = main()
 
@@ -210,9 +186,7 @@ class TestMainFunctionExceptionHandling:
     ):
         """Test main() handling specific exception types in handlers."""
         mock_args = MagicMock(command="scan", log="INFO")
-        mock_main_dependencies["handle_scan"].side_effect = (
-            exception_class(exception_msg)
-        )
+        mock_main_dependencies["handle_scan"].side_effect = exception_class(exception_msg)
 
         with patch(
             "workbench_agent.main.parse_cmdline_args",
@@ -222,14 +196,10 @@ class TestMainFunctionExceptionHandling:
 
         assert result == 1  # Handler error exit code
 
-    def test_main_unexpected_exception_handling(
-        self, mock_main_dependencies
-    ):
+    def test_main_unexpected_exception_handling(self, mock_main_dependencies):
         """Test main() handling unexpected exceptions."""
         mock_args = MagicMock(command="scan", log="INFO")
-        mock_main_dependencies["handle_scan"].side_effect = ValueError(
-            "Unexpected error"
-        )
+        mock_main_dependencies["handle_scan"].side_effect = ValueError("Unexpected error")
 
         with patch(
             "workbench_agent.main.parse_cmdline_args",
@@ -243,14 +213,10 @@ class TestMainFunctionExceptionHandling:
 class TestEvaluateGatesSpecialHandling:
     """Test special exit code handling for evaluate-gates command."""
 
-    def test_evaluate_gates_success_returns_0(
-        self, mock_main_dependencies
-    ):
+    def test_evaluate_gates_success_returns_0(self, mock_main_dependencies):
         """Test evaluate-gates command returns 0 on success (gates pass)."""
         mock_args = MagicMock(command="evaluate-gates", log="INFO")
-        mock_main_dependencies["handle_evaluate_gates"].return_value = (
-            True  # Gates pass
-        )
+        mock_main_dependencies["handle_evaluate_gates"].return_value = True  # Gates pass
 
         with patch(
             "workbench_agent.main.parse_cmdline_args",
@@ -260,14 +226,10 @@ class TestEvaluateGatesSpecialHandling:
 
         assert result == 0
 
-    def test_evaluate_gates_failure_returns_1(
-        self, mock_main_dependencies
-    ):
+    def test_evaluate_gates_failure_returns_1(self, mock_main_dependencies):
         """Test evaluate-gates command returns 1 on failure (gates fail)."""
         mock_args = MagicMock(command="evaluate-gates", log="INFO")
-        mock_main_dependencies["handle_evaluate_gates"].return_value = (
-            False  # Gates fail
-        )
+        mock_main_dependencies["handle_evaluate_gates"].return_value = False  # Gates fail
 
         with patch(
             "workbench_agent.main.parse_cmdline_args",
@@ -297,9 +259,7 @@ class TestHandlerReturnValues:
     ):
         """Test that non-evaluate-gates handlers return 0 regardless of return value."""
         mock_args = MagicMock(command=command, log="INFO")
-        mock_main_dependencies[handler_name].return_value = (
-            True  # Handler succeeds
-        )
+        mock_main_dependencies[handler_name].return_value = True  # Handler succeeds
 
         with patch(
             "workbench_agent.main.parse_cmdline_args",
@@ -317,10 +277,7 @@ class TestLoggingConfiguration:
         """urllib3/requests should not spam DEBUG when root accepts DEBUG."""
         setup_logging("DEBUG")
         assert logging.getLogger("urllib3").level == logging.WARNING
-        assert (
-            logging.getLogger("urllib3.connectionpool").level
-            == logging.WARNING
-        )
+        assert logging.getLogger("urllib3.connectionpool").level == logging.WARNING
         assert logging.getLogger("requests").level == logging.WARNING
 
     def test_main_handles_log_level(self, mock_main_dependencies):
@@ -373,9 +330,7 @@ class TestMainIntegration:
             ("evaluate-gates", "handle_evaluate_gates"),
         ],
     )
-    def test_main_command_dispatch_logic(
-        self, command, handler_name, mock_main_dependencies
-    ):
+    def test_main_command_dispatch_logic(self, command, handler_name, mock_main_dependencies):
         """Test that commands are properly dispatched to their handlers."""
         mock_args = MagicMock(command=command, log="INFO")
         mock_main_dependencies[handler_name].return_value = True
@@ -387,10 +342,5 @@ class TestMainIntegration:
             result = main()
 
         # All commands should succeed
-        assert (
-            result == 0
-            if command != "evaluate-gates"
-            else result in [0, 1]
-        )
+        assert result == 0 if command != "evaluate-gates" else result in [0, 1]
         mock_main_dependencies[handler_name].assert_called_once()
-

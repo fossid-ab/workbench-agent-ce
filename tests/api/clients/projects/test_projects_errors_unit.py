@@ -4,14 +4,14 @@ from unittest.mock import patch
 
 import pytest
 
-from workbench_agent.api.clients.projects import ProjectsClient
-from workbench_agent.api.clients.projects.helpers import is_project_not_found
-from workbench_agent.api.exceptions import ApiError, ProjectNotFoundError
-from workbench_agent.api.base_api import BaseAPI
 from tests.api.support.error_assertions import (
     assert_api_error,
     assert_api_error_details_status_zero,
 )
+from workbench_agent.api.base_api import BaseAPI
+from workbench_agent.api.clients.projects import ProjectsClient
+from workbench_agent.api.clients.projects.helpers import is_project_not_found
+from workbench_agent.api.exceptions import ProjectNotFoundError
 
 ERROR_RESPONSE = {
     "status": "0",
@@ -57,9 +57,7 @@ def projects_client(mock_session):
         ("check_status", (99, "REPORT_GENERATION")),
     ],
 )
-def test_methods_raise_api_error_on_status_zero(
-    mock_send, projects_client, method_name, call_args
-):
+def test_methods_raise_api_error_on_status_zero(mock_send, projects_client, method_name, call_args):
     mock_send.return_value = ERROR_RESPONSE
     method = getattr(projects_client, method_name)
     err = assert_api_error(lambda: method(*call_args))
@@ -75,18 +73,14 @@ def test_methods_raise_api_error_on_status_zero(
         "row_not_found in query",
     ],
 )
-def test_get_information_raises_project_not_found(
-    mock_send, projects_client, error_msg
-):
+def test_get_information_raises_project_not_found(mock_send, projects_client, error_msg):
     mock_send.return_value = {"status": "0", "error": error_msg}
     with pytest.raises(ProjectNotFoundError, match="PROJ_X"):
         projects_client.get_information("PROJ_X")
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_information_raises_api_error_for_other_failures(
-    mock_send, projects_client
-):
+def test_get_information_raises_api_error_for_other_failures(mock_send, projects_client):
     mock_send.return_value = {"status": "0", "error": "Permission denied"}
     err = assert_api_error(
         lambda: projects_client.get_information("PROJ_X"),
@@ -104,17 +98,13 @@ def test_get_information_raises_api_error_for_other_failures(
         "row_not_found",
     ],
 )
-def test_get_all_scans_returns_empty_when_project_not_found(
-    mock_send, projects_client, error_msg
-):
+def test_get_all_scans_returns_empty_when_project_not_found(mock_send, projects_client, error_msg):
     mock_send.return_value = {"status": "0", "error": error_msg}
     assert projects_client.get_all_scans("PROJ_X") == []
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_all_scans_raises_api_error_for_other_failures(
-    mock_send, projects_client
-):
+def test_get_all_scans_raises_api_error_for_other_failures(mock_send, projects_client):
     mock_send.return_value = {"status": "0", "error": "Internal server error"}
     err = assert_api_error(
         lambda: projects_client.get_all_scans("PROJ_X"),

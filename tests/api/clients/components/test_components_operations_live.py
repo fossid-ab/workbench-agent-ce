@@ -11,13 +11,13 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.clients.components.helpers import (
-    is_missing_component_information,
-)
 from tests.api.support.contract import assert_contract, assert_data_contract
 from tests.api.support.error_assertions import (
     assert_api_error,
     assert_api_error_details_status_zero,
+)
+from workbench_agent.api.clients.components.helpers import (
+    is_missing_component_information,
 )
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
@@ -26,9 +26,7 @@ MISSING_NAME = f"__api_missing_{uuid.uuid4().hex[:8]}__"
 
 
 class TestComponentsLiveRawProbes:
-    def test_raw_get_information_missing_returns_success_null(
-        self, workbench_client
-    ):
+    def test_raw_get_information_missing_returns_success_null(self, workbench_client):
         response = workbench_client.components._api._send_request(
             {
                 "group": "components",
@@ -52,9 +50,7 @@ class TestComponentsLiveRawProbes:
         assert response.get("status") == "0", response
         assert "not found" in (response.get("error") or "").lower()
 
-    def test_list_components_count_results_shape(
-        self, workbench_client, workbench_version
-    ):
+    def test_list_components_count_results_shape(self, workbench_client, workbench_version):
         response = workbench_client.components._api._send_request(
             {
                 "group": "components",
@@ -72,30 +68,19 @@ class TestComponentsLiveRawProbes:
 
 
 class TestComponentsLiveClientErrors:
-    def test_get_information_missing_returns_none_not_exception(
-        self, workbench_client
-    ):
-        assert (
-            workbench_client.components.get_information(
-                MISSING_NAME, "9.9.9"
-            )
-            is None
-        )
+    def test_get_information_missing_returns_none_not_exception(self, workbench_client):
+        assert workbench_client.components.get_information(MISSING_NAME, "9.9.9") is None
 
     def test_delete_missing_raises_api_error(self, workbench_client):
         err = assert_api_error(
-            lambda: workbench_client.components.delete(
-                MISSING_NAME, "0.0.0"
-            ),
+            lambda: workbench_client.components.delete(MISSING_NAME, "0.0.0"),
             message_contains="not found",
         )
         assert "Failed to delete component" in err.message
 
     def test_get_usage_count_missing_raises(self, workbench_client):
         err = assert_api_error(
-            lambda: workbench_client.components.get_usage_count(
-                999999999
-            ),
+            lambda: workbench_client.components.get_usage_count(999999999),
             message_contains="not found",
         )
         assert "Failed to get usage count" in err.message
@@ -113,9 +98,7 @@ class TestComponentsLiveClientErrors:
         assert_api_error_details_status_zero(err)
 
     def test_list_by_usage_via_client(self, workbench_client, workbench_version):
-        data = workbench_client.components.list_by_usage(
-            page=1, records_per_page=3
-        )
+        data = workbench_client.components.list_by_usage(page=1, records_per_page=3)
         assert_data_contract(
             "components.list_by_usage",
             data,
@@ -165,22 +148,14 @@ class TestComponentsLiveMutationsViaClient:
             workbench_version=workbench_version,
         )
 
-        info = workbench_client.components.get_information(
-            unique_component_name, version
-        )
+        info = workbench_client.components.get_information(unique_component_name, version)
         assert info is not None
-        assert info.get("name") == unique_component_name or info.get(
-            "version"
-        ) == version
+        assert info.get("name") == unique_component_name or info.get("version") == version
         assert info.get("description") == "API live test component"
-        assert info.get("comment") == (
-            "Created and updated by components operations live test"
-        )
+        assert info.get("comment") == ("Created and updated by components operations live test")
         assert info.get("url") == "https://example.com/components-live-test"
 
-        comp_id = info.get("id") or update_result["data"].get(
-            "component_id"
-        )
+        comp_id = info.get("id") or update_result["data"].get("component_id")
         if comp_id is not None:
             usage = workbench_client.components.get_usage(
                 component_id=int(comp_id),
@@ -193,6 +168,4 @@ class TestComponentsLiveMutationsViaClient:
                 workbench_version=workbench_version,
             )
 
-        assert workbench_client.components.delete(
-            unique_component_name, version
-        ) is True
+        assert workbench_client.components.delete(unique_component_name, version) is True

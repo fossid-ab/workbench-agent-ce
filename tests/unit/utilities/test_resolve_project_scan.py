@@ -16,8 +16,8 @@ from workbench_agent.api.utils.scan_type import (
 )
 from workbench_agent.utilities.resolve_project_scan import (
     _build_scan_create_data,
-    format_reuse_issue,
     find_or_create_project_and_scan,
+    format_reuse_issue,
 )
 
 
@@ -91,12 +91,8 @@ def test_format_reuse_issue_upload_vs_git():
     assert "https://github.com/example/repo.git" in message
 
 
-def test_find_or_create_existing_scan(
-    mock_client, mock_params, capsys
-):
-    project_code, scan_code, scan_is_new = find_or_create_project_and_scan(
-        mock_client, mock_params
-    )
+def test_find_or_create_existing_scan(mock_client, mock_params, capsys):
+    project_code, scan_code, scan_is_new = find_or_create_project_and_scan(mock_client, mock_params)
 
     assert project_code == "PROJ123"
     assert scan_code == "SCAN456"
@@ -116,9 +112,7 @@ def test_find_or_create_new_scan(mock_client, mock_params, capsys):
         info=_scan_info(),
     )
 
-    project_code, scan_code, scan_is_new = find_or_create_project_and_scan(
-        mock_client, mock_params
-    )
+    project_code, scan_code, scan_is_new = find_or_create_project_and_scan(mock_client, mock_params)
 
     assert scan_is_new is True
     assert scan_code == "SCAN999"
@@ -127,9 +121,7 @@ def test_find_or_create_new_scan(mock_client, mock_params, capsys):
     assert "Created New Scan in Existing Project" in output
 
 
-def test_find_or_create_incompatible_scan(
-    mock_client, mock_params, capsys
-):
+def test_find_or_create_incompatible_scan(mock_client, mock_params, capsys):
     mock_client.resolver.find_scan.return_value = ResolvedScan(
         code="SCAN456",
         id=789,

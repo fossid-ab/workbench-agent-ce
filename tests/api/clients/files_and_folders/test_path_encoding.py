@@ -15,9 +15,7 @@ def test_encode_path_simple():
 def test_encode_path_roundtrip():
     path = "OpenFastPath/src/ofp_uma.c"
     assert decode_path(encode_path(path)) == path
-    assert FilesAndFoldersClient.decode_path(
-        FilesAndFoldersClient.encode_path(path)
-    ) == path
+    assert FilesAndFoldersClient.decode_path(FilesAndFoldersClient.encode_path(path)) == path
 
 
 def test_encode_path_unicode():

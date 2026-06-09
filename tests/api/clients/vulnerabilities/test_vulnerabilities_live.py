@@ -46,9 +46,7 @@ class TestVulnerabilitiesLiveReadOnly:
             response,
             workbench_version=workbench_version,
         )
-        listed = workbench_client.vulnerability.list_scan_vulnerabilities(
-            scan_code
-        )
+        listed = workbench_client.vulnerability.list_scan_vulnerabilities(scan_code)
         assert listed == scan_has_vulnerabilities["vulnerabilities"]
         assert len(listed) >= 1
 
@@ -58,9 +56,7 @@ class TestVulnerabilitiesLiveReadOnly:
         identified_test_scan_code,
         scan_has_identified,
     ):
-        vulns = workbench_client.vulnerability.list_scan_vulnerabilities(
-            identified_test_scan_code
-        )
+        vulns = workbench_client.vulnerability.list_scan_vulnerabilities(identified_test_scan_code)
         if not vulns:
             pytest.skip(
                 "Identified Test Scan has no vulnerabilities "
@@ -113,9 +109,7 @@ class TestVulnerabilitiesLiveReadOnly:
         )
         assert client_data == data
 
-        count = workbench_client.vulnerability.count_scan_vulnerabilities(
-            scan_code
-        )
+        count = workbench_client.vulnerability.count_scan_vulnerabilities(scan_code)
         assert count == data["count_results"]
         assert count == len(scan_has_vulnerabilities["vulnerabilities"])
 
@@ -144,6 +138,4 @@ class TestVulnerabilitiesLiveReadOnly:
 
         data = workbench_client.vulnerabilities.get_information(cve)
         assert isinstance(data.get("cve"), list)
-        assert isinstance(
-            data.get("component_vulnerability_in_scans"), list
-        )
+        assert isinstance(data.get("component_vulnerability_in_scans"), list)

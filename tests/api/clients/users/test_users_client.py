@@ -5,13 +5,13 @@ from unittest.mock import patch
 import pytest
 import requests
 
+from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.clients.users import UsersClient
 from workbench_agent.api.clients.users.helpers import (
     is_user_not_found,
     normalize_permissions_list_data,
 )
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.base_api import BaseAPI
 
 
 @pytest.fixture
@@ -100,10 +100,7 @@ def test_get_information_invalid_searched_username(mock_send, users_client):
         ),
     ) as raised:
         users_client.get_information("noone@example.com")
-    assert (
-        raised.value.details["error"]
-        == "RequestData.Base.issues_while_parsing_request"
-    )
+    assert raised.value.details["error"] == "RequestData.Base.issues_while_parsing_request"
     assert raised.value.details["data"][0]["code"] == (
         "RequestData.Traits.UserTrait.username_not_valid"
     )
@@ -117,9 +114,7 @@ def test_normalize_permissions_map():
     data = {
         "10": {"id": 10, "code": "SCANS_VIEW", "group": "scans"},
     }
-    result = normalize_permissions_list_data(
-        data, operation="get_user_permissions_list"
-    )
+    result = normalize_permissions_list_data(data, operation="get_user_permissions_list")
     assert len(result) == 1
     assert result[0]["code"] == "SCANS_VIEW"
 
@@ -130,9 +125,7 @@ def test_get_user_permissions_list_requires_exactly_one_identifier(
     with pytest.raises(ValueError, match="exactly one"):
         users_client.get_user_permissions_list()
     with pytest.raises(ValueError, match="exactly one"):
-        users_client.get_user_permissions_list(
-            searched_username="u", user_id=1
-        )
+        users_client.get_user_permissions_list(searched_username="u", user_id=1)
 
 
 @patch.object(BaseAPI, "_send_request")
@@ -158,9 +151,7 @@ def test_get_user_permissions_list_by_username(mock_send, users_client):
         ],
     }
 
-    result = users_client.get_user_permissions_list(
-        searched_username="alice"
-    )
+    result = users_client.get_user_permissions_list(searched_username="alice")
 
     assert len(result) == 1
     assert result[0]["code"] == "PROJECT_ACCESS_ANY"

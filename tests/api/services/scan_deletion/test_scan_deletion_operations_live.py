@@ -38,16 +38,11 @@ class TestScanDeletionServiceLiveMutations:
                 "scan_code": scan_code,
                 "scan_name": "ScanDeletionService live test",
                 "project_code": test_project_code,
-                "description": (
-                    "ephemeral scan; deleted by "
-                    "test_scan_deletion_operations_live"
-                ),
+                "description": ("ephemeral scan; deleted by " "test_scan_deletion_operations_live"),
             }
         )
         assert scan_id > 0
-        assert scan_code in _project_scan_codes(
-            workbench_client, test_project_code
-        )
+        assert scan_code in _project_scan_codes(workbench_client, test_project_code)
 
         result = workbench_client.scan_deletion.delete_scan(
             scan_code,
@@ -59,6 +54,4 @@ class TestScanDeletionServiceLiveMutations:
         assert isinstance(result, StatusResult)
         assert result.is_finished is True
         assert result.success is True
-        assert scan_code not in _project_scan_codes(
-            workbench_client, test_project_code
-        )
+        assert scan_code not in _project_scan_codes(workbench_client, test_project_code)

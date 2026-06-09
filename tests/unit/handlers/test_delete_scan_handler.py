@@ -3,10 +3,9 @@
 import argparse
 from unittest.mock import MagicMock
 
-from workbench_agent.api.services.resolver_service import ResolvedScan
-
 import pytest
 
+from workbench_agent.api.services.resolver_service import ResolvedScan
 from workbench_agent.api.utils.process_waiter import StatusResult
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.handlers.delete_scan import (
@@ -42,9 +41,7 @@ def test_handle_delete_scan_success(params):
     )
 
     assert handle_delete_scan(client, params) is True
-    client.resolver.find_project_and_scan.assert_called_once_with(
-        "Proj", "Scan1"
-    )
+    client.resolver.find_project_and_scan.assert_called_once_with("Proj", "Scan1")
     client.user_permissions.can_delete_scan.assert_called_once_with("sc_code")
     client.scan_deletion.delete_scan.assert_called_once_with(
         "sc_code",

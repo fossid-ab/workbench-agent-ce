@@ -22,9 +22,7 @@ PERMISSION_DENIED_MESSAGE = (
 
 
 @handler_error_wrapper
-def handle_delete_scan(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> bool:
+def handle_delete_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     """
     Delete an existing scan after resolving project/scan names and permissions.
 
@@ -69,10 +67,7 @@ def handle_delete_scan(
             details={"status": result.status, "raw_data": result.raw_data},
         )
 
-    print(
-        f"\nScan '{params.scan_name}' (code: {scan_code}) was deleted "
-        "successfully."
-    )
+    print(f"\nScan '{params.scan_name}' (code: {scan_code}) was deleted " "successfully.")
     if result.duration is not None:
         print(f"Duration (server-reported): {result.duration:.1f}s")
     return True

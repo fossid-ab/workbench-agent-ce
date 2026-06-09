@@ -17,9 +17,7 @@ def test_find_delegates(component_service):
     component_service._components.get_information.return_value = {"name": "ofp"}
     result = component_service.find("ofp", "1.1")
     assert result["name"] == "ofp"
-    component_service._components.get_information.assert_called_once_with(
-        "ofp", "1.1"
-    )
+    component_service._components.get_information.assert_called_once_with("ofp", "1.1")
 
 
 def test_exists_true_when_found(component_service):
@@ -37,9 +35,7 @@ def test_resolve_skips_create_when_exists(component_service):
         "name": "ofp",
         "supplier_name": "OpenFastPath",
     }
-    result = component_service.resolve(
-        "ofp", "1.1", "BSD-3-Clause", supplier_name="Fallback"
-    )
+    result = component_service.resolve("ofp", "1.1", "BSD-3-Clause", supplier_name="Fallback")
     assert result["created"] is False
     assert result["supplier_name"] == "OpenFastPath"
     component_service._components.create.assert_not_called()
@@ -47,9 +43,7 @@ def test_resolve_skips_create_when_exists(component_service):
 
 def test_resolve_creates_when_missing(component_service):
     component_service._components.get_information.return_value = None
-    component_service._components.create.return_value = {
-        "data": {"component_id": 1}
-    }
+    component_service._components.create.return_value = {"data": {"component_id": 1}}
     result = component_service.resolve(
         "ofp",
         "1.1",

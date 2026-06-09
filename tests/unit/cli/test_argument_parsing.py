@@ -5,11 +5,7 @@ import sys
 from unittest.mock import patch
 
 # Add src to path
-sys.path.insert(
-    0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src")
-)
-
-from workbench_agent.cli import parse_cmdline_args
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 
 class TestBasicCommandParsing:
@@ -17,20 +13,14 @@ class TestBasicCommandParsing:
 
     def test_parse_scan_command(self, args, arg_parser, mock_path_exists):
         """Test basic scan command parsing."""
-        cmd_args = (
-            args()
-            .scan(project="MyProject", scan="MyScan", path=".")
-            .build()
-        )
+        cmd_args = args().scan(project="MyProject", scan="MyScan", path=".").build()
         parsed = arg_parser(cmd_args)
 
         assert parsed.command == "scan"
         assert parsed.project_name == "MyProject"
         assert parsed.scan_name == "MyScan"
         assert parsed.path == "."
-        assert (
-            parsed.api_url == "https://test.com/api.php"
-        )  # Check URL fix
+        assert parsed.api_url == "https://test.com/api.php"  # Check URL fix
         assert parsed.limit == 10  # Check default
         assert parsed.log == "WARNING"  # Check default
 
@@ -76,9 +66,7 @@ class TestBasicCommandParsing:
         assert parsed.git_branch is None
         assert parsed.git_tag is None
 
-    def test_parse_import_da_command(
-        self, args, arg_parser, mock_path_exists
-    ):
+    def test_parse_import_da_command(self, args, arg_parser, mock_path_exists):
         """Test import-da command parsing."""
         with patch("os.path.isfile", return_value=True):
             cmd_args = (
@@ -97,16 +85,10 @@ class TestBasicCommandParsing:
             assert parsed.scan_name == "DAScan"
             assert parsed.path == "analyzer-result.json"
 
-    def test_parse_import_sbom_command(
-        self, args, arg_parser, mock_path_exists
-    ):
+    def test_parse_import_sbom_command(self, args, arg_parser, mock_path_exists):
         """Test import-sbom command parsing."""
         cmd_args = (
-            args()
-            .import_sbom(
-                project="SBOMProject", scan="SBOMScan", path="bom.json"
-            )
-            .build()
+            args().import_sbom(project="SBOMProject", scan="SBOMScan", path="bom.json").build()
         )
         parsed = arg_parser(cmd_args)
 
@@ -135,12 +117,7 @@ class TestBasicCommandParsing:
 
     def test_parse_download_reports_project_scope(self, args, arg_parser):
         """Test download-reports with project scope."""
-        cmd_args = (
-            args()
-            .download_reports(scope="project")
-            .project_name("TestProject")
-            .build()
-        )
+        cmd_args = args().download_reports(scope="project").project_name("TestProject").build()
         parsed = arg_parser(cmd_args)
 
         assert parsed.command == "download-reports"
@@ -151,10 +128,7 @@ class TestBasicCommandParsing:
     def test_parse_show_results_command(self, args, arg_parser):
         """Test show-results command parsing."""
         cmd_args = (
-            args()
-            .show_results(project="ShowProject", scan="ShowScan")
-            .show_licenses()
-            .build()
+            args().show_results(project="ShowProject", scan="ShowScan").show_licenses().build()
         )
         parsed = arg_parser(cmd_args)
 
@@ -168,9 +142,7 @@ class TestBasicCommandParsing:
 class TestFlagsAndDefaults:
     """Test flag parsing and default values."""
 
-    def test_parse_flags_and_log_level(
-        self, args, arg_parser, mock_path_exists
-    ):
+    def test_parse_flags_and_log_level(self, args, arg_parser, mock_path_exists):
         """Test various flags and log level."""
         cmd_args = args().log_level("DEBUG").scan().build()
         # Add flags manually for this test
@@ -187,12 +159,7 @@ class TestFlagsAndDefaults:
     def test_id_reuse_parameters(self, args, arg_parser, mock_path_exists):
         """Test new mutually exclusive ID reuse parameter parsing."""
         # Test project reuse type
-        cmd_args = (
-            args()
-            .scan()
-            .id_reuse(reuse_type="project", source="ReusePrj")
-            .build()
-        )
+        cmd_args = args().scan().id_reuse(reuse_type="project", source="ReusePrj").build()
         parsed = arg_parser(cmd_args)
 
         # Check that new arguments are parsed correctly
@@ -202,12 +169,7 @@ class TestFlagsAndDefaults:
         assert parsed.reuse_scan_ids is None
 
         # Test scan reuse type
-        cmd_args = (
-            args()
-            .scan()
-            .id_reuse(reuse_type="scan", source="ReuseScan")
-            .build()
-        )
+        cmd_args = args().scan().id_reuse(reuse_type="scan", source="ReuseScan").build()
         parsed = arg_parser(cmd_args)
 
         # Check that new arguments are parsed correctly
@@ -260,9 +222,7 @@ class TestEnvironmentVariables:
             ]
             parsed = arg_parser(cmd_args)
 
-            assert (
-                parsed.api_url == "http://env.com/api.php"
-            )  # Check URL fix
+            assert parsed.api_url == "http://env.com/api.php"  # Check URL fix
             assert parsed.api_user == "env_user"
             assert parsed.api_token == "env_token"
 
@@ -270,9 +230,7 @@ class TestEnvironmentVariables:
 class TestUrlHandling:
     """Test API URL handling and normalization."""
 
-    def test_api_url_normalization(
-        self, args, arg_parser, mock_path_exists
-    ):
+    def test_api_url_normalization(self, args, arg_parser, mock_path_exists):
         """Test that API URLs are properly normalized."""
         # Test URL without /api.php
         scan_cmd = [
@@ -341,18 +299,14 @@ class TestUrlHandling:
 class TestIncrementalUploadFlag:
     """Test --incremental-upload flag on the scan subcommand."""
 
-    def test_incremental_upload_defaults_to_false(
-        self, args, arg_parser, mock_path_exists
-    ):
+    def test_incremental_upload_defaults_to_false(self, args, arg_parser, mock_path_exists):
         """--incremental-upload should default to False when not provided."""
         cmd_args = args().scan().build()
         parsed = arg_parser(cmd_args)
 
         assert parsed.incremental_upload is False
 
-    def test_incremental_upload_set_to_true(
-        self, args, arg_parser, mock_path_exists
-    ):
+    def test_incremental_upload_set_to_true(self, args, arg_parser, mock_path_exists):
         """--incremental-upload sets incremental_upload=True."""
         builder = args().scan()
         builder.args.append("--incremental-upload")

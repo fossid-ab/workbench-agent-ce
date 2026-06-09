@@ -4,12 +4,12 @@ from unittest.mock import patch
 
 import pytest
 
+from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.clients.components import ComponentsClient
 from workbench_agent.api.clients.components.helpers import (
     is_missing_component_information,
 )
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.base_api import BaseAPI
 
 
 @pytest.fixture
@@ -98,9 +98,7 @@ def test_create_returns_data_and_message(mock_send, components_client):
         },
         "message": "Component created",
     }
-    result = components_client.create(
-        "test", "1.0", "MIT", cpe="cpe:2.3:a:test:1.0:*:*:*:*:*:*:*"
-    )
+    result = components_client.create("test", "1.0", "MIT", cpe="cpe:2.3:a:test:1.0:*:*:*:*:*:*:*")
     assert result["data"]["component_id"] == 1200
     assert result["message"] == "Component created"
     assert "cpe" in mock_send.call_args[0][0]["data"]
@@ -180,6 +178,4 @@ def test_api_error(mock_send, components_client):
 
 def test_is_missing_component_information_helper():
     assert is_missing_component_information({"status": "1", "data": None})
-    assert not is_missing_component_information(
-        {"status": "1", "data": {"id": 1}}
-    )
+    assert not is_missing_component_information({"status": "1", "data": {"id": 1}})

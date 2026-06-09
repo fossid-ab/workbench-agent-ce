@@ -1,6 +1,5 @@
 # tests/unit/cli/test_validation_edge_cases.py
 
-import os
 from argparse import Namespace
 from unittest.mock import patch
 
@@ -30,9 +29,7 @@ class TestValidationEdgeCases:
 
     def test_missing_api_user_raises_error(self):
         """Test that missing API user raises ValidationError."""
-        args = Namespace(
-            api_url="https://test.com", api_user=None, api_token="token"
-        )
+        args = Namespace(api_url="https://test.com", api_user=None, api_token="token")
 
         with pytest.raises(
             ValidationError,
@@ -42,9 +39,7 @@ class TestValidationEdgeCases:
 
     def test_missing_api_token_raises_error(self):
         """Test that missing API token raises ValidationError."""
-        args = Namespace(
-            api_url="https://test.com", api_user="test", api_token=None
-        )
+        args = Namespace(api_url="https://test.com", api_user="test", api_token=None)
 
         with pytest.raises(
             ValidationError,
@@ -67,9 +62,7 @@ class TestValidationEdgeCases:
         # Test case for line 76 in validators.py
         args = Namespace(command="scan", path=None)
 
-        with pytest.raises(
-            ValidationError, match="Path is required for scan command"
-        ):
+        with pytest.raises(ValidationError, match="Path is required for scan command"):
             _validate_scan_commands(args)
 
     def test_blind_scan_command_missing_path_raises_error(self):
@@ -94,9 +87,7 @@ class TestValidationEdgeCases:
             _validate_scan_commands(args)
 
     @patch("os.path.exists", return_value=False)
-    def test_blind_scan_command_nonexistent_path_raises_error(
-        self, mock_exists
-    ):
+    def test_blind_scan_command_nonexistent_path_raises_error(self, mock_exists):
         """Test that blind-scan command with non-existent path raises ValidationError."""
         args = Namespace(command="blind-scan", path="/non/existent/path")
 
@@ -108,9 +99,7 @@ class TestValidationEdgeCases:
 
     def test_scan_git_command_no_path_validation(self):
         """Test that scan-git command doesn't require path validation."""
-        args = Namespace(
-            command="scan-git", git_url="https://github.com/user/repo.git"
-        )
+        args = Namespace(command="scan-git", git_url="https://github.com/user/repo.git")
 
         # Should not raise an exception
         _validate_scan_commands(args)
@@ -125,9 +114,7 @@ class TestValidationEdgeCases:
 
     @patch("os.path.isdir", return_value=True)
     @patch("os.path.exists", return_value=True)
-    def test_valid_blind_scan_command_passes(
-        self, mock_exists, mock_isdir
-    ):
+    def test_valid_blind_scan_command_passes(self, mock_exists, mock_isdir):
         """Test that valid blind-scan command passes validation."""
         args = Namespace(command="blind-scan", path="/valid/path")
 
@@ -136,9 +123,7 @@ class TestValidationEdgeCases:
 
     @patch("os.path.isdir", return_value=True)
     @patch("os.path.exists", return_value=True)
-    def test_blind_scan_invalid_toolbox_timeout_raises(
-        self, mock_exists, mock_isdir
-    ):
+    def test_blind_scan_invalid_toolbox_timeout_raises(self, mock_exists, mock_isdir):
         """Test that non-positive fossid-toolbox-timeout is rejected."""
         args = Namespace(
             command="blind-scan",

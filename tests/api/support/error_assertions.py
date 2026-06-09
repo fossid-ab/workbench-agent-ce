@@ -6,7 +6,6 @@ import pytest
 
 from workbench_agent.api.exceptions import ApiError
 
-
 MatchType = Optional[Union[str, Pattern[str]]]
 
 
@@ -44,6 +43,6 @@ def assert_api_error_details_status_zero(err: ApiError) -> None:
     """Assert API error response used status '0' when details are present."""
     details = err.details or {}
     if "status" in details:
-        assert details["status"] == "0", (
-            f"Expected API status '0' in details, got {details['status']!r}"
-        )
+        assert (
+            details["status"] == "0"
+        ), f"Expected API status '0' in details, got {details['status']!r}"

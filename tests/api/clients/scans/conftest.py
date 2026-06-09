@@ -46,9 +46,7 @@ def unknown_scan_code() -> str:
 
 
 @pytest.fixture(scope="session")
-def unknown_scan_row_not_found_probe(
-    workbench_client, unknown_scan_code
-) -> Dict[str, Any]:
+def unknown_scan_row_not_found_probe(workbench_client, unknown_scan_code) -> Dict[str, Any]:
     """
     One live ``get_information`` for a missing scan.
 

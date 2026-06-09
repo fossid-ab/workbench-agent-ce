@@ -4,9 +4,9 @@ from unittest.mock import patch
 
 import pytest
 
-from workbench_agent.api.clients.vulnerabilities import VulnerabilitiesClient
-from workbench_agent.api.base_api import BaseAPI
 from tests.api.support.error_assertions import assert_api_error
+from workbench_agent.api.base_api import BaseAPI
+from workbench_agent.api.clients.vulnerabilities import VulnerabilitiesClient
 
 
 @pytest.fixture
@@ -47,9 +47,7 @@ ERROR_RESPONSE = {
         ),
     ],
 )
-def test_api_errors_raise(
-    mock_send, vulnerabilities_client, method_name, kwargs
-):
+def test_api_errors_raise(mock_send, vulnerabilities_client, method_name, kwargs):
     mock_send.return_value = ERROR_RESPONSE
     assert_api_error(
         lambda: getattr(vulnerabilities_client, method_name)(**kwargs),

@@ -46,9 +46,7 @@ def test_print_scan_summary_link_only(mock_client, mock_params, capsys):
     mock_client.identification.get_scan_metrics.assert_not_called()
 
 
-def test_print_scan_summary_requires_scan_operations(
-    mock_client, mock_params
-):
+def test_print_scan_summary_requires_scan_operations(mock_client, mock_params):
     with pytest.raises(ValueError, match="scan_operations is required"):
         print_scan_summary(
             mock_client,
@@ -66,12 +64,8 @@ def test_print_scan_summary_full(mock_client, mock_params, mocker, capsys):
         "pending_identification": 2,
         "without_matches": 3,
     }
-    mock_client.identification.get_identified_components.return_value = [
-        {"name": "openssl"}
-    ]
-    mock_client.identification.get_unique_identified_licenses.return_value = [
-        {"identifier": "MIT"}
-    ]
+    mock_client.identification.get_identified_components.return_value = [{"name": "openssl"}]
+    mock_client.identification.get_unique_identified_licenses.return_value = [{"identifier": "MIT"}]
     mock_client.policy.get_policy_warnings.return_value = {
         "policy_warnings_total": 0,
         "identified_files_with_warnings": 0,

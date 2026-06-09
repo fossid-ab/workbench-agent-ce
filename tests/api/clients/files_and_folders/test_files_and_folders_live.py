@@ -166,19 +166,15 @@ class TestFilesAndFoldersLiveReadOnly:
         test_scan_code,
         openfastpath_dir,
     ):
-        all_ranking = (
-            workbench_client.files_and_folders.get_folder_extensions_ranking(
-                test_scan_code,
-                openfastpath_dir,
-                current_view="show_all",
-            )
+        all_ranking = workbench_client.files_and_folders.get_folder_extensions_ranking(
+            test_scan_code,
+            openfastpath_dir,
+            current_view="show_all",
         )
-        pending_ranking = (
-            workbench_client.files_and_folders.get_folder_extensions_ranking(
-                test_scan_code,
-                openfastpath_dir,
-                current_view="pending_items",
-            )
+        pending_ranking = workbench_client.files_and_folders.get_folder_extensions_ranking(
+            test_scan_code,
+            openfastpath_dir,
+            current_view="pending_items",
         )
         assert isinstance(all_ranking, list)
         assert isinstance(pending_ranking, list)
@@ -223,9 +219,7 @@ class TestFilesAndFoldersLiveReadOnly:
         test_scan_code,
         pending_path,
     ):
-        data = workbench_client.files_and_folders.get_fossid_results(
-            test_scan_code, pending_path
-        )
+        data = workbench_client.files_and_folders.get_fossid_results(test_scan_code, pending_path)
         assert_data_contract(
             "files_and_folders.get_fossid_results",
             data,
@@ -239,9 +233,7 @@ class TestFilesAndFoldersLiveReadOnly:
         test_scan_code,
         pending_path,
     ):
-        data = workbench_client.files_and_folders.get_file_comments(
-            test_scan_code, pending_path
-        )
+        data = workbench_client.files_and_folders.get_file_comments(test_scan_code, pending_path)
         assert_data_contract(
             "files_and_folders.get_file_comments",
             data,
@@ -391,14 +383,8 @@ class TestFilesAndFoldersLiveMutations:
             mutation_pending_path,
             f"comment {tag}",
         )
-        comments = identification_service.get_file_comments(
-            test_scan_code, mutation_pending_path
-        )
-        created = [
-            c
-            for c in comments
-            if tag in (c.get("comment") or "")
-        ]
+        comments = identification_service.get_file_comments(test_scan_code, mutation_pending_path)
+        created = [c for c in comments if tag in (c.get("comment") or "")]
         if not created:
             pytest.skip("Could not find created comment for edit/delete")
         comment_id = created[-1]["id"]
@@ -407,9 +393,7 @@ class TestFilesAndFoldersLiveMutations:
             comment_id,
             comment=f"edited {tag}",
         )
-        workbench_client.files_and_folders.delete_file_comment(
-            test_scan_code, comment_id
-        )
+        workbench_client.files_and_folders.delete_file_comment(test_scan_code, comment_id)
 
     def test_mark_and_unmark_identified(
         self,
@@ -417,12 +401,8 @@ class TestFilesAndFoldersLiveMutations:
         test_scan_code,
         mutation_pending_path,
     ):
-        identification_service.mark_as_identified(
-            test_scan_code, mutation_pending_path
-        )
-        identification_service.unmark_as_identified(
-            test_scan_code, mutation_pending_path
-        )
+        identification_service.mark_as_identified(test_scan_code, mutation_pending_path)
+        identification_service.unmark_as_identified(test_scan_code, mutation_pending_path)
 
     def test_component_identification_cycle(
         self,
@@ -433,9 +413,7 @@ class TestFilesAndFoldersLiveMutations:
         unique_component_name,
     ):
         version = "0.0.1-api-test"
-        identification_service.resolve_component(
-            unique_component_name, version, "MIT"
-        )
+        identification_service.resolve_component(unique_component_name, version, "MIT")
         try:
             identification_service.identify_component_to_file(
                 test_scan_code,
@@ -448,6 +426,4 @@ class TestFilesAndFoldersLiveMutations:
             )
             assert removed is True
         finally:
-            workbench_client.components.delete(
-                unique_component_name, version
-            )
+            workbench_client.components.delete(unique_component_name, version)

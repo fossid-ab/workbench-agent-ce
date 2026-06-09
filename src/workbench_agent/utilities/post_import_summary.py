@@ -69,18 +69,12 @@ def print_import_summary(
     # Fetch KB components and licenses for SBOM imports
     if is_sbom_import and import_completed:
         try:
-            kb_components = workbench.identification.get_identified_components(
-                scan_code
-            )
+            kb_components = workbench.identification.get_identified_components(scan_code)
         except (ApiError, NetworkError) as e:
             logger.debug(f"Could not fetch KB components: {e}")
 
         try:
-            kb_licenses = (
-                workbench.identification.get_unique_identified_licenses(
-                    scan_code
-                )
-            )
+            kb_licenses = workbench.identification.get_unique_identified_licenses(scan_code)
         except (ApiError, NetworkError) as e:
             logger.debug(f"Could not fetch KB licenses: {e}")
 
@@ -92,9 +86,7 @@ def print_import_summary(
 
     # Fetch vulnerabilities
     try:
-        vulnerabilities = workbench.vulnerability.list_scan_vulnerabilities(
-            scan_code
-        )
+        vulnerabilities = workbench.vulnerability.list_scan_vulnerabilities(scan_code)
     except (ApiError, NetworkError) as e:
         logger.debug(f"Could not fetch vulnerabilities: {e}")
 
@@ -143,12 +135,8 @@ def print_import_summary(
     # Policy warnings count
     if policy_warnings is not None:
         total_warnings = int(policy_warnings.get("policy_warnings_total", 0))
-        files_with_warnings = int(
-            policy_warnings.get("identified_files_with_warnings", 0)
-        )
-        deps_with_warnings = int(
-            policy_warnings.get("dependencies_with_warnings", 0)
-        )
+        files_with_warnings = int(policy_warnings.get("identified_files_with_warnings", 0))
+        deps_with_warnings = int(policy_warnings.get("dependencies_with_warnings", 0))
         print(f"  - Policy Warnings: {total_warnings}")
         if total_warnings > 0:
             print(f"    - In Identified Files: {files_with_warnings}")
@@ -157,11 +145,8 @@ def print_import_summary(
         print("  - Could not check Policy Warnings - are Policies set?")
 
     print_vulnerable_component_count(
-        vulnerability_summary
-        or {"total_cves": 0, "vulnerable_component_count": 0},
-        empty_message=(
-            "  - No CVEs found for Components or Dependencies."
-        ),
+        vulnerability_summary or {"total_cves": 0, "vulnerable_component_count": 0},
+        empty_message=("  - No CVEs found for Components or Dependencies."),
     )
 
     print("------------------------------------")

@@ -53,16 +53,10 @@ def try_raise_parsing_request_error(
         return False
 
     error_code = data[0].get("code", "")
-    field = (
-        data[0].get("message_parameters", {}).get("fieldname", "unknown")
-    )
+    field = data[0].get("message_parameters", {}).get("fieldname", "unknown")
 
     if "not_valid_date_string" in error_code:
-        target = (
-            f"project '{project_code}'"
-            if project_code
-            else "project"
-        )
+        target = f"project '{project_code}'" if project_code else "project"
         raise ApiError(
             f"Failed to update {target}: Invalid date format for '{field}'. "
             f"Please provide a valid date string (e.g., '2025-12-31')",
@@ -94,11 +88,7 @@ def try_raise_create_parsing_request_error(
 
     error_code = data[0].get("code", "")
     if "not_valid_date_string" in error_code:
-        field = (
-            data[0]
-            .get("message_parameters", {})
-            .get("fieldname", "date")
-        )
+        field = data[0].get("message_parameters", {}).get("fieldname", "date")
         raise ApiError(
             f"Failed to create project '{project_name}':"
             f"Invalid date format for '{field}'."

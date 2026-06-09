@@ -4,13 +4,13 @@ from unittest.mock import patch
 
 import pytest
 
-from workbench_agent.api.clients.files_and_folders import FilesAndFoldersClient
-from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.base_api import BaseAPI
 from tests.api.support.error_assertions import (
     assert_api_error,
     assert_api_error_details_status_zero,
 )
+from workbench_agent.api.base_api import BaseAPI
+from workbench_agent.api.clients.files_and_folders import FilesAndFoldersClient
+from workbench_agent.api.exceptions import ApiError
 
 
 @pytest.fixture
@@ -63,9 +63,7 @@ PATH = "src/missing.c"
         ("remove_component_identification", (SCAN, PATH)),
     ],
 )
-def test_methods_raise_api_error_on_status_zero(
-    mock_send, files_client, method_name, call_args
-):
+def test_methods_raise_api_error_on_status_zero(mock_send, files_client, method_name, call_args):
     mock_send.return_value = ERROR_RESPONSE
     method = getattr(files_client, method_name)
     err = assert_api_error(lambda: method(*call_args))

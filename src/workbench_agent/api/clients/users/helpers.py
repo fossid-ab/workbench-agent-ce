@@ -49,9 +49,7 @@ def normalize_permissions_list_data(
     Live servers may return an array or a map keyed by permission id.
     """
     if data is None:
-        logger.warning(
-            "users.%s: success but ``data`` is null or absent", operation
-        )
+        logger.warning("users.%s: success but ``data`` is null or absent", operation)
         return []
     if isinstance(data, list):
         if not all(isinstance(item, dict) for item in data):
@@ -68,7 +66,5 @@ def normalize_permissions_list_data(
         if all(isinstance(v, dict) for v in data.values()):
             return list(data.values())
         return [data]
-    logger.warning(
-        "users.%s: unexpected 'data' type: %s", operation, type(data)
-    )
+    logger.warning("users.%s: unexpected 'data' type: %s", operation, type(data))
     return []

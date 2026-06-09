@@ -23,9 +23,7 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_scan_git(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> bool:
+def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     """
     Handler for the 'scan-git' command.
 
@@ -69,9 +67,7 @@ def handle_scan_git(
 
     # ===== STEP 2: Pre-Flight Checks =====
     print("\n--- Pre-Flight Checks ---")
-    scan_git_pre_flight_check(
-        client, scan_code, scan_is_new, params
-    )
+    scan_git_pre_flight_check(client, scan_code, scan_is_new, params)
 
     # ===== STEP 3: Git Clone =====
     print("\n--- Cloning the Target Repo ---")
@@ -87,8 +83,7 @@ def handle_scan_git(
         print("Git Clone Completed.")
     except Exception as e:
         logger.error(
-            f"Failed to clone Git repository for "
-            f"'{scan_code}': {e}",
+            f"Failed to clone Git repository for " f"'{scan_code}': {e}",
             exc_info=True,
         )
         raise WorkbenchAgentError(
@@ -99,22 +94,12 @@ def handle_scan_git(
     # ===== STEP 4: Remove .git Directory =====
     print("\nRemoving .git directory to optimize scan...")
     try:
-        if client.scan_content.remove_uploaded_content(
-            scan_code, ".git/"
-        ):
+        if client.scan_content.remove_uploaded_content(scan_code, ".git/"):
             print("Successfully removed .git directory.")
     except Exception as e:
-        logger.warning(
-            f"Error removing .git directory: {e}. "
-            f"Continuing with scan..."
-        )
-        print(
-            f"Warning: Error removing .git directory: {e}. "
-            f"Continuing with scan..."
-        )
+        logger.warning(f"Error removing .git directory: {e}. " f"Continuing with scan...")
+        print(f"Warning: Error removing .git directory: {e}. " f"Continuing with scan...")
 
     # ===== STEP 5: Run Scans =====
     print("\n--- Scan Operations ---")
-    return execute_scan_workflow(
-        client, params, scan_code, durations
-    )
+    return execute_scan_workflow(client, params, scan_code, durations)

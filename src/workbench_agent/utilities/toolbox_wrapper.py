@@ -43,17 +43,12 @@ class ToolboxWrapper:
 
         # Validate CLI path exists and is executable
         if not os.path.exists(toolbox_path):
-            raise FileSystemError(
-                f"FossID Toolbox not found at path: {toolbox_path}"
-            )
+            raise FileSystemError(f"FossID Toolbox not found at path: {toolbox_path}")
         if not os.access(toolbox_path, os.X_OK):
-            raise FileSystemError(
-                f"FossID Toolbox not executable: {toolbox_path}"
-            )
+            raise FileSystemError(f"FossID Toolbox not executable: {toolbox_path}")
 
         logger.debug(
-            f"ToolboxWrapper initialized with toolbox_path={toolbox_path}, "
-            f"timeout={timeout}"
+            f"ToolboxWrapper initialized with toolbox_path={toolbox_path}, " f"timeout={timeout}"
         )
 
     def get_version(self) -> str:
@@ -77,17 +72,11 @@ class ToolboxWrapper:
             logger.info(f"FossID Toolbox version: {version}")
             return version
         except subprocess.TimeoutExpired as e:
-            error_msg = (
-                f"Toolbox version check timed out after "
-                f"{self.timeout} seconds"
-            )
+            error_msg = f"Toolbox version check timed out after " f"{self.timeout} seconds"
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
         except subprocess.CalledProcessError as e:
-            error_msg = (
-                f"Toolbox version check failed: {e.cmd} "
-                f"(exit code: {e.returncode})"
-            )
+            error_msg = f"Toolbox version check failed: {e.cmd} " f"(exit code: {e.returncode})"
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
         except Exception as e:
@@ -95,9 +84,7 @@ class ToolboxWrapper:
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
 
-    def generate_hashes(
-        self, path: str, run_dependency_analysis: bool = False
-    ) -> str:
+    def generate_hashes(self, path: str, run_dependency_analysis: bool = False) -> str:
         """
         Generate hashes using FossID Toolbox.
 
@@ -127,14 +114,10 @@ class ToolboxWrapper:
             )
             os.close(fd)
         except OSError as e:
-            raise FileSystemError(
-                f"Failed to create temporary hash file: {e}"
-            ) from e
+            raise FileSystemError(f"Failed to create temporary hash file: {e}") from e
 
         logger.info(f"Hashing path: {path}")
-        logger.debug(
-            f"Temporary file will be created at: {temporary_file_path}"
-        )
+        logger.debug(f"Temporary file will be created at: {temporary_file_path}")
 
         # Build fossid-toolbox hash command
         # Format: fossid-toolbox hash [OPTIONS] <PATHS>...
@@ -143,14 +126,10 @@ class ToolboxWrapper:
         if run_dependency_analysis:
             # Enable manifest for dependency analysis
             cmd_args.append("--enable-manifest=true")
-            logger.debug(
-                "Manifest capture enabled for dependency analysis"
-            )
+            logger.debug("Manifest capture enabled for dependency analysis")
 
         cmd_args.append(path)  # Path to scan (must be last)
-        logger.debug(
-            f"Executing fossid-toolbox hash command: {' '.join(cmd_args)}"
-        )
+        logger.debug(f"Executing fossid-toolbox hash command: {' '.join(cmd_args)}")
 
         try:
             # Execute command and redirect output to temporary file.
@@ -181,16 +160,11 @@ class ToolboxWrapper:
 
             # Verify temporary file was created and has content
             if not os.path.exists(temporary_file_path):
-                raise ProcessError(
-                    f"Temporary file was not created: "
-                    f"{temporary_file_path}"
-                )
+                raise ProcessError(f"Temporary file was not created: " f"{temporary_file_path}")
 
             file_size = os.path.getsize(temporary_file_path)
             if file_size == 0:
-                logger.warning(
-                    "Hash generation completed but generated empty file."
-                )
+                logger.warning("Hash generation completed but generated empty file.")
             else:
                 logger.info(
                     f"Hash generation completed successfully. "
@@ -200,9 +174,7 @@ class ToolboxWrapper:
             return temporary_file_path
 
         except subprocess.TimeoutExpired as e:
-            error_msg = (
-                f"Hash generation timed out after {self.timeout} seconds"
-            )
+            error_msg = f"Hash generation timed out after {self.timeout} seconds"
             logger.error(error_msg)
             cleanup_temp_path(temporary_file_path)
             raise ProcessError(error_msg) from e

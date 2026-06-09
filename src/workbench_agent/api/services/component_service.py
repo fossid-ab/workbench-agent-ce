@@ -33,9 +33,7 @@ class ComponentService:
         component_version: Optional[str] = None,
     ) -> Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]:
         """Return catalog component information, or ``None`` if missing."""
-        return self._components.get_information(
-            component_name, component_version
-        )
+        return self._components.get_information(component_name, component_version)
 
     def exists(self, component_name: str, component_version: str) -> bool:
         """Return whether a name/version pair exists in the catalog."""
@@ -69,11 +67,7 @@ class ComponentService:
 
         existing = self.find(name, version)
         if existing is not None:
-            catalog_supplier = (
-                existing.get("supplier_name")
-                if isinstance(existing, dict)
-                else None
-            )
+            catalog_supplier = existing.get("supplier_name") if isinstance(existing, dict) else None
             resolved_supplier = catalog_supplier or supplier_name
             logger.debug(
                 "Component '%s' v%s already exists in catalog (supplier=%r)",
@@ -121,6 +115,4 @@ class ComponentService:
         **kwargs: Any,
     ) -> Dict[str, Any]:
         """Update an existing catalog component (delegates to ``ComponentsClient``)."""
-        return self._components.update(
-            component_name, component_version, **kwargs
-        )
+        return self._components.update(component_name, component_version, **kwargs)

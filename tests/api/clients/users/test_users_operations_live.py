@@ -32,9 +32,7 @@ class TestUsersLiveRawProbes:
             }
         )
         assert response.get("status") == "0", response
-        assert is_user_not_found(
-            response.get("error", ""), response
-        ), response.get("error")
+        assert is_user_not_found(response.get("error", ""), response), response.get("error")
 
     def test_raw_get_permissions_unknown_user(self, workbench_client):
         response = workbench_client.users._api._send_request(
@@ -48,9 +46,7 @@ class TestUsersLiveRawProbes:
         assert response.get("error") == "User not found"
         assert response.get("data") is None
 
-    def test_permissions_map_shape_if_returned(
-        self, workbench_client, api_username
-    ):
+    def test_permissions_map_shape_if_returned(self, workbench_client, api_username):
         """Document whether live server returns list or map for permissions."""
         raw = workbench_client.users._api._send_request(
             {
@@ -61,9 +57,7 @@ class TestUsersLiveRawProbes:
         )
         assert raw.get("status") == "1"
         data = raw.get("data")
-        normalized = normalize_permissions_list_data(
-            data, operation="get_user_permissions_list"
-        )
+        normalized = normalize_permissions_list_data(data, operation="get_user_permissions_list")
         via_client = workbench_client.users.get_user_permissions_list(
             searched_username=api_username
         )
@@ -84,7 +78,5 @@ class TestUsersLiveClientErrors:
 
     def test_get_permissions_client_error_prefix(self, workbench_client):
         with pytest.raises(ApiError) as exc_info:
-            workbench_client.users.get_user_permissions_list(
-                searched_username=INVALID_USER
-            )
+            workbench_client.users.get_user_permissions_list(searched_username=INVALID_USER)
         assert "Failed to list user permissions" in str(exc_info.value)

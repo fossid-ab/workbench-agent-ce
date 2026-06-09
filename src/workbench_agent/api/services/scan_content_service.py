@@ -13,8 +13,8 @@ import logging
 import os
 from typing import TYPE_CHECKING, Dict, Optional
 
-from workbench_agent.api.utils.process_waiter import StatusResult
 from workbench_agent.api.exceptions import FileSystemError
+from workbench_agent.api.utils.process_waiter import StatusResult
 
 if TYPE_CHECKING:
     from workbench_agent.api.clients.scans import ScansClient
@@ -59,12 +59,8 @@ class ScanContentService:
     ) -> Dict[str, str]:
         upload_basename = os.path.basename(path)
         headers = {
-            "FOSSID-SCAN-CODE": base64.b64encode(
-                scan_code.encode()
-            ).decode("utf-8"),
-            "FOSSID-FILE-NAME": base64.b64encode(
-                upload_basename.encode()
-            ).decode("utf-8"),
+            "FOSSID-SCAN-CODE": base64.b64encode(scan_code.encode()).decode("utf-8"),
+            "FOSSID-FILE-NAME": base64.b64encode(upload_basename.encode()).decode("utf-8"),
             "Accept": "*/*",
         }
         if upload_type is not None:
@@ -75,8 +71,7 @@ class ScanContentService:
         file_size = os.path.getsize(path)
         if file_size > self.CHUNKED_UPLOAD_THRESHOLD:
             logger.debug(
-                "File size (%.2f MB) exceeds %.0f MB threshold; "
-                "using chunked upload.",
+                "File size (%.2f MB) exceeds %.0f MB threshold; " "using chunked upload.",
                 file_size / (1024 * 1024),
                 self.CHUNKED_UPLOAD_THRESHOLD / (1024 * 1024),
             )
@@ -94,14 +89,10 @@ class ScanContentService:
 
     def upload_da_results(self, scan_code: str, path: str) -> None:
         """Upload a dependency analysis results file for later import processing."""
-        self._validate_upload_file(
-            path, "Dependency analysis results file"
-        )
+        self._validate_upload_file(path, "Dependency analysis results file")
         self._upload_file(
             path,
-            self._upload_headers(
-                scan_code, path, upload_type="dependency_analysis"
-            ),
+            self._upload_headers(scan_code, path, upload_type="dependency_analysis"),
         )
 
     def upload_sbom_file(self, scan_code: str, path: str) -> None:
@@ -124,9 +115,7 @@ class ScanContentService:
 
         payload_data = {
             "scan_code": scan_code,
-            "recursively_extract_archives": (
-                str(recursively_extract_archives).lower()
-            ),
+            "recursively_extract_archives": (str(recursively_extract_archives).lower()),
             "jar_file_extraction": str(jar_file_extraction).lower(),
             "extract_to_directory": "1" if extract_to_directory else "0",
         }
@@ -195,9 +184,7 @@ class ScanContentService:
 
     # ===== SERVER-SIDE FILE OPERATIONS =====
 
-    def remove_uploaded_content(
-        self, scan_code: str, filename: Optional[str] = None
-    ) -> bool:
+    def remove_uploaded_content(self, scan_code: str, filename: Optional[str] = None) -> bool:
         """
         Remove uploaded content from a scan (all or a specific path).
 
@@ -211,4 +198,3 @@ class ScanContentService:
             filename,
         )
         return self._scans.remove_uploaded_content(scan_code, filename)
-

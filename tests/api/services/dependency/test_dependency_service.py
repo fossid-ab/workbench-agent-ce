@@ -20,16 +20,12 @@ def test_list_dependencies_delegates(dependency_service):
     ]
     result = dependency_service.list_dependencies("S1")
     assert len(result) == 1
-    dependency_service._scans.get_dependency_analysis_results.assert_called_once_with(
-        "S1"
-    )
+    dependency_service._scans.get_dependency_analysis_results.assert_called_once_with("S1")
 
 
 def test_add_dependency_resolves_catalog_then_adds(dependency_service):
     dependency_service._catalog.resolve.return_value = {"created": True}
-    dependency_service._scans.add_dependency_analysis_results.return_value = {
-        "component_id": 1
-    }
+    dependency_service._scans.add_dependency_analysis_results.return_value = {"component_id": 1}
     result = dependency_service.add_dependency(
         "S1",
         "abbrev",
@@ -51,9 +47,7 @@ def test_add_dependency_resolves_catalog_then_adds(dependency_service):
 
 def test_add_dependency_requires_license(dependency_service):
     with pytest.raises(ValueError, match="license_identifier is required to add"):
-        dependency_service.add_dependency(
-            "S1", "abbrev", "1.1.1", "pkg:npm/abbrev@1.1.1", ""
-        )
+        dependency_service.add_dependency("S1", "abbrev", "1.1.1", "pkg:npm/abbrev@1.1.1", "")
 
 
 def test_set_include_in_report_delegates(dependency_service):

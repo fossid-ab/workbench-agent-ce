@@ -30,9 +30,7 @@ def _format_report_parameters(
 
     Returns a formatted string showing which parameters were used.
     """
-    capabilities = (
-        workbench.reports.REPORT_DEFS.get(report_type) or {}
-    ).get("capabilities") or {}
+    capabilities = (workbench.reports.REPORT_DEFS.get(report_type) or {}).get("capabilities") or {}
 
     param_parts = []
 
@@ -64,9 +62,7 @@ def _format_report_parameters(
     # Include Dep Det Info - defaults to false if not set (for Excel reports)
     if capabilities.get("supports_dep_det_info"):
         include_dep_det_info = getattr(params, "include_dep_det_info", False)
-        param_parts.append(
-            f"Dependency Details: {'Yes' if include_dep_det_info else 'No'}"
-        )
+        param_parts.append(f"Dependency Details: {'Yes' if include_dep_det_info else 'No'}")
 
     if param_parts:
         return " (" + ", ".join(param_parts) + ")"
@@ -111,14 +107,8 @@ def print_report_summary(
     print("\n--- Post-Report Summary ---")
 
     # Report Scope
-    scope_label = (
-        "Project" if params.report_scope == "project" else "Scan"
-    )
-    scope_name = (
-        params.project_name
-        if params.report_scope == "project"
-        else params.scan_name
-    )
+    scope_label = "Project" if params.report_scope == "project" else "Scan"
+    scope_name = params.project_name if params.report_scope == "project" else params.scan_name
     print(f"\nReport Scope: {scope_label} '{scope_name}'")
 
     # Output Directory

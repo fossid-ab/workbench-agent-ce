@@ -52,15 +52,10 @@ class ProjectsClient:
             if isinstance(data, list):
                 logger.debug(f"Successfully listed {len(data)} projects.")
                 return data
-            logger.warning(
-                f"API returned success but 'data' was not a list: "
-                f"{type(data)}"
-            )
+            logger.warning(f"API returned success but 'data' was not a list: " f"{type(data)}")
             return []
 
-        helpers.raise_on_failed_response(
-            response, error_context="Failed to list projects"
-        )
+        helpers.raise_on_failed_response(response, error_context="Failed to list projects")
         return []
 
     def get_information(self, project_code: str) -> Dict[str, Any]:
@@ -69,9 +64,7 @@ class ProjectsClient:
 
         Required: ``project_code``. Raises ``ProjectNotFoundError`` when missing.
         """
-        logger.debug(
-            f"Fetching information for project '{project_code}'..."
-        )
+        logger.debug(f"Fetching information for project '{project_code}'...")
         response = self._api._send_request(
             {
                 "group": "projects",
@@ -81,14 +74,10 @@ class ProjectsClient:
         )
 
         if response.get("status") == "1" and "data" in response:
-            logger.debug(
-                f"Success fetching information for project '{project_code}'."
-            )
+            logger.debug(f"Success fetching information for project '{project_code}'.")
             return response["data"]
 
-        error_msg = response.get(
-            "error", f"Unexpected response: {response}"
-        )
+        error_msg = response.get("error", f"Unexpected response: {response}")
         if helpers.is_project_not_found(error_msg):
             helpers.raise_project_not_found(project_code)
         raise ApiError(
@@ -143,19 +132,15 @@ class ProjectsClient:
                 )
                 return data
             raise ApiError(
-                f"Unexpected data type for project policy warnings: "
-                f"{type(data)}",
+                f"Unexpected data type for project policy warnings: " f"{type(data)}",
                 details=response,
             )
 
-        error_msg = response.get(
-            "error", f"Unexpected response: {response}"
-        )
+        error_msg = response.get("error", f"Unexpected response: {response}")
         if helpers.is_project_not_found(error_msg):
             helpers.raise_project_not_found(project_code)
         raise ApiError(
-            f"Failed to get policy warnings for project "
-            f"'{project_code}': {error_msg}",
+            f"Failed to get policy warnings for project " f"'{project_code}': {error_msg}",
             details=response,
         )
 
@@ -177,21 +162,15 @@ class ProjectsClient:
         if response.get("status") == "1" and "data" in response:
             data = response["data"]
             if isinstance(data, list):
-                logger.debug(
-                    f"Found {len(data)} scans in project '{project_code}'."
-                )
+                logger.debug(f"Found {len(data)} scans in project '{project_code}'.")
                 return data
-            logger.warning(
-                f"API success but 'data' is not a list: {type(data)}"
-            )
+            logger.warning(f"API success but 'data' is not a list: {type(data)}")
             return []
         if response.get("status") == "1":
             logger.warning("API success but no 'data' key found.")
             return []
 
-        error_msg = response.get(
-            "error", f"Unexpected response: {response}"
-        )
+        error_msg = response.get("error", f"Unexpected response: {response}")
         if helpers.is_project_not_found(error_msg):
             logger.warning(f"Project code '{project_code}' not found.")
             return []
@@ -242,9 +221,7 @@ class ProjectsClient:
                 )
             return project_code
 
-        helpers.try_raise_create_parsing_request_error(
-            response, project_name=project_name
-        )
+        helpers.try_raise_create_parsing_request_error(response, project_name=project_name)
         error_msg = response.get("error", "Unknown error")
         raise ApiError(
             f"Failed to create project '{project_name}': {error_msg}",
@@ -297,12 +274,8 @@ class ProjectsClient:
         if response.get("status") == "1":
             project_id = response.get("data", {}).get("project_id")
             if not project_id:
-                raise ApiError(
-                    "Project updated but no ID returned", details=response
-                )
-            logger.debug(
-                f"Successfully updated project '{project_code}'."
-            )
+                raise ApiError("Project updated but no ID returned", details=response)
+            logger.debug(f"Successfully updated project '{project_code}'.")
             return int(project_id)
 
         helpers.try_raise_parsing_request_error(
@@ -352,14 +325,11 @@ class ProjectsClient:
             )
             return int(process_id)
 
-        error_msg = response_data.get(
-            "error", f"Unexpected response: {response_data}"
-        )
+        error_msg = response_data.get("error", f"Unexpected response: {response_data}")
         if helpers.is_project_not_found(error_msg):
             helpers.raise_project_not_found(project_code)
         raise ApiError(
-            f"Failed to request report generation for project "
-            f"'{project_code}': {error_msg}",
+            f"Failed to request report generation for project " f"'{project_code}': {error_msg}",
             details=response_data,
         )
 
@@ -373,9 +343,7 @@ class ProjectsClient:
 
         Required: ``process_id``, ``type`` (e.g. ``REPORT_GENERATION``).
         """
-        logger.debug(
-            f"Checking {process_type} status for process {process_id}..."
-        )
+        logger.debug(f"Checking {process_type} status for process {process_id}...")
 
         response = self._api._send_request(
             {
@@ -391,11 +359,8 @@ class ProjectsClient:
         if response.get("status") == "1" and "data" in response:
             return response["data"]
 
-        error_msg = response.get(
-            "error", f"Unexpected response: {response}"
-        )
+        error_msg = response.get("error", f"Unexpected response: {response}")
         raise ApiError(
-            f"Failed to check {process_type} status for process "
-            f"{process_id}: {error_msg}",
+            f"Failed to check {process_type} status for process " f"{process_id}: {error_msg}",
             details=response,
         )

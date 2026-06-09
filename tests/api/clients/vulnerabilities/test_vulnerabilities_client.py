@@ -5,9 +5,9 @@ from unittest.mock import patch
 import pytest
 import requests
 
+from workbench_agent.api.base_api import BaseAPI
 from workbench_agent.api.clients.vulnerabilities import VulnerabilitiesClient
 from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.base_api import BaseAPI
 
 
 @pytest.fixture
@@ -35,9 +35,7 @@ def vulnerabilities_client(base_api):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_list_vulnerabilities_returns_page_data(
-    mock_send, vulnerabilities_client
-):
+def test_list_vulnerabilities_returns_page_data(mock_send, vulnerabilities_client):
     mock_send.return_value = {
         "status": "1",
         "data": {
@@ -89,9 +87,7 @@ def test_list_vulnerabilities_project_scope(mock_send, vulnerabilities_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_list_vulnerabilities_with_search_value(
-    mock_send, vulnerabilities_client
-):
+def test_list_vulnerabilities_with_search_value(mock_send, vulnerabilities_client):
     mock_send.return_value = {
         "status": "1",
         "data": {"list": [{"cve": "CVE-2020-1"}]},
@@ -165,21 +161,17 @@ def test_update_vulnerability_exploitability(mock_send, vulnerabilities_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_import_vulnerability_exploitability_from_scan(
-    mock_send, vulnerabilities_client
-):
+def test_import_vulnerability_exploitability_from_scan(mock_send, vulnerabilities_client):
     mock_send.return_value = {
         "status": "1",
         "data": [{"id": 1}],
         "message": "done",
     }
 
-    result = (
-        vulnerabilities_client.import_vulnerability_exploitability_from_scan(
-            "source",
-            "target",
-            override_vex=False,
-        )
+    result = vulnerabilities_client.import_vulnerability_exploitability_from_scan(
+        "source",
+        "target",
+        override_vex=False,
     )
 
     assert result["data"] == [{"id": 1}]

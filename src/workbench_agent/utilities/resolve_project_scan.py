@@ -48,9 +48,7 @@ def find_or_create_project_and_scan(
     Raises:
         CompatibilityError: If existing scan is incompatible with command
     """
-    scan_data = _build_scan_create_data(
-        params, import_from_report=import_from_report
-    )
+    scan_data = _build_scan_create_data(params, import_from_report=import_from_report)
 
     project_created = False
     try:
@@ -70,10 +68,7 @@ def find_or_create_project_and_scan(
         scan_code = resolved.code
         scan_info = resolved.info
     except ScanNotFoundError:
-        print(
-            f"Creating scan '{params.scan_name}' in project "
-            f"'{project_code}'..."
-        )
+        print(f"Creating scan '{params.scan_name}' in project " f"'{project_code}'...")
         resolved = client.resolver.create_scan(
             project_code,
             params.scan_name,
@@ -86,9 +81,7 @@ def find_or_create_project_and_scan(
 
     if not scan_is_new:
         print("Checking scan compatibility...")
-        _ensure_scan_compatible(
-            client, scan_code, params, scan_info=scan_info
-        )
+        _ensure_scan_compatible(client, scan_code, params, scan_info=scan_info)
         print("✓ Compatibility check passed")
 
     return project_code, scan_code, scan_is_new
@@ -205,10 +198,7 @@ def format_reuse_issue(
             f"matching ref."
         )
 
-    return (
-        f"Scan '{scan_code}' cannot be reused for command '{command}' "
-        f"({issue.code.value})."
-    )
+    return f"Scan '{scan_code}' cannot be reused for command '{command}' " f"({issue.code.value})."
 
 
 def _build_scan_create_data(
@@ -247,9 +237,7 @@ def _build_scan_create_data(
     return scan_data
 
 
-def _print_resolution_outcome(
-    project_created: bool, scan_is_new: bool
-) -> None:
+def _print_resolution_outcome(project_created: bool, scan_is_new: bool) -> None:
     """Print user-facing messages for find-or-create outcomes."""
     if project_created and scan_is_new:
         print("✓ Created new Project and Scan")
@@ -273,55 +261,36 @@ def _ensure_scan_compatible(
     back to ``scans.get_information``.
     """
     operation = params.command
-    logger.debug(
-        f"Verifying scan '{scan_code}' is compatible with operation "
-        f"'{operation}'..."
-    )
+    logger.debug(f"Verifying scan '{scan_code}' is compatible with operation " f"'{operation}'...")
 
     existing_scan_info = scan_info
     if existing_scan_info is None:
         try:
             existing_scan_info = client.scans.get_information(scan_code)
         except ScanNotFoundError:
-            logger.warning(
-                f"Scan '{scan_code}' not found during compatibility check."
-            )
+            logger.warning(f"Scan '{scan_code}' not found during compatibility check.")
             return
         except (ApiError, NetworkError) as e:
-            logger.warning(
-                f"Error fetching scan information during compatibility "
-                f"check: {e}"
-            )
-            print(
-                f"Warning: Could not verify scan compatibility due to API "
-                f"error: {e}"
-            )
+            logger.warning(f"Error fetching scan information during compatibility " f"check: {e}")
+            print(f"Warning: Could not verify scan compatibility due to API " f"error: {e}")
             return
 
     constraints = _reuse_constraints_from_params(params)
     issue = check_scan_reuse(existing_scan_info, **constraints)
 
     if issue:
-        error_message = format_reuse_issue(
-            issue, scan_code, operation
-        )
+        error_message = format_reuse_issue(issue, scan_code, operation)
         print("\nError: Incompatible scan usage detected.")
-        logger.error(
-            f"Compatibility check failed for scan '{scan_code}': "
-            f"{error_message}"
-        )
+        logger.error(f"Compatibility check failed for scan '{scan_code}': " f"{error_message}")
         raise CompatibilityError(
-            f"Incompatible usage for existing scan '{scan_code}': "
-            f"{error_message}"
+            f"Incompatible usage for existing scan '{scan_code}': " f"{error_message}"
         )
 
     logger.info("Compatibility check passed! Proceeding...")
     scan_type = infer_scan_type(existing_scan_info)
 
     if operation == "scan-git" and scan_type == ScanType.GIT:
-        git_repo = existing_scan_info.get(
-            "git_repo_url", existing_scan_info.get("git_url")
-        )
+        git_repo = existing_scan_info.get("git_repo_url", existing_scan_info.get("git_url"))
         ref_type = existing_scan_info.get("git_ref_type")
         ref_value = existing_scan_info.get("git_branch")
         ref_display = f"{ref_type or 'ref'} '{ref_value}'"
@@ -330,14 +299,9 @@ def _ensure_scan_compatible(
             f"repository '{git_repo}' ({ref_display})."
         )
     elif operation in ("scan", "blind-scan") and scan_type == ScanType.UPLOAD:
-        logger.debug(
-            f"Reusing existing scan '{scan_code}' configured for code "
-            f"upload."
-        )
+        logger.debug(f"Reusing existing scan '{scan_code}' configured for code " f"upload.")
     elif operation == "import-da":
-        logger.debug(
-            f"Reusing existing scan '{scan_code}' for DA import."
-        )
+        logger.debug(f"Reusing existing scan '{scan_code}' for DA import.")
     elif operation == "import-sbom":
         logger.debug(
             f"Reusing existing scan '{scan_code}' for SBOM import "

@@ -16,6 +16,7 @@ SAMPLE_PROJECT_WARNINGS = {
     ],
 }
 
+
 def _policy_service(scans=None, projects=None, downloads=None):
     return PolicyService(
         scans or MagicMock(),
@@ -64,9 +65,7 @@ def test_get_scan_identification_policy_warnings_info():
     result = service.get_scan_identification_policy_warnings_info("SCAN1")
 
     assert result == SAMPLE_SCAN_POLICY_INFO
-    scans.get_policy_warnings_info.assert_called_once_with(
-        "SCAN1", warning_type="identifications"
-    )
+    scans.get_policy_warnings_info.assert_called_once_with("SCAN1", warning_type="identifications")
 
 
 def test_get_scan_dependency_policy_warnings_info():
@@ -77,9 +76,7 @@ def test_get_scan_dependency_policy_warnings_info():
 
     service.get_scan_dependency_policy_warnings_info("SCAN1")
 
-    scans.get_policy_warnings_info.assert_called_once_with(
-        "SCAN1", warning_type="dependencies"
-    )
+    scans.get_policy_warnings_info.assert_called_once_with("SCAN1", warning_type="dependencies")
 
 
 def test_get_scan_policy_warnings_info_all():
@@ -90,9 +87,7 @@ def test_get_scan_policy_warnings_info_all():
 
     service.get_scan_policy_warnings_info_all("SCAN1")
 
-    scans.get_policy_warnings_info.assert_called_once_with(
-        "SCAN1", warning_type="all"
-    )
+    scans.get_policy_warnings_info.assert_called_once_with("SCAN1", warning_type="all")
 
 
 def test_get_project_identification_policy_warnings():

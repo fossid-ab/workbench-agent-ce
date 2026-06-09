@@ -8,10 +8,7 @@ def test_normalize_2026_1_build_id():
 
 
 def test_normalize_with_v_suffix():
-    assert (
-        normalize_workbench_version("2026.1.0.v11#24448141686")
-        == "2026.1.0"
-    )
+    assert normalize_workbench_version("2026.1.0.v11#24448141686") == "2026.1.0"
 
 
 def test_normalize_unknown():

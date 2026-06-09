@@ -11,9 +11,9 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.exceptions import ApiError
 from tests.api.support.contract import assert_contract, assert_data_contract
 from tests.api.support.error_assertions import assert_api_error
+from workbench_agent.api.exceptions import ApiError
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
@@ -52,17 +52,11 @@ class TestScansLiveRawProbes:
         except ApiError:
             pass
 
-    def test_list_scans_id_field_types(
-        self, workbench_client, test_scan_code
-    ):
+    def test_list_scans_id_field_types(self, workbench_client, test_scan_code):
         scans = workbench_client.scans.list_scans()
-        sample = next(
-            s for s in scans if isinstance(s, dict) and s.get("code") == test_scan_code
-        )
+        sample = next(s for s in scans if isinstance(s, dict) and s.get("code") == test_scan_code)
         scan_id = sample.get("id")
-        assert isinstance(scan_id, (str, int)), (
-            f"Unexpected id type: {type(scan_id)}"
-        )
+        assert isinstance(scan_id, (str, int)), f"Unexpected id type: {type(scan_id)}"
 
 
 @pytest.fixture(scope="class")
@@ -152,14 +146,10 @@ class TestScansLiveMutations:
             workbench_version=workbench_version,
         )
         process_id = int(delete_response["data"]["process_id"])
-        status = workbench_client.scans.check_status(
-            None, "DELETE_SCAN", process_id=process_id
-        )
+        status = workbench_client.scans.check_status(None, "DELETE_SCAN", process_id=process_id)
         assert isinstance(status, dict)
 
-    def test_create_duplicate_scan_code_raises(
-        self, workbench_client, ephemeral_scan
-    ):
+    def test_create_duplicate_scan_code_raises(self, workbench_client, ephemeral_scan):
         assert_api_error(
             lambda: workbench_client.scans.create(
                 {

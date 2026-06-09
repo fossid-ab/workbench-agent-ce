@@ -34,9 +34,7 @@ class DependencyService:
 
     def list_dependencies(self, scan_code: str) -> List[Dict[str, Any]]:
         """Return dependency analysis rows for a scan."""
-        logger.debug(
-            "Listing dependency analysis results for scan '%s'", scan_code
-        )
+        logger.debug("Listing dependency analysis results for scan '%s'", scan_code)
         return self._scans.get_dependency_analysis_results(scan_code)
 
     # ===== WRITE =====
@@ -62,9 +60,7 @@ class DependencyService:
         """
         license_id = license_identifier.strip()
         if not license_id:
-            raise ValueError(
-                "license_identifier is required to add a dependency"
-            )
+            raise ValueError("license_identifier is required to add a dependency")
 
         logger.info(
             "Adding dependency '%s' %r to scan '%s'",

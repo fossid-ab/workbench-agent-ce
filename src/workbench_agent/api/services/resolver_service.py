@@ -127,9 +127,7 @@ class ResolverService:
         """
         return self._find_scan_globally(scan_name)
 
-    def find_project_and_scan(
-        self, project_name: str, scan_name: str
-    ) -> Tuple[str, ResolvedScan]:
+    def find_project_and_scan(self, project_name: str, scan_name: str) -> Tuple[str, ResolvedScan]:
         """
         Resolve project and scan names to codes in one pass.
 
@@ -189,9 +187,7 @@ class ResolverService:
         Returns:
             ResolvedScan for the created scan
         """
-        logger.debug(
-            f"Creating scan '{scan_name}' in project '{project_code}'..."
-        )
+        logger.debug(f"Creating scan '{scan_name}' in project '{project_code}'...")
 
         payload = {
             "project_code": project_code,
@@ -201,19 +197,14 @@ class ResolverService:
         self.scans.create(payload)
 
         scan_list = self.projects.get_all_scans(project_code)
-        scan = next(
-            (s for s in scan_list if s.get("name") == scan_name), None
-        )
+        scan = next((s for s in scan_list if s.get("name") == scan_name), None)
         if scan:
             logger.debug(
-                f"Created scan '{scan_name}' with code '{scan['code']}' "
-                f"and ID {scan['id']}"
+                f"Created scan '{scan_name}' with code '{scan['code']}' " f"and ID {scan['id']}"
             )
             return self._resolved_scan_from_row(scan)
 
-        raise ApiError(
-            f"Failed to retrieve scan '{scan_name}' after creation"
-        )
+        raise ApiError(f"Failed to retrieve scan '{scan_name}' after creation")
 
     def find_or_create(
         self,
@@ -287,10 +278,7 @@ class ResolverService:
 
         if project:
             project_code = project["project_code"]
-            logger.debug(
-                f"Found project '{project_name}' "
-                f"with code '{project_code}'"
-            )
+            logger.debug(f"Found project '{project_name}' " f"with code '{project_code}'")
             return str(project_code)
 
         raise ProjectNotFoundError(f"Project '{project_name}' not found")
@@ -304,28 +292,19 @@ class ResolverService:
     ) -> ResolvedScan:
         """Find a scan by name within a project (read-only)."""
         if project_name is None and project_code is None:
-            raise ValueError(
-                "_find_scan_in_project requires project_name or project_code"
-            )
+            raise ValueError("_find_scan_in_project requires project_name or project_code")
 
         log_project = project_name or project_code or "?"
-        logger.debug(
-            f"Looking up scan '{scan_name}' in project '{log_project}'..."
-        )
+        logger.debug(f"Looking up scan '{scan_name}' in project '{log_project}'...")
 
         if project_code is None:
             assert project_name is not None
             project_code = self._find_project(project_name)
         else:
-            logger.debug(
-                f"Using project_code '{project_code}' "
-                f"(skipping project lookup)"
-            )
+            logger.debug(f"Using project_code '{project_code}' " f"(skipping project lookup)")
 
         scan_list = self.projects.get_all_scans(project_code)
-        scan = next(
-            (s for s in scan_list if s.get("name") == scan_name), None
-        )
+        scan = next((s for s in scan_list if s.get("name") == scan_name), None)
         if scan:
             logger.debug(
                 f"Found scan '{scan_name}' with code '{scan['code']}' "
@@ -334,17 +313,14 @@ class ResolverService:
             return self._resolved_scan_from_row(scan)
 
         raise ScanNotFoundError(
-            f"Scan '{scan_name}' not found in project "
-            f"'{project_name or project_code}'"
+            f"Scan '{scan_name}' not found in project " f"'{project_name or project_code}'"
         )
 
     def _find_scan_globally(self, scan_name: str) -> ResolvedScan:
         """Resolve a scan by name across all projects (read-only, heavy)."""
         logger.debug(f"Looking up scan '{scan_name}' globally...")
         all_scans = self.scans.list_scans()
-        scan = next(
-            (s for s in all_scans if s.get("name") == scan_name), None
-        )
+        scan = next((s for s in all_scans if s.get("name") == scan_name), None)
         if scan:
             logger.debug(
                 f"Found scan '{scan_name}' with code '{scan['code']}' "

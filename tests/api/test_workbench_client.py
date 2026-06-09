@@ -2,8 +2,6 @@
 
 from unittest.mock import patch
 
-import pytest
-
 from workbench_agent.api import WorkbenchClient
 from workbench_agent.api.services.report_service import ReportService
 

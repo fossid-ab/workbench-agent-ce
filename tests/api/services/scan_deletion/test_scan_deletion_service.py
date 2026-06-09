@@ -27,9 +27,7 @@ def test_delete_scan_success():
     result = svc.delete_scan("scan_a")
 
     assert result is terminal
-    scans.delete.assert_called_once_with(
-        "scan_a", delete_identifications=True
-    )
+    scans.delete.assert_called_once_with("scan_a", delete_identifications=True)
     status_check.check_delete_scan_status.assert_called_once_with(
         "scan_a",
         1001,

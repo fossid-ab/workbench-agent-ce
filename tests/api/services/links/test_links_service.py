@@ -105,9 +105,7 @@ class TestWorkbenchLinks:
         service = LinksService(MagicMock(), api_url=api_url)
         links = service.workbench_links(TEST_SCAN_ID)
         for prop_name in ["scan", "pending", "policy"]:
-            assert_url_structure(
-                getattr(links, prop_name)["url"], TEST_SCAN_ID
-            )
+            assert_url_structure(getattr(links, prop_name)["url"], TEST_SCAN_ID)
 
     def test_no_version_uses_legacy_format(self):
         links = WorkbenchLinks(TEST_API_URL, TEST_SCAN_ID)
@@ -115,9 +113,7 @@ class TestWorkbenchLinks:
         assert "/nui/" not in links.scan["url"]
 
     def test_old_version_uses_legacy_format(self):
-        links = WorkbenchLinks(
-            TEST_API_URL, TEST_SCAN_ID, workbench_version="2025.2.0"
-        )
+        links = WorkbenchLinks(TEST_API_URL, TEST_SCAN_ID, workbench_version="2025.2.0")
         assert "index.html" in links.scan["url"]
         assert "/nui/" not in links.scan["url"]
 
@@ -137,29 +133,20 @@ LEGACY_VERSIONS = ["", "2025.2.0", "2024.3.0"]
 
 class TestWorkbenchLinksNui:
     def test_nui_url_structure(self):
-        links = WorkbenchLinks(
-            TEST_API_URL, TEST_SCAN_ID, workbench_version="2026.1.0"
-        )
+        links = WorkbenchLinks(TEST_API_URL, TEST_SCAN_ID, workbench_version="2026.1.0")
         for prop_name, expected_path in EXPECTED_NUI_PATHS.items():
             link_data = getattr(links, prop_name)
-            expected_url = (
-                f"{TEST_BASE_URL}/nui/scans/"
-                f"{TEST_SCAN_ID}/{expected_path}"
-            )
+            expected_url = f"{TEST_BASE_URL}/nui/scans/" f"{TEST_SCAN_ID}/{expected_path}"
             assert link_data["url"] == expected_url
 
     @pytest.mark.parametrize("version", NUI_VERSIONS)
     def test_nui_version_triggers_nui_format(self, version):
-        links = WorkbenchLinks(
-            TEST_API_URL, TEST_SCAN_ID, workbench_version=version
-        )
+        links = WorkbenchLinks(TEST_API_URL, TEST_SCAN_ID, workbench_version=version)
         assert "/nui/scans/" in links.scan["url"]
 
     @pytest.mark.parametrize("version", LEGACY_VERSIONS)
     def test_legacy_version_keeps_legacy_format(self, version):
-        links = WorkbenchLinks(
-            TEST_API_URL, TEST_SCAN_ID, workbench_version=version
-        )
+        links = WorkbenchLinks(TEST_API_URL, TEST_SCAN_ID, workbench_version=version)
         assert "index.html" in links.scan["url"]
 
     def test_nui_via_links_service(self):

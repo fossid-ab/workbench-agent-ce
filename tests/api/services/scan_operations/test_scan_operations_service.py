@@ -57,9 +57,7 @@ def test_start_scan_basic(scan_operations_service, mock_scans_client):
     assert call_args["advanced_match_scoring"] == "1"
 
 
-def test_start_scan_with_optional_params(
-    scan_operations_service, mock_scans_client
-):
+def test_start_scan_with_optional_params(scan_operations_service, mock_scans_client):
     """Test starting a scan with optional parameters."""
     mock_scans_client.run.return_value = None
 
@@ -92,9 +90,7 @@ def test_start_scan_with_optional_params(
     assert call_args["match_filtering_threshold"] == "100"
 
 
-def test_start_scan_with_specific_id_reuse(
-    scan_operations_service, mock_scans_client
-):
+def test_start_scan_with_specific_id_reuse(scan_operations_service, mock_scans_client):
     """Test starting a scan with specific ID reuse."""
     mock_scans_client.run.return_value = None
 
@@ -117,9 +113,7 @@ def test_start_scan_with_specific_id_reuse(
 
 
 # --- Test scan_failed_files ---
-def test_scan_failed_files_forces_scan_failed_only(
-    scan_operations_service, mock_scans_client
-):
+def test_scan_failed_files_forces_scan_failed_only(scan_operations_service, mock_scans_client):
     """Test scanning only files that failed in a previous scan."""
     mock_scans_client.run.return_value = None
 

@@ -17,9 +17,9 @@ from typing import Any, Dict, Optional, Set, Union
 import requests
 from packaging import version as packaging_version
 
+from workbench_agent.api.exceptions import FileSystemError, ValidationError
 from workbench_agent.api.utils import report_definitions
 from workbench_agent.api.utils.process_waiter import StatusResult
-from workbench_agent.api.exceptions import FileSystemError, ValidationError
 
 logger = logging.getLogger("workbench-agent")
 
@@ -90,21 +90,10 @@ class ReportService:
         derived from ``REPORT_DEFS``.
         """
         if scope == "scan":
-            return {
-                rt
-                for rt, d in cls.REPORT_DEFS.items()
-                if "scan" in d["scopes"]
-            }
+            return {rt for rt, d in cls.REPORT_DEFS.items() if "scan" in d["scopes"]}
         if scope == "project":
-            return {
-                rt
-                for rt, d in cls.REPORT_DEFS.items()
-                if "project" in d["scopes"]
-            }
-        raise ValidationError(
-            f"Invalid report scope '{scope}'. "
-            f"Expected 'scan' or 'project'."
-        )
+            return {rt for rt, d in cls.REPORT_DEFS.items() if "project" in d["scopes"]}
+        raise ValidationError(f"Invalid report scope '{scope}'. " f"Expected 'scan' or 'project'.")
 
     # ===== VERSION HELPERS =====
 
@@ -115,9 +104,9 @@ class ReportService:
         if not min_version or not self._workbench_version:
             return True
         try:
-            return packaging_version.parse(
-                self._workbench_version
-            ) >= packaging_version.parse(min_version)
+            return packaging_version.parse(self._workbench_version) >= packaging_version.parse(
+                min_version
+            )
         except Exception:
             return True
 
@@ -163,8 +152,7 @@ class ReportService:
             self.validate_project_report_type(report_type)
         else:
             raise ValidationError(
-                f"Invalid report scope '{scope}'. "
-                f"Expected 'scan' or 'project'."
+                f"Invalid report scope '{scope}'. " f"Expected 'scan' or 'project'."
             )
 
     def resolve_report_types(
@@ -195,11 +183,7 @@ class ReportService:
             ValidationError: If scope is invalid or an explicit type fails
                 validation
         """
-        sv = (
-            server_version
-            if server_version is not None
-            else self._workbench_version
-        )
+        sv = server_version if server_version is not None else self._workbench_version
         display_version = sv if sv else "unknown"
 
         # Validates scope and returns types allowed for that scope
@@ -207,9 +191,7 @@ class ReportService:
 
         raw = report_type_param.strip()
         if raw.upper() == "ALL":
-            skipped = {
-                rt for rt in full_set if not self.is_report_type_supported(rt)
-            }
+            skipped = {rt for rt in full_set if not self.is_report_type_supported(rt)}
             for rt in sorted(skipped):
                 min_v = self.MIN_VERSION_FOR_REPORT_TYPES.get(rt, "?")
                 logger.warning(
@@ -218,9 +200,7 @@ class ReportService:
                 )
             return full_set - skipped
 
-        requested = {
-            p.strip().lower() for p in raw.split(",") if p.strip()
-        }
+        requested = {p.strip().lower() for p in raw.split(",") if p.strip()}
         for rt in requested:
             self.validate_report_type(rt, scope)
         return requested
@@ -267,59 +247,39 @@ class ReportService:
         capabilities = self._report_capabilities(report_type)
         if not capabilities:
             # Unknown report type - let the API validate it
-            logger.debug(
-                f"Unknown report type '{report_type}', "
-                f"skipping parameter validation"
-            )
+            logger.debug(f"Unknown report type '{report_type}', " f"skipping parameter validation")
             return
 
         # Check each parameter against capabilities
-        if (
-            selection_type is not None
-            and not capabilities["supports_selection_type"]
-        ):
+        if selection_type is not None and not capabilities["supports_selection_type"]:
             logger.warning(
                 f"selection_type is not supported for '{report_type}' "
                 f"reports and will be ignored"
             )
 
-        if (
-            selection_view is not None
-            and not capabilities["supports_selection_view"]
-        ):
+        if selection_view is not None and not capabilities["supports_selection_view"]:
             logger.warning(
                 f"selection_view is not supported for '{report_type}' "
                 f"reports and will be ignored"
             )
 
-        if (
-            disclaimer is not None
-            and not capabilities["supports_disclaimer"]
-        ):
+        if disclaimer is not None and not capabilities["supports_disclaimer"]:
             logger.warning(
-                f"disclaimer is not supported for '{report_type}' "
-                f"reports and will be ignored"
+                f"disclaimer is not supported for '{report_type}' " f"reports and will be ignored"
             )
 
         if include_vex is not None and not capabilities["supports_vex"]:
             logger.warning(
-                f"include_vex is not supported for '{report_type}' "
-                f"reports and will be ignored"
+                f"include_vex is not supported for '{report_type}' " f"reports and will be ignored"
             )
 
-        if (
-            include_dep_det_info
-            and not capabilities["supports_dep_det_info"]
-        ):
+        if include_dep_det_info and not capabilities["supports_dep_det_info"]:
             logger.warning(
                 f"include_dep_det_info is only supported for Excel "
                 f"reports, ignoring for '{report_type}'"
             )
 
-        if (
-            report_content_type is not None
-            and not capabilities["supports_report_content_type"]
-        ):
+        if report_content_type is not None and not capabilities["supports_report_content_type"]:
             logger.warning(
                 f"report_content_type is only supported for Excel "
                 f"reports, ignoring for '{report_type}'"
@@ -400,9 +360,7 @@ class ReportService:
         if disclaimer and capabilities.get("supports_disclaimer"):
             payload_data["disclaimer"] = disclaimer
 
-        if report_content_type and capabilities.get(
-            "supports_report_content_type"
-        ):
+        if report_content_type and capabilities.get("supports_report_content_type"):
             payload_data["report_content_type"] = report_content_type
 
         if capabilities.get("supports_vex"):
@@ -415,9 +373,7 @@ class ReportService:
                     f"field omitted (server: {self._workbench_version})"
                 )
 
-        if include_dep_det_info and capabilities.get(
-            "supports_dep_det_info"
-        ):
+        if include_dep_det_info and capabilities.get("supports_dep_det_info"):
             if self._is_field_supported("include_dep_det_info"):
                 payload_data["include_dep_det_info"] = include_dep_det_info
             else:
@@ -449,8 +405,7 @@ class ReportService:
         """
         if scope not in ("scan", "project"):
             raise ValidationError(
-                f"Invalid report scope '{scope}'. "
-                f"Expected 'scan' or 'project'."
+                f"Invalid report scope '{scope}'. " f"Expected 'scan' or 'project'."
             )
 
         if scope == "project":
@@ -461,8 +416,7 @@ class ReportService:
         defs = self.REPORT_DEFS.get(report_type)
         if defs is not None and scope not in defs["scopes"]:
             raise ValidationError(
-                f"Report type '{report_type}' is not supported for "
-                f"{scope} scope."
+                f"Report type '{report_type}' is not supported for " f"{scope} scope."
             )
 
         self._validate_report_parameters(
@@ -479,8 +433,7 @@ class ReportService:
 
         if scope == "project":
             logger.debug(
-                f"Building project report payload: "
-                f"project={resource_code}, type={report_type}"
+                f"Building project report payload: " f"project={resource_code}, type={report_type}"
             )
             payload_data: Dict[str, Any] = {
                 "project_code": resource_code,
@@ -489,8 +442,7 @@ class ReportService:
             }
         else:
             logger.debug(
-                f"Building scan report payload: "
-                f"scan={resource_code}, type={report_type}"
+                f"Building scan report payload: " f"scan={resource_code}, type={report_type}"
             )
             if async_mode is None:
                 use_async = self.is_async_report_type(report_type)
@@ -641,14 +593,9 @@ class ReportService:
                 f"Use generate_notice_extract() and related methods instead."
             )
         # Build payload with validation
-        payload_data = self.build_project_report_payload(
-            project_code, report_type, **options
-        )
+        payload_data = self.build_project_report_payload(project_code, report_type, **options)
 
-        logger.info(
-            f"Generating project report: project={project_code}, "
-            f"type={report_type}"
-        )
+        logger.info(f"Generating project report: project={project_code}, " f"type={report_type}")
 
         # Delegate to the client's raw method
         return self._projects.generate_report(payload_data)
@@ -686,14 +633,9 @@ class ReportService:
                 f"Use generate_notice_extract() and related methods instead."
             )
         # Build payload with validation
-        payload_data = self.build_scan_report_payload(
-            scan_code, report_type, **options
-        )
+        payload_data = self.build_scan_report_payload(scan_code, report_type, **options)
 
-        logger.info(
-            f"Generating scan report: scan={scan_code}, "
-            f"type={report_type}"
-        )
+        logger.info(f"Generating scan report: scan={scan_code}, " f"type={report_type}")
 
         # Delegate to the client's raw method
         return self._scans.generate_report(payload_data)
@@ -757,30 +699,22 @@ class ReportService:
         """
         if scope not in ("scan", "project"):
             raise ValidationError(
-                f"Invalid report scope '{scope}'. "
-                f"Expected 'scan' or 'project'."
+                f"Invalid report scope '{scope}'. " f"Expected 'scan' or 'project'."
             )
         if scope == "scan" and not scan_code:
-            raise ValidationError(
-                "scan_code is required for scan-scoped reports."
-            )
+            raise ValidationError("scan_code is required for scan-scoped reports.")
         if scope == "project" and not project_code:
-            raise ValidationError(
-                "project_code is required for project-scoped reports."
-            )
+            raise ValidationError("project_code is required for project-scoped reports.")
 
         opts = self._filter_report_generation_options(dict(report_options))
 
         if report_type in self.NOTICE_REPORT_TYPES:
             if scope != "scan":
                 raise ValidationError(
-                    f"Report type '{report_type}' is only supported for "
-                    f"scan scope."
+                    f"Report type '{report_type}' is only supported for " f"scan scope."
                 )
             if self._status_check is None:
-                raise RuntimeError(
-                    "status_check_service is not configured on ReportService"
-                )
+                raise RuntimeError("status_check_service is not configured on ReportService")
             notice_api = self.NOTICE_REPORT_TYPE_MAP[report_type]
             self.generate_notice_extract(scan_code, notice_api)
             self.check_notice_extract_status(
@@ -803,13 +737,9 @@ class ReportService:
 
         if is_async:
             if self._status_check is None:
-                raise RuntimeError(
-                    "status_check_service is not configured on ReportService"
-                )
+                raise RuntimeError("status_check_service is not configured on ReportService")
             if scope == "project":
-                process_id = self.generate_project_report(
-                    project_code, report_type, **opts
-                )
+                process_id = self.generate_project_report(project_code, report_type, **opts)
                 self.check_project_report_status(
                     process_id=process_id,
                     project_code=project_code,
@@ -819,9 +749,7 @@ class ReportService:
                 )
                 response = self.download_project_report(process_id)
             else:
-                process_id = self.generate_scan_report(
-                    scan_code, report_type, **opts
-                )
+                process_id = self.generate_scan_report(scan_code, report_type, **opts)
                 self.check_scan_report_status(
                     scan_code=scan_code,
                     process_id=process_id,
@@ -832,13 +760,9 @@ class ReportService:
                 response = self.download_scan_report(process_id)
         else:
             if scope == "project":
-                response = self.generate_project_report(
-                    project_code, report_type, **opts
-                )
+                response = self.generate_project_report(project_code, report_type, **opts)
             else:
-                response = self.generate_scan_report(
-                    scan_code, report_type, **opts
-                )
+                response = self.generate_scan_report(scan_code, report_type, **opts)
 
         return self.save_report(
             response,
@@ -863,9 +787,7 @@ class ReportService:
         Raises:
             ApiError: If download fails
         """
-        logger.debug(
-            f"Downloading project report for process ID {process_id}..."
-        )
+        logger.debug(f"Downloading project report for process ID {process_id}...")
 
         # Delegate to the downloads client
         return self._downloads.download_report("projects", process_id)
@@ -883,9 +805,7 @@ class ReportService:
         Raises:
             ApiError: If download fails
         """
-        logger.debug(
-            f"Downloading scan report for process ID {process_id}..."
-        )
+        logger.debug(f"Downloading scan report for process ID {process_id}...")
 
         # Delegate to the downloads client
         return self._downloads.download_report("scans", process_id)
@@ -907,9 +827,7 @@ class ReportService:
             RuntimeError: If status_check_service was not configured
         """
         if self._status_check is None:
-            raise RuntimeError(
-                "status_check_service is not configured on ReportService"
-            )
+            raise RuntimeError("status_check_service is not configured on ReportService")
         logger.debug(
             f"Checking scan report status: scan={scan_code}, "
             f"process_id={process_id}, wait={wait}"
@@ -956,9 +874,7 @@ class ReportService:
             ... )
         """
         if self._status_check is None:
-            raise RuntimeError(
-                "status_check_service is not configured on ReportService"
-            )
+            raise RuntimeError("status_check_service is not configured on ReportService")
         logger.debug(
             f"Checking report generation status for process {process_id} "
             f"(project '{project_code}')..."
@@ -973,9 +889,7 @@ class ReportService:
 
     # ===== NOTICE EXTRACT METHODS =====
 
-    def generate_notice_extract(
-        self, scan_code: str, notice_type: str
-    ) -> bool:
+    def generate_notice_extract(self, scan_code: str, notice_type: str) -> bool:
         """
         Start notice file generation for a scan (notice_extract_run).
 
@@ -1006,18 +920,12 @@ class ReportService:
             wait_retry_interval: Seconds between polls when wait is True
         """
         if self._status_check is None:
-            raise RuntimeError(
-                "status_check_service is not configured on ReportService"
-            )
+            raise RuntimeError("status_check_service is not configured on ReportService")
         schk = self._status_check
         dispatch = {
             "NOTICE_EXTRACT_FILE": schk.check_notice_extract_file_status,
-            "NOTICE_EXTRACT_COMPONENT": (
-                schk.check_notice_extract_component_status
-            ),
-            "NOTICE_EXTRACT_AGGREGATE": (
-                schk.check_notice_extract_aggregate_status
-            ),
+            "NOTICE_EXTRACT_COMPONENT": (schk.check_notice_extract_component_status),
+            "NOTICE_EXTRACT_AGGREGATE": (schk.check_notice_extract_aggregate_status),
         }
         if notice_type not in dispatch:
             raise ValidationError(
@@ -1039,9 +947,7 @@ class ReportService:
 
     def save_report(
         self,
-        response_or_content: Union[
-            requests.Response, str, bytes, dict, list
-        ],
+        response_or_content: Union[requests.Response, str, bytes, dict, list],
         output_dir: str,
         name_component: str,
         report_type: str,
@@ -1065,28 +971,20 @@ class ReportService:
             FileSystemError: If file operations fail
         """
         if not output_dir:
-            raise ValidationError(
-                "Output directory is not specified for saving report."
-            )
+            raise ValidationError("Output directory is not specified for saving report.")
         if not name_component:
             raise ValidationError(
-                "Name component (scan/project name) is not specified "
-                "for saving report."
+                "Name component (scan/project name) is not specified " "for saving report."
             )
         if not report_type:
-            raise ValidationError(
-                "Report type is not specified for saving report."
-            )
+            raise ValidationError("Report type is not specified for saving report.")
 
         filename = ""
         content_to_write: Union[str, bytes] = b""
         write_mode = "wb"
 
         # Handle wrapped Response objects from base_api
-        if (
-            isinstance(response_or_content, dict)
-            and "_raw_response" in response_or_content
-        ):
+        if isinstance(response_or_content, dict) and "_raw_response" in response_or_content:
             response_or_content = response_or_content["_raw_response"]
 
         if isinstance(response_or_content, requests.Response):
@@ -1104,16 +1002,10 @@ class ReportService:
             try:
                 content_to_write = response.content
             except Exception as e:
-                raise FileSystemError(
-                    f"Failed to read content from response object: {e}"
-                )
+                raise FileSystemError(f"Failed to read content from response object: {e}")
 
             content_type = response.headers.get("content-type", "").lower()
-            if (
-                "text" in content_type
-                or "json" in content_type
-                or "html" in content_type
-            ):
+            if "text" in content_type or "json" in content_type or "html" in content_type:
                 write_mode = "w"
                 try:
                     content_to_write = content_to_write.decode(
@@ -1135,14 +1027,11 @@ class ReportService:
             safe_type = re.sub(r"[^\w\-]+", "_", report_type)
             filename = f"{safe_scope}-{safe_name}-{safe_type}.json"
             try:
-                content_to_write = json.dumps(
-                    response_or_content, indent=2
-                )
+                content_to_write = json.dumps(response_or_content, indent=2)
                 write_mode = "w"
             except TypeError as e:
                 raise ValidationError(
-                    f"Failed to serialize provided dictionary/list to "
-                    f"JSON: {e}"
+                    f"Failed to serialize provided dictionary/list to " f"JSON: {e}"
                 )
 
         elif isinstance(response_or_content, str):
@@ -1165,8 +1054,7 @@ class ReportService:
 
         else:
             raise ValidationError(
-                f"Unsupported content type for saving: "
-                f"{type(response_or_content)}"
+                f"Unsupported content type for saving: " f"{type(response_or_content)}"
             )
 
         filepath = os.path.join(output_dir, filename)
@@ -1178,9 +1066,7 @@ class ReportService:
                 f"Failed to create output directory '{output_dir}': {e}",
                 exc_info=True,
             )
-            raise FileSystemError(
-                f"Could not create output directory '{output_dir}': {e}"
-            ) from e
+            raise FileSystemError(f"Could not create output directory '{output_dir}': {e}") from e
 
         try:
             if write_mode == "w":
@@ -1198,14 +1084,10 @@ class ReportService:
                 f"Failed to write report to {filepath}: {e}",
                 exc_info=True,
             )
-            raise FileSystemError(
-                f"Failed to write report to '{filepath}': {e}"
-            ) from e
+            raise FileSystemError(f"Failed to write report to '{filepath}': {e}") from e
         except Exception as e:
             logger.error(
                 f"Unexpected error writing report to {filepath}: {e}",
                 exc_info=True,
             )
-            raise FileSystemError(
-                f"Unexpected error writing report to '{filepath}': {e}"
-            ) from e
+            raise FileSystemError(f"Unexpected error writing report to '{filepath}': {e}") from e

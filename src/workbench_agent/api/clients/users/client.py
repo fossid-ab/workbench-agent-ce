@@ -44,9 +44,7 @@ class UsersClient:
 
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to get information for user '{searched_username}'"
-            ),
+            error_context=(f"Failed to get information for user '{searched_username}'"),
         )
 
     def get_user_permissions_list(
@@ -63,9 +61,7 @@ class UsersClient:
         has_username = searched_username is not None
         has_user_id = user_id is not None
         if has_username == has_user_id:
-            raise ValueError(
-                "Provide exactly one of searched_username or user_id."
-            )
+            raise ValueError("Provide exactly one of searched_username or user_id.")
 
         action = "get_user_permissions_list"
         if searched_username is not None:
@@ -75,9 +71,7 @@ class UsersClient:
             logger.debug("users.%s: user_id=%s", action, user_id)
             data = {"user_id": user_id}
 
-        response = self._api._send_request(
-            {"group": "users", "action": action, "data": data}
-        )
+        response = self._api._send_request({"group": "users", "action": action, "data": data})
 
         if response.get("status") == "1":
             items = helpers.normalize_permissions_list_data(

@@ -7,10 +7,10 @@ Services coordinate multiple clients to accomplish higher-level tasks.
 from .component_service import ComponentService
 from .dependency_service import DependencyService
 from .identification_service import IdentificationService
-from .quick_scan_service import QuickScanService
-from .report_service import ReportService
 from .links_service import LinksService, WorkbenchLinks
 from .policy_service import PolicyService
+from .quick_scan_service import QuickScanService
+from .report_service import ReportService
 from .resolver_service import ResolutionResult, ResolvedScan, ResolverService
 from .scan_content_service import ScanContentService
 from .scan_deletion import ScanDeletionService

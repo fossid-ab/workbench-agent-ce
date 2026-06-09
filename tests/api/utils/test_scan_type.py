@@ -17,10 +17,7 @@ def test_infer_scan_type_upload():
 
 
 def test_infer_scan_type_git():
-    assert (
-        infer_scan_type({"git_repo_url": "https://example.com/repo.git"})
-        == ScanType.GIT
-    )
+    assert infer_scan_type({"git_repo_url": "https://example.com/repo.git"}) == ScanType.GIT
 
 
 def test_infer_scan_type_sbom():
@@ -28,10 +25,7 @@ def test_infer_scan_type_sbom():
 
 
 def test_required_upload_success():
-    assert (
-        check_scan_reuse({"git_repo_url": None}, required=ScanType.UPLOAD)
-        is None
-    )
+    assert check_scan_reuse({"git_repo_url": None}, required=ScanType.UPLOAD) is None
 
 
 def test_required_upload_rejects_git():
@@ -60,12 +54,7 @@ def test_required_git_success():
         "git_branch": "main",
         "git_ref_type": "branch",
     }
-    assert (
-        check_scan_reuse(
-            scan_info, required=ScanType.GIT, git_target=target
-        )
-        is None
-    )
+    assert check_scan_reuse(scan_info, required=ScanType.GIT, git_target=target) is None
 
 
 def test_required_git_repo_mismatch():
@@ -107,10 +96,7 @@ def test_required_git_ref_type_mismatch():
 
 
 def test_required_sbom_success():
-    assert (
-        check_scan_reuse({"is_from_report": "1"}, required=ScanType.SBOM)
-        is None
-    )
+    assert check_scan_reuse({"is_from_report": "1"}, required=ScanType.SBOM) is None
 
 
 def test_required_sbom_rejects_upload():

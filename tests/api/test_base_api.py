@@ -39,9 +39,7 @@ def api_base_inst(mock_session):
 
 # --- Test BaseAPI init ---
 def test_api_base_init_url_fix():
-    api_base = BaseAPI(
-        api_url="http://dummy.com", api_user="user", api_token="token"
-    )
+    api_base = BaseAPI(api_url="http://dummy.com", api_user="user", api_token="token")
     assert api_base.api_url == "http://dummy.com/api.php"
 
 
@@ -70,15 +68,11 @@ def test_send_request_success(api_base_inst, mock_session):
     assert result == {"status": "1", "data": {"key": "value"}}
 
 
-def test_send_request_masks_api_key_in_debug_logs(
-    api_base_inst, mock_session, caplog
-):
+def test_send_request_masks_api_key_in_debug_logs(api_base_inst, mock_session, caplog):
     mock_response = MagicMock(spec=requests.Response)
     mock_response.status_code = 200
     mock_response.headers = {"content-type": "application/json"}
-    mock_response.text = (
-        '{"status": "1", "data": {"key": "server-echoed-token"}}'
-    )
+    mock_response.text = '{"status": "1", "data": {"key": "server-echoed-token"}}'
     mock_response.json.return_value = {
         "status": "1",
         "data": {"key": "server-echoed-token"},
@@ -96,9 +90,7 @@ def test_send_request_masks_api_key_in_debug_logs(
     assert "***" in caplog.text
 
 
-def test_send_request_masks_api_key_in_api_error_log(
-    api_base_inst, mock_session, caplog
-):
+def test_send_request_masks_api_key_in_api_error_log(api_base_inst, mock_session, caplog):
     mock_response = MagicMock(spec=requests.Response)
     mock_response.status_code = 200
     mock_response.headers = {"content-type": "application/json"}
@@ -133,18 +125,14 @@ def test_send_request_api_error(api_base_inst, mock_session):
 
 
 def test_send_request_network_error(api_base_inst, mock_session):
-    mock_session.post.side_effect = requests.exceptions.ConnectionError(
-        "Failed to connect"
-    )
+    mock_session.post.side_effect = requests.exceptions.ConnectionError("Failed to connect")
     payload = {"group": "test", "action": "connectfail"}
     with pytest.raises(NetworkError, match="Connection error:"):
         api_base_inst._send_request(payload)
 
 
 def test_send_request_timeout(api_base_inst, mock_session):
-    mock_session.post.side_effect = requests.exceptions.Timeout(
-        "Request timed out"
-    )
+    mock_session.post.side_effect = requests.exceptions.Timeout("Request timed out")
     payload = {"group": "test", "action": "timeout"}
     with pytest.raises(NetworkError, match="Request timeout after"):
         api_base_inst._send_request(payload)
@@ -153,13 +141,9 @@ def test_send_request_timeout(api_base_inst, mock_session):
 def test_send_request_json_decode_error(api_base_inst, mock_session):
     mock_response = MagicMock(spec=requests.Response)
     mock_response.status_code = 200
-    mock_response.headers = {
-        "content-type": "application/json"
-    }  # Claims JSON
+    mock_response.headers = {"content-type": "application/json"}  # Claims JSON
     mock_response.text = "This is not JSON"
-    mock_response.json.side_effect = json.JSONDecodeError(
-        "Expecting value", "This is not JSON", 0
-    )
+    mock_response.json.side_effect = json.JSONDecodeError("Expecting value", "This is not JSON", 0)
     mock_session.post.return_value = mock_response
     payload = {"group": "test", "action": "badjson"}
     with pytest.raises(ApiError, match="Invalid JSON response:"):
@@ -182,10 +166,8 @@ def test_send_request_http_error(api_base_inst, mock_session):
     mock_response = MagicMock(spec=requests.Response)
     mock_response.status_code = 401  # Unauthorized
     mock_response.headers = {}  # Add this line to avoid AttributeError
-    mock_response.raise_for_status.side_effect = (
-        requests.exceptions.HTTPError(
-            "401 Client Error", response=mock_response
-        )
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+        "401 Client Error", response=mock_response
     )
     mock_session.post.return_value = mock_response
 
@@ -198,9 +180,7 @@ def test_send_request_http_error(api_base_inst, mock_session):
         assert "Invalid credentials or expired token" in str(e)
 
 
-def test_send_request_git_repository_access_error(
-    api_base_inst, mock_session
-):
+def test_send_request_git_repository_access_error(api_base_inst, mock_session):
     """Test detection of Git repository access errors."""
     mock_response = MagicMock(spec=requests.Response)
     mock_response.status_code = 200
@@ -218,10 +198,7 @@ def test_send_request_git_repository_access_error(
                 ),
                 "message_parameters": {
                     "fieldname": "git_repo_url",
-                    "cmd": (
-                        "timeout 200 git ls-remote "
-                        "'https://github.com/fake/repo' 2>&1"
-                    ),
+                    "cmd": ("timeout 200 git ls-remote " "'https://github.com/fake/repo' 2>&1"),
                     "exitStatus": 128,
                     "out": (
                         "fatal: could not read Username for "
@@ -242,7 +219,5 @@ def test_send_request_git_repository_access_error(
     with pytest.raises(ApiError) as exc_info:
         api_base_inst._send_request(payload)
 
-    assert "RequestData.Base.issues_while_parsing_request" in str(
-        exc_info.value
-    )
+    assert "RequestData.Base.issues_while_parsing_request" in str(exc_info.value)
     # The API error should contain the parsing issue message

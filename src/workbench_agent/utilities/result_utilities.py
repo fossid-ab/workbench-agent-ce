@@ -53,9 +53,7 @@ def fetch_results(
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
     should_fetch_metrics = getattr(params, "show_scan_metrics", False)
     should_fetch_policy = getattr(params, "show_policy_warnings", False)
-    should_fetch_vulnerabilities = getattr(
-        params, "show_vulnerabilities", False
-    )
+    should_fetch_vulnerabilities = getattr(params, "show_vulnerabilities", False)
 
     if not any(
         [
@@ -68,9 +66,7 @@ def fetch_results(
         ]
     ):
         print("\n=== No Results Requested ===")
-        print(
-            "Add flags like --show-licenses, --show-vulnerabilities, etc. to see results."
-        )
+        print("Add flags like --show-licenses, --show-vulnerabilities, etc. to see results.")
         return {}
 
     logger.debug(
@@ -89,20 +85,12 @@ def fetch_results(
                     len(da_results),
                 )
         except (ApiError, NetworkError) as e:
-            logger.warning(
-                "Could not fetch Dependency Analysis results: %s", e
-            )
-            print(
-                f"Warning: Could not fetch Dependency Analysis results: {e}"
-            )
+            logger.warning("Could not fetch Dependency Analysis results: %s", e)
+            print(f"Warning: Could not fetch Dependency Analysis results: {e}")
 
     if should_fetch_licenses:
         try:
-            kb_licenses = (
-                workbench.identification.get_unique_identified_licenses(
-                    scan_code
-                )
-            )
+            kb_licenses = workbench.identification.get_unique_identified_licenses(scan_code)
             if kb_licenses:
                 collected_results["kb_licenses"] = sorted(
                     kb_licenses,
@@ -115,9 +103,7 @@ def fetch_results(
 
     if should_fetch_components:
         try:
-            kb_components = (
-                workbench.identification.get_identified_components(scan_code)
-            )
+            kb_components = workbench.identification.get_identified_components(scan_code)
             if kb_components:
                 collected_results["kb_components"] = sorted(
                     kb_components,
@@ -126,17 +112,10 @@ def fetch_results(
                         x.get("version", ""),
                     ),
                 )
-                logger.info(
-                    "Fetched %d KB components", len(kb_components)
-                )
+                logger.info("Fetched %d KB components", len(kb_components))
         except (ApiError, NetworkError) as e:
-            logger.warning(
-                "Could not fetch KB Identified Scan Components: %s", e
-            )
-            print(
-                "Warning: Could not fetch KB Identified Scan Components: "
-                f"{e}"
-            )
+            logger.warning("Could not fetch KB Identified Scan Components: %s", e)
+            print("Warning: Could not fetch KB Identified Scan Components: " f"{e}")
 
     if should_fetch_metrics:
         try:
@@ -160,14 +139,10 @@ def fetch_results(
 
     if should_fetch_vulnerabilities:
         try:
-            vulnerabilities = (
-                workbench.vulnerability.list_scan_vulnerabilities(scan_code)
-            )
+            vulnerabilities = workbench.vulnerability.list_scan_vulnerabilities(scan_code)
             if vulnerabilities:
                 collected_results["vulnerabilities"] = vulnerabilities
-                logger.info(
-                    "Fetched %d vulnerabilities", len(vulnerabilities)
-                )
+                logger.info("Fetched %d vulnerabilities", len(vulnerabilities))
         except (ApiError, NetworkError) as e:
             logger.warning("Could not fetch Vulnerabilities: %s", e)
             print(f"Warning: Could not fetch Vulnerabilities: {e}")
@@ -175,9 +150,7 @@ def fetch_results(
     return collected_results
 
 
-def display_results(
-    collected_results: Dict[str, Any], params: argparse.Namespace
-) -> bool:
+def display_results(collected_results: Dict[str, Any], params: argparse.Namespace) -> bool:
     """
     Displays results based on the collected data.
     """
@@ -186,9 +159,7 @@ def display_results(
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
     should_fetch_metrics = getattr(params, "show_scan_metrics", False)
     should_fetch_policy = getattr(params, "show_policy_warnings", False)
-    should_fetch_vulnerabilities = getattr(
-        params, "show_vulnerabilities", False
-    )
+    should_fetch_vulnerabilities = getattr(params, "show_vulnerabilities", False)
 
     da_results_data = collected_results.get("dependency_analysis")
     kb_licenses_data = collected_results.get("kb_licenses")
@@ -206,9 +177,7 @@ def display_results(
         displayed_something = True
         if scan_metrics_data:
             total = scan_metrics_data.get("total", "N/A")
-            pending = scan_metrics_data.get(
-                "pending_identification", "N/A"
-            )
+            pending = scan_metrics_data.get("pending_identification", "N/A")
             identified = scan_metrics_data.get("identified_files", "N/A")
             no_match = scan_metrics_data.get("without_matches", "N/A")
             print(f"  - Total Files Scanned: {total}")
@@ -263,9 +232,7 @@ def display_results(
         if kb_components_data:
             print("From Signature Scanning:")
             for comp in kb_components_data:
-                print(
-                    f"  - {comp.get('name', 'N/A')} : {comp.get('version', 'N/A')}"
-                )
+                print(f"  - {comp.get('name', 'N/A')} : {comp.get('version', 'N/A')}")
             print("-" * 25)
         else:
             print("No KB Scan Components found to report.")
@@ -275,9 +242,7 @@ def display_results(
         print("\n=== Dependency Analysis Results ===")
         displayed_something = True
         if da_results_data:
-            print(
-                "Component, Version, Scope, and License of Dependencies:"
-            )
+            print("Component, Version, Scope, and License of Dependencies:")
             da_results_data.sort(
                 key=lambda x: (
                     x.get("name", "").lower(),
@@ -304,9 +269,7 @@ def display_results(
                         AttributeError,
                         TypeError,
                     ) as scope_err:
-                        logger.debug(
-                            f"Could not parse scope for {comp.get('name')}: {scope_err}"
-                        )
+                        logger.debug(f"Could not parse scope for {comp.get('name')}: {scope_err}")
                 print(
                     f"  - {comp.get('name', 'N/A')} : {comp.get('version', 'N/A')} "
                     f"(Scope: {scopes_display}, License: {comp.get('license_identifier', 'N/A')})"
@@ -321,17 +284,9 @@ def display_results(
         displayed_something = True
         if policy_warnings_data is not None:
             # Check if we have real data with non-zero values
-            total_warnings = int(
-                policy_warnings_data.get("policy_warnings_total", 0)
-            )
-            files_with_warnings = int(
-                policy_warnings_data.get(
-                    "identified_files_with_warnings", 0
-                )
-            )
-            deps_with_warnings = int(
-                policy_warnings_data.get("dependencies_with_warnings", 0)
-            )
+            total_warnings = int(policy_warnings_data.get("policy_warnings_total", 0))
+            files_with_warnings = int(policy_warnings_data.get("identified_files_with_warnings", 0))
+            deps_with_warnings = int(policy_warnings_data.get("dependencies_with_warnings", 0))
 
             if total_warnings > 0:
                 print(
@@ -342,9 +297,7 @@ def display_results(
             else:
                 print("No policy warnings found.")
         else:
-            print(
-                "Policy warnings counter could not be fetched."
-            )
+            print("Policy warnings counter could not be fetched.")
         print("-" * 25)
 
     # Display Vulnerability Summary
@@ -353,9 +306,7 @@ def display_results(
         print_vulnerability_results(vulnerabilities_data)
 
     if not displayed_something:
-        print(
-            "No results were successfully fetched."
-        )
+        print("No results were successfully fetched.")
     print("------------------------------------")
 
     return displayed_something
@@ -409,6 +360,4 @@ def fetch_display_save_results(
             print(f"\nSaving collected results to '{save_path}'...")
             save_results_to_file(save_path, collected_results)
         else:
-            print(
-                "\nNo results were successfully collected, skipping save."
-            )
+            print("\nNo results were successfully collected, skipping save.")

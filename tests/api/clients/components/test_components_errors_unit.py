@@ -4,13 +4,13 @@ from unittest.mock import patch
 
 import pytest
 
-from workbench_agent.api.clients.components import ComponentsClient
-from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.base_api import BaseAPI
 from tests.api.support.error_assertions import (
     assert_api_error,
     assert_api_error_details_status_zero,
 )
+from workbench_agent.api.base_api import BaseAPI
+from workbench_agent.api.clients.components import ComponentsClient
+from workbench_agent.api.exceptions import ApiError
 
 
 @pytest.fixture
@@ -47,9 +47,7 @@ ERROR_RESPONSE = {
         ("get_usage_count", {"component_id": 999}),
     ],
 )
-def test_methods_raise_api_error_on_status_zero(
-    mock_send, components_client, method_name, kwargs
-):
+def test_methods_raise_api_error_on_status_zero(mock_send, components_client, method_name, kwargs):
     mock_send.return_value = ERROR_RESPONSE
     method = getattr(components_client, method_name)
     if method_name == "get_usage_count":
@@ -70,9 +68,7 @@ def test_methods_raise_api_error_on_status_zero(
             )
         )
     elif method_name == "delete":
-        err = assert_api_error(
-            lambda: method(kwargs["name"], kwargs["version"])
-        )
+        err = assert_api_error(lambda: method(kwargs["name"], kwargs["version"]))
     else:
         err = assert_api_error(lambda: method(**kwargs))
 

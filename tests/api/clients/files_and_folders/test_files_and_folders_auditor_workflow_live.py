@@ -30,26 +30,18 @@ pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
 
 def _has_file_license(identification_service, data: dict) -> bool:
-    return bool(
-        identification_service.summarize_identification_data(data).get(
-            "has_file_license"
-        )
-    )
+    return bool(identification_service.summarize_identification_data(data).get("has_file_license"))
 
 
 def _distributed_flag(identification_service, data: dict):
-    status = identification_service.summarize_identification_data(data).get(
-        "distribution_status"
-    )
+    status = identification_service.summarize_identification_data(data).get("distribution_status")
     if status is None:
         return None
     return "1" if status else "0"
 
 
 def _identifying_done(identification_service, data: dict):
-    marked = identification_service.summarize_identification_data(data).get(
-        "is_marked_identified"
-    )
+    marked = identification_service.summarize_identification_data(data).get("is_marked_identified")
     if marked is None:
         return None
     return "1" if marked else "0"
@@ -109,11 +101,9 @@ class TestAuditorWorkflowPhase1Discovery:
         )
         assert len(all_entries) >= len(pending_entries)
 
-        folder_metrics = (
-            workbench_client.files_and_folders.get_folder_content_metrics(
-                test_scan_code,
-                openfastpath_dir,
-            )
+        folder_metrics = workbench_client.files_and_folders.get_folder_content_metrics(
+            test_scan_code,
+            openfastpath_dir,
         )
         assert_data_contract(
             "files_and_folders.get_folder_content_metrics",
@@ -122,11 +112,9 @@ class TestAuditorWorkflowPhase1Discovery:
         )
         assert int(folder_metrics.get("pending_identification", 0) or 0) >= 1
 
-        components = (
-            workbench_client.files_and_folders.get_folder_components_ranking(
-                test_scan_code,
-                openfastpath_dir,
-            )
+        components = workbench_client.files_and_folders.get_folder_components_ranking(
+            test_scan_code,
+            openfastpath_dir,
         )
         assert_data_contract(
             "files_and_folders.get_folder_components_ranking",
@@ -135,19 +123,15 @@ class TestAuditorWorkflowPhase1Discovery:
         )
         assert isinstance(components, list) and components
 
-        extensions_all = (
-            workbench_client.files_and_folders.get_folder_extensions_ranking(
-                test_scan_code,
-                openfastpath_dir,
-                current_view="show_all",
-            )
+        extensions_all = workbench_client.files_and_folders.get_folder_extensions_ranking(
+            test_scan_code,
+            openfastpath_dir,
+            current_view="show_all",
         )
-        extensions_pending = (
-            workbench_client.files_and_folders.get_folder_extensions_ranking(
-                test_scan_code,
-                openfastpath_dir,
-                current_view="pending_items",
-            )
+        extensions_pending = workbench_client.files_and_folders.get_folder_extensions_ranking(
+            test_scan_code,
+            openfastpath_dir,
+            current_view="pending_items",
         )
         assert_data_contract(
             "files_and_folders.get_folder_extensions_ranking",
@@ -263,9 +247,7 @@ class TestAuditorWorkflowPhase2Mutations:
         component_version = "0.0.1-auditor"
         copyright_text = f"(c) auditor workflow {tag}"
 
-        baseline = identification_service.get_identification(
-            test_scan_code, path
-        )
+        baseline = identification_service.get_identification(test_scan_code, path)
 
         license_result = identification_service.add_file_license_to_file(
             test_scan_code,
@@ -279,9 +261,7 @@ class TestAuditorWorkflowPhase2Mutations:
                 license_result["data"],
                 workbench_version=workbench_version,
             )
-        after_license = identification_service.get_identification(
-            test_scan_code, path
-        )
+        after_license = identification_service.get_identification(test_scan_code, path)
         assert _has_file_license(identification_service, after_license)
 
         copyright_result = identification_service.add_copyright_to_file(
@@ -290,9 +270,7 @@ class TestAuditorWorkflowPhase2Mutations:
             copyright_text,
         )
         assert copyright_result.get("message")
-        after_copyright = identification_service.get_identification(
-            test_scan_code, path
-        )
+        after_copyright = identification_service.get_identification(test_scan_code, path)
         assert after_copyright.get("copyright") == copyright_text
 
         identification_service.resolve_component(
@@ -309,47 +287,31 @@ class TestAuditorWorkflowPhase2Mutations:
                 component_version,
             )
             assert component_result.get("message")
-            after_component = identification_service.get_identification(
-                test_scan_code, path
-            )
-            assert identification_service.summarize_identification_data(
-                after_component
-            )["has_linked_catalog_component"]
+            after_component = identification_service.get_identification(test_scan_code, path)
+            assert identification_service.summarize_identification_data(after_component)[
+                "has_linked_catalog_component"
+            ]
 
             dist_before = _distributed_flag(identification_service, after_component)
             identification_service.set_distribution_status(
                 test_scan_code, path, distributed=dist_before != "1"
             )
-            after_toggle = identification_service.get_identification(
-                test_scan_code, path
-            )
-            assert _distributed_flag(
-                identification_service, after_toggle
-            ) != dist_before
+            after_toggle = identification_service.get_identification(test_scan_code, path)
+            assert _distributed_flag(identification_service, after_toggle) != dist_before
 
             identification_service.set_distribution_status(
                 test_scan_code, path, distributed=dist_before == "1"
             )
-            after_restore = identification_service.get_identification(
-                test_scan_code, path
-            )
-            assert _distributed_flag(
-                identification_service, after_restore
-            ) == dist_before
+            after_restore = identification_service.get_identification(test_scan_code, path)
+            assert _distributed_flag(identification_service, after_restore) == dist_before
 
             identification_service.add_file_comment(
                 test_scan_code,
                 path,
                 f"auditor workflow comment {tag}",
             )
-            comments = identification_service.get_file_comments(
-                test_scan_code, path
-            )
-            created = [
-                c
-                for c in comments
-                if tag in (c.get("comment") or "")
-            ]
+            comments = identification_service.get_file_comments(test_scan_code, path)
+            created = [c for c in comments if tag in (c.get("comment") or "")]
             assert created, "Expected created comment to appear in list"
             comment_id = created[-1]["id"]
 
@@ -360,38 +322,22 @@ class TestAuditorWorkflowPhase2Mutations:
             )
             assert edit_result.get("message")
 
-            done_before = _identifying_done(
-                identification_service, after_restore
-            )
-            mark_result = identification_service.mark_as_identified(
-                test_scan_code, path
-            )
-            assert mark_result.get("message") or mark_result.get(
-                "is_marked_identified"
-            )
-            after_mark = identification_service.get_identification(
-                test_scan_code, path
-            )
+            done_before = _identifying_done(identification_service, after_restore)
+            mark_result = identification_service.mark_as_identified(test_scan_code, path)
+            assert mark_result.get("message") or mark_result.get("is_marked_identified")
+            after_mark = identification_service.get_identification(test_scan_code, path)
             assert _identifying_done(identification_service, after_mark) == "1"
 
-            unmark_result = identification_service.unmark_as_identified(
-                test_scan_code, path
+            unmark_result = identification_service.unmark_as_identified(test_scan_code, path)
+            assert (
+                unmark_result.get("message") or unmark_result.get("is_marked_identified") is False
             )
-            assert unmark_result.get("message") or unmark_result.get(
-                "is_marked_identified"
-            ) is False
-            after_unmark = identification_service.get_identification(
-                test_scan_code, path
-            )
+            after_unmark = identification_service.get_identification(test_scan_code, path)
             assert _identifying_done(identification_service, after_unmark) != "1"
 
             ff.delete_file_comment(test_scan_code, comment_id)
-            remaining = identification_service.get_file_comments(
-                test_scan_code, path
-            )
-            assert not any(
-                str(c.get("id")) == str(comment_id) for c in remaining
-            )
+            remaining = identification_service.get_file_comments(test_scan_code, path)
+            assert not any(str(c.get("id")) == str(comment_id) for c in remaining)
 
             removed = identification_service.remove_component_identification(
                 test_scan_code,
@@ -428,9 +374,7 @@ class TestAuditorWorkflowPhase2Mutations:
             pytest.skip("No partial match on snippet test file")
 
         license_id = (
-            partial.get("artifact_license")
-            or partial.get("file_license")
-            or "BSD-3-Clause"
+            partial.get("artifact_license") or partial.get("file_license") or "BSD-3-Clause"
         )
         result = identification_service.identify_snippet_in_file(
             test_scan_code,

@@ -50,9 +50,7 @@ def _validate_sbom_file(file_path: str) -> Tuple[str, str, Dict, Any]:
             metadata,
             parsed_document,
         ) = SBOMValidator.validate_sbom_file(file_path)
-        logger.debug(
-            f"SBOM validation successful: {sbom_format} v{version}"
-        )
+        logger.debug(f"SBOM validation successful: {sbom_format} v{version}")
         return sbom_format, version, metadata, parsed_document
     except Exception as e:
         logger.error(f"SBOM validation failed for '{file_path}': {e}")
@@ -99,17 +97,13 @@ def _prepare_sbom_for_upload(
         raise
 
 
-def _print_validation_summary(
-    sbom_format: str, version: str, metadata: Dict
-):
+def _print_validation_summary(sbom_format: str, version: str, metadata: Dict):
     """Prints a summary of the SBOM validation results."""
     print("SBOM validation successful:")
     print(f"  Format: {sbom_format.upper()}")
     print(f"  Version: {version}")
     if sbom_format == "cyclonedx":
-        print(
-            f"  Components: {metadata.get('components_count', 'Unknown')}"
-        )
+        print(f"  Components: {metadata.get('components_count', 'Unknown')}")
         if metadata.get("serial_number"):
             print(f"  Serial Number: {metadata['serial_number']}")
     elif sbom_format == "spdx":
@@ -119,9 +113,7 @@ def _print_validation_summary(
 
 
 @handler_error_wrapper
-def handle_import_sbom(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> bool:
+def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     """
     Handler for the 'import-sbom' command.
 
@@ -184,10 +176,7 @@ def handle_import_sbom(
         )
 
         if temp_file_created:
-            print(
-                f"  Converted for upload: "
-                f"{os.path.basename(upload_path)}"
-            )
+            print(f"  Converted for upload: " f"{os.path.basename(upload_path)}")
         else:
             print("  Using original file format")
 
@@ -206,9 +195,7 @@ def handle_import_sbom(
         # Upload SBOM file using the prepared upload path
         print("\n--- Uploading SBOM File ---")
         try:
-            client.scan_content.upload_sbom_file(
-                scan_code=scan_code, path=upload_path
-            )
+            client.scan_content.upload_sbom_file(scan_code=scan_code, path=upload_path)
             print(f"SBOM uploaded successfully from: {upload_path}")
         except Exception as e:
             logger.error(
@@ -266,8 +253,7 @@ def handle_import_sbom(
             raise
         except Exception as e:
             logger.error(
-                f"Unexpected error during SBOM import for "
-                f"'{scan_code}': {e}",
+                f"Unexpected error during SBOM import for " f"'{scan_code}': {e}",
                 exc_info=True,
             )
             raise WorkbenchAgentError(

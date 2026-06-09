@@ -11,9 +11,7 @@ pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
 @pytest.mark.usefixtures("scan_has_pending")
 class TestIdentificationServiceLiveReadOnly:
-    def test_wired_on_workbench_client(
-        self, workbench_client, identification_service
-    ):
+    def test_wired_on_workbench_client(self, workbench_client, identification_service):
         assert workbench_client.identification is identification_service
 
     def test_scan_metrics(self, identification_service, test_scan_code):
@@ -45,12 +43,8 @@ class TestIdentificationServiceLiveReadOnly:
         assert isinstance(snapshot["extensions"], list)
         assert isinstance(snapshot["components"], list)
 
-    def test_get_matches_fields(
-        self, identification_service, test_scan_code, pending_path
-    ):
-        matches = identification_service.get_matches(
-            test_scan_code, pending_path
-        )
+    def test_get_matches_fields(self, identification_service, test_scan_code, pending_path):
+        matches = identification_service.get_matches(test_scan_code, pending_path)
         assert matches
         first = next(iter(matches.values()))
         assert first.get("artifact")
@@ -62,9 +56,7 @@ class TestIdentificationServiceLiveReadOnly:
         test_scan_code,
         snippet_file_path,
     ):
-        matches = identification_service.get_matches(
-            test_scan_code, snippet_file_path
-        )
+        matches = identification_service.get_matches(test_scan_code, snippet_file_path)
         partial = None
         for entry in matches.values():
             if isinstance(entry, dict) and entry.get("match_type") == "partial":
@@ -171,9 +163,7 @@ class TestIdentificationServiceLiveMutations:
             f"(c) identification service {tag}",
         )
         assert result.get("message")
-        data = identification_service.get_identification(
-            test_scan_code, mutation_pending_path
-        )
+        data = identification_service.get_identification(test_scan_code, mutation_pending_path)
         assert data.get("copyright") == f"(c) identification service {tag}"
 
     def test_identify_whole_file_from_match(
@@ -182,9 +172,7 @@ class TestIdentificationServiceLiveMutations:
         test_scan_code,
         mutation_pending_path,
     ):
-        matches = identification_service.get_matches(
-            test_scan_code, mutation_pending_path
-        )
+        matches = identification_service.get_matches(test_scan_code, mutation_pending_path)
         full = None
         for entry in matches.values():
             if isinstance(entry, dict) and entry.get("match_type") == "full":
@@ -213,9 +201,7 @@ class TestIdentificationServiceLiveMutations:
         mutation_pending_path,
         unique_component_name,
     ):
-        matches = identification_service.get_matches(
-            test_scan_code, mutation_pending_path
-        )
+        matches = identification_service.get_matches(test_scan_code, mutation_pending_path)
         assert matches
 
         resolved = identification_service.resolve_component(
@@ -242,9 +228,7 @@ class TestIdentificationServiceLiveMutations:
             identification_service.remove_component_identification(
                 test_scan_code, mutation_pending_path
             )
-            workbench_client.components.delete(
-                unique_component_name, "0.0.1-id-svc-test"
-            )
+            workbench_client.components.delete(unique_component_name, "0.0.1-id-svc-test")
 
     def test_resolve_component_from_match(
         self,
@@ -255,9 +239,7 @@ class TestIdentificationServiceLiveMutations:
         unique_component_name,
     ):
         """Map a FossID match to catalog fields and resolve via component catalog."""
-        matches = identification_service.get_matches(
-            test_scan_code, pending_path
-        )
+        matches = identification_service.get_matches(test_scan_code, pending_path)
         match = {
             **next(iter(matches.values())),
             "artifact": unique_component_name,
@@ -270,9 +252,7 @@ class TestIdentificationServiceLiveMutations:
             match, license_identifier="MIT"
         )
         assert resolved["created"] is True
-        workbench_client.components.delete(
-            unique_component_name, "0.0.1-from-match"
-        )
+        workbench_client.components.delete(unique_component_name, "0.0.1-from-match")
 
     def test_snippet_identification_on_snippet_file(
         self,
@@ -280,9 +260,7 @@ class TestIdentificationServiceLiveMutations:
         test_scan_code,
         snippet_file_path,
     ):
-        matches = identification_service.get_matches(
-            test_scan_code, snippet_file_path
-        )
+        matches = identification_service.get_matches(test_scan_code, snippet_file_path)
         partial = None
         for entry in matches.values():
             if isinstance(entry, dict) and entry.get("match_type") == "partial":
@@ -292,9 +270,7 @@ class TestIdentificationServiceLiveMutations:
             pytest.skip("No partial match on snippet file")
 
         license_id = (
-            partial.get("artifact_license")
-            or partial.get("file_license")
-            or "BSD-3-Clause"
+            partial.get("artifact_license") or partial.get("file_license") or "BSD-3-Clause"
         )
         result = identification_service.identify_snippet_in_file(
             test_scan_code,
@@ -312,12 +288,8 @@ class TestIdentificationServiceLiveMutations:
         test_scan_code,
         mutation_pending_path,
     ):
-        identification_service.mark_as_identified(
-            test_scan_code, mutation_pending_path
-        )
-        identification_service.unmark_as_identified(
-            test_scan_code, mutation_pending_path
-        )
+        identification_service.mark_as_identified(test_scan_code, mutation_pending_path)
+        identification_service.unmark_as_identified(test_scan_code, mutation_pending_path)
 
     def test_set_distribution_status(
         self,
@@ -342,7 +314,7 @@ class TestIdentificationServiceLiveMutations:
         assert result["changed"] is True
 
         identification_service.set_distribution_status(
-            test_scan_code, mutation_pending_path, distributed=current
-            if current is not None
-            else True,
+            test_scan_code,
+            mutation_pending_path,
+            distributed=current if current is not None else True,
         )

@@ -130,9 +130,7 @@ REPORT_DEFS: Dict[str, Dict[str, Any]] = {
     },
 }
 
-ASYNC_REPORT_TYPES: set[str] = {
-    rt for rt, d in REPORT_DEFS.items() if d["is_async"]
-}
+ASYNC_REPORT_TYPES: set[str] = {rt for rt, d in REPORT_DEFS.items() if d["is_async"]}
 
 # Notice file reports (scan scope): map CLI name -> API check_status type
 NOTICE_REPORT_TYPE_MAP: Dict[str, str] = {

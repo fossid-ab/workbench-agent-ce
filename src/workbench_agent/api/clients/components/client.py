@@ -64,9 +64,7 @@ class ComponentsClient:
         if name is not None:
             data["name"] = name
         if count_results is not None:
-            data["count_results"] = (
-                "1" if count_results in (True, 1, "1") else "0"
-            )
+            data["count_results"] = "1" if count_results in (True, 1, "1") else "0"
         if records_per_page is not None:
             data["records_per_page"] = helpers.optional_str(records_per_page)
         if page is not None:
@@ -85,9 +83,7 @@ class ComponentsClient:
         )
         if response.get("status") == "1":
             return response.get("data")
-        helpers.raise_on_failed_response(
-            response, error_context="Failed to list components"
-        )
+        helpers.raise_on_failed_response(response, error_context="Failed to list components")
 
     def list_by_usage(
         self,
@@ -176,9 +172,7 @@ class ComponentsClient:
             return response.get("data")
         helpers.raise_on_failed_response(
             response,
-            error_context=(
-                f"Failed to get information for component '{component_name}'"
-            ),
+            error_context=(f"Failed to get information for component '{component_name}'"),
         )
 
     def create(
@@ -416,9 +410,7 @@ class ComponentsClient:
         if response.get("status") != "1":
             helpers.raise_on_failed_response(
                 response,
-                error_context=(
-                    f"Failed to update component '{name}' '{version}'"
-                ),
+                error_context=(f"Failed to update component '{name}' '{version}'"),
             )
         result: Dict[str, Any] = {"data": response.get("data")}
         if "message" in response:
@@ -525,9 +517,7 @@ class ComponentsClient:
         if response.get("status") != "1":
             helpers.raise_on_failed_response(
                 response,
-                error_context=(
-                    f"Failed to get usage count for component id {component_id}"
-                ),
+                error_context=(f"Failed to get usage count for component id {component_id}"),
             )
         result = response.get("data")
         if isinstance(result, dict):

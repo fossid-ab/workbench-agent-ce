@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
-from workbench_agent.api.clients.users import UsersClient
 from workbench_agent.api.base_api import BaseAPI
+from workbench_agent.api.clients.users import UsersClient
 
 
 @pytest.fixture
@@ -36,18 +36,14 @@ def test_get_information_payload(mock_send, users_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_user_permissions_list_by_username_payload(
-    mock_send, users_client
-):
+def test_get_user_permissions_list_by_username_payload(mock_send, users_client):
     mock_send.return_value = {"status": "1", "data": []}
     users_client.get_user_permissions_list(searched_username="alice")
     assert _data_from_call(mock_send) == {"searched_username": "alice"}
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_user_permissions_list_by_user_id_payload(
-    mock_send, users_client
-):
+def test_get_user_permissions_list_by_user_id_payload(mock_send, users_client):
     mock_send.return_value = {"status": "1", "data": []}
     users_client.get_user_permissions_list(user_id=5)
     assert _data_from_call(mock_send) == {"user_id": 5}

@@ -12,17 +12,17 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.clients.files_and_folders.helpers import (
-    PLAIN_PATH_ACTIONS,
-    path_for_action,
-)
-from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.clients.files_and_folders.helpers import encode_path
 from tests.api.support.contract import assert_data_contract
 from tests.api.support.error_assertions import (
     assert_api_error,
     assert_api_error_details_status_zero,
 )
+from workbench_agent.api.clients.files_and_folders.helpers import (
+    PLAIN_PATH_ACTIONS,
+    encode_path,
+    path_for_action,
+)
+from workbench_agent.api.exceptions import ApiError
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
@@ -30,26 +30,18 @@ BAD_PATH = "__no/such/file/path__.c"
 
 
 class TestFilesAndFoldersLiveRawProbes:
-    def test_path_encoding_get_identification(
-        self, test_scan_code, pending_path
-    ):
+    def test_path_encoding_get_identification(self, test_scan_code, pending_path):
         encoded = path_for_action("get_identification", pending_path)
         assert encoded == encode_path(pending_path)
         assert encoded != pending_path or "/" not in pending_path
 
-    def test_path_encoding_remove_component_is_plain(
-        self, test_scan_code, pending_path
-    ):
+    def test_path_encoding_remove_component_is_plain(self, test_scan_code, pending_path):
         assert "remove_component_identification" in PLAIN_PATH_ACTIONS
-        plain = path_for_action(
-            "remove_component_identification", pending_path
-        )
+        plain = path_for_action("remove_component_identification", pending_path)
         assert plain == pending_path
         assert plain != encode_path(pending_path)
 
-    def test_raw_get_identification_invalid_path(
-        self, workbench_client, test_scan_code
-    ):
+    def test_raw_get_identification_invalid_path(self, workbench_client, test_scan_code):
         response = workbench_client.files_and_folders._api._send_request(
             {
                 "group": "files_and_folders",
@@ -71,37 +63,25 @@ class TestFilesAndFoldersLiveRawProbes:
             "action": "get_identification",
             "data": {
                 "scan_code": test_scan_code,
-                "path": path_for_action(
-                    "get_identification", pending_path
-                ),
+                "path": path_for_action("get_identification", pending_path),
             },
         }
-        response = workbench_client.files_and_folders._api._send_request(
-            payload
-        )
+        response = workbench_client.files_and_folders._api._send_request(payload)
         assert response.get("status") == "1", response
         wire_path = payload["data"]["path"]
-        assert wire_path == base64.b64encode(
-            pending_path.encode()
-        ).decode()
+        assert wire_path == base64.b64encode(pending_path.encode()).decode()
 
 
 class TestFilesAndFoldersLiveClientErrors:
-    def test_get_identification_invalid_path_prefix(
-        self, workbench_client, test_scan_code
-    ):
+    def test_get_identification_invalid_path_prefix(self, workbench_client, test_scan_code):
         err = assert_api_error(
-            lambda: workbench_client.files_and_folders.get_identification(
-                test_scan_code, BAD_PATH
-            ),
+            lambda: workbench_client.files_and_folders.get_identification(test_scan_code, BAD_PATH),
             message_contains="does not exist",
         )
         assert "Failed to get identification" in err.message
         assert_api_error_details_status_zero(err)
 
-    def test_set_component_missing_catalog(
-        self, workbench_client, test_scan_code, pending_path
-    ):
+    def test_set_component_missing_catalog(self, workbench_client, test_scan_code, pending_path):
         err = assert_api_error(
             lambda: workbench_client.files_and_folders.set_identification_component(
                 test_scan_code,
@@ -172,6 +152,4 @@ class TestFilesAndFoldersLiveMutationsViaClient:
                 component_name=payload["data"]["component_name"],
                 component_version="0.0.0",
             )
-        assert "Failed to remove component identification" in str(
-            exc_info.value
-        )
+        assert "Failed to remove component identification" in str(exc_info.value)

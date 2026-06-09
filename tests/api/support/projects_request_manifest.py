@@ -13,26 +13,30 @@ PROJECTS_REQUEST_MANIFEST: Dict[str, Tuple[FrozenSet[str], FrozenSet[str]]] = {
     "get_all_scans": (frozenset({"project_code"}), frozenset()),
     "create": (
         frozenset({"project_name"}),
-        frozenset({
-            "product_code",
-            "product_name",
-            "description",
-            "comment",
-            "limit_date",
-            "jira_project_key",
-        }),
+        frozenset(
+            {
+                "product_code",
+                "product_name",
+                "description",
+                "comment",
+                "limit_date",
+                "jira_project_key",
+            }
+        ),
     ),
     "update": (
         frozenset({"project_code", "project_name"}),
-        frozenset({
-            "product_code",
-            "product_name",
-            "description",
-            "comment",
-            "limit_date",
-            "jira_project_key",
-            "new_project_owner",
-        }),
+        frozenset(
+            {
+                "product_code",
+                "product_name",
+                "description",
+                "comment",
+                "limit_date",
+                "jira_project_key",
+                "new_project_owner",
+            }
+        ),
     ),
     "check_status": (frozenset({"process_id", "type"}), frozenset()),
 }

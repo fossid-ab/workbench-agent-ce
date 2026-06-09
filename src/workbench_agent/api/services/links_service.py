@@ -24,9 +24,7 @@ class WorkbenchLinks:
 
     """
 
-    def __init__(
-        self, api_url: str, scan_id: int, workbench_version: str = ""
-    ):
+    def __init__(self, api_url: str, scan_id: int, workbench_version: str = ""):
         self._api_url = api_url
         self._scan_id = scan_id
         self._base_url = api_url.replace("/api.php", "").rstrip("/")
@@ -38,15 +36,13 @@ class WorkbenchLinks:
         if not version_string:
             return False
         try:
-            return packaging_version.parse(
-                version_string
-            ) >= packaging_version.parse(NUI_MIN_VERSION)
+            return packaging_version.parse(version_string) >= packaging_version.parse(
+                NUI_MIN_VERSION
+            )
         except packaging_version.InvalidVersion:
             return False
 
-    def _build_link(
-        self, view_param: str = None, message: str = ""
-    ) -> Dict[str, str]:
+    def _build_link(self, view_param: str = None, message: str = "") -> Dict[str, str]:
         url = (
             f"{self._base_url}/index.html?"
             f"form=main_interface&action=scanview&sid={self._scan_id}"
@@ -55,21 +51,15 @@ class WorkbenchLinks:
             url += f"&current_view={view_param}"
         return {"url": url, "message": message}
 
-    def _build_nui_link(
-        self, path: str, message: str = ""
-    ) -> Dict[str, str]:
+    def _build_nui_link(self, path: str, message: str = "") -> Dict[str, str]:
         url = f"{self._base_url}/nui/scans/{self._scan_id}/{path}"
         return {"url": url, "message": message}
 
     @property
     def scan(self) -> Dict[str, str]:
         if self._nui:
-            return self._build_nui_link(
-                "audit/all", message="View this Scan in Workbench"
-            )
-        return self._build_link(
-            view_param="all_items", message="View this Scan in Workbench"
-        )
+            return self._build_nui_link("audit/all", message="View this Scan in Workbench")
+        return self._build_link(view_param="all_items", message="View this Scan in Workbench")
 
     @property
     def pending(self) -> Dict[str, str]:

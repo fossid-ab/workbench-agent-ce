@@ -25,9 +25,7 @@ logger = logging.getLogger("workbench-agent")
 
 
 @handler_error_wrapper
-def handle_download_reports(
-    client: "WorkbenchClient", params: argparse.Namespace
-):
+def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespace):
     """
     Handler for the 'download-reports' command.
 
@@ -68,11 +66,7 @@ def handle_download_reports(
         os.makedirs(output_dir, exist_ok=True)
 
     # Resolve project, scan
-    scope_name = (
-        params.scan_name
-        if params.report_scope == "scan"
-        else params.project_name
-    )
+    scope_name = params.scan_name if params.report_scope == "scan" else params.project_name
     print(
         f"\nResolving "
         f"{'scan' if params.report_scope == 'scan' else 'project'} "
@@ -97,10 +91,7 @@ def handle_download_reports(
 
     # Generate and download reports based on scope
     scope_label = "project" if params.report_scope == "project" else "scan"
-    print(
-        f"\nGenerating and downloading {len(report_types)} "
-        f"{scope_label} report(s)..."
-    )
+    print(f"\nGenerating and downloading {len(report_types)} " f"{scope_label} report(s)...")
 
     # Print the actual report types being downloaded
     for rt in sorted(report_types):
@@ -124,9 +115,7 @@ def handle_download_reports(
             print(f"\nGenerating {report_type} report...")
 
             name_component = (
-                params.project_name
-                if params.report_scope == "project"
-                else params.scan_name
+                params.project_name if params.report_scope == "project" else params.scan_name
             )
 
             gen_kwargs: dict = {}
@@ -145,9 +134,7 @@ def handle_download_reports(
                 or report_type in report_definitions.ASYNC_REPORT_TYPES
             )
             if needs_wait:
-                print(
-                    f"Waiting for {report_type} report to finish generating..."
-                )
+                print(f"Waiting for {report_type} report to finish generating...")
 
             client.reports.run_and_download_report(
                 params.report_scope,
@@ -163,9 +150,7 @@ def handle_download_reports(
             success_count += 1
 
         except ProcessTimeoutError as e:
-            logger.error(
-                f"Failed waiting for '{report_type}' report: {e}"
-            )
+            logger.error(f"Failed waiting for '{report_type}' report: {e}")
             error_count += 1
             error_types.append(report_type)
 
@@ -175,10 +160,7 @@ def handle_download_reports(
             FileSystemError,
             ValidationError,
         ) as e:
-            print(
-                f"Error processing {report_type} report: "
-                f"{getattr(e, 'message', str(e))}"
-            )
+            print(f"Error processing {report_type} report: " f"{getattr(e, 'message', str(e))}")
             logger.error(
                 f"Failed to generate/download {report_type} report: {e}",
                 exc_info=True,
@@ -187,10 +169,7 @@ def handle_download_reports(
             error_types.append(report_type)
 
         except Exception as e:
-            print(
-                f"Error processing {report_type} report: "
-                f"{getattr(e, 'message', str(e))}"
-            )
+            print(f"Error processing {report_type} report: " f"{getattr(e, 'message', str(e))}")
             logger.error(
                 f"Unexpected failure for {report_type} report: {e}",
                 exc_info=True,

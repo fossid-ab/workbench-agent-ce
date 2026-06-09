@@ -28,9 +28,7 @@ class TestScansLiveReadOnly:
         assert len(scans) >= 1
         codes = {s.get("code") for s in scans if isinstance(s, dict)}
         assert test_scan_code in codes
-        sample = next(
-            s for s in scans if isinstance(s, dict) and s.get("code") == test_scan_code
-        )
+        sample = next(s for s in scans if isinstance(s, dict) and s.get("code") == test_scan_code)
         assert_data_contract(
             "scans.list_scans",
             [sample],
@@ -112,9 +110,7 @@ class TestScansLiveReadOnly:
         workbench_version,
         identified_test_scan_code,
     ):
-        data = workbench_client.scans.get_scan_identified_components(
-            identified_test_scan_code
-        )
+        data = workbench_client.scans.get_scan_identified_components(identified_test_scan_code)
         assert isinstance(data, list)
         assert len(data) >= 1
         assert_data_contract(
@@ -129,9 +125,7 @@ class TestScansLiveReadOnly:
         workbench_version,
         test_scan_code,
     ):
-        data = workbench_client.scans.get_policy_warnings_counter(
-            test_scan_code
-        )
+        data = workbench_client.scans.get_policy_warnings_counter(test_scan_code)
         assert_data_contract(
             "scans.get_policy_warnings_counter",
             data,
@@ -188,9 +182,7 @@ class TestScansLiveReadOnly:
         workbench_version,
         identified_test_scan_code,
     ):
-        data = workbench_client.policy.get_scan_policy_warnings_info_all(
-            identified_test_scan_code
-        )
+        data = workbench_client.policy.get_scan_policy_warnings_info_all(identified_test_scan_code)
         assert_data_contract(
             "scans.get_policy_warnings_info",
             data,
@@ -203,21 +195,15 @@ class TestScansLiveReadOnly:
         """Test Scan is upload-based; Git status call errors without a repo."""
         info = workbench_client.scans.get_information(test_scan_code)
         if info.get("git_repo_url"):
-            data = workbench_client.scans.check_status_download_content_from_git(
-                test_scan_code
-            )
+            data = workbench_client.scans.check_status_download_content_from_git(test_scan_code)
             assert isinstance(data, dict)
             return
         from workbench_agent.api.exceptions import ApiError
 
         with pytest.raises(ApiError, match="git"):
-            workbench_client.scans.check_status_download_content_from_git(
-                test_scan_code
-            )
+            workbench_client.scans.check_status_download_content_from_git(test_scan_code)
 
-    def test_check_status_scan_process(
-        self, workbench_client, test_scan_code
-    ):
+    def test_check_status_scan_process(self, workbench_client, test_scan_code):
         status = workbench_client.scans.check_status(test_scan_code, "SCAN")
         assert isinstance(status, dict)
 
@@ -264,8 +250,6 @@ class TestScansLiveDependencyAnalysis:
         dependency_analysis_test_scan_code,
         scan_has_da_results,
     ):
-        deps = workbench_client.dependencies.list_dependencies(
-            dependency_analysis_test_scan_code
-        )
+        deps = workbench_client.dependencies.list_dependencies(dependency_analysis_test_scan_code)
         assert deps == scan_has_da_results
         assert len(deps) >= 1

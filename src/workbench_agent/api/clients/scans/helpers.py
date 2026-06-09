@@ -47,9 +47,7 @@ def parse_list_scans_data(data: Any) -> List[Dict[str, Any]]:
                 try:
                     scan_details["id"] = int(scan_id)
                 except ValueError:
-                    logger.warning(
-                        "Non-integer scan ID key found: %s", scan_id
-                    )
+                    logger.warning("Non-integer scan ID key found: %s", scan_id)
                     scan_details["id"] = scan_id
                 if "code" not in scan_details:
                     logger.warning(
@@ -75,9 +73,7 @@ def normalize_git_status_data(data: Any) -> Dict[str, Any]:
         return data
     if isinstance(data, str):
         return {"data": data}
-    logger.warning(
-        "Unexpected response type from git status API: %s", type(data)
-    )
+    logger.warning("Unexpected response type from git status API: %s", type(data))
     return {"data": str(data)}
 
 

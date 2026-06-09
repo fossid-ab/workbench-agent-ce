@@ -82,28 +82,26 @@ def _assert_data_shape(
     version_hint: str,
 ) -> None:
     if shape == "null":
-        assert payload is None, (
-            f"{operation_id}{version_hint}: expected null, got {type(payload)}"
-        )
+        assert payload is None, f"{operation_id}{version_hint}: expected null, got {type(payload)}"
         return
 
     if shape == "bool":
-        assert isinstance(payload, bool), (
-            f"{operation_id}{version_hint}: expected bool, got {type(payload)}"
-        )
+        assert isinstance(
+            payload, bool
+        ), f"{operation_id}{version_hint}: expected bool, got {type(payload)}"
         return
 
     if shape == "list":
-        assert isinstance(payload, list), (
-            f"{operation_id}{version_hint}: expected list, got {type(payload)}"
-        )
+        assert isinstance(
+            payload, list
+        ), f"{operation_id}{version_hint}: expected list, got {type(payload)}"
         _assert_list_items(operation_id, payload, spec, version_hint)
         return
 
     if shape == "dict":
-        assert isinstance(payload, dict), (
-            f"{operation_id}{version_hint}: expected dict, got {type(payload)}"
-        )
+        assert isinstance(
+            payload, dict
+        ), f"{operation_id}{version_hint}: expected dict, got {type(payload)}"
         _assert_dict_keys(operation_id, payload, spec, version_hint)
         if "list" in spec.get("required_keys", set()) and "list" in payload:
             usage_list = payload["list"]
@@ -113,8 +111,7 @@ def _assert_data_shape(
                     if isinstance(item, dict) and list_keys:
                         missing = list_keys - item.keys()
                         assert not missing, (
-                            f"{operation_id}{version_hint}: "
-                            f"usage list item missing {missing}"
+                            f"{operation_id}{version_hint}: " f"usage list item missing {missing}"
                         )
             elif isinstance(usage_list, dict) and usage_list:
                 first = next(iter(usage_list.values()))
@@ -123,8 +120,7 @@ def _assert_data_shape(
                     if list_keys:
                         missing = list_keys - first.keys()
                         assert not missing, (
-                            f"{operation_id}{version_hint}: "
-                            f"usage dict item missing {missing}"
+                            f"{operation_id}{version_hint}: " f"usage dict item missing {missing}"
                         )
         return
 
@@ -141,8 +137,7 @@ def _assert_data_shape(
             return
         else:
             raise AssertionError(
-                f"{operation_id}{version_hint}: expected list or dict, "
-                f"got {type(payload)}"
+                f"{operation_id}{version_hint}: expected list or dict, " f"got {type(payload)}"
             )
         return
 
@@ -153,8 +148,7 @@ def _assert_data_shape(
             return
         else:
             raise AssertionError(
-                f"{operation_id}{version_hint}: expected list or bool, "
-                f"got {type(payload)}"
+                f"{operation_id}{version_hint}: expected list or bool, " f"got {type(payload)}"
             )
         return
 
@@ -178,9 +172,7 @@ def _assert_list_items(
         if not isinstance(item, dict):
             continue
         missing = item_keys - item.keys()
-        assert not missing, (
-            f"{operation_id}{version_hint}: item missing keys {missing}"
-        )
+        assert not missing, f"{operation_id}{version_hint}: item missing keys {missing}"
 
 
 def _assert_dict_keys(
@@ -193,9 +185,7 @@ def _assert_dict_keys(
     if not required:
         return
     missing = required - payload.keys()
-    assert not missing, (
-        f"{operation_id}{version_hint}: dict missing keys {missing}"
-    )
+    assert not missing, f"{operation_id}{version_hint}: dict missing keys {missing}"
 
 
 def _record_response(

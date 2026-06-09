@@ -4,12 +4,11 @@ import uuid
 
 import pytest
 
-from workbench_agent.api.clients.users.helpers import is_user_not_found
-from workbench_agent.api.exceptions import ApiError
 from tests.api.support.error_assertions import (
     assert_api_error,
     assert_api_error_details_status_zero,
 )
+from workbench_agent.api.clients.users.helpers import is_user_not_found
 
 pytestmark = [pytest.mark.requires_workbench, pytest.mark.api_contract]
 
@@ -23,9 +22,7 @@ class TestUsersErrorsLive:
             message_contains="Failed to get information",
         )
         assert_api_error_details_status_zero(err)
-        assert is_user_not_found(
-            err.details.get("error", ""), err.details
-        )
+        assert is_user_not_found(err.details.get("error", ""), err.details)
 
     def test_get_user_permissions_list_unknown_user(self, workbench_client):
         err = assert_api_error(

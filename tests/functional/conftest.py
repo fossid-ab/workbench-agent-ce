@@ -105,7 +105,5 @@ def fossid_toolbox_path():
     """
     toolbox = shutil.which("fossid-toolbox")
     if not toolbox:
-        pytest.skip(
-            "fossid-toolbox not found in PATH. Required for blind-scan tests."
-        )
+        pytest.skip("fossid-toolbox not found in PATH. Required for blind-scan tests.")
     return toolbox

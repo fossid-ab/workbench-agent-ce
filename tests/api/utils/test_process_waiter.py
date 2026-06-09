@@ -15,7 +15,6 @@ from workbench_agent.api.utils.process_waiter import (
     wait_for_completion,
 )
 
-
 # --- Test StatusResult with six-state model ---
 
 
@@ -63,9 +62,7 @@ def test_status_result_finished_state():
 
 def test_status_result_failed_state():
     """Test FAILED state normalization."""
-    result = StatusResult(
-        status="FAILED", raw_data={"error": "Something went wrong"}
-    )
+    result = StatusResult(status="FAILED", raw_data={"error": "Something went wrong"})
     assert result.status == "FAILED"
     assert result.is_terminal is True
     assert result.is_idle is True
@@ -107,9 +104,7 @@ def test_status_result_normalizes_variants():
 
 def test_status_result_with_duration():
     """Test StatusResult with duration populated (after waiting)."""
-    result = StatusResult(
-        status="FINISHED", raw_data={"status": "FINISHED"}, duration=45.2
-    )
+    result = StatusResult(status="FINISHED", raw_data={"status": "FINISHED"}, duration=45.2)
     assert result.status == "FINISHED"
     assert result.duration == 45.2
     assert result.success is True
@@ -212,9 +207,7 @@ def test_wait_for_completion_failure():
 
 def test_wait_for_completion_timeout():
     """Test wait_for_completion timeout."""
-    mock_check = MagicMock(
-        return_value=StatusResult(status="RUNNING", raw_data={})
-    )
+    mock_check = MagicMock(return_value=StatusResult(status="RUNNING", raw_data={}))
 
     with pytest.raises(ProcessTimeoutError) as exc_info:
         wait_for_completion(
@@ -233,9 +226,7 @@ def test_wait_for_completion_cancelled():
     mock_check = MagicMock(
         side_effect=[
             StatusResult(status="QUEUED", raw_data={}),
-            StatusResult(
-                status="CANCELLED", raw_data={"info": "User cancelled"}
-            ),
+            StatusResult(status="CANCELLED", raw_data={"info": "User cancelled"}),
         ]
     )
 
@@ -253,9 +244,7 @@ def test_wait_for_completion_cancelled():
 
 def test_wait_for_completion_unsupported_status_check():
     """Test wait_for_completion re-raises UnsupportedStatusCheck."""
-    mock_check = MagicMock(
-        side_effect=UnsupportedStatusCheck("Not supported")
-    )
+    mock_check = MagicMock(side_effect=UnsupportedStatusCheck("Not supported"))
 
     with pytest.raises(UnsupportedStatusCheck):
         wait_for_completion(

@@ -98,12 +98,8 @@ def _determine_scans_to_run(
     Returns a dict with keys ``run_kb_scan`` and
     ``run_dependency_analysis``.
     """
-    run_dependency_analysis = getattr(
-        params, "run_dependency_analysis", False
-    )
-    dependency_analysis_only = getattr(
-        params, "dependency_analysis_only", False
-    )
+    run_dependency_analysis = getattr(params, "run_dependency_analysis", False)
+    dependency_analysis_only = getattr(params, "dependency_analysis_only", False)
     scan_operations: Dict[str, bool] = {
         "run_kb_scan": True,
         "run_dependency_analysis": False,
@@ -142,11 +138,7 @@ def _is_cancelled_scan_result(scan_result) -> bool:
         raw_data.get("info", ""),
         raw_data.get("comment", ""),
     ]
-    status_message = " ".join(
-        str(message).lower()
-        for message in cancellation_messages
-        if message
-    )
+    status_message = " ".join(str(message).lower() for message in cancellation_messages if message)
     return "cancel" in status_message
 
 
@@ -168,26 +160,14 @@ def execute_scan_workflow(
     scan_operations = _determine_scans_to_run(params)
     da_completed = False
 
-    if (
-        not scan_operations["run_kb_scan"]
-        and scan_operations["run_dependency_analysis"]
-    ):
-        print(
-            "\nStarting Dependency Analysis only "
-            "(skipping KB scan)..."
-        )
+    if not scan_operations["run_kb_scan"] and scan_operations["run_dependency_analysis"]:
+        print("\nStarting Dependency Analysis only " "(skipping KB scan)...")
         client.scan_operations.start_da_only(scan_code)
 
         if getattr(params, "no_wait", False):
             print("Dependency Analysis has been started.")
-            print(
-                "\nExiting without waiting for completion "
-                "(--no-wait mode)."
-            )
-            print(
-                "You can check the status later using the "
-                "'show-results' command."
-            )
+            print("\nExiting without waiting for completion " "(--no-wait mode).")
+            print("You can check the status later using the " "'show-results' command.")
             scan_operations["da_completed"] = False
             print_scan_summary(
                 client,
@@ -212,9 +192,7 @@ def execute_scan_workflow(
     if scan_operations["run_kb_scan"]:
         print("\nStarting Scan Process...")
 
-        id_reuse_type, id_reuse_specific_code = (
-            resolve_id_reuse(client, params)
-        )
+        id_reuse_type, id_reuse_specific_code = resolve_id_reuse(client, params)
 
         client.scan_operations.start_scan(
             scan_code=scan_code,
@@ -226,9 +204,7 @@ def execute_scan_workflow(
             delta_scan=params.delta_scan,
             id_reuse_type=id_reuse_type,
             id_reuse_specific_code=id_reuse_specific_code,
-            run_dependency_analysis=scan_operations[
-                "run_dependency_analysis"
-            ],
+            run_dependency_analysis=scan_operations["run_dependency_analysis"],
             replace_existing_identifications=getattr(
                 params,
                 "replace_existing_identifications",
@@ -236,26 +212,16 @@ def execute_scan_workflow(
             ),
             scan_failed_only=getattr(params, "scan_failed_only", False),
             full_file_only=getattr(params, "full_file_only", False),
-            advanced_match_scoring=getattr(
-                params, "advanced_match_scoring", True
-            ),
-            match_filtering_threshold=getattr(
-                params, "match_filtering_threshold", None
-            ),
+            advanced_match_scoring=getattr(params, "advanced_match_scoring", True),
+            match_filtering_threshold=getattr(params, "match_filtering_threshold", None),
             scan_host=getattr(params, "scan_host", None),
         )
 
         if getattr(params, "no_wait", False):
             print("\nKB Scan started successfully.")
             if scan_operations["run_dependency_analysis"]:
-                print(
-                    "Dependency Analysis will start when "
-                    "KB scan completes."
-                )
-            print(
-                "\nExiting without waiting for completion "
-                "(--no-wait mode)."
-            )
+                print("Dependency Analysis will start when " "KB scan completes.")
+            print("\nExiting without waiting for completion " "(--no-wait mode).")
             scan_operations["da_completed"] = False
             print_scan_summary(
                 client,
@@ -278,9 +244,7 @@ def execute_scan_workflow(
             kb_scan_result = _wait_for_kb_scan(client, scan_code, params)
             durations["kb_scan"] = kb_scan_result.duration or 0.0
 
-            if kb_scan_result.is_failed and not _is_cancelled_scan_result(
-                kb_scan_result
-            ):
+            if kb_scan_result.is_failed and not _is_cancelled_scan_result(kb_scan_result):
                 logger.warning(
                     f"KB Scan '{scan_code}' ended in "
                     f"{kb_scan_result.status}. Attempting one "
@@ -296,23 +260,15 @@ def execute_scan_workflow(
                     delta_scan=params.delta_scan,
                     id_reuse_type=id_reuse_type,
                     id_reuse_specific_code=id_reuse_specific_code,
-                    run_dependency_analysis=scan_operations[
-                        "run_dependency_analysis"
-                    ],
+                    run_dependency_analysis=scan_operations["run_dependency_analysis"],
                     replace_existing_identifications=getattr(
                         params,
                         "replace_existing_identifications",
                         False,
                     ),
-                    full_file_only=getattr(
-                        params, "full_file_only", False
-                    ),
-                    advanced_match_scoring=getattr(
-                        params, "advanced_match_scoring", True
-                    ),
-                    match_filtering_threshold=getattr(
-                        params, "match_filtering_threshold", None
-                    ),
+                    full_file_only=getattr(params, "full_file_only", False),
+                    advanced_match_scoring=getattr(params, "advanced_match_scoring", True),
+                    match_filtering_threshold=getattr(params, "match_filtering_threshold", None),
                     scan_host=getattr(params, "scan_host", None),
                 )
                 kb_scan_result = _wait_for_kb_scan(client, scan_code, params)
@@ -324,37 +280,22 @@ def execute_scan_workflow(
                         f"after retry (status="
                         f"{kb_scan_result.status})."
                     )
-                    print(
-                        f"\nKB Scan still {kb_scan_result.status} "
-                        f"after retry."
-                    )
+                    print(f"\nKB Scan still {kb_scan_result.status} " f"after retry.")
 
             if "DEPENDENCY_ANALYSIS" in process_types_to_wait:
-                print(
-                    "\nWaiting for Dependency Analysis "
-                    "to complete..."
-                )
+                print("\nWaiting for Dependency Analysis " "to complete...")
                 try:
-                    da_result = (
-                        client.status_check.check_dependency_analysis_status(
-                            scan_code,
-                            wait=True,
-                            wait_retry_count=params.scan_number_of_tries,
-                            wait_retry_interval=params.scan_wait_time,
-                        )
+                    da_result = client.status_check.check_dependency_analysis_status(
+                        scan_code,
+                        wait=True,
+                        wait_retry_count=params.scan_number_of_tries,
+                        wait_retry_interval=params.scan_wait_time,
                     )
-                    durations["dependency_analysis"] = (
-                        da_result.duration or 0.0
-                    )
+                    durations["dependency_analysis"] = da_result.duration or 0.0
                     da_completed = True
                 except Exception as e:
-                    logger.warning(
-                        f"Error in dependency analysis: {e}"
-                    )
-                    print(
-                        f"\nWarning: Error waiting for "
-                        f"dependency analysis: {e}"
-                    )
+                    logger.warning(f"Error in dependency analysis: {e}")
+                    print(f"\nWarning: Error waiting for " f"dependency analysis: {e}")
                     da_completed = False
             else:
                 da_completed = False

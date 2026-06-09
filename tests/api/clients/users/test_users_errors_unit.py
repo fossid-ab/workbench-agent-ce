@@ -4,15 +4,13 @@ from unittest.mock import patch
 
 import pytest
 
-from workbench_agent.api.clients.users import UsersClient
-from workbench_agent.api.clients.users.helpers import is_user_not_found
-from workbench_agent.api.exceptions import ApiError
-from workbench_agent.api.base_api import BaseAPI
 from tests.api.support.error_assertions import (
     assert_api_error,
     assert_api_error_details_status_zero,
 )
-
+from workbench_agent.api.base_api import BaseAPI
+from workbench_agent.api.clients.users import UsersClient
+from workbench_agent.api.clients.users.helpers import is_user_not_found
 
 @pytest.fixture
 def users_client(mock_session):
@@ -56,9 +54,7 @@ def test_get_user_permissions_list_user_not_found(mock_send, users_client):
     }
     mock_send.return_value = response
     err = assert_api_error(
-        lambda: users_client.get_user_permissions_list(
-            searched_username="nobody@x"
-        ),
+        lambda: users_client.get_user_permissions_list(searched_username="nobody@x"),
         message_contains="User not found",
     )
     assert is_user_not_found("User not found", response)
@@ -66,8 +62,6 @@ def test_get_user_permissions_list_user_not_found(mock_send, users_client):
 
 
 @patch.object(BaseAPI, "_send_request")
-def test_get_user_permissions_list_null_data_returns_empty(
-    mock_send, users_client
-):
+def test_get_user_permissions_list_null_data_returns_empty(mock_send, users_client):
     mock_send.return_value = {"status": "1", "data": None}
     assert users_client.get_user_permissions_list(user_id=1) == []
