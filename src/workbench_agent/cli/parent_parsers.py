@@ -345,6 +345,16 @@ def create_fossid_toolbox_parser():
         dest="fossid_toolbox_timeout",
         metavar="SECONDS",
     )
+    toolbox_args.add_argument(
+        "--skip-lac-extraction",
+        help=(
+            "Disable License and Copyright (LAC) extraction during hashing. "
+            "LAC extraction is enabled by default."
+        ),
+        action="store_true",
+        default=False,
+        dest="skip_lac_extraction",
+    )
     return fossid_toolbox_parent
 
 

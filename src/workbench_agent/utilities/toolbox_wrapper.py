@@ -7,15 +7,22 @@ used primarily for blind scanning using its hash command.
 
 import logging
 import os
+import re
 import subprocess
 import tempfile
 import traceback
+
+from packaging import version as packaging_version
 
 from workbench_agent.api.exceptions import ProcessError
 from workbench_agent.exceptions import FileSystemError
 from workbench_agent.utilities.upload_data_prep import cleanup_temp_path
 
 logger = logging.getLogger("workbench-agent")
+
+# Minimum FossID Toolbox version supported by this Workbench Agent CE release.
+# This defines the agent-to-Toolbox compatibility matrix for blind-scan.
+MINIMUM_TOOLBOX_VERSION = "1.7.5"
 
 
 class ToolboxWrapper:
@@ -75,8 +82,26 @@ class ToolboxWrapper:
             error_msg = f"Toolbox version check timed out after " f"{self.timeout} seconds"
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
+        except (PermissionError, OSError) as e:
+            # Raised when the file cannot be executed at all, e.g. it is
+            # missing the execute bit or is not a runnable binary.
+            error_msg = (
+                f"Could not run FossID Toolbox at '{self.toolbox_path}': {e}. "
+                f"Ensure the file is executable and that it points to a "
+                f"valid fossid-toolbox binary."
+            )
+            logger.error(error_msg)
+            raise ProcessError(error_msg) from e
         except subprocess.CalledProcessError as e:
-            error_msg = f"Toolbox version check failed: {e.cmd} " f"(exit code: {e.returncode})"
+            # A negative return code means the process was killed by a signal
+            # (for example -9 = SIGKILL), which usually indicates the binary
+            # could not actually run.
+            error_msg = (
+                f"Toolbox version check failed: FossID Toolbox at "
+                f"'{self.toolbox_path}' exited with code {e.returncode}. "
+                f"Ensure the file is executable and points to a valid "
+                f"fossid-toolbox binary."
+            )
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
         except Exception as e:
@@ -84,7 +109,67 @@ class ToolboxWrapper:
             logger.error(error_msg)
             raise ProcessError(error_msg) from e
 
-    def generate_hashes(self, path: str, run_dependency_analysis: bool = False) -> str:
+    def validate_toolbox_version(
+        self, version_string: str, minimum: str = MINIMUM_TOOLBOX_VERSION
+    ) -> None:
+        """
+        Validate that the Toolbox version is supported by this agent.
+
+        Parses the version number out of the raw ``--version`` output
+        (for example "FossID Toolbox version 1.7.5") and compares it
+        against the minimum supported version using semantic version
+        ordering. This enforces the Workbench Agent CE to FossID Toolbox
+        compatibility matrix for blind-scan.
+
+        Args:
+            version_string: Raw version output from get_version()
+            minimum: Minimum supported version (defaults to
+                MINIMUM_TOOLBOX_VERSION)
+
+        Raises:
+            ProcessError: If the detected version is below the minimum
+        """
+        match = re.search(r"(\d+\.\d+(?:\.\d+)*)", version_string)
+        if not match:
+            logger.warning(
+                f"Could not parse Toolbox version from '{version_string}'. "
+                f"Proceeding without a version compatibility check."
+            )
+            return
+
+        detected = match.group(1)
+        try:
+            parsed_version = packaging_version.parse(detected)
+            min_version = packaging_version.parse(minimum)
+        except packaging_version.InvalidVersion:
+            logger.warning(
+                f"Could not parse Toolbox version '{detected}'. "
+                f"Proceeding without a version compatibility check."
+            )
+            return
+
+        if parsed_version < min_version:
+            from workbench_agent import __version__
+
+            error_msg = (
+                f"FossID Toolbox {detected} is not supported. Workbench Agent "
+                f"CE {__version__} requires FossID Toolbox {minimum} or later "
+                f"for blind-scan. Please download a newer version of FossID "
+                f"Toolbox."
+            )
+            logger.error(error_msg)
+            raise ProcessError(error_msg)
+
+        logger.debug(
+            f"Toolbox version {detected} satisfies minimum supported " f"version {minimum}"
+        )
+
+    def generate_hashes(
+        self,
+        path: str,
+        run_dependency_analysis: bool = False,
+        enable_lac_extraction: bool = True,
+    ) -> str:
         """
         Generate hashes using FossID Toolbox.
 
@@ -95,6 +180,8 @@ class ToolboxWrapper:
             path: Path of the code to generate hashes for
             run_dependency_analysis: Whether to enable manifest
                 generation for dependency analysis (default: False)
+            enable_lac_extraction: Whether to enable License and Copyright
+                (LAC) extraction during hashing (default: True)
 
         Returns:
             str: Path to temporary .fossid file containing generated
@@ -127,6 +214,11 @@ class ToolboxWrapper:
             # Enable manifest for dependency analysis
             cmd_args.append("--enable-manifest=true")
             logger.debug("Manifest capture enabled for dependency analysis")
+
+        if enable_lac_extraction:
+            # Enable License and Copyright (LAC) extraction
+            cmd_args.append("--enable-la")
+            logger.debug("LAC extraction enabled")
 
         cmd_args.append(path)  # Path to scan (must be last)
         logger.debug(f"Executing fossid-toolbox hash command: {' '.join(cmd_args)}")

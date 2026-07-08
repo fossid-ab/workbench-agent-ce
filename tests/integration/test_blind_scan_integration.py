@@ -162,6 +162,114 @@ class TestBlindScanIntegration:
             combined_output = captured.out + captured.err
             assert "DEPENDENCY_ANALYSIS" in combined_output
 
+    def test_blind_scan_lac_enabled_by_default(self, mock_workbench_api, tmp_path, capsys):
+        """
+        LAC extraction is enabled by default: generate_hashes is called with
+        enable_lac_extraction=True and the version gate is validated.
+        """
+        dummy_path = create_dummy_directory(tmp_path)
+
+        mock_toolbox = MagicMock()
+        mock_toolbox.get_version.return_value = "FossID Toolbox version 1.7.5"
+        mock_fossid = tmp_path / "mock_toolbox_out_lac.fossid"
+        mock_toolbox.generate_hashes.return_value = copy_signatures_fixture_as_mock_fossid(
+            mock_fossid
+        )
+
+        with (
+            patch(
+                "workbench_agent.handlers.blind_scan.ToolboxWrapper",
+                return_value=mock_toolbox,
+            ),
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch(
+                "workbench_agent.handlers.blind_scan.cleanup_temp_path",
+                return_value=None,
+            ),
+        ):
+            args = [
+                "workbench-agent",
+                "blind-scan",
+                "--api-url",
+                "http://dummy.com",
+                "--api-user",
+                "test",
+                "--api-token",
+                "token",
+                "--project-name",
+                "TestProject",
+                "--scan-name",
+                "TestBlindScanLac",
+                "--path",
+                dummy_path,
+                "--fossid-toolbox-path",
+                "/usr/bin/fossid-toolbox",
+            ]
+
+            with patch.object(sys, "argv", args):
+                return_code = main()
+                assert return_code == 0, "Command should exit with success code"
+
+        mock_toolbox.validate_toolbox_version.assert_called_once()
+        _, kwargs = mock_toolbox.generate_hashes.call_args
+        assert kwargs.get("enable_lac_extraction") is True
+
+    def test_blind_scan_skip_lac_extraction(self, mock_workbench_api, tmp_path, capsys):
+        """
+        --skip-lac-extraction disables LAC: generate_hashes is called with
+        enable_lac_extraction=False. The Toolbox version compatibility check
+        still runs regardless of the LAC flag.
+        """
+        dummy_path = create_dummy_directory(tmp_path)
+
+        mock_toolbox = MagicMock()
+        mock_toolbox.get_version.return_value = "FossID Toolbox version 1.7.5"
+        mock_fossid = tmp_path / "mock_toolbox_out_skiplac.fossid"
+        mock_toolbox.generate_hashes.return_value = copy_signatures_fixture_as_mock_fossid(
+            mock_fossid
+        )
+
+        with (
+            patch(
+                "workbench_agent.handlers.blind_scan.ToolboxWrapper",
+                return_value=mock_toolbox,
+            ),
+            patch("os.path.exists", return_value=True),
+            patch("os.path.isdir", return_value=True),
+            patch(
+                "workbench_agent.handlers.blind_scan.cleanup_temp_path",
+                return_value=None,
+            ),
+        ):
+            args = [
+                "workbench-agent",
+                "blind-scan",
+                "--api-url",
+                "http://dummy.com",
+                "--api-user",
+                "test",
+                "--api-token",
+                "token",
+                "--project-name",
+                "TestProject",
+                "--scan-name",
+                "TestBlindScanSkipLac",
+                "--path",
+                dummy_path,
+                "--skip-lac-extraction",
+                "--fossid-toolbox-path",
+                "/usr/bin/fossid-toolbox",
+            ]
+
+            with patch.object(sys, "argv", args):
+                return_code = main()
+                assert return_code == 0, "Command should exit with success code"
+
+        mock_toolbox.validate_toolbox_version.assert_called_once()
+        _, kwargs = mock_toolbox.generate_hashes.call_args
+        assert kwargs.get("enable_lac_extraction") is False
+
     def test_blind_scan_no_wait_mode(self, mock_workbench_api, tmp_path, capsys):
         """
         Test blind-scan command with --no-wait flag.

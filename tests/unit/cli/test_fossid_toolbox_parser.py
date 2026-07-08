@@ -29,3 +29,13 @@ class TestFossidToolboxParser:
         )
         assert args.fossid_toolbox_path == "/opt/fossid-toolbox"
         assert args.fossid_toolbox_timeout == 600
+
+    def test_skip_lac_extraction_default_off(self):
+        parser = create_fossid_toolbox_parser()
+        args = parser.parse_args([])
+        assert args.skip_lac_extraction is False
+
+    def test_skip_lac_extraction_flag(self):
+        parser = create_fossid_toolbox_parser()
+        args = parser.parse_args(["--skip-lac-extraction"])
+        assert args.skip_lac_extraction is True
