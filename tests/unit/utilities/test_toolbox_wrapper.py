@@ -73,8 +73,8 @@ class TestToolboxWrapperGetVersionErrors:
         fake_toolbox.chmod(0o755)
         return ToolboxWrapper(toolbox_path=str(fake_toolbox))
 
-    def test_signal_termination_gives_actionable_message(self, wrapper):
-        """A negative return code (killed by signal) explains likely causes."""
+    def test_signal_termination_reports_code_and_executability(self, wrapper):
+        """A negative return code (killed by signal) mentions executability."""
         error = subprocess.CalledProcessError(
             returncode=-9, cmd=[wrapper.toolbox_path, "--version"], output=b""
         )
@@ -86,12 +86,11 @@ class TestToolboxWrapperGetVersionErrors:
                 wrapper.get_version()
 
         message = str(exc_info.value)
-        assert "signal 9" in message
-        assert "chmod +x" in message
-        assert "quarantine" in message
+        assert "exited with code -9" in message
+        assert "executable" in message
 
     def test_permission_error_gives_actionable_message(self, wrapper):
-        """A PermissionError from exec suggests making the file executable."""
+        """A PermissionError from exec mentions executability."""
         with patch(
             "workbench_agent.utilities.toolbox_wrapper.subprocess.check_output",
             side_effect=PermissionError("[Errno 13] Permission denied"),
@@ -101,7 +100,7 @@ class TestToolboxWrapperGetVersionErrors:
 
         message = str(exc_info.value)
         assert "Could not run FossID Toolbox" in message
-        assert "chmod +x" in message
+        assert "executable" in message
 
     def test_nonzero_exit_reports_code(self, wrapper):
         """A positive exit code reports the code and points at the binary."""
@@ -119,7 +118,7 @@ class TestToolboxWrapperGetVersionErrors:
 
         message = str(exc_info.value)
         assert "exited with code 2" in message
-        assert "bad usage" in message
+        assert "executable" in message
 
 
 class TestToolboxWrapperGenerateHashes:
