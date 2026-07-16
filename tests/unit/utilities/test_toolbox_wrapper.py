@@ -11,7 +11,10 @@ import pytest
 
 from workbench_agent.api.exceptions import ProcessError
 from workbench_agent.exceptions import FileSystemError
-from workbench_agent.utilities.toolbox_wrapper import ToolboxWrapper
+from workbench_agent.utilities.toolbox_wrapper import (
+    MINIMUM_TOOLBOX_VERSION,
+    ToolboxWrapper,
+)
 
 
 class TestToolboxWrapperInitialization:
@@ -57,6 +60,65 @@ class TestToolboxWrapperGetVersion:
         assert version is not None
         assert len(version) > 0
         assert "fossid" in version.lower() or "toolbox" in version.lower()
+
+
+class TestToolboxWrapperGetVersionErrors:
+    """Tests for actionable error messages from get_version."""
+
+    @pytest.fixture
+    def wrapper(self, tmp_path):
+        """Wrapper backed by a fake executable file."""
+        fake_toolbox = tmp_path / "fossid-toolbox"
+        fake_toolbox.write_text("#!/bin/sh\nexit 0\n")
+        fake_toolbox.chmod(0o755)
+        return ToolboxWrapper(toolbox_path=str(fake_toolbox))
+
+    def test_signal_termination_reports_code_and_executability(self, wrapper):
+        """A negative return code (killed by signal) mentions executability."""
+        error = subprocess.CalledProcessError(
+            returncode=-9, cmd=[wrapper.toolbox_path, "--version"], output=b""
+        )
+        with patch(
+            "workbench_agent.utilities.toolbox_wrapper.subprocess.check_output",
+            side_effect=error,
+        ):
+            with pytest.raises(ProcessError) as exc_info:
+                wrapper.get_version()
+
+        message = str(exc_info.value)
+        assert "exited with code -9" in message
+        assert "executable" in message
+
+    def test_permission_error_gives_actionable_message(self, wrapper):
+        """A PermissionError from exec mentions executability."""
+        with patch(
+            "workbench_agent.utilities.toolbox_wrapper.subprocess.check_output",
+            side_effect=PermissionError("[Errno 13] Permission denied"),
+        ):
+            with pytest.raises(ProcessError) as exc_info:
+                wrapper.get_version()
+
+        message = str(exc_info.value)
+        assert "Could not run FossID Toolbox" in message
+        assert "executable" in message
+
+    def test_nonzero_exit_reports_code(self, wrapper):
+        """A positive exit code reports the code and points at the binary."""
+        error = subprocess.CalledProcessError(
+            returncode=2,
+            cmd=[wrapper.toolbox_path, "--version"],
+            output=b"bad usage",
+        )
+        with patch(
+            "workbench_agent.utilities.toolbox_wrapper.subprocess.check_output",
+            side_effect=error,
+        ):
+            with pytest.raises(ProcessError) as exc_info:
+                wrapper.get_version()
+
+        message = str(exc_info.value)
+        assert "exited with code 2" in message
+        assert "executable" in message
 
 
 class TestToolboxWrapperGenerateHashes:
@@ -222,3 +284,102 @@ class TestToolboxWrapperTempFileSafety:
 
         assert "path" in captured
         assert not os.path.exists(captured["path"])
+
+
+class TestToolboxWrapperLacExtraction:
+    """Tests for LAC extraction flag handling in generate_hashes."""
+
+    @pytest.fixture
+    def wrapper(self, tmp_path):
+        """Wrapper backed by a fake executable file."""
+        fake_toolbox = tmp_path / "fossid-toolbox"
+        fake_toolbox.write_text("#!/bin/sh\nexit 0\n")
+        fake_toolbox.chmod(0o755)
+        return ToolboxWrapper(toolbox_path=str(fake_toolbox))
+
+    def _capture_cmd_args(self, wrapper, scan_target, **kwargs):
+        """Run generate_hashes with subprocess mocked and return cmd_args."""
+        captured: dict = {}
+
+        completed = MagicMock()
+        completed.returncode = 0
+        completed.stderr = ""
+
+        def fake_run(cmd_args, *_args, **_kwargs):
+            captured["cmd_args"] = cmd_args
+            return completed
+
+        with patch(
+            "workbench_agent.utilities.toolbox_wrapper.subprocess.run",
+            side_effect=fake_run,
+        ):
+            result_path = wrapper.generate_hashes(str(scan_target), **kwargs)
+
+        if os.path.exists(result_path):
+            os.unlink(result_path)
+
+        return captured["cmd_args"]
+
+    def test_lac_enabled_by_default(self, wrapper, tmp_path):
+        """--enable-la is appended when enable_lac_extraction defaults on."""
+        scan_target = tmp_path / "src.py"
+        scan_target.write_text("x = 1\n")
+
+        cmd_args = self._capture_cmd_args(wrapper, scan_target)
+
+        assert "--enable-la" in cmd_args
+
+    def test_lac_disabled_omits_flag(self, wrapper, tmp_path):
+        """--enable-la is not appended when enable_lac_extraction is False."""
+        scan_target = tmp_path / "src.py"
+        scan_target.write_text("x = 1\n")
+
+        cmd_args = self._capture_cmd_args(wrapper, scan_target, enable_lac_extraction=False)
+
+        assert "--enable-la" not in cmd_args
+
+    def test_path_is_last_argument_with_lac(self, wrapper, tmp_path):
+        """Scan path remains the final argument when LAC is enabled."""
+        scan_target = tmp_path / "src.py"
+        scan_target.write_text("x = 1\n")
+
+        cmd_args = self._capture_cmd_args(wrapper, scan_target)
+
+        assert cmd_args[-1] == str(scan_target)
+
+
+class TestToolboxWrapperValidateVersion:
+    """Tests for validate_toolbox_version."""
+
+    @pytest.fixture
+    def wrapper(self, tmp_path):
+        """Wrapper backed by a fake executable file."""
+        fake_toolbox = tmp_path / "fossid-toolbox"
+        fake_toolbox.write_text("#!/bin/sh\nexit 0\n")
+        fake_toolbox.chmod(0o755)
+        return ToolboxWrapper(toolbox_path=str(fake_toolbox))
+
+    def test_version_at_minimum_passes(self, wrapper):
+        """Exact minimum supported version passes without raising."""
+        wrapper.validate_toolbox_version(f"FossID Toolbox version {MINIMUM_TOOLBOX_VERSION}")
+
+    def test_version_above_minimum_passes(self, wrapper):
+        """Version above the minimum passes without raising."""
+        wrapper.validate_toolbox_version("FossID Toolbox version 1.8.0")
+
+    def test_version_below_minimum_raises(self, wrapper):
+        """Version below the minimum raises ProcessError."""
+        with pytest.raises(ProcessError, match="is not supported"):
+            wrapper.validate_toolbox_version("FossID Toolbox version 1.7.4")
+
+    def test_below_minimum_message_prompts_download(self, wrapper):
+        """The error prompts the user to download a newer Toolbox."""
+        with pytest.raises(ProcessError) as exc_info:
+            wrapper.validate_toolbox_version("FossID Toolbox version 1.0.0")
+        message = str(exc_info.value)
+        assert MINIMUM_TOOLBOX_VERSION in message
+        assert "download a newer version" in message
+
+    def test_unparseable_version_does_not_raise(self, wrapper):
+        """A version string without a number is tolerated with a warning."""
+        wrapper.validate_toolbox_version("FossID Toolbox (dev build)")

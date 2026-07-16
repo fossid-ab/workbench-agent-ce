@@ -188,10 +188,16 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
             version = toolbox_wrapper.get_version()
             print(f"Using {version}")
 
+            # Enforce the agent-to-Toolbox compatibility matrix for blind-scan.
+            toolbox_wrapper.validate_toolbox_version(version)
+
+            enable_lac = not getattr(params, "skip_lac_extraction", False)
+
             print("\nHashing Target Path with Toolbox...")
             hash_file_path = toolbox_wrapper.generate_hashes(
                 path=params.path,
                 run_dependency_analysis=getattr(params, "run_dependency_analysis", False),
+                enable_lac_extraction=enable_lac,
             )
             should_cleanup = True
 
