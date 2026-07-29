@@ -57,6 +57,8 @@ def _validate_command_specific_args(args: Namespace) -> None:
 
     if command in ["scan", "scan-git", "blind-scan"]:
         _validate_scan_commands(args)
+    elif command == "analyze":
+        _validate_analyze_command(args)
     elif command in ["import-da", "import-sbom"]:
         _validate_import_commands(args)
     elif command == "download-reports":
@@ -65,6 +67,55 @@ def _validate_command_specific_args(args: Namespace) -> None:
         _validate_show_results_command(args)
     elif command == "quick-scan":
         _validate_quick_scan_command(args)
+
+
+def _validate_analyze_command(args: Namespace) -> None:
+    """Validate the analyze command (fda pipeline + first-party KB scan)."""
+    input_path = getattr(args, "input", None)
+    if not input_path:
+        raise ValidationError("analyze requires -i/--input <path/to/project>")
+    if not os.path.exists(input_path):
+        raise ValidationError(f"Input path does not exist: {input_path}")
+    if not os.path.isdir(input_path):
+        raise ValidationError(
+            f"analyze -i/--input must be a project directory: {input_path}"
+        )
+
+    ecosystem = (getattr(args, "ecosystem", None) or "").strip().lower()
+    if ecosystem != "bazel":
+        raise ValidationError(
+            f"analyze currently supports only -e bazel (got {ecosystem!r})"
+        )
+
+    bazel_target = getattr(args, "bazel_target", None)
+    if not bazel_target or not str(bazel_target).strip():
+        raise ValidationError(
+            "analyze with -e bazel requires --bazel-target "
+            "(e.g. --bazel-target '//myapp:app')"
+        )
+
+    bazel_mode = getattr(args, "bazel_mode", None)
+    if bazel_mode is not None:
+        normalized = str(bazel_mode).strip().upper()
+        if normalized not in {"BZLMOD", "WORKSPACE"}:
+            raise ValidationError(
+                f"invalid --bazel-mode '{bazel_mode}'; expected BZLMOD or WORKSPACE"
+            )
+        args.bazel_mode = normalized
+
+    fda_timeout = getattr(args, "fda_timeout", None)
+    if fda_timeout is not None and fda_timeout <= 0:
+        raise ValidationError("--fda-timeout must be a positive integer.")
+
+    fossid_conf_path = getattr(args, "fossid_conf_path", None)
+    if fossid_conf_path and not os.path.isfile(fossid_conf_path):
+        raise ValidationError(f"fossid.conf not found: {fossid_conf_path}")
+
+    toolbox_timeout = getattr(args, "fossid_toolbox_timeout", None)
+    if toolbox_timeout is not None and toolbox_timeout <= 0:
+        raise ValidationError("fossid-toolbox-timeout must be a positive integer.")
+
+    _validate_id_reuse_args(args)
 
 
 def _validate_scan_commands(args: Namespace) -> None:

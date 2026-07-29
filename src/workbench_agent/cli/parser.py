@@ -151,6 +151,151 @@ Examples:
         metavar="PATH",
     )
 
+    # --- 'analyze' Subcommand ---
+    analyze_parser = subparsers.add_parser(
+        "analyze",
+        help=(
+            "Run FossID-DA pipeline mode and import results into Workbench "
+            "(Bazel: also KB-scans first-party sources)"
+        ),
+        description=(
+            "Analyze a build-tool project with FossID-DA pipeline mode and "
+            "import the dependency graph into a Workbench scan.\n\n"
+            "For Bazel, first-party sources of --bazel-target are also "
+            "KB-scanned into the same Project/Scan so managed packages "
+            "(fda) and unmanaged/source matches (KB) land together.\n\n"
+            "By default those sources are uploaded (regular scan). Pass "
+            "--blind-scan to hash with FossID Toolbox instead.\n\n"
+            "Pipeline flags mirror fda --pipeline. First pass supports "
+            "Bazel only (-e bazel)."
+        ),
+        formatter_class=RawTextHelpFormatter,
+        parents=[
+            parent_parsers["cli_behaviors"],
+            parent_parsers["workbench_connection"],
+            parent_parsers["project_scan_target"],
+            parent_parsers["archive_operations"],
+            parent_parsers["fossid_toolbox"],
+            parent_parsers["scan_control"],
+            parent_parsers["id_assist_control"],
+            parent_parsers["identification_control"],
+            parent_parsers["monitoring"],
+        ],
+        epilog="""
+Examples:
+  # Bazel: managed deps (fda) + upload first-party sources (default)
+  workbench-agent analyze \\
+      -i /path/to/workspace -e bazel --bazel-target //myapp:app \\
+      --project-name "MyApp" --scan-name "myapp@1.0.0"
+
+  # Same, but blind-scan first-party sources (hashes only)
+  workbench-agent analyze \\
+      -i /path/to/workspace -e bazel --bazel-target //myapp:app \\
+      --project-name "MyApp" --scan-name "myapp@1.0.0" \\
+      --blind-scan
+
+  # Custom fda / bazel binaries
+  workbench-agent analyze \\
+      -i . -e bazel --bazel-target //:bin \\
+      --fda-path /opt/fossid/fda --bazel-path /usr/local/bin/bazelisk \\
+      --project-name "MyApp" --scan-name "bin@HEAD"
+""",
+    )
+    analyze_parser.add_argument(
+        "-i",
+        "--input",
+        dest="input",
+        help="Path to the project/workspace directory (passed to fda --input)",
+        required=True,
+        metavar="PATH",
+    )
+    analyze_parser.add_argument(
+        "-e",
+        "--ecosystem",
+        dest="ecosystem",
+        help=(
+            "Build-tool ecosystem for fda pipeline mode. "
+            "First pass: bazel only (maven/gradle coming later)."
+        ),
+        required=True,
+        choices=["bazel"],
+        metavar="ECOSYSTEM",
+    )
+    analyze_parser.add_argument(
+        "--bazel-target",
+        dest="bazel_target",
+        help=(
+            "Bazel build target whose deps() are analyzed, "
+            "e.g. //myapp:app (required for -e bazel)"
+        ),
+        required=False,
+        metavar="TARGET",
+    )
+    analyze_parser.add_argument(
+        "--bazel-path",
+        dest="bazel_path",
+        help="Path to the bazel executable (default: bazel/bazelisk on PATH)",
+        required=False,
+        metavar="PATH",
+    )
+    analyze_parser.add_argument(
+        "--bazel-mode",
+        dest="bazel_mode",
+        help="Force Bazel mode: BZLMOD or WORKSPACE (auto-detected if omitted)",
+        required=False,
+        choices=["BZLMOD", "WORKSPACE", "bzlmod", "workspace"],
+        metavar="MODE",
+    )
+    analyze_parser.add_argument(
+        "--fda-path",
+        dest="fda_path",
+        help="Path to the fda executable (default: fda on PATH)",
+        required=False,
+        metavar="PATH",
+    )
+    analyze_parser.add_argument(
+        "-c",
+        "--fossid-conf-path",
+        dest="fossid_conf_path",
+        help="Path to fossid.conf passed through to fda (writable da_logs_path, KB host, …)",
+        required=False,
+        metavar="PATH",
+    )
+    analyze_parser.add_argument(
+        "--fda-timeout",
+        dest="fda_timeout",
+        help="Maximum seconds to wait for fda --pipeline (Default: 3600)",
+        type=int,
+        default=3600,
+        metavar="SECONDS",
+    )
+    analyze_parser.add_argument(
+        "--blind-scan",
+        dest="blind_scan",
+        help=(
+            "Hash first-party sources with FossID Toolbox instead of "
+            "uploading source content (default: upload)."
+        ),
+        action="store_true",
+        default=False,
+    )
+    analyze_parser.add_argument(
+        "--no-wait",
+        help="Exit after starting scans/imports instead of waiting.",
+        action="store_true",
+        default=False,
+    )
+    # Defaults expected by execute_scan_workflow / start_scan / upload path.
+    analyze_parser.set_defaults(
+        run_dependency_analysis=False,
+        dependency_analysis_only=False,
+        delta_scan=False,
+        scan_failed_only=False,
+        full_file_only=False,
+        replace_existing_identifications=False,
+        incremental_upload=False,
+    )
+
     # --- 'import-da' Subcommand ---
     import_da_parser = subparsers.add_parser(
         "import-da",
