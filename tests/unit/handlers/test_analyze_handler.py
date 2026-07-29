@@ -10,6 +10,14 @@ from workbench_agent.handlers.analyze import handle_analyze
 from workbench_agent.utilities.fda_wrapper import FdaPipelineResult
 
 
+def _pipeline_result():
+    return FdaPipelineResult(
+        report_path="/tmp/out/analyzer-result.json",
+        output_dir="/tmp/out",
+        sources_path="/tmp/out/first-party-sources.json",
+    )
+
+
 def _params(**overrides):
     ns = argparse.Namespace(
         command="analyze",
@@ -72,36 +80,30 @@ class TestHandleAnalyze:
     @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
     @patch("workbench_agent.handlers.analyze.stage_sources", return_value="/tmp/stage")
     @patch(
-        "workbench_agent.handlers.analyze.collect_source_files",
+        "workbench_agent.handlers.analyze.load_first_party_sources",
         return_value=["src/main.rs"],
     )
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
     @patch("workbench_agent.handlers.analyze.run_pipeline")
-    @patch("workbench_agent.handlers.analyze.resolve_bazel_path", return_value="bazel")
     @patch("workbench_agent.handlers.analyze.resolve_fda_path", return_value="fda")
     def test_default_flow_upload_then_import(
         self,
         _fda,
-        _bazel,
         mock_pipeline,
         mock_resolve,
-        mock_collect,
+        mock_load,
         mock_stage,
         mock_upload,
         mock_import,
         _rmtree,
     ):
-        mock_pipeline.return_value = FdaPipelineResult(
-            report_path="/tmp/out/analyzer-result.json",
-            output_dir="/tmp/out",
-        )
+        mock_pipeline.return_value = _pipeline_result()
         mock_resolve.return_value = ("PROJ", "SCAN", True)
         client = MagicMock()
 
         ok = handle_analyze(client, _params())
 
         assert ok is True
-        mock_collect.assert_called_once()
         mock_stage.assert_called_once()
         mock_upload.assert_called_once()
         mock_import.assert_called_once()
@@ -109,32 +111,60 @@ class TestHandleAnalyze:
 
     @patch("workbench_agent.handlers.analyze.shutil.rmtree")
     @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
-    @patch("workbench_agent.handlers.analyze._run_blind_scan_sources", return_value=True)
+    @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
     @patch("workbench_agent.handlers.analyze.stage_sources", return_value="/tmp/stage")
     @patch(
-        "workbench_agent.handlers.analyze.collect_source_files",
+        "workbench_agent.handlers.analyze.load_first_party_sources",
         return_value=["src/main.rs"],
     )
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
     @patch("workbench_agent.handlers.analyze.run_pipeline")
-    @patch("workbench_agent.handlers.analyze.resolve_bazel_path", return_value="bazel")
+    @patch("workbench_agent.handlers.analyze.resolve_fda_path", return_value="fda")
+    def test_sources_come_from_the_fda_sidecar(
+        self,
+        _fda,
+        mock_pipeline,
+        mock_resolve,
+        mock_load,
+        _stage,
+        _upload,
+        _import,
+        _rmtree,
+    ):
+        mock_pipeline.return_value = _pipeline_result()
+        mock_resolve.return_value = ("PROJ", "SCAN", True)
+        client = MagicMock()
+
+        handle_analyze(client, _params())
+
+        # fda is asked for the source list, and the agent reads exactly the
+        # sidecar fda reported — no bazel query of its own.
+        assert mock_pipeline.call_args.kwargs["emit_source_files"] is True
+        mock_load.assert_called_once_with("/tmp/out/first-party-sources.json")
+
+    @patch("workbench_agent.handlers.analyze.shutil.rmtree")
+    @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
+    @patch("workbench_agent.handlers.analyze._run_blind_scan_sources", return_value=True)
+    @patch("workbench_agent.handlers.analyze.stage_sources", return_value="/tmp/stage")
+    @patch(
+        "workbench_agent.handlers.analyze.load_first_party_sources",
+        return_value=["src/main.rs"],
+    )
+    @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
+    @patch("workbench_agent.handlers.analyze.run_pipeline")
     @patch("workbench_agent.handlers.analyze.resolve_fda_path", return_value="fda")
     def test_blind_scan_opt_in(
         self,
         _fda,
-        _bazel,
         mock_pipeline,
         mock_resolve,
-        mock_collect,
+        mock_load,
         mock_stage,
         mock_blind,
         mock_import,
         _rmtree,
     ):
-        mock_pipeline.return_value = FdaPipelineResult(
-            report_path="/tmp/out/analyzer-result.json",
-            output_dir="/tmp/out",
-        )
+        mock_pipeline.return_value = _pipeline_result()
         mock_resolve.return_value = ("PROJ", "SCAN", True)
         client = MagicMock()
 
@@ -152,26 +182,21 @@ class TestHandleAnalyze:
     @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
     @patch("workbench_agent.handlers.analyze.run_pipeline")
-    @patch("workbench_agent.handlers.analyze.resolve_bazel_path", return_value="bazel")
     @patch("workbench_agent.handlers.analyze.resolve_fda_path", return_value="fda")
     def test_empty_sources_skips_kb_still_imports(
         self,
         _fda,
-        _bazel,
         mock_pipeline,
         mock_resolve,
         mock_import,
         _rmtree,
     ):
-        mock_pipeline.return_value = FdaPipelineResult(
-            report_path="/tmp/out/analyzer-result.json",
-            output_dir="/tmp/out",
-        )
+        mock_pipeline.return_value = _pipeline_result()
         mock_resolve.return_value = ("PROJ", "SCAN", True)
         client = MagicMock()
 
         with patch(
-            "workbench_agent.handlers.analyze.collect_source_files",
+            "workbench_agent.handlers.analyze.load_first_party_sources",
             return_value=[],
         ), patch(
             "workbench_agent.handlers.analyze._run_upload_sources"

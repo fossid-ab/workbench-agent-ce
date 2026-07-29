@@ -1,145 +1,83 @@
 """
-Bazel first-party source discovery for the ``analyze`` command.
+First-party source handling for the ``analyze`` command.
 
-Collects workspace source files that feed a given Bazel target so they
-can be KB-scanned (unmanaged / first-party code) via upload or
-``--blind-scan``. Managed package coordinates come from
-``fda --pipeline`` separately.
+``fda --pipeline --emit-source-files`` decides which workspace files feed
+the analyzed Bazel target and writes them to a ``first-party-sources.json``
+sidecar. This module reads that list and stages the files so they can be
+KB-scanned (unmanaged / first-party code) via upload or ``--blind-scan``.
+Managed package coordinates come from the fda report separately.
+
+Discovery lives in fda, not here: it already runs the Bazel queries for the
+dependency graph, so keeping one source of truth avoids the agent and fda
+disagreeing about what is in the target.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import shutil
-import subprocess
 import tempfile
-from typing import List, Optional, Set
+from typing import List
 
-from workbench_agent.api.exceptions import ProcessError
-from workbench_agent.exceptions import ValidationError
+from workbench_agent.exceptions import FileSystemError, ValidationError
 
 logger = logging.getLogger("workbench-agent")
 
-# Filenames that are build metadata, not product source.
-_SKIP_BASENAMES = {
-    "BUILD",
-    "BUILD.bazel",
-    "MODULE.bazel",
-    "MODULE.bazel.lock",
-    "WORKSPACE",
-    "WORKSPACE.bazel",
-    ".bazelrc",
-    ".bazelversion",
-}
+# Sidecar schema versions this agent understands.
+_SUPPORTED_SCHEMA_VERSIONS = {1}
 
 
-def resolve_bazel_path(configured: Optional[str]) -> str:
-    """Return the bazel executable path (configured or from PATH)."""
-    if configured:
-        if not os.path.exists(configured):
-            raise ValidationError(f"bazel not found at path: {configured}")
-        if not os.access(configured, os.X_OK):
-            raise ValidationError(f"bazel is not executable: {configured}")
-        return configured
-
-    resolved = shutil.which("bazel") or shutil.which("bazelisk")
-    if not resolved:
-        raise ValidationError(
-            "bazel not found in PATH. Install Bazel/Bazelisk or pass "
-            "--bazel-path with the path to the executable."
-        )
-    return resolved
-
-
-def label_to_workspace_path(label: str) -> Optional[str]:
+def load_first_party_sources(sidecar_path: str) -> List[str]:
     """
-    Convert a main-repo Bazel source label to a workspace-relative path.
+    Return the workspace-relative source paths listed by fda.
 
-    ``//pkg:src/main.rs`` → ``pkg/src/main.rs``
-    ``//:README.md`` → ``README.md``
-
-    Returns ``None`` for external labels (``@…``) and non-labels.
+    Reads the ``first-party-sources.json`` written by
+    ``fda --pipeline --emit-source-files``. An empty list is a valid
+    result (nothing to KB-scan); a malformed or unknown-version file is
+    an error.
     """
-    label = label.strip()
-    if not label or not label.startswith("//"):
-        return None
-    # Drop any trailing `` (config)`` annotation.
-    label = label.split(" (", 1)[0].strip()
-    body = label[2:]  # strip leading //
-    if ":" not in body:
-        return None
-    package, name = body.split(":", 1)
-    if not name or name in _SKIP_BASENAMES:
-        return None
-    if os.path.basename(name) in _SKIP_BASENAMES:
-        return None
-    if package:
-        return f"{package}/{name}"
-    return name
-
-
-def collect_source_files(
-    workspace_path: str,
-    target: str,
-    bazel_bin: str,
-    timeout: int = 180,
-) -> List[str]:
-    """
-    Return sorted workspace-relative source paths for ``deps(target)``.
-
-    Uses::
-
-        bazel query 'kind("source file", deps(<target>))' --output=label
-
-    External ``@…`` labels are dropped — those are covered by the fda
-    pipeline as managed dependencies when possible.
-    """
-    query = f'kind("source file", deps({target}))'
-    cmd = [bazel_bin, "query", query, "--output=label"]
-    logger.info("Collecting Bazel sources: %s", " ".join(cmd))
-    print(f"\nCollecting first-party sources for {target}...")
-
     try:
-        result = subprocess.run(
-            cmd,
-            cwd=workspace_path,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout,
-            check=False,
-        )
-    except subprocess.TimeoutExpired as e:
-        raise ProcessError(
-            f"bazel source query timed out after {timeout} seconds"
-        ) from e
+        with open(sidecar_path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
     except OSError as e:
-        raise ProcessError(f"Failed to run bazel at '{bazel_bin}': {e}") from e
+        raise FileSystemError(
+            f"Failed to read the fda source list at '{sidecar_path}': {e}"
+        ) from e
+    except json.JSONDecodeError as e:
+        raise FileSystemError(
+            f"The fda source list at '{sidecar_path}' is not valid JSON: {e}"
+        ) from e
 
-    if result.returncode != 0:
-        detail = (result.stderr or result.stdout or "").strip()
-        raise ProcessError(
-            f"bazel source query failed with exit code {result.returncode}"
-            + (f": {detail}" if detail else "")
+    if not isinstance(payload, dict):
+        raise FileSystemError(
+            f"The fda source list at '{sidecar_path}' is not a JSON object."
         )
 
-    paths: Set[str] = set()
-    for line in result.stdout.splitlines():
-        rel = label_to_workspace_path(line)
-        if not rel:
-            continue
-        abs_path = os.path.join(workspace_path, rel)
-        if os.path.isfile(abs_path):
-            paths.add(rel)
-        else:
-            logger.debug("Skipping missing source path: %s", rel)
+    schema_version = payload.get("schema_version")
+    if schema_version not in _SUPPORTED_SCHEMA_VERSIONS:
+        raise ValidationError(
+            f"Unsupported fda source list schema_version {schema_version!r} "
+            f"in '{sidecar_path}'. Upgrade the Workbench Agent."
+        )
 
-    ordered = sorted(paths)
-    print(f"Found {len(ordered)} first-party source file(s) for {target}")
-    logger.info("Bazel source files (%d): %s", len(ordered), ordered[:20])
-    return ordered
+    files = payload.get("files") or []
+    if not isinstance(files, list) or not all(isinstance(f, str) for f in files):
+        raise FileSystemError(
+            f"The fda source list at '{sidecar_path}' has a malformed "
+            "'files' entry; expected a list of paths."
+        )
+
+    missing = payload.get("missing") or []
+    if missing:
+        logger.info(
+            "fda reported %d source path(s) that were absent on disk", len(missing)
+        )
+
+    logger.info("fda listed %d first-party source file(s)", len(files))
+    print(f"fda listed {len(files)} first-party source file(s)")
+    return files
 
 
 def stage_sources(

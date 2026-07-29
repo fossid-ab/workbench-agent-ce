@@ -3,7 +3,8 @@ Handler for the ``analyze`` command.
 
 Orchestrates FossID-DA pipeline mode (managed dependencies) plus a
 KB scan of first-party Bazel sources (unmanaged code) into the same
-Workbench Project/Scan.
+Workbench Project/Scan. fda decides which sources belong to the target
+and reports them in a sidecar; the agent only stages and scans them.
 
 By default first-party sources are uploaded (regular scan). Pass
 ``--blind-scan`` to hash with FossID Toolbox instead of uploading
@@ -27,8 +28,7 @@ from workbench_agent.handlers.blind_scan import (
     validate_fossid_file,
 )
 from workbench_agent.utilities.bazel_sources import (
-    collect_source_files,
-    resolve_bazel_path,
+    load_first_party_sources,
     stage_sources,
 )
 from workbench_agent.utilities.error_handling import handler_error_wrapper
@@ -274,10 +274,10 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     Handler for the ``analyze`` command.
 
     Workflow (Bazel):
-    1. Run ``fda --pipeline`` for managed dependencies
-    2. Collect first-party sources via ``bazel query``
-    3. KB-scan those sources (upload by default, or ``--blind-scan``)
-    4. Import the fda ``analyzer-result.json`` into the same scan
+    1. Run ``fda --pipeline --emit-source-files`` for managed dependencies
+       plus the list of first-party sources feeding the target
+    2. KB-scan those sources (upload by default, or ``--blind-scan``)
+    3. Import the fda ``analyzer-result.json`` into the same scan
     """
     print(f"\n--- Running {params.command.upper()} Command ---")
     _ensure_bazel_params(params)
@@ -286,13 +286,12 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     blind_scan = bool(getattr(params, "blind_scan", False))
 
     fda_bin = resolve_fda_path(getattr(params, "fda_path", None))
-    bazel_bin = resolve_bazel_path(getattr(params, "bazel_path", None))
 
     pipeline_result = None
     staging_dir = None
 
     try:
-        # --- 1. Managed deps via fda pipeline ---
+        # --- 1. Managed deps + first-party source list via fda pipeline ---
         pipeline_result = run_pipeline(
             fda_bin=fda_bin,
             input_path=input_path,
@@ -300,20 +299,17 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
             bazel_target=params.bazel_target,
             bazel_path=getattr(params, "bazel_path", None),
             bazel_mode=getattr(params, "bazel_mode", None),
+            emit_source_files=True,
             fossid_conf_path=getattr(params, "fossid_conf_path", None),
             timeout=int(getattr(params, "fda_timeout", 3600)),
         )
 
-        # --- 2/3. First-party KB scan (upload or blind) ---
+        # --- 2. First-party KB scan (upload or blind) ---
         print("\n--- Project and Scan Checks ---")
         print("Checking target Project and Scan...")
         _, scan_code, scan_is_new = find_or_create_project_and_scan(client, params)
 
-        sources = collect_source_files(
-            workspace_path=input_path,
-            target=params.bazel_target,
-            bazel_bin=bazel_bin,
-        )
+        sources = load_first_party_sources(pipeline_result.sources_path)
         if not sources:
             print(
                 "\nNo first-party source files found for "
@@ -333,7 +329,7 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
             if not kb_ok:
                 return False
 
-        # --- 4. Import fda report into the same scan ---
+        # --- 3. Import fda report into the same scan ---
         return _import_da_report(
             client,
             params,
