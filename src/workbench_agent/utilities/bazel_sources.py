@@ -1,15 +1,16 @@
 """
 First-party source handling for the ``analyze`` command.
 
-``fda --pipeline --emit-source-files`` decides which workspace files feed
-the analyzed Bazel target and writes them to a ``first-party-sources.json``
-sidecar. This module reads that list and stages the files so they can be
-KB-scanned (unmanaged / first-party code) via upload or ``--blind-scan``.
-Managed package coordinates come from the fda report separately.
+``fossid-toolbox da --pipeline --emit-source-files`` decides which workspace
+files feed the analyzed Bazel target and writes them to a
+``first-party-sources.json`` sidecar. This module reads that list and stages
+the files so they can be KB-scanned (unmanaged / first-party code) via upload
+or ``--blind-scan``. Managed package coordinates come from the Toolbox DA
+report separately.
 
-Discovery lives in fda, not here: it already runs the Bazel queries for the
-dependency graph, so keeping one source of truth avoids the agent and fda
-disagreeing about what is in the target.
+Discovery lives in Toolbox DA, not here: it already runs the Bazel queries
+for the dependency graph, so keeping one source of truth avoids the agent
+and Toolbox disagreeing about what is in the target.
 """
 
 from __future__ import annotations
@@ -31,52 +32,54 @@ _SUPPORTED_SCHEMA_VERSIONS = {1}
 
 def load_first_party_sources(sidecar_path: str) -> List[str]:
     """
-    Return the workspace-relative source paths listed by fda.
+    Return the workspace-relative source paths listed by Toolbox DA.
 
     Reads the ``first-party-sources.json`` written by
-    ``fda --pipeline --emit-source-files``. An empty list is a valid
-    result (nothing to KB-scan); a malformed or unknown-version file is
-    an error.
+    ``fossid-toolbox da --pipeline --emit-source-files``. An empty list
+    is a valid result (nothing to KB-scan); a malformed or
+    unknown-version file is an error.
     """
     try:
         with open(sidecar_path, "r", encoding="utf-8") as handle:
             payload = json.load(handle)
     except OSError as e:
         raise FileSystemError(
-            f"Failed to read the fda source list at '{sidecar_path}': {e}"
+            f"Failed to read the Toolbox DA source list at '{sidecar_path}': {e}"
         ) from e
     except json.JSONDecodeError as e:
         raise FileSystemError(
-            f"The fda source list at '{sidecar_path}' is not valid JSON: {e}"
+            f"The Toolbox DA source list at '{sidecar_path}' is not valid JSON: {e}"
         ) from e
 
     if not isinstance(payload, dict):
         raise FileSystemError(
-            f"The fda source list at '{sidecar_path}' is not a JSON object."
+            f"The Toolbox DA source list at '{sidecar_path}' is not a JSON object."
         )
 
     schema_version = payload.get("schema_version")
     if schema_version not in _SUPPORTED_SCHEMA_VERSIONS:
         raise ValidationError(
-            f"Unsupported fda source list schema_version {schema_version!r} "
-            f"in '{sidecar_path}'. Upgrade the Workbench Agent."
+            f"Unsupported Toolbox DA source list schema_version "
+            f"{schema_version!r} in '{sidecar_path}'. Upgrade the "
+            "Workbench Agent."
         )
 
     files = payload.get("files") or []
     if not isinstance(files, list) or not all(isinstance(f, str) for f in files):
         raise FileSystemError(
-            f"The fda source list at '{sidecar_path}' has a malformed "
-            "'files' entry; expected a list of paths."
+            f"The Toolbox DA source list at '{sidecar_path}' has a "
+            "malformed 'files' entry; expected a list of paths."
         )
 
     missing = payload.get("missing") or []
     if missing:
         logger.info(
-            "fda reported %d source path(s) that were absent on disk", len(missing)
+            "Toolbox DA reported %d source path(s) that were absent on disk",
+            len(missing),
         )
 
-    logger.info("fda listed %d first-party source file(s)", len(files))
-    print(f"fda listed {len(files)} first-party source file(s)")
+    logger.info("Toolbox DA listed %d first-party source file(s)", len(files))
+    print(f"Toolbox DA listed {len(files)} first-party source file(s)")
     return files
 
 

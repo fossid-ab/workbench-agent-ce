@@ -155,22 +155,24 @@ Examples:
     analyze_parser = subparsers.add_parser(
         "analyze",
         help=(
-            "Run FossID-DA pipeline mode and import results into Workbench "
-            "(Bazel: also KB-scans first-party sources)"
+            "Run FossID Toolbox DA pipeline mode and import results into "
+            "Workbench (Bazel: also KB-scans first-party sources)"
         ),
         description=(
-            "Analyze a build-tool project with FossID-DA pipeline mode and "
-            "import the dependency graph into a Workbench scan.\n\n"
+            "Analyze a build-tool project with FossID Toolbox DA pipeline "
+            "mode (fossid-toolbox da) and import the dependency graph into "
+            "a Workbench scan.\n\n"
+            "Requires FossID Toolbox 1.7.11 or later.\n\n"
             "For Bazel, first-party sources of --bazel-target are also "
             "KB-scanned into the same Project/Scan so managed packages "
-            "(fda) and unmanaged/source matches (KB) land together. fda "
-            "reports which sources feed the target (--emit-source-files); "
-            "the agent stages and scans exactly that list, so it requires "
-            "an fda build that supports the flag.\n\n"
+            "(Toolbox DA) and unmanaged/source matches (KB) land together. "
+            "Toolbox reports which sources feed the target "
+            "(--emit-source-files); the agent stages and scans exactly "
+            "that list.\n\n"
             "By default those sources are uploaded (regular scan). Pass "
             "--blind-scan to hash with FossID Toolbox instead.\n\n"
-            "Pipeline flags mirror fda --pipeline. First pass supports "
-            "Bazel only (-e bazel)."
+            "Pipeline flags are passed through to fossid-toolbox da "
+            "--pipeline. First pass supports Bazel only (-e bazel)."
         ),
         formatter_class=RawTextHelpFormatter,
         parents=[
@@ -186,7 +188,7 @@ Examples:
         ],
         epilog="""
 Examples:
-  # Bazel: managed deps (fda) + upload first-party sources (default)
+  # Bazel: managed deps (Toolbox DA) + upload first-party sources (default)
   workbench-agent analyze \\
       -i /path/to/workspace -e bazel --bazel-target //myapp:app \\
       --project-name "MyApp" --scan-name "myapp@1.0.0"
@@ -197,10 +199,10 @@ Examples:
       --project-name "MyApp" --scan-name "myapp@1.0.0" \\
       --blind-scan
 
-  # Custom fda / bazel binaries
+  # Custom fossid-toolbox / bazel binaries
   workbench-agent analyze \\
       -i . -e bazel --bazel-target //:bin \\
-      --fda-path /opt/fossid/fda --bazel-path /usr/local/bin/bazelisk \\
+      --fossid-toolbox-path /opt/fossid/fossid-toolbox --bazel-path /usr/local/bin/bazelisk \\
       --project-name "MyApp" --scan-name "bin@HEAD"
 """,
     )
@@ -208,7 +210,10 @@ Examples:
         "-i",
         "--input",
         dest="input",
-        help="Path to the project/workspace directory (passed to fda --input)",
+        help=(
+            "Path to the project/workspace directory "
+            "(passed to fossid-toolbox da --input)"
+        ),
         required=True,
         metavar="PATH",
     )
@@ -217,7 +222,7 @@ Examples:
         "--ecosystem",
         dest="ecosystem",
         help=(
-            "Build-tool ecosystem for fda pipeline mode. "
+            "Build-tool ecosystem for Toolbox DA pipeline mode. "
             "First pass: bazel only (maven/gradle coming later)."
         ),
         required=True,
@@ -250,24 +255,23 @@ Examples:
         metavar="MODE",
     )
     analyze_parser.add_argument(
-        "--fda-path",
-        dest="fda_path",
-        help="Path to the fda executable (default: fda on PATH)",
-        required=False,
-        metavar="PATH",
-    )
-    analyze_parser.add_argument(
         "-c",
         "--fossid-conf-path",
         dest="fossid_conf_path",
-        help="Path to fossid.conf passed through to fda (writable da_logs_path, KB host, …)",
+        help=(
+            "Path to fossid.conf passed through to fossid-toolbox da "
+            "(writable da_logs_path, KB host, …)"
+        ),
         required=False,
         metavar="PATH",
     )
     analyze_parser.add_argument(
-        "--fda-timeout",
-        dest="fda_timeout",
-        help="Maximum seconds to wait for fda --pipeline (Default: 3600)",
+        "--da-timeout",
+        dest="da_timeout",
+        help=(
+            "Maximum seconds to wait for fossid-toolbox da --pipeline "
+            "(Default: 3600)"
+        ),
         type=int,
         default=3600,
         metavar="SECONDS",

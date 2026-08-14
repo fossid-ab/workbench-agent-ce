@@ -1,10 +1,11 @@
 """
 Handler for the ``analyze`` command.
 
-Orchestrates FossID-DA pipeline mode (managed dependencies) plus a
-KB scan of first-party Bazel sources (unmanaged code) into the same
-Workbench Project/Scan. fda decides which sources belong to the target
-and reports them in a sidecar; the agent only stages and scans them.
+Orchestrates FossID Toolbox DA pipeline mode (managed dependencies)
+plus a KB scan of first-party Bazel sources (unmanaged code) into the
+same Workbench Project/Scan. Toolbox decides which sources belong to
+the target and reports them in a sidecar; the agent only stages and
+scans them.
 
 By default first-party sources are uploaded (regular scan). Pass
 ``--blind-scan`` to hash with FossID Toolbox instead of uploading
@@ -32,7 +33,6 @@ from workbench_agent.utilities.bazel_sources import (
     stage_sources,
 )
 from workbench_agent.utilities.error_handling import handler_error_wrapper
-from workbench_agent.utilities.fda_wrapper import resolve_fda_path, run_pipeline
 from workbench_agent.utilities.post_import_summary import print_import_summary
 from workbench_agent.utilities.pre_flight_checks import (
     blind_scan_pre_flight_check,
@@ -43,7 +43,10 @@ from workbench_agent.utilities.resolve_project_scan import (
     find_or_create_project_and_scan,
 )
 from workbench_agent.utilities.scan_workflows import execute_scan_workflow
-from workbench_agent.utilities.toolbox_wrapper import ToolboxWrapper
+from workbench_agent.utilities.toolbox_wrapper import (
+    MINIMUM_TOOLBOX_DA_VERSION,
+    ToolboxWrapper,
+)
 from workbench_agent.utilities.upload_data_prep import (
     cleanup_temp_path,
     prepare_scan_target,
@@ -72,7 +75,7 @@ def _ensure_bazel_params(params: argparse.Namespace) -> None:
 
 
 def _force_kb_only(params: argparse.Namespace) -> None:
-    """Managed deps come from fda import-da, not Workbench DA."""
+    """Managed deps come from Toolbox DA import, not Workbench DA."""
     params.run_dependency_analysis = False
     params.dependency_analysis_only = False
 
@@ -274,10 +277,11 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     Handler for the ``analyze`` command.
 
     Workflow (Bazel):
-    1. Run ``fda --pipeline --emit-source-files`` for managed dependencies
-       plus the list of first-party sources feeding the target
+    1. Run ``fossid-toolbox da --pipeline --emit-source-files`` for
+       managed dependencies plus the list of first-party sources
+       feeding the target
     2. KB-scan those sources (upload by default, or ``--blind-scan``)
-    3. Import the fda ``analyzer-result.json`` into the same scan
+    3. Import the Toolbox ``analyzer-result.json`` into the same scan
     """
     print(f"\n--- Running {params.command.upper()} Command ---")
     _ensure_bazel_params(params)
@@ -285,15 +289,26 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     input_path = params.input
     blind_scan = bool(getattr(params, "blind_scan", False))
 
-    fda_bin = resolve_fda_path(getattr(params, "fda_path", None))
+    toolbox_wrapper = ToolboxWrapper(
+        toolbox_path=resolve_fossid_toolbox_path(
+            getattr(params, "fossid_toolbox_path", None)
+        ),
+        timeout=str(getattr(params, "fossid_toolbox_timeout", 300)),
+    )
+    version = toolbox_wrapper.get_version()
+    print(f"Using {version}")
+    toolbox_wrapper.validate_toolbox_version(
+        version,
+        minimum=MINIMUM_TOOLBOX_DA_VERSION,
+        purpose="analyze",
+    )
 
     pipeline_result = None
     staging_dir = None
 
     try:
-        # --- 1. Managed deps + first-party source list via fda pipeline ---
-        pipeline_result = run_pipeline(
-            fda_bin=fda_bin,
+        # --- 1. Managed deps + first-party source list via Toolbox DA ---
+        pipeline_result = toolbox_wrapper.run_da_pipeline(
             input_path=input_path,
             ecosystem=params.ecosystem,
             bazel_target=params.bazel_target,
@@ -301,7 +316,7 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
             bazel_mode=getattr(params, "bazel_mode", None),
             emit_source_files=True,
             fossid_conf_path=getattr(params, "fossid_conf_path", None),
-            timeout=int(getattr(params, "fda_timeout", 3600)),
+            timeout=int(getattr(params, "da_timeout", 3600)),
         )
 
         # --- 2. First-party KB scan (upload or blind) ---
@@ -329,7 +344,7 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
             if not kb_ok:
                 return False
 
-        # --- 3. Import fda report into the same scan ---
+        # --- 3. Import Toolbox DA report into the same scan ---
         return _import_da_report(
             client,
             params,

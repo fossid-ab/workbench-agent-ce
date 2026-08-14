@@ -7,11 +7,11 @@ import pytest
 
 from workbench_agent.exceptions import ValidationError
 from workbench_agent.handlers.analyze import handle_analyze
-from workbench_agent.utilities.fda_wrapper import FdaPipelineResult
+from workbench_agent.utilities.toolbox_wrapper import DaPipelineResult
 
 
 def _pipeline_result():
-    return FdaPipelineResult(
+    return DaPipelineResult(
         report_path="/tmp/out/analyzer-result.json",
         output_dir="/tmp/out",
         sources_path="/tmp/out/first-party-sources.json",
@@ -26,8 +26,7 @@ def _params(**overrides):
         bazel_target="//app:bin",
         bazel_path=None,
         bazel_mode=None,
-        fda_path=None,
-        fda_timeout=3600,
+        da_timeout=3600,
         blind_scan=False,
         no_wait=False,
         fossid_toolbox_path=None,
@@ -64,6 +63,15 @@ def _params(**overrides):
     return ns
 
 
+def _stub_toolbox(mock_wrapper_cls, pipeline_result=None):
+    mock_wrapper = mock_wrapper_cls.return_value
+    mock_wrapper.get_version.return_value = "FossID Toolbox version 1.7.11"
+    mock_wrapper.run_da_pipeline.return_value = (
+        pipeline_result or _pipeline_result()
+    )
+    return mock_wrapper
+
+
 class TestHandleAnalyze:
     def test_rejects_non_bazel(self):
         client = MagicMock()
@@ -84,12 +92,15 @@ class TestHandleAnalyze:
         return_value=["src/main.rs"],
     )
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
-    @patch("workbench_agent.handlers.analyze.run_pipeline")
-    @patch("workbench_agent.handlers.analyze.resolve_fda_path", return_value="fda")
+    @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
+        return_value="/toolbox",
+    )
     def test_default_flow_upload_then_import(
         self,
-        _fda,
-        mock_pipeline,
+        _resolve_toolbox,
+        mock_wrapper_cls,
         mock_resolve,
         mock_load,
         mock_stage,
@@ -97,7 +108,7 @@ class TestHandleAnalyze:
         mock_import,
         _rmtree,
     ):
-        mock_pipeline.return_value = _pipeline_result()
+        _stub_toolbox(mock_wrapper_cls)
         mock_resolve.return_value = ("PROJ", "SCAN", True)
         client = MagicMock()
 
@@ -118,12 +129,15 @@ class TestHandleAnalyze:
         return_value=["src/main.rs"],
     )
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
-    @patch("workbench_agent.handlers.analyze.run_pipeline")
-    @patch("workbench_agent.handlers.analyze.resolve_fda_path", return_value="fda")
-    def test_sources_come_from_the_fda_sidecar(
+    @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
+        return_value="/toolbox",
+    )
+    def test_sources_come_from_the_toolbox_da_sidecar(
         self,
-        _fda,
-        mock_pipeline,
+        _resolve_toolbox,
+        mock_wrapper_cls,
         mock_resolve,
         mock_load,
         _stage,
@@ -131,15 +145,15 @@ class TestHandleAnalyze:
         _import,
         _rmtree,
     ):
-        mock_pipeline.return_value = _pipeline_result()
+        mock_wrapper = _stub_toolbox(mock_wrapper_cls)
         mock_resolve.return_value = ("PROJ", "SCAN", True)
         client = MagicMock()
 
         handle_analyze(client, _params())
 
-        # fda is asked for the source list, and the agent reads exactly the
-        # sidecar fda reported — no bazel query of its own.
-        assert mock_pipeline.call_args.kwargs["emit_source_files"] is True
+        # Toolbox DA is asked for the source list, and the agent reads
+        # exactly the sidecar it reported — no bazel query of its own.
+        assert mock_wrapper.run_da_pipeline.call_args.kwargs["emit_source_files"] is True
         mock_load.assert_called_once_with("/tmp/out/first-party-sources.json")
 
     @patch("workbench_agent.handlers.analyze.shutil.rmtree")
@@ -151,12 +165,15 @@ class TestHandleAnalyze:
         return_value=["src/main.rs"],
     )
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
-    @patch("workbench_agent.handlers.analyze.run_pipeline")
-    @patch("workbench_agent.handlers.analyze.resolve_fda_path", return_value="fda")
+    @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
+        return_value="/toolbox",
+    )
     def test_blind_scan_opt_in(
         self,
-        _fda,
-        mock_pipeline,
+        _resolve_toolbox,
+        mock_wrapper_cls,
         mock_resolve,
         mock_load,
         mock_stage,
@@ -164,7 +181,7 @@ class TestHandleAnalyze:
         mock_import,
         _rmtree,
     ):
-        mock_pipeline.return_value = _pipeline_result()
+        _stub_toolbox(mock_wrapper_cls)
         mock_resolve.return_value = ("PROJ", "SCAN", True)
         client = MagicMock()
 
@@ -181,17 +198,20 @@ class TestHandleAnalyze:
     @patch("workbench_agent.handlers.analyze.shutil.rmtree")
     @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
-    @patch("workbench_agent.handlers.analyze.run_pipeline")
-    @patch("workbench_agent.handlers.analyze.resolve_fda_path", return_value="fda")
+    @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
+        return_value="/toolbox",
+    )
     def test_empty_sources_skips_kb_still_imports(
         self,
-        _fda,
-        mock_pipeline,
+        _resolve_toolbox,
+        mock_wrapper_cls,
         mock_resolve,
         mock_import,
         _rmtree,
     ):
-        mock_pipeline.return_value = _pipeline_result()
+        _stub_toolbox(mock_wrapper_cls)
         mock_resolve.return_value = ("PROJ", "SCAN", True)
         client = MagicMock()
 

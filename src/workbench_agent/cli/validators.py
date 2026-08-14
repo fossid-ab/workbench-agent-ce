@@ -70,7 +70,7 @@ def _validate_command_specific_args(args: Namespace) -> None:
 
 
 def _validate_analyze_command(args: Namespace) -> None:
-    """Validate the analyze command (fda pipeline + first-party KB scan)."""
+    """Validate the analyze command (Toolbox DA pipeline + first-party KB scan)."""
     input_path = getattr(args, "input", None)
     if not input_path:
         raise ValidationError("analyze requires -i/--input <path/to/project>")
@@ -103,9 +103,9 @@ def _validate_analyze_command(args: Namespace) -> None:
             )
         args.bazel_mode = normalized
 
-    fda_timeout = getattr(args, "fda_timeout", None)
-    if fda_timeout is not None and fda_timeout <= 0:
-        raise ValidationError("--fda-timeout must be a positive integer.")
+    da_timeout = getattr(args, "da_timeout", None)
+    if da_timeout is not None and da_timeout <= 0:
+        raise ValidationError("--da-timeout must be a positive integer.")
 
     fossid_conf_path = getattr(args, "fossid_conf_path", None)
     if fossid_conf_path and not os.path.isfile(fossid_conf_path):
