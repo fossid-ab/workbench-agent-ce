@@ -196,7 +196,7 @@ class ArgBuilder:
         self,
         project="TestProject",
         scan="TestScan",
-        input_path=".",
+        path=None,
         ecosystem="bazel",
         bazel_target="//app:bin",
     ):
@@ -208,12 +208,12 @@ class ArgBuilder:
                 project,
                 "--scan-name",
                 scan,
-                "-i",
-                input_path,
                 "-e",
                 ecosystem,
             ]
         )
+        if path is not None:
+            self.args.extend(["--path", path])
         if bazel_target is not None:
             self.args.extend(["--bazel-target", bazel_target])
         return self

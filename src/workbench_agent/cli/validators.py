@@ -71,14 +71,13 @@ def _validate_command_specific_args(args: Namespace) -> None:
 
 def _validate_analyze_command(args: Namespace) -> None:
     """Validate the analyze command (Toolbox DA pipeline + first-party KB scan)."""
-    input_path = getattr(args, "input", None)
-    if not input_path:
-        raise ValidationError("analyze requires -i/--input <path/to/project>")
-    if not os.path.exists(input_path):
-        raise ValidationError(f"Input path does not exist: {input_path}")
-    if not os.path.isdir(input_path):
+    path = getattr(args, "path", None) or "."
+    args.path = path
+    if not os.path.exists(path):
+        raise ValidationError(f"Path does not exist: {path}")
+    if not os.path.isdir(path):
         raise ValidationError(
-            f"analyze -i/--input must be a project directory: {input_path}"
+            f"analyze --path must be a project directory: {path}"
         )
 
     ecosystem = (getattr(args, "ecosystem", None) or "").strip().lower()

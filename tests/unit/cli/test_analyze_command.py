@@ -21,7 +21,7 @@ class TestAnalyzeParsing:
                 .analyze(
                     project="BazelProj",
                     scan="target@1",
-                    input_path="/ws",
+                    path="/ws",
                     ecosystem="bazel",
                     bazel_target="//app:bin",
                 )
@@ -32,7 +32,7 @@ class TestAnalyzeParsing:
         assert parsed.command == "analyze"
         assert parsed.project_name == "BazelProj"
         assert parsed.scan_name == "target@1"
-        assert parsed.input == "/ws"
+        assert parsed.path == "/ws"
         assert parsed.ecosystem == "bazel"
         assert parsed.bazel_target == "//app:bin"
         assert parsed.blind_scan is False
@@ -54,13 +54,20 @@ class TestAnalyzeParsing:
         assert parsed.blind_scan is True
         assert parsed.bazel_mode == "BZLMOD"
 
+    def test_path_defaults_to_cwd(self, args, arg_parser, mock_path_exists):
+        with patch("os.path.isdir", return_value=True):
+            cmd_args = args().analyze(bazel_target="//:t").build()
+            parsed = arg_parser(cmd_args)
+
+        assert parsed.path == "."
+
 
 class TestAnalyzeValidation:
     def test_requires_input_directory(self, args, arg_parser):
         with patch("os.path.exists", return_value=True), patch(
             "os.path.isdir", return_value=False
         ):
-            cmd_args = args().analyze(bazel_target="//:t", input_path="/file").build()
+            cmd_args = args().analyze(bazel_target="//:t", path="/file").build()
             with pytest.raises(ValidationError, match="project directory"):
                 arg_parser(cmd_args)
 
@@ -76,7 +83,7 @@ class TestAnalyzeValidation:
                     "P",
                     "--scan-name",
                     "S",
-                    "-i",
+                    "--path",
                     "/ws",
                     "-e",
                     "bazel",
@@ -85,11 +92,11 @@ class TestAnalyzeValidation:
             with pytest.raises(ValidationError, match="--bazel-target"):
                 arg_parser(builder.build())
 
-    def test_missing_input_path(self, args, arg_parser):
+    def test_missing_path(self, args, arg_parser):
         with patch("os.path.exists", return_value=False):
-            cmd_args = args().analyze(bazel_target="//:t", input_path="/missing").build()
+            cmd_args = args().analyze(bazel_target="//:t", path="/missing").build()
             with pytest.raises(
                 ValidationError,
-                match=re.escape("Input path does not exist: /missing"),
+                match=re.escape("Path does not exist: /missing"),
             ):
                 arg_parser(cmd_args)

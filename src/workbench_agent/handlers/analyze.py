@@ -286,7 +286,7 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     print(f"\n--- Running {params.command.upper()} Command ---")
     _ensure_bazel_params(params)
 
-    input_path = params.input
+    path = params.path
     blind_scan = bool(getattr(params, "blind_scan", False))
 
     toolbox_wrapper = ToolboxWrapper(
@@ -309,7 +309,7 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     try:
         # --- 1. Managed deps + first-party source list via Toolbox DA ---
         pipeline_result = toolbox_wrapper.run_da_pipeline(
-            input_path=input_path,
+            input_path=path,
             ecosystem=params.ecosystem,
             bazel_target=params.bazel_target,
             bazel_path=getattr(params, "bazel_path", None),
@@ -332,7 +332,7 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
                 "the dependency graph only."
             )
         else:
-            staging_dir = stage_sources(input_path, sources)
+            staging_dir = stage_sources(path, sources)
             if blind_scan:
                 kb_ok = _run_blind_scan_sources(
                     client, params, scan_code, scan_is_new, staging_dir

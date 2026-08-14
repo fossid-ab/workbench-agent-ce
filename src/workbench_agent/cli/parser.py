@@ -188,33 +188,30 @@ Examples:
         ],
         epilog="""
 Examples:
-  # Bazel: managed deps (Toolbox DA) + upload first-party sources (default)
+  # From the workspace root (--path defaults to cwd)
   workbench-agent analyze \\
-      -i /path/to/workspace -e bazel --bazel-target //myapp:app \\
+      -e bazel --bazel-target //myapp:app \\
       --project-name "MyApp" --scan-name "myapp@1.0.0"
 
   # Same, but blind-scan first-party sources (hashes only)
   workbench-agent analyze \\
-      -i /path/to/workspace -e bazel --bazel-target //myapp:app \\
+      --path /path/to/workspace -e bazel --bazel-target //myapp:app \\
       --project-name "MyApp" --scan-name "myapp@1.0.0" \\
       --blind-scan
 
   # Custom fossid-toolbox / bazel binaries
   workbench-agent analyze \\
-      -i . -e bazel --bazel-target //:bin \\
+      --path . -e bazel --bazel-target //:bin \\
       --fossid-toolbox-path /opt/fossid/fossid-toolbox --bazel-path /usr/local/bin/bazelisk \\
       --project-name "MyApp" --scan-name "bin@HEAD"
 """,
     )
     analyze_parser.add_argument(
-        "-i",
-        "--input",
-        dest="input",
-        help=(
-            "Path to the project/workspace directory "
-            "(passed to fossid-toolbox da --input)"
-        ),
-        required=True,
+        "--path",
+        dest="path",
+        help="Project / workspace directory to analyze (Default: current working directory)",
+        required=False,
+        default=".",
         metavar="PATH",
     )
     analyze_parser.add_argument(

@@ -21,7 +21,7 @@ def _pipeline_result():
 def _params(**overrides):
     ns = argparse.Namespace(
         command="analyze",
-        input="/ws",
+        path="/ws",
         ecosystem="bazel",
         bazel_target="//app:bin",
         bazel_path=None,
