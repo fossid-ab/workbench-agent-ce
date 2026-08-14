@@ -204,6 +204,12 @@ Examples:
       --path . -e bazel --bazel-target //:bin \\
       --fossid-toolbox-path /opt/fossid/fossid-toolbox --bazel-path /usr/local/bin/bazelisk \\
       --project "MyApp" --scan "bin@HEAD"
+
+  # Dependency graph only (no first-party KB scan)
+  workbench-agent analyze \\
+      -e bazel --bazel-target //myapp:app \\
+      --project "MyApp" --scan "myapp@1.0.0" \\
+      --dependency-analysis-only
 """,
     )
     analyze_parser.add_argument(
@@ -279,6 +285,27 @@ Examples:
         help=(
             "Hash first-party sources with FossID Toolbox instead of "
             "uploading source content (default: upload)."
+        ),
+        action="store_true",
+        default=False,
+    )
+    analyze_parser.add_argument(
+        "--dependency-analysis-only",
+        dest="dependency_analysis_only",
+        help=(
+            "Skip first-party source discovery and the KB scan. "
+            "Runs Toolbox DA pipeline without --emit-source-files "
+            "and imports the dependency graph only."
+        ),
+        action="store_true",
+        default=False,
+    )
+    analyze_parser.add_argument(
+        "--run-dependency-analysis",
+        dest="run_dependency_analysis",
+        help=(
+            "Accepted for compatibility with scan commands and ignored. "
+            "analyze always imports the Toolbox DA graph."
         ),
         action="store_true",
         default=False,

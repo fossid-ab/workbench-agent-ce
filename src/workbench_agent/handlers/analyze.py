@@ -274,10 +274,11 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     Handler for the ``analyze`` command.
 
     Workflow (Bazel):
-    1. Run ``fossid-toolbox da --pipeline --emit-source-files`` for
-       managed dependencies plus the list of first-party sources
-       feeding the target
+    1. Run ``fossid-toolbox da --pipeline`` (with ``--emit-source-files``
+       unless ``--dependency-analysis-only``) for managed dependencies
+       and, by default, the list of first-party sources feeding the target
     2. KB-scan those sources (upload by default, or ``--blind-scan``)
+       unless ``--dependency-analysis-only``
     3. Import the Toolbox ``analyzer-result.json`` into the same scan
     """
     print_section(f"Running {params.command.upper()} Command")
@@ -285,6 +286,12 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
 
     path = params.path
     blind_scan = bool(getattr(params, "blind_scan", False))
+    da_only = bool(getattr(params, "dependency_analysis_only", False))
+    if getattr(params, "run_dependency_analysis", False):
+        logger.debug(
+            "--run-dependency-analysis is ignored on analyze; "
+            "Toolbox DA results are always imported."
+        )
 
     toolbox_wrapper = ToolboxWrapper(
         toolbox_path=resolve_fossid_toolbox_path(
@@ -310,11 +317,10 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
             bazel_target=params.bazel_target,
             bazel_path=getattr(params, "bazel_path", None),
             bazel_mode=getattr(params, "bazel_mode", None),
-            emit_source_files=True,
+            emit_source_files=not da_only,
             fossid_conf_path=getattr(params, "fossid_conf_path", None),
             timeout=int(getattr(params, "da_timeout", 3600)),
         )
-        sources = load_first_party_sources(pipeline_result.sources_path)
 
         # --- 2. First-party KB scan (upload or blind) ---
         print_section("Project and Scan Checks")
@@ -327,26 +333,34 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
         }
         kb_performed = False
 
-        if not sources:
+        if da_only:
             print(
-                "\nNo first-party source files found for "
-                f"{params.bazel_target}; skipping KB scan and importing "
-                "the dependency graph only."
+                "\n--dependency-analysis-only: skipping first-party "
+                "source discovery and KB scan."
             )
             print_section("Running Scans")
         else:
-            staging_dir = stage_sources(path, sources)
-            if blind_scan:
-                kb_ok = _run_blind_scan_sources(
-                    client, params, scan_code, scan_is_new, staging_dir, durations
+            sources = load_first_party_sources(pipeline_result.sources_path)
+            if not sources:
+                print(
+                    "\nNo first-party source files found for "
+                    f"{params.bazel_target}; skipping KB scan and importing "
+                    "the dependency graph only."
                 )
+                print_section("Running Scans")
             else:
-                kb_ok = _run_upload_sources(
-                    client, params, scan_code, scan_is_new, staging_dir, durations
-                )
-            if not kb_ok:
-                return False
-            kb_performed = True
+                staging_dir = stage_sources(path, sources)
+                if blind_scan:
+                    kb_ok = _run_blind_scan_sources(
+                        client, params, scan_code, scan_is_new, staging_dir, durations
+                    )
+                else:
+                    kb_ok = _run_upload_sources(
+                        client, params, scan_code, scan_is_new, staging_dir, durations
+                    )
+                if not kb_ok:
+                    return False
+                kb_performed = True
 
         # --- 3. Import Toolbox DA report into the same scan ---
         import_ok = _import_da_report(

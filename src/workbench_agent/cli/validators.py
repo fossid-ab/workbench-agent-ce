@@ -114,6 +114,14 @@ def _validate_analyze_command(args: Namespace) -> None:
     if toolbox_timeout is not None and toolbox_timeout <= 0:
         raise ValidationError("fossid-toolbox-timeout must be a positive integer.")
 
+    if getattr(args, "dependency_analysis_only", False) and getattr(
+        args, "blind_scan", False
+    ):
+        raise ValidationError(
+            "--dependency-analysis-only cannot be combined with --blind-scan "
+            "(there is no first-party source scan to hash)."
+        )
+
     _validate_id_reuse_args(args)
 
 

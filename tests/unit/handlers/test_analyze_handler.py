@@ -229,3 +229,39 @@ class TestHandleAnalyze:
         mock_upload.assert_not_called()
         mock_blind.assert_not_called()
         mock_import.assert_called_once()
+
+    @patch("workbench_agent.handlers.analyze.shutil.rmtree")
+    @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
+    @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
+    @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
+        return_value="/toolbox",
+    )
+    def test_dependency_analysis_only_skips_emit_and_kb(
+        self,
+        _resolve_toolbox,
+        mock_wrapper_cls,
+        mock_resolve,
+        mock_import,
+        _rmtree,
+    ):
+        mock_wrapper = _stub_toolbox(mock_wrapper_cls)
+        mock_resolve.return_value = ("PROJ", "SCAN", True)
+        client = MagicMock()
+
+        with patch(
+            "workbench_agent.handlers.analyze.load_first_party_sources"
+        ) as mock_load, patch(
+            "workbench_agent.handlers.analyze._run_upload_sources"
+        ) as mock_upload, patch(
+            "workbench_agent.handlers.analyze._run_blind_scan_sources"
+        ) as mock_blind:
+            ok = handle_analyze(client, _params(dependency_analysis_only=True))
+
+        assert ok is True
+        assert mock_wrapper.run_da_pipeline.call_args.kwargs["emit_source_files"] is False
+        mock_load.assert_not_called()
+        mock_upload.assert_not_called()
+        mock_blind.assert_not_called()
+        mock_import.assert_called_once()
