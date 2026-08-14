@@ -388,8 +388,8 @@ class ToolboxWrapper:
         cmd.extend(args)
 
         run_timeout = timeout if timeout is not None else int(self.timeout)
-        logger.info("Running Toolbox DA pipeline: %s", " ".join(cmd))
-        print(f"\nRunning Toolbox DA pipeline...\n  {' '.join(cmd)}")
+        logger.debug("Running Toolbox DA pipeline: %s", " ".join(cmd))
+        print("\nRunning Toolbox DA pipeline...")
 
         try:
             result = subprocess.run(
@@ -445,7 +445,7 @@ class ToolboxWrapper:
                     f"upgrade to {MINIMUM_TOOLBOX_DA_VERSION} or later."
                 )
 
-        print(f"Toolbox DA pipeline wrote {report_path}")
+        logger.debug("Toolbox DA pipeline wrote %s", report_path)
         return DaPipelineResult(
             report_path=report_path,
             output_dir=output_dir,

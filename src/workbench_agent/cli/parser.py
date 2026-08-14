@@ -81,15 +81,15 @@ For more information on a specific command, use:
         epilog="""
 Examples:
   # Basic scan with dependency analysis
-  workbench-agent scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src --run-dependency-analysis
 
   # Dependency analysis only (skip KB scan)
-  workbench-agent scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src --dependency-analysis-only
 
   # Start scan and exit without waiting
-  workbench-agent scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src --no-wait
 """,
     )
@@ -127,20 +127,20 @@ Examples:
         epilog="""
 Examples:
   # Basic blind scan
-  workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent blind-scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src
 
   # Blind scan with dependency analysis
-  workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent blind-scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src --run-dependency-analysis
 
   # Blind scan with custom fossid-toolbox path and timeout
-  workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent blind-scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src --fossid-toolbox-path /usr/local/bin/fossid-toolbox \\
       --fossid-toolbox-timeout 600
 
   # Blind scan with a pre-generated .fossid file (skips hashing)
-  workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent blind-scan --project "MyProject" --scan "v1.0.0" \\
       --path ./signatures.fossid
 """,
     )
@@ -191,19 +191,19 @@ Examples:
   # From the workspace root (--path defaults to cwd)
   workbench-agent analyze \\
       -e bazel --bazel-target //myapp:app \\
-      --project-name "MyApp" --scan-name "myapp@1.0.0"
+      --project "MyApp" --scan "myapp@1.0.0"
 
   # Same, but blind-scan first-party sources (hashes only)
   workbench-agent analyze \\
       --path /path/to/workspace -e bazel --bazel-target //myapp:app \\
-      --project-name "MyApp" --scan-name "myapp@1.0.0" \\
+      --project "MyApp" --scan "myapp@1.0.0" \\
       --blind-scan
 
   # Custom fossid-toolbox / bazel binaries
   workbench-agent analyze \\
       --path . -e bazel --bazel-target //:bin \\
       --fossid-toolbox-path /opt/fossid/fossid-toolbox --bazel-path /usr/local/bin/bazelisk \\
-      --project-name "MyApp" --scan-name "bin@HEAD"
+      --project "MyApp" --scan "bin@HEAD"
 """,
     )
     analyze_parser.add_argument(
@@ -315,7 +315,7 @@ Examples:
         epilog="""
 Examples:
   # Import analyzer-result.json from ORT
-  workbench-agent import-da --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent import-da --project "MyProject" --scan "v1.0.0" \\
       --path ./ort-output/analyzer-result.json
 """,
     )
@@ -342,15 +342,15 @@ Examples:
         epilog="""
 Examples:
   # Import CycloneDX SBOM
-  workbench-agent import-sbom --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent import-sbom --project "MyProject" --scan "v1.0" \\
       --path ./cyclonedx-bom.json
 
   # Import SPDX SBOM (JSON; uploaded directly on Workbench 2025.2.0+)
-  workbench-agent import-sbom --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent import-sbom --project "MyProject" --scan "v1.0" \\
       --path ./spdx-document.json
 
   # Import SPDX SBOM (RDF format)
-  workbench-agent import-sbom --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent import-sbom --project "MyProject" --scan "v1.0" \\
       --path ./spdx-document.rdf
 
 On Workbench versions before 2025.2.0, SPDX JSON is automatically converted
@@ -384,12 +384,12 @@ to RDF before upload. RDF and XML SPDX files are always uploaded as-is.
         epilog="""
 Examples:
   # Show all available results
-  workbench-agent show-results --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent show-results --project "MyProject" --scan "v1.0" \\
       --show-licenses --show-components --show-dependencies \\
       --show-scan-metrics --show-vulnerabilities --show-policy-warnings
 
   # Save results to JSON file
-  workbench-agent show-results --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent show-results --project "MyProject" --scan "v1.0" \\
       --show-licenses --show-components --result-save-path ./results.json
 
 """,
@@ -415,10 +415,10 @@ Examples:
         epilog="""
 Examples:
   # Delete a scan (default: keep identifications metadata behavior per API)
-  workbench-agent delete-scan --project-name "MyProject" --scan-name "v1.0"
+  workbench-agent delete-scan --project "MyProject" --scan "v1.0"
 
   # Delete scan and request identifications removal per API
-  workbench-agent delete-scan --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent delete-scan --project "MyProject" --scan "v1.0" \\
       --delete-identifications
 """,
     )
@@ -444,19 +444,19 @@ Examples:
         epilog="""
 Examples:
   # Fail on policy violations
-  workbench-agent evaluate-gates --project-name "MyProj" --scan-name "v1.0" \\
+  workbench-agent evaluate-gates --project "MyProj" --scan "v1.0" \\
       --fail-on-policy
 
   # Fail on pending identifications
-  workbench-agent evaluate-gates --project-name "MyProj" --scan-name "v1.0" \\
+  workbench-agent evaluate-gates --project "MyProj" --scan "v1.0" \\
       --fail-on-pending
 
   # Fail on critical or high severity vulnerabilities
-  workbench-agent evaluate-gates --project-name "MyProj" --scan-name "v1.0" \\
+  workbench-agent evaluate-gates --project "MyProj" --scan "v1.0" \\
       --fail-on-vuln-severity high
 
   # Multiple gate conditions
-  workbench-agent evaluate-gates --project-name "MyProj" --scan-name "v1.0" \\
+  workbench-agent evaluate-gates --project "MyProj" --scan "v1.0" \\
       --fail-on-policy --fail-on-pending --fail-on-vuln-severity critical
 """,
     )
@@ -492,19 +492,19 @@ Examples:
         epilog="""
 Examples:
   # Download all scan-level reports
-  workbench-agent download-reports --project-name "MyProject" \\
-      --scan-name "v1.0.0" --report-scope scan
+  workbench-agent download-reports --project "MyProject" \\
+      --scan "v1.0.0" --report-scope scan
 
   # Download specific report types (scan-level)
-  workbench-agent download-reports --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent download-reports --project "MyProject" --scan "v1.0.0" \\
       --report-scope scan --report-type xlsx,spdx --report-save-path ./reports/
 
   # Download project-level reports
-  workbench-agent download-reports --project-name "MyProject" \\
+  workbench-agent download-reports --project "MyProject" \\
       --report-scope project --report-type xlsx,cyclonedx
 
   # Download reports with license filtering
-  workbench-agent download-reports --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent download-reports --project "MyProject" --scan "v1.0.0" \\
       --report-scope scan --report-type xlsx \\
       --selection-type include_foss --selection-view all
 """,
@@ -594,20 +594,20 @@ Examples:
         epilog="""
 Examples:
   # Scan a branch
-  workbench-agent scan-git --project-name "GitProject" --scan-name "main-branch" \\
+  workbench-agent scan-git --project "GitProject" --scan "main-branch" \\
       --git-url https://github.com/owner/repo.git --git-branch main
 
   # Scan a tag
-  workbench-agent scan-git --project-name "GitProject" --scan-name "v1.0.0" \\
+  workbench-agent scan-git --project "GitProject" --scan "v1.0.0" \\
       --git-url https://github.com/owner/repo.git --git-tag "v1.0.0"
 
   # Scan a specific commit
-  workbench-agent scan-git --project-name "GitProject" --scan-name "commit-abc123" \\
+  workbench-agent scan-git --project "GitProject" --scan "commit-abc123" \\
       --git-url https://github.com/owner/repo.git \\
       --git-commit ffac537e6cbbf934b08745a378932722df287a53
 
   # Scan with dependency analysis and summary
-  workbench-agent scan-git --project-name "GitProject" --scan-name "main-branch" \\
+  workbench-agent scan-git --project "GitProject" --scan "main-branch" \\
       --git-url https://github.com/owner/repo.git --git-branch main \\
       --run-dependency-analysis --show-summary
 """,
