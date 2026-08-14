@@ -78,8 +78,7 @@ def load_first_party_sources(sidecar_path: str) -> List[str]:
             len(missing),
         )
 
-    logger.info("Toolbox DA listed %d first-party source file(s)", len(files))
-    print(f"Toolbox DA listed {len(files)} first-party source file(s)")
+    logger.debug("Toolbox DA listed %d first-party source file(s)", len(files))
     return files
 
 

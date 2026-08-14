@@ -67,15 +67,17 @@ def prepare_scan_target(path: str) -> Iterator[str]:
         str: A file path safe to hand to ``ScanContentService.upload_scan_target``.
     """
     if os.path.isdir(path):
-        print("The path provided is a directory. Compressing...")
+        logger.debug("Target path is a directory; creating ZIP for upload")
+        print("Compressing target path...")
         archive_path = UploadArchivePrep.create_zip_archive(path)
         temp_dir = os.path.dirname(archive_path)
-        print("\nArchive prepared! Starting upload...")
+        print("✓ Archived target path")
         try:
             yield archive_path
         finally:
             cleanup_temp_path(temp_dir)
     else:
+        logger.debug("Target path is a file; skipped archiving")
         yield path
 
 
@@ -213,7 +215,7 @@ class UploadArchivePrep:
             with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zipf:
                 abs_path = os.path.abspath(source_path)
 
-                print("Creating ZIP (respecting .gitignore)...")
+                logger.debug("Creating ZIP (respecting .gitignore)...")
 
                 for root, dirs, files in os.walk(abs_path):
                     # Get relative path from source directory
@@ -288,7 +290,9 @@ class UploadArchivePrep:
                             logger.warning(f"Failed to archive {rel_file_path}: {e}")
                             continue
 
-                print(f"{files_added} files archived, {files_excluded} excluded)")
+                logger.debug(
+                    "%d files archived, %d excluded", files_added, files_excluded
+                )
 
             # Verify the archive was created successfully
             if not os.path.exists(archive_path) or os.path.getsize(archive_path) == 0:

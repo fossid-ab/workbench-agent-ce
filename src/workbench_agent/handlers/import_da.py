@@ -10,6 +10,7 @@ from workbench_agent.api.exceptions import (
 )
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.post_import_summary import print_import_summary
 from workbench_agent.utilities.pre_flight_checks import (
     import_da_pre_flight_check,
@@ -59,14 +60,13 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         ProcessTimeoutError: If import times out
         ProcessError: If import fails
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     # Note: Path existence, file type, and filename validation
     # are handled at CLI layer (cli/validators.py)
 
     # Resolve project and scan (find or create)
-    print("\n--- Project and Scan Checks ---")
-    print("Checking target Project and Scan...")
+    print_section("Project and Scan Checks")
     _, scan_code, scan_is_new = find_or_create_project_and_scan(
         client,
         params,
@@ -76,7 +76,7 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
     import_da_pre_flight_check(client, scan_code, scan_is_new, params)
 
     # Upload dependency analysis file
-    print("\n--- Uploading Dependency Analysis File ---")
+    print_section("Uploading Dependency Analysis File")
     try:
         client.scan_content.upload_da_results(scan_code=scan_code, path=params.path)
         print("Dependency analysis results uploaded successfully!")
@@ -91,7 +91,7 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
         ) from e
 
     # Start dependency analysis import
-    print("\n--- Starting Dependency Analysis Import ---")
+    print_section("Starting Dependency Analysis Import")
 
     try:
         client.scan_operations.start_da_import(scan_code=scan_code)

@@ -5,6 +5,7 @@ import logging
 from typing import TYPE_CHECKING, Dict, Optional, Union
 
 from workbench_agent.api.exceptions import ApiError, NetworkError
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.vulnerability_display import (
     print_vulnerable_component_count,
     summarize_vulnerability_rows,
@@ -54,6 +55,7 @@ def print_scan_summary(
     durations: Optional[Dict[str, float]] = None,
     show_summary: bool = False,
     scan_operations: Optional[Dict[str, bool]] = None,
+    title: str = "Post-Scan Summary",
 ) -> None:
     """
     Post-scan summary for scan operations.
@@ -70,7 +72,7 @@ def print_scan_summary(
     if scan_operations is None:
         raise ValueError("scan_operations is required when show_summary=True")
 
-    print("\n--- Post-Scan Summary ---")
+    print_section(title)
 
     kb_scan_performed = scan_operations.get("run_kb_scan", False)
     da_requested = scan_operations.get("run_dependency_analysis", False)
@@ -110,7 +112,7 @@ def print_scan_summary(
     if vulnerabilities:
         vulnerability_summary = summarize_vulnerability_rows(vulnerabilities)
 
-    print("\nScan Operation Summary:")
+    print("Scan Operation Summary:")
 
     if kb_scan_performed:
         try:

@@ -80,13 +80,17 @@ def _wait_for_kb_scan(
     scan_code: str,
     params: argparse.Namespace,
 ) -> StatusResult:
-    return client.status_check.check_scan_status(
+    result = client.status_check.check_scan_status(
         scan_code,
         wait=True,
         wait_retry_count=params.scan_number_of_tries,
         wait_retry_interval=params.scan_wait_time,
         progress_callback=create_scan_progress_callback(scan_code),
     )
+    # Progress updates are printed with end="" so dots can append;
+    # finish the line before the next section starts.
+    print()
+    return result
 
 
 def _determine_scans_to_run(
@@ -147,6 +151,8 @@ def execute_scan_workflow(
     params: argparse.Namespace,
     scan_code: str,
     durations: Dict[str, float],
+    *,
+    emit_summary: bool = True,
 ) -> bool:
     """
     Run scans, wait for completion, and print the summary.
@@ -156,12 +162,19 @@ def execute_scan_workflow(
 
     Handles DA-only mode, KB scan mode, ``--no-wait`` mode,
     ID reuse resolution, and result summary display.
+
+    Set ``emit_summary=False`` when a caller (e.g. ``analyze``) will
+    print its own combined summary after later steps.
     """
     scan_operations = _determine_scans_to_run(params)
     da_completed = False
 
+    def _emit_summary(**kwargs) -> None:
+        if emit_summary:
+            print_scan_summary(**kwargs)
+
     if not scan_operations["run_kb_scan"] and scan_operations["run_dependency_analysis"]:
-        print("\nStarting Dependency Analysis only " "(skipping KB scan)...")
+        print("Starting Dependency Analysis only " "(skipping KB scan)...")
         client.scan_operations.start_da_only(scan_code)
 
         if getattr(params, "no_wait", False):
@@ -169,11 +182,11 @@ def execute_scan_workflow(
             print("\nExiting without waiting for completion " "(--no-wait mode).")
             print("You can check the status later using the " "'show-results' command.")
             scan_operations["da_completed"] = False
-            print_scan_summary(
-                client,
-                params,
-                scan_code,
-                durations,
+            _emit_summary(
+                workbench=client,
+                params=params,
+                scan_code=scan_code,
+                durations=durations,
                 show_summary=False,
                 scan_operations=scan_operations,
             )
@@ -190,7 +203,7 @@ def execute_scan_workflow(
         da_completed = True
 
     if scan_operations["run_kb_scan"]:
-        print("\nStarting Scan Process...")
+        print("Starting Scan Process...")
 
         id_reuse_type, id_reuse_specific_code = resolve_id_reuse(client, params)
 
@@ -223,11 +236,11 @@ def execute_scan_workflow(
                 print("Dependency Analysis will start when " "KB scan completes.")
             print("\nExiting without waiting for completion " "(--no-wait mode).")
             scan_operations["da_completed"] = False
-            print_scan_summary(
-                client,
-                params,
-                scan_code,
-                durations,
+            _emit_summary(
+                workbench=client,
+                params=params,
+                scan_code=scan_code,
+                durations=durations,
                 show_summary=False,
                 scan_operations=scan_operations,
             )
@@ -309,11 +322,11 @@ def execute_scan_workflow(
             da_completed = False
 
     scan_operations["da_completed"] = da_completed
-    print_scan_summary(
-        client,
-        params,
-        scan_code,
-        durations,
+    _emit_summary(
+        workbench=client,
+        params=params,
+        scan_code=scan_code,
+        durations=durations,
         show_summary=getattr(params, "show_summary", False),
         scan_operations=scan_operations,
     )

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -34,9 +35,9 @@ def handle_delete_scan(client: "WorkbenchClient", params: argparse.Namespace) ->
     Returns:
         True on successful deletion job completion
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
-    print("\n--- Resolving scan ---")
+    print_section("Resolving scan")
     logger.info(
         "Looking up scan '%s' in project '%s'",
         params.scan_name,
@@ -52,7 +53,7 @@ def handle_delete_scan(client: "WorkbenchClient", params: argparse.Namespace) ->
     if not client.user_permissions.can_delete_scan(scan_code):
         raise WorkbenchAgentError(PERMISSION_DENIED_MESSAGE)
 
-    print("\n--- Deleting scan ---")
+    print_section("Deleting scan")
     result = client.scan_deletion.delete_scan(
         scan_code,
         delete_identifications=params.delete_identifications,

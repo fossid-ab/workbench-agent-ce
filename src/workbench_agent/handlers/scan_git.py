@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.pre_flight_checks import (
     scan_git_pre_flight_check,
 )
@@ -49,7 +50,7 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
     Raises:
         WorkbenchAgentError: If Git clone fails
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     durations: dict = {
         "kb_scan": 0.0,
@@ -58,19 +59,18 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
     }
 
     # ===== STEP 1: Resolve project and scan =====
-    print("\n--- Project and Scan Checks ---")
-    print("Checking target Project and Scan...")
+    print_section("Project and Scan Checks")
     _, scan_code, scan_is_new = find_or_create_project_and_scan(
         client,
         params,
     )
 
     # ===== STEP 2: Pre-Flight Checks =====
-    print("\n--- Pre-Flight Checks ---")
+    print_section("Pre-Flight Checks")
     scan_git_pre_flight_check(client, scan_code, scan_is_new, params)
 
     # ===== STEP 3: Git Clone =====
-    print("\n--- Cloning the Target Repo ---")
+    print_section("Cloning the Target Repo")
     print("Starting Git Clone...")
 
     try:
@@ -101,5 +101,5 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
         print(f"Warning: Error removing .git directory: {e}. " f"Continuing with scan...")
 
     # ===== STEP 5: Run Scans =====
-    print("\n--- Scan Operations ---")
+    print_section("Scan Operations")
     return execute_scan_workflow(client, params, scan_code, durations)

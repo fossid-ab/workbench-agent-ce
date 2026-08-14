@@ -140,7 +140,7 @@ class ToolboxWrapper:
                 args, stderr=subprocess.STDOUT, timeout=int(self.timeout)
             )
             version = result.decode("utf-8").strip()
-            logger.info(f"FossID Toolbox version: {version}")
+            logger.debug("FossID Toolbox version: %s", version)
             return version
         except subprocess.TimeoutExpired as e:
             error_msg = f"Toolbox version check timed out after " f"{self.timeout} seconds"

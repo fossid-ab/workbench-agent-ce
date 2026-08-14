@@ -33,7 +33,8 @@ from workbench_agent.utilities.bazel_sources import (
     stage_sources,
 )
 from workbench_agent.utilities.error_handling import handler_error_wrapper
-from workbench_agent.utilities.post_import_summary import print_import_summary
+from workbench_agent.utilities.section import print_section
+from workbench_agent.utilities.post_analysis_summary import print_analysis_summary
 from workbench_agent.utilities.pre_flight_checks import (
     blind_scan_pre_flight_check,
     import_da_pre_flight_check,
@@ -86,9 +87,10 @@ def _run_blind_scan_sources(
     scan_code: str,
     scan_is_new: bool,
     staging_dir: str,
+    durations: dict,
 ) -> bool:
     """Hash staged sources, upload, and run the KB scan (no Workbench DA)."""
-    print("\n--- Blind-scanning first-party sources ---")
+    print_section("Blind-scanning first-party sources")
     toolbox_wrapper = ToolboxWrapper(
         toolbox_path=resolve_fossid_toolbox_path(
             getattr(params, "fossid_toolbox_path", None)
@@ -96,11 +98,10 @@ def _run_blind_scan_sources(
         timeout=str(getattr(params, "fossid_toolbox_timeout", 300)),
     )
     version = toolbox_wrapper.get_version()
-    print(f"Using {version}")
     toolbox_wrapper.validate_toolbox_version(version)
 
     enable_lac = not getattr(params, "skip_lac_extraction", False)
-    print("\nHashing staged sources with Toolbox...")
+    print("Hashing staged sources with Toolbox...")
     hash_file_path = toolbox_wrapper.generate_hashes(
         path=staging_dir,
         run_dependency_analysis=False,
@@ -126,8 +127,10 @@ def _run_blind_scan_sources(
         print("Hashes uploaded successfully!")
 
         _force_kb_only(params)
-        durations = {"kb_scan": 0.0, "dependency_analysis": 0.0}
-        return execute_scan_workflow(client, params, scan_code, durations)
+        print_section("Running Scans")
+        return execute_scan_workflow(
+            client, params, scan_code, durations, emit_summary=False
+        )
     finally:
         cleanup_temp_path(hash_file_path)
 
@@ -138,9 +141,11 @@ def _run_upload_sources(
     scan_code: str,
     scan_is_new: bool,
     staging_dir: str,
+    durations: dict,
 ) -> bool:
     """Upload staged sources and run the KB scan (no Workbench DA)."""
-    print("\n--- Uploading first-party sources ---")
+    if not scan_is_new:
+        print_section("Pre-Flight Checks")
     scan_pre_flight_check(client, scan_code, scan_is_new, params)
 
     if not scan_is_new:
@@ -152,12 +157,13 @@ def _run_upload_sources(
             logger.warning("Failed to clear existing scan content: %s", e)
             print("Continuing with upload...")
 
-    print("\n--- Preparing Scan Target ---")
+    print_section("Preparing Scan Target")
     with prepare_scan_target(staging_dir) as upload_path:
-        print("\nUploading Code to Workbench...")
+        print("Uploading archive to Workbench...")
         client.scan_content.upload_scan_target(scan_code, upload_path)
+        print("✓ Upload complete")
 
-    print("\nExtracting Uploaded Archive...")
+    print("Extracting uploaded archive...")
     extraction_triggered = client.scan_content.extract_archives(
         scan_code=scan_code,
         recursively_extract_archives=getattr(
@@ -166,11 +172,9 @@ def _run_upload_sources(
         jar_file_extraction=getattr(params, "jar_file_extraction", False),
     )
 
-    durations: dict = {
-        "kb_scan": 0.0,
-        "dependency_analysis": 0.0,
-        "extraction_duration": 0.0,
-    }
+    durations.setdefault("kb_scan", 0.0)
+    durations.setdefault("dependency_analysis", 0.0)
+    durations.setdefault("extraction_duration", 0.0)
 
     if extraction_triggered:
         extraction_result = client.status_check.check_extract_archives_status(
@@ -189,12 +193,15 @@ def _run_upload_sources(
             raise ProcessError(
                 f"Archive extraction failed for scan '{scan_code}': {error_msg}"
             )
+        print("✓ Archive extracted")
     else:
-        print("No archives to extract. Continuing with scan...")
+        print("No archives to extract")
 
     _force_kb_only(params)
-    print("\n--- Running Scans ---")
-    return execute_scan_workflow(client, params, scan_code, durations)
+    print_section("Running Scans")
+    return execute_scan_workflow(
+        client, params, scan_code, durations, emit_summary=False
+    )
 
 
 def _import_da_report(
@@ -204,13 +211,13 @@ def _import_da_report(
     report_path: str,
 ) -> bool:
     """Upload analyzer-result.json and wait for import-only DA."""
-    print("\n--- Importing Dependency Analysis results ---")
     # After a KB scan the scan is no longer "new"; always idle-check DA.
-    import_da_pre_flight_check(client, scan_code, False, params)
+    import_da_pre_flight_check(client, scan_code, False, params, quiet=True)
 
+    print("\nImporting dependency analysis results...")
     try:
         client.scan_content.upload_da_results(scan_code=scan_code, path=report_path)
-        print("Dependency analysis results uploaded successfully!")
+        logger.debug("Dependency analysis results uploaded for '%s'", scan_code)
     except Exception as e:
         logger.error(
             "Failed to upload dependency analysis file for '%s': %s",
@@ -225,7 +232,7 @@ def _import_da_report(
 
     try:
         client.scan_operations.start_da_import(scan_code=scan_code)
-        print("Dependency analysis import initiated successfully.")
+        logger.debug("Dependency analysis import initiated for '%s'", scan_code)
     except Exception as e:
         logger.error(
             "Failed to start dependency analysis import for '%s': %s",
@@ -239,28 +246,18 @@ def _import_da_report(
         ) from e
 
     if getattr(params, "no_wait", False):
-        print("\nExiting without waiting for DA import completion (--no-wait).")
-        print_import_summary(
-            client, params, scan_code, False, show_summary=False
-        )
+        print("Exiting without waiting for DA import completion (--no-wait).")
         return True
 
     try:
-        print("\nWaiting for Dependency Analysis import to complete...")
+        print("Waiting for Dependency Analysis import to complete...")
         client.status_check.check_dependency_analysis_status(
             scan_code,
             wait=True,
             wait_retry_count=params.scan_number_of_tries,
             wait_retry_interval=3,
         )
-        print("Dependency Analysis import completed successfully.")
-        print_import_summary(
-            client,
-            params,
-            scan_code,
-            True,
-            show_summary=getattr(params, "show_summary", False),
-        )
+        print("✓ Dependency analysis imported")
         return True
     except (ProcessTimeoutError, ProcessError):
         raise
@@ -283,7 +280,7 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     2. KB-scan those sources (upload by default, or ``--blind-scan``)
     3. Import the Toolbox ``analyzer-result.json`` into the same scan
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
     _ensure_bazel_params(params)
 
     path = params.path
@@ -296,7 +293,6 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
         timeout=str(getattr(params, "fossid_toolbox_timeout", 300)),
     )
     version = toolbox_wrapper.get_version()
-    print(f"Using {version}")
     toolbox_wrapper.validate_toolbox_version(
         version,
         minimum=MINIMUM_TOOLBOX_DA_VERSION,
@@ -318,39 +314,59 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
             fossid_conf_path=getattr(params, "fossid_conf_path", None),
             timeout=int(getattr(params, "da_timeout", 3600)),
         )
+        sources = load_first_party_sources(pipeline_result.sources_path)
 
         # --- 2. First-party KB scan (upload or blind) ---
-        print("\n--- Project and Scan Checks ---")
-        print("Checking target Project and Scan...")
+        print_section("Project and Scan Checks")
         _, scan_code, scan_is_new = find_or_create_project_and_scan(client, params)
 
-        sources = load_first_party_sources(pipeline_result.sources_path)
+        durations = {
+            "kb_scan": 0.0,
+            "dependency_analysis": 0.0,
+            "extraction_duration": 0.0,
+        }
+        kb_performed = False
+
         if not sources:
             print(
                 "\nNo first-party source files found for "
                 f"{params.bazel_target}; skipping KB scan and importing "
                 "the dependency graph only."
             )
+            print_section("Running Scans")
         else:
             staging_dir = stage_sources(path, sources)
             if blind_scan:
                 kb_ok = _run_blind_scan_sources(
-                    client, params, scan_code, scan_is_new, staging_dir
+                    client, params, scan_code, scan_is_new, staging_dir, durations
                 )
             else:
                 kb_ok = _run_upload_sources(
-                    client, params, scan_code, scan_is_new, staging_dir
+                    client, params, scan_code, scan_is_new, staging_dir, durations
                 )
             if not kb_ok:
                 return False
+            kb_performed = True
 
         # --- 3. Import Toolbox DA report into the same scan ---
-        return _import_da_report(
+        import_ok = _import_da_report(
             client,
             params,
             scan_code,
             pipeline_result.report_path,
         )
+        if not import_ok:
+            return False
+
+        print_analysis_summary(
+            client,
+            params,
+            scan_code,
+            durations,
+            kb_performed=kb_performed,
+            da_imported=not getattr(params, "no_wait", False),
+        )
+        return True
     finally:
         if staging_dir:
             shutil.rmtree(staging_dir, ignore_errors=True)

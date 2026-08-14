@@ -4,6 +4,8 @@ Configuration display utility to render the configuration at startup.
 
 from typing import Any, Dict
 
+from workbench_agent.utilities.section import print_section
+
 # ===== Parameter groups =====
 # Each frozenset names the params owned by a single section.
 
@@ -225,7 +227,7 @@ def print_configuration(params: Any, workbench_api: Any) -> None:
         params: Parsed command line parameters
         workbench_api: WorkbenchClient instance for connection info
     """
-    print("--- Workbench Agent Configuration ---")
+    print_section("Workbench Agent Configuration")
     print(f"Command: {params.command}")
 
     _print_connection_info(params, workbench_api)

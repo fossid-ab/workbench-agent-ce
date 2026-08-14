@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Optional
 
 from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.pre_flight_checks import (
     blind_scan_pre_flight_check,
 )
@@ -155,7 +156,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
         FileSystemError: If specified paths don't exist
         ProcessError: If Toolbox execution fails
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     durations: dict = {
         "kb_scan": 0.0,
@@ -171,13 +172,13 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
     try:
         if is_pregenerated:
-            print("\nValidating pre-generated .fossid file...")
+            print("Validating pre-generated .fossid file...")
             validate_fossid_file(params.path)
             hash_file_path = params.path
             print("Validation successful. Skipping hash generation.")
         else:
             # ===== STEP 2: Validate Toolbox and generate hashes =====
-            print("\nValidating FossID Toolbox...")
+            logger.debug("Validating FossID Toolbox...")
             toolbox_wrapper = ToolboxWrapper(
                 toolbox_path=resolve_fossid_toolbox_path(
                     getattr(params, "fossid_toolbox_path", None)
@@ -186,14 +187,11 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
             )
 
             version = toolbox_wrapper.get_version()
-            print(f"Using {version}")
-
-            # Enforce the agent-to-Toolbox compatibility matrix for blind-scan.
             toolbox_wrapper.validate_toolbox_version(version)
 
             enable_lac = not getattr(params, "skip_lac_extraction", False)
 
-            print("\nHashing Target Path with Toolbox...")
+            print("Hashing Target Path with Toolbox...")
             hash_file_path = toolbox_wrapper.generate_hashes(
                 path=params.path,
                 run_dependency_analysis=getattr(params, "run_dependency_analysis", False),
@@ -206,8 +204,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
             print("Validation successful.")
 
         # ===== STEP 3: Resolve/create project and scan =====
-        print("\n--- Project and Scan Checks ---")
-        print("Checking target Project and Scan...")
+        print_section("Project and Scan Checks")
         _, scan_code, scan_is_new = find_or_create_project_and_scan(
             client,
             params,

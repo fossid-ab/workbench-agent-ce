@@ -105,7 +105,6 @@ class TestBlindScanIntegration:
             captured = capsys.readouterr()
             combined_output = captured.out + captured.err
             assert "BLIND-SCAN" in combined_output
-            assert "Validating FossID Toolbox" in combined_output
             assert "Hashing Target Path" in combined_output
 
     def test_blind_scan_with_dependency_analysis(self, mock_workbench_api, tmp_path, capsys):

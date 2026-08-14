@@ -43,7 +43,7 @@ def scan_pre_flight_check(
         logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
         return
 
-    print("\nEnsuring the Scan is Idle...")
+    print("Ensuring the Scan is Idle...")
 
     # Check each process type individually
     try:
@@ -201,7 +201,7 @@ def blind_scan_pre_flight_check(
         logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
         return
 
-    print("\nEnsuring the Scan is Idle...")
+    print("Ensuring the Scan is Idle...")
 
     # Check each process type individually
     try:
@@ -241,6 +241,8 @@ def import_da_pre_flight_check(
     scan_code: str,
     scan_is_new: bool,
     params: argparse.Namespace,
+    *,
+    quiet: bool = False,
 ) -> None:
     """
     Performs pre-flight checks for the import-da handler.
@@ -262,7 +264,10 @@ def import_da_pre_flight_check(
         logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
         return
 
-    print("\nEnsuring Scan is Idle...")
+    if quiet:
+        logger.debug("Ensuring scan is idle before DA import...")
+    else:
+        print("\nEnsuring Scan is Idle...")
 
     try:
         # Check if DA is active and wait if needed

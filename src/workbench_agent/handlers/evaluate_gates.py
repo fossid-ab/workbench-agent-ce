@@ -11,6 +11,7 @@ from workbench_agent.api.exceptions import (
     ProcessTimeoutError,
 )
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.pre_flight_checks import (
     evaluate_gates_pre_flight_check,
 )
@@ -411,10 +412,10 @@ def handle_evaluate_gates(client: "WorkbenchClient", params: "argparse.Namespace
     Raises:
         Various exceptions based on errors that occur during the process
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     # Resolve project and scan (find only - don't create)
-    print("\nResolving scan for gate evaluation...")
+    print("Resolving scan for gate evaluation...")
     _, scan = client.resolver.find_project_and_scan(
         params.project_name,
         params.scan_name,
