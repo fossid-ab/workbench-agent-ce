@@ -218,9 +218,11 @@ def _validate_download_reports_command(args: Namespace) -> None:
     scan_name = (getattr(args, "scan_name", None) or "").strip()
 
     if not project_name:
-        raise ValidationError("Please provide a project name (use --project-name)")
+        raise ValidationError("Please provide a project name (use --project-name or --project)")
     if report_scope == "scan" and not scan_name:
-        raise ValidationError("Scan scope reports require the scan name (use --scan-name)")
+        raise ValidationError(
+            "Scan scope reports require the scan name (use --scan-name or --scan)"
+        )
 
 
 def _validate_show_results_command(args: Namespace) -> None:

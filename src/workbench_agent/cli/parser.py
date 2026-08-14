@@ -511,11 +511,15 @@ Examples:
     )
     download_reports_parser.add_argument(
         "--project-name",
+        "--project",
+        dest="project_name",
         help=("The Project to download reports from."),
         metavar="NAME",
     )
     download_reports_parser.add_argument(
         "--scan-name",
+        "--scan",
+        dest="scan_name",
         help=("The Scan to download reports from. Required for scan reports."),
         metavar="NAME",
     )

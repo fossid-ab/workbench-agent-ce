@@ -24,6 +24,26 @@ class TestBasicCommandParsing:
         assert parsed.limit == 10  # Check default
         assert parsed.log == "WARNING"  # Check default
 
+    def test_project_and_scan_aliases(self, args, arg_parser, mock_path_exists):
+        """--project and --scan are aliases for --project-name and --scan-name."""
+        builder = args()
+        builder.args.extend(["scan"])
+        builder.args.extend(builder.global_args)
+        builder.args.extend(
+            [
+                "--project",
+                "AliasProject",
+                "--scan",
+                "AliasScan",
+                "--path",
+                ".",
+            ]
+        )
+        parsed = arg_parser(builder.build())
+
+        assert parsed.project_name == "AliasProject"
+        assert parsed.scan_name == "AliasScan"
+
     def test_parse_scan_git_with_branch(self, args, arg_parser):
         """Test scan-git command with branch."""
         cmd_args = (

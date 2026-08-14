@@ -307,12 +307,16 @@ def create_project_scan_target_parser():
     target_args = project_scan_target_parent.add_argument_group("Project & Scan Target")
     target_args.add_argument(
         "--project-name",
+        "--project",
+        dest="project_name",
         help="The Name of the Workbench Project to interact with.",
         required=True,
         metavar="NAME",
     )
     target_args.add_argument(
         "--scan-name",
+        "--scan",
+        dest="scan_name",
         help="The Name of the Workbench Scan to interact with.",
         required=True,
         metavar="NAME",
