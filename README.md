@@ -1,9 +1,7 @@
 # About the Workbench Agent
-The **Workbench-Agent** is a CLI to interact with and automate **FossID Workbench**. 
+The **Workbench-Agent** is a CLI to interact with **FossID Workbench**. 
 
-This is the Community Edition (CE) of the Workbench Agent maintained by the Customer Success Team. We use GitHub Issues for this repo; thank you in advance for reporting any issues! We will do our best to stay on top of any GitHub Issues opened.
-
-The official [Workbench Agent](https://github.com/fossid-ab/workbench-agent) is maintained by Engineering and has contracted SLA.
+This is the Community Edition (CE) of the Workbench Agent. We use GitHub Issues for this repo; thank you in advance for reporting any issues! We will do our best to stay on top of any GitHub Issues opened.
 
 ## Container Image Tags
 This repo publishes container images to [GitHub Container Registry](https://github.com/fossid-ab/workbench-agent-ce/pkgs/container/workbench-agent-ce) (`ghcr.io/fossid-ab/workbench-agent-ce`) with several tags:
@@ -18,7 +16,7 @@ This repo publishes container images to [GitHub Container Registry](https://gith
 docker run ghcr.io/fossid-ab/workbench-agent-ce:latest --help
 ```
 
-This shows the general Help message and lets you know the container is ready! Each command has its own help:
+This shows the Help message and lets you know the container is ready! Each command has its own help:
 
 ```bash
 docker run ghcr.io/fossid-ab/workbench-agent-ce:latest scan --help
@@ -32,11 +30,10 @@ The [Workbench Agent Wiki](https://github.com/fossid-ab/workbench-agent-ce/wiki)
 The [Getting Started Guide](https://github.com/fossid-ab/workbench-agent-ce/wiki/Getting-Started) walks through initial setup and running your first scan.
 
 ## Available Scan Settings
-The scanning-related commands (scan, scan-git, blind-scan) support the same scan settings available in the Workbench UI. Visit [Customizing Scan Operations](https://github.com/fossid-ab/workbench-agent-ce/wiki/Customizing-Scan-Operations) for details.
+The scanning commands (scan, scan-git, blind-scan) support all the settings available in the Workbench UI. Visit [Customizing Scan Operations](https://github.com/fossid-ab/workbench-agent-ce/wiki/Customizing-Scan-Operations) for details.
 
 ## Contributing
-Thank you for considering contributing to Workbench Agent CE! The best way to contribute is by reporting bugs or by
-sending improvement suggestions. Please create an Issue in this GitHub repository with bugs or improvement ideas.
+We welcome contributions to Workbench Agent CE! The best way to contribute is by reporting bugs or by suggesting improvements. Please create an Issue in this repository with bugs or improvement ideas.
 
-Pull requests are also welcomed. Please note that the Workbench-Agent is licensed under MIT license.
+We also welcome Pull requests! Please note that the Workbench-Agent is licensed under MIT license.
 The submission of your contribution implies that you agree with MIT licensing terms.
