@@ -16,6 +16,7 @@ import pytest
 
 from workbench_agent.utilities.config_display import (
     _print_agent_config,
+    _print_analyze_parameters,
     _print_connection_info,
     _print_identification_settings,
     _print_other_parameters,
@@ -73,6 +74,16 @@ def fixture_mock_params(mocker):
     params.reuse_project_ids = False
     params.reuse_scan_ids = True
     params.replace_existing_identifications = False
+    params.skip_lac_extraction = False
+
+    # Analyze
+    params.ecosystem = "bazel"
+    params.bazel_target = "//app:bin"
+    params.bazel_path = None
+    params.bazel_mode = None
+    params.fossid_conf_path = "/etc/fossid.conf"
+    params.da_timeout = 3600
+    params.blind_scan = False
 
     # Scan operation
     params.limit = 10
@@ -223,7 +234,7 @@ def test_print_section_sorted_output(mock_print):
 
 def _printed(mock_print) -> str:
     """Concatenated print output for substring assertions."""
-    return "\n".join(call[0][0] for call in mock_print.call_args_list)
+    return "\n".join(call[0][0] if call[0] else "" for call in mock_print.call_args_list)
 
 
 @patch("builtins.print")
@@ -255,6 +266,19 @@ def test_print_scan_target(mock_print, mock_params):
 
 
 @patch("builtins.print")
+def test_print_analyze_parameters(mock_print, mock_params):
+    """Analyze Parameters prints its title and only its keys."""
+    _print_analyze_parameters(mock_params)
+    out = _printed(mock_print)
+
+    assert "📦 Analyze Parameters:" in out
+    for k in ("ecosystem", "bazel_target", "da_timeout", "blind_scan"):
+        assert k in out
+    for k in ("log", "project_name", "limit", "skip_lac_extraction"):
+        assert k not in out
+
+
+@patch("builtins.print")
 def test_print_scan_operation_settings(mock_print, mock_params):
     """Scan Operation Settings prints its title and only its keys."""
     _print_scan_operation_settings(mock_params)
@@ -278,9 +302,10 @@ def test_print_identification_settings(mock_print, mock_params):
         "autoid_file_copyrights",
         "reuse_my_identifications",
         "replace_existing_identifications",
+        "skip_lac_extraction",
     ):
         assert k in out
-    for k in ("log", "project_name", "limit", "report_scope"):
+    for k in ("log", "project_name", "limit", "report_scope", "ecosystem"):
         assert k not in out
 
 
@@ -439,6 +464,7 @@ def test_print_configuration_calls_all_section_renderers(mock_params, mock_workb
         patch("workbench_agent.utilities.config_display._print_connection_info") as m_conn,
         patch("workbench_agent.utilities.config_display._print_agent_config") as m_agent,
         patch("workbench_agent.utilities.config_display._print_scan_target") as m_target,
+        patch("workbench_agent.utilities.config_display._print_analyze_parameters") as m_analyze,
         patch(
             "workbench_agent.utilities.config_display" "._print_scan_operation_settings"
         ) as m_ops,
@@ -455,6 +481,7 @@ def test_print_configuration_calls_all_section_renderers(mock_params, mock_workb
     for m in (
         m_agent,
         m_target,
+        m_analyze,
         m_ops,
         m_ident,
         m_results,
@@ -470,6 +497,7 @@ def test_print_configuration_calls_all_section_renderers(mock_params, mock_workb
 @patch("workbench_agent.utilities.config_display" "._print_identification_settings")
 @patch("workbench_agent.utilities.config_display" "._print_scan_operation_settings")
 @patch("workbench_agent.utilities.config_display._print_scan_target")
+@patch("workbench_agent.utilities.config_display._print_analyze_parameters")
 @patch("workbench_agent.utilities.config_display._print_agent_config")
 @patch("workbench_agent.utilities.config_display._print_connection_info")
 @patch("builtins.print")
@@ -477,6 +505,7 @@ def test_print_configuration_prints_header_and_command(
     mock_print,
     _m_conn,
     _m_agent,
+    _m_analyze,
     _m_target,
     _m_ops,
     _m_ident,
@@ -491,7 +520,7 @@ def test_print_configuration_prints_header_and_command(
 
     print_configuration(mock_params, mock_workbench_client)
 
-    printed_lines = [call[0][0] for call in mock_print.call_args_list]
+    printed_lines = [call[0][0] if call[0] else "" for call in mock_print.call_args_list]
     assert any("--- Workbench Agent Configuration ---" in line for line in printed_lines)
     assert any("Command: show-results" in line for line in printed_lines)
     assert any("------------------------------------" in line for line in printed_lines)
@@ -512,11 +541,12 @@ def test_print_configuration_integration(mock_print, mock_params, mock_workbench
     assert "Command: scan" in out
     assert "------------------------------------" in out
 
-    # All eight sections render their titles.
+    # All named sections render their titles.
     for title in (
         "🔗 Workbench Connection Info:",
         "⚙️  Agent Configuration:",
         "🎯 Scan Target:",
+        "📦 Analyze Parameters:",
         "🔬 Scan Operation Settings:",
         "🔍 Identification Settings:",
         "📊 Result Display:",
