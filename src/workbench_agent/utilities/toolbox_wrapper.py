@@ -26,11 +26,7 @@ from workbench_agent.utilities.upload_data_prep import cleanup_temp_path
 logger = logging.getLogger("workbench-agent")
 
 # Minimum FossID Toolbox version supported by this Workbench Agent CE release.
-# This defines the agent-to-Toolbox compatibility matrix for blind-scan.
-MINIMUM_TOOLBOX_VERSION = "1.7.5"
-
-# analyze requires the Bazel pipeline flags on ``fossid-toolbox da``.
-MINIMUM_TOOLBOX_DA_VERSION = "1.7.11"
+MINIMUM_TOOLBOX_VERSION = "1.7.11"
 
 DA_REPORT_NAME = "analyzer-result.json"
 DA_SOURCES_NAME = "first-party-sources.json"
@@ -177,13 +173,13 @@ class ToolboxWrapper:
         self,
         version_string: str,
         minimum: str = MINIMUM_TOOLBOX_VERSION,
-        purpose: str = "blind-scan",
+        purpose: str = "this agent",
     ) -> None:
         """
         Validate that the Toolbox version is supported by this agent.
 
         Parses the version number out of the raw ``--version`` output
-        (for example "FossID Toolbox version 1.7.5") and compares it
+        (for example "FossID Toolbox version 1.7.11") and compares it
         against the minimum supported version using semantic version
         ordering.
 
@@ -192,7 +188,6 @@ class ToolboxWrapper:
             minimum: Minimum supported version (defaults to
                 MINIMUM_TOOLBOX_VERSION)
             purpose: Feature name used in the error message
-                (defaults to ``blind-scan``)
 
         Raises:
             ProcessError: If the detected version is below the minimum
@@ -442,7 +437,7 @@ class ToolboxWrapper:
                     f"Toolbox DA pipeline completed but {DA_SOURCES_NAME} "
                     f"was not written under {output_dir}. This build of "
                     "FossID Toolbox does not support --emit-source-files; "
-                    f"upgrade to {MINIMUM_TOOLBOX_DA_VERSION} or later."
+                    f"upgrade to {MINIMUM_TOOLBOX_VERSION} or later."
                 )
 
         logger.debug("Toolbox DA pipeline wrote %s", report_path)

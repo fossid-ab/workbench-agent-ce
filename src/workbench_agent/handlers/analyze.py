@@ -45,10 +45,7 @@ from workbench_agent.utilities.resolve_project_scan import (
     find_or_create_project_and_scan,
 )
 from workbench_agent.utilities.scan_workflows import execute_scan_workflow
-from workbench_agent.utilities.toolbox_wrapper import (
-    MINIMUM_TOOLBOX_DA_VERSION,
-    ToolboxWrapper,
-)
+from workbench_agent.utilities.toolbox_wrapper import ToolboxWrapper
 from workbench_agent.utilities.upload_data_prep import (
     cleanup_temp_path,
     prepare_scan_target,
@@ -276,11 +273,7 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
         timeout=str(getattr(params, "fossid_toolbox_timeout", 300)),
     )
     version = toolbox_wrapper.get_version()
-    toolbox_wrapper.validate_toolbox_version(
-        version,
-        minimum=MINIMUM_TOOLBOX_DA_VERSION,
-        purpose="analyze",
-    )
+    toolbox_wrapper.validate_toolbox_version(version)
 
     pipeline_result = None
     staging_dir = None

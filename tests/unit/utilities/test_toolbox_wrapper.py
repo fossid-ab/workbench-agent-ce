@@ -12,7 +12,6 @@ import pytest
 from workbench_agent.api.exceptions import ProcessError
 from workbench_agent.exceptions import FileSystemError
 from workbench_agent.utilities.toolbox_wrapper import (
-    MINIMUM_TOOLBOX_DA_VERSION,
     MINIMUM_TOOLBOX_VERSION,
     ToolboxWrapper,
 )
@@ -385,14 +384,8 @@ class TestToolboxWrapperValidateVersion:
         """A version string without a number is tolerated with a warning."""
         wrapper.validate_toolbox_version("FossID Toolbox (dev build)")
 
-    def test_version_below_da_minimum_fails_for_analyze(self, wrapper):
-        """1.7.10 is below the DA pipeline minimum and names purpose=analyze."""
+    def test_version_just_below_minimum_raises(self, wrapper):
+        """1.7.10 is below the unified 1.7.11 minimum."""
         with pytest.raises(ProcessError) as exc_info:
-            wrapper.validate_toolbox_version(
-                "FossID Toolbox version 1.7.10",
-                minimum=MINIMUM_TOOLBOX_DA_VERSION,
-                purpose="analyze",
-            )
-        message = str(exc_info.value)
-        assert MINIMUM_TOOLBOX_DA_VERSION in message
-        assert "analyze" in message
+            wrapper.validate_toolbox_version("FossID Toolbox version 1.7.10")
+        assert MINIMUM_TOOLBOX_VERSION in str(exc_info.value)

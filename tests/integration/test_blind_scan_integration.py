@@ -169,7 +169,7 @@ class TestBlindScanIntegration:
         dummy_path = create_dummy_directory(tmp_path)
 
         mock_toolbox = MagicMock()
-        mock_toolbox.get_version.return_value = "FossID Toolbox version 1.7.5"
+        mock_toolbox.get_version.return_value = "FossID Toolbox version 1.7.11"
         mock_fossid = tmp_path / "mock_toolbox_out_lac.fossid"
         mock_toolbox.generate_hashes.return_value = copy_signatures_fixture_as_mock_fossid(
             mock_fossid
@@ -223,7 +223,7 @@ class TestBlindScanIntegration:
         dummy_path = create_dummy_directory(tmp_path)
 
         mock_toolbox = MagicMock()
-        mock_toolbox.get_version.return_value = "FossID Toolbox version 1.7.5"
+        mock_toolbox.get_version.return_value = "FossID Toolbox version 1.7.11"
         mock_fossid = tmp_path / "mock_toolbox_out_skiplac.fossid"
         mock_toolbox.generate_hashes.return_value = copy_signatures_fixture_as_mock_fossid(
             mock_fossid

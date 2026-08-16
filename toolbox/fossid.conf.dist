@@ -1,0 +1,14 @@
+[CLI]
+; FossID Toolbox configuration (KB host and scan token).
+; This is not the Workbench Agent API config (WORKBENCH_URL / USER / TOKEN).
+;
+; Copy to fossid.conf and fill in the values:
+;   cp toolbox/fossid.conf.dist toolbox/fossid.conf
+;
+; fossid.conf is gitignored. Do not commit a filled copy.
+
+; KB / scan-server hostname (for example https://us1.foss.id)
+cli_server_host = YOUR_KB_HOST
+
+; Scanning token from Workbench (user or scan token used by Toolbox)
+cli_token = YOUR_SCAN_TOKEN
