@@ -1,5 +1,5 @@
 """
-CE utilities for resolving ID reuse CLI flags to scan API payload values.
+Utilities for resolving ID reuse flags to scan API payload values.
 
 Orchestrates the slim ``ResolverService`` with terminal output and
 graceful degradation when reuse sources cannot be found.

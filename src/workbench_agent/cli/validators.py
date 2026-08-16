@@ -5,6 +5,7 @@ import os
 from argparse import Namespace
 
 from workbench_agent.exceptions import ValidationError
+from workbench_agent.utilities.analyze.ecosystem import validate_analyze_ecosystem
 
 logger = logging.getLogger("workbench-agent")
 
@@ -57,6 +58,8 @@ def _validate_command_specific_args(args: Namespace) -> None:
 
     if command in ["scan", "scan-git", "blind-scan"]:
         _validate_scan_commands(args)
+    elif command == "analyze":
+        _validate_analyze_command(args)
     elif command in ["import-da", "import-sbom"]:
         _validate_import_commands(args)
     elif command == "download-reports":
@@ -65,6 +68,42 @@ def _validate_command_specific_args(args: Namespace) -> None:
         _validate_show_results_command(args)
     elif command == "quick-scan":
         _validate_quick_scan_command(args)
+
+
+def _validate_analyze_command(args: Namespace) -> None:
+    """Validate the analyze command (Toolbox DA pipeline + first-party KB scan)."""
+    path = getattr(args, "path", None) or "."
+    args.path = path
+    if not os.path.exists(path):
+        raise ValidationError(f"Path does not exist: {path}")
+    if not os.path.isdir(path):
+        raise ValidationError(
+            f"analyze --path must be a project directory: {path}"
+        )
+
+    validate_analyze_ecosystem(args)
+
+    da_timeout = getattr(args, "da_timeout", None)
+    if da_timeout is not None and da_timeout <= 0:
+        raise ValidationError("--da-timeout must be a positive integer.")
+
+    fossid_conf_path = getattr(args, "fossid_conf_path", None)
+    if fossid_conf_path and not os.path.isfile(fossid_conf_path):
+        raise ValidationError(f"fossid.conf not found: {fossid_conf_path}")
+
+    toolbox_timeout = getattr(args, "fossid_toolbox_timeout", None)
+    if toolbox_timeout is not None and toolbox_timeout <= 0:
+        raise ValidationError("fossid-toolbox-timeout must be a positive integer.")
+
+    if getattr(args, "dependency_analysis_only", False) and getattr(
+        args, "blind_scan", False
+    ):
+        raise ValidationError(
+            "--dependency-analysis-only cannot be combined with --blind-scan "
+            "(there is no first-party source scan to hash)."
+        )
+
+    _validate_id_reuse_args(args)
 
 
 def _validate_scan_commands(args: Namespace) -> None:
@@ -168,9 +207,11 @@ def _validate_download_reports_command(args: Namespace) -> None:
     scan_name = (getattr(args, "scan_name", None) or "").strip()
 
     if not project_name:
-        raise ValidationError("Please provide a project name (use --project-name)")
+        raise ValidationError("Please provide a project name (use --project-name or --project)")
     if report_scope == "scan" and not scan_name:
-        raise ValidationError("Scan scope reports require the scan name (use --scan-name)")
+        raise ValidationError(
+            "Scan scope reports require the scan name (use --scan-name or --scan)"
+        )
 
 
 def _validate_show_results_command(args: Namespace) -> None:

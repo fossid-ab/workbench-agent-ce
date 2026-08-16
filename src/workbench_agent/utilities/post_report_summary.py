@@ -2,6 +2,8 @@ import argparse
 import logging
 from typing import TYPE_CHECKING, Optional, Set
 
+from workbench_agent.utilities.section import print_section
+
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
 
@@ -104,12 +106,12 @@ def print_report_summary(
             _print_workbench_link(workbench, scan_code)
         return
 
-    print("\n--- Post-Report Summary ---")
+    print_section("Post-Report Summary")
 
     # Report Scope
     scope_label = "Project" if params.report_scope == "project" else "Scan"
     scope_name = params.project_name if params.report_scope == "project" else params.scan_name
-    print(f"\nReport Scope: {scope_label} '{scope_name}'")
+    print(f"Report Scope: {scope_label} '{scope_name}'")
 
     # Output Directory
     output_dir = getattr(params, "report_save_path", ".")

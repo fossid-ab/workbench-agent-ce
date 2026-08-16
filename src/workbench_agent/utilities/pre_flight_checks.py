@@ -17,7 +17,6 @@ logger = logging.getLogger("workbench-agent")
 def scan_pre_flight_check(
     client: "WorkbenchClient",
     scan_code: str,
-    scan_is_new: bool,
     params: argparse.Namespace,
 ) -> None:
     """
@@ -29,21 +28,16 @@ def scan_pre_flight_check(
     - KB scan operations
     - Dependency analysis operations
 
+    Callers skip this for new scans (they are guaranteed idle).
+
     Args:
         client: The Workbench API client instance
         scan_code: Code of the scan to check
-        scan_is_new: Whether this is a new scan (new scans are guaranteed
-            to be idle, so checks are skipped)
         params: Command line parameters containing:
             - scan_number_of_tries: Maximum attempts for waiting
             - scan_wait_time: Seconds to wait between attempts
     """
-    # Skip idle checks for new scans (they're guaranteed to be idle)
-    if scan_is_new:
-        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
-        return
-
-    print("\nEnsuring the Scan is Idle...")
+    print("Ensuring the Scan is Idle...")
 
     # Check each process type individually
     try:
@@ -98,7 +92,6 @@ def scan_pre_flight_check(
 def scan_git_pre_flight_check(
     client: "WorkbenchClient",
     scan_code: str,
-    scan_is_new: bool,
     params: argparse.Namespace,
 ) -> None:
     """
@@ -110,20 +103,15 @@ def scan_git_pre_flight_check(
     - KB scan operations
     - Dependency analysis operations
 
+    Callers skip this for new scans (they are guaranteed idle).
+
     Args:
         client: The Workbench API client instance
         scan_code: Code of the scan to check
-        scan_is_new: Whether this is a new scan (new scans are guaranteed
-            to be idle, so checks are skipped)
         params: Command line parameters containing:
             - scan_number_of_tries: Maximum attempts for waiting
             - scan_wait_time: Seconds to wait between attempts
     """
-    # Skip idle checks for new scans (they're guaranteed to be idle)
-    if scan_is_new:
-        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
-        return
-
     print("Ensuring the Scan is Idle...")
 
     # Check each process type individually
@@ -176,7 +164,6 @@ def scan_git_pre_flight_check(
 def blind_scan_pre_flight_check(
     client: "WorkbenchClient",
     scan_code: str,
-    scan_is_new: bool,
     params: argparse.Namespace,
 ) -> None:
     """
@@ -187,21 +174,16 @@ def blind_scan_pre_flight_check(
     - KB scan operations
     - Dependency analysis operations
 
+    Callers skip this for new scans (they are guaranteed idle).
+
     Args:
         client: The Workbench API client instance
         scan_code: Code of the scan to check
-        scan_is_new: Whether this is a new scan (new scans are guaranteed
-            to be idle, so checks are skipped)
         params: Command line parameters containing:
             - scan_number_of_tries: Maximum attempts for waiting
             - scan_wait_time: Seconds to wait between attempts
     """
-    # Skip idle checks for new scans (they're guaranteed to be idle)
-    if scan_is_new:
-        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
-        return
-
-    print("\nEnsuring the Scan is Idle...")
+    print("Ensuring the Scan is Idle...")
 
     # Check each process type individually
     try:
@@ -239,8 +221,9 @@ def blind_scan_pre_flight_check(
 def import_da_pre_flight_check(
     client: "WorkbenchClient",
     scan_code: str,
-    scan_is_new: bool,
     params: argparse.Namespace,
+    *,
+    quiet: bool = False,
 ) -> None:
     """
     Performs pre-flight checks for the import-da handler.
@@ -248,21 +231,19 @@ def import_da_pre_flight_check(
     Ensures that existing scans don't have any running dependency analysis
     operations that would be interrupted by a new import operation.
 
+    Callers skip this for new scans (they are guaranteed idle).
+
     Args:
         client: The Workbench API client instance
         scan_code: Code of the scan to check
-        scan_is_new: Whether this is a new scan (new scans are guaranteed
-            to be idle, so checks are skipped)
         params: Command line parameters containing:
             - scan_number_of_tries: Maximum attempts for waiting
             - scan_wait_time: Seconds to wait between attempts
     """
-    # Skip idle checks for new scans (they're guaranteed to be idle)
-    if scan_is_new:
-        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
-        return
-
-    print("\nEnsuring Scan is Idle...")
+    if quiet:
+        logger.debug("Ensuring scan is idle before DA import...")
+    else:
+        print("\nEnsuring Scan is Idle...")
 
     try:
         # Check if DA is active and wait if needed
@@ -281,7 +262,6 @@ def import_da_pre_flight_check(
 def import_sbom_pre_flight_check(
     client: "WorkbenchClient",
     scan_code: str,
-    scan_is_new: bool,
     params: argparse.Namespace,
 ) -> None:
     """
@@ -290,20 +270,15 @@ def import_sbom_pre_flight_check(
     Ensures that existing scans don't have any running report import
     operations that would be interrupted by a new SBOM import operation.
 
+    Callers skip this for new scans (they are guaranteed idle).
+
     Args:
         client: The Workbench API client instance
         scan_code: Code of the scan to check
-        scan_is_new: Whether this is a new scan (new scans are guaranteed
-            to be idle, so checks are skipped)
         params: Command line parameters containing:
             - scan_number_of_tries: Maximum attempts for waiting
             - scan_wait_time: Seconds to wait between attempts
     """
-    # Skip idle checks for new scans (they're guaranteed to be idle)
-    if scan_is_new:
-        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
-        return
-
     print("\nEnsuring the Scan is Idle...")
 
     try:
@@ -329,8 +304,7 @@ def show_results_pre_flight_check(
     Performs pre-flight checks for the show-results handler.
 
     Ensures that scan processes are complete before displaying results.
-    This is a read-only operation, so it always checks (no scan_is_new
-    parameter needed).
+    This is a read-only operation, so it always checks.
 
     Checks for:
     - KB scan operations
@@ -398,8 +372,7 @@ def evaluate_gates_pre_flight_check(
     Performs pre-flight checks for the evaluate-gates handler.
 
     Ensures that scan processes are complete before evaluating gates.
-    This is a read-only operation, so it always checks (no scan_is_new
-    parameter needed).
+    This is a read-only operation, so it always checks.
 
     Checks for:
     - KB scan operations

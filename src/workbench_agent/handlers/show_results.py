@@ -5,6 +5,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.pre_flight_checks import (
     show_results_pre_flight_check,
 )
@@ -49,13 +50,13 @@ def handle_show_results(client: "WorkbenchClient", params: argparse.Namespace) -
         projects or scans. It will wait for in-progress scans to complete
         before displaying results.
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     # Note: --show-* flag validation is done at CLI layer (cli/validators.py)
     # We trust that at least one flag is provided
 
     # Resolve project and scan (find only - don't create)
-    print("\nResolving scan for results display...")
+    print("Resolving scan for results display...")
     logger.info(f"Looking for scan '{params.scan_name}' in project " f"'{params.project_name}'")
 
     # Use explicit resolver API (read-only)

@@ -8,6 +8,7 @@ WorkbenchClient API architecture.
 
 import logging
 
+from .analyze import handle_analyze
 from .blind_scan import handle_blind_scan
 from .delete_scan import handle_delete_scan
 from .download_reports import handle_download_reports
@@ -23,6 +24,7 @@ from .show_results import handle_show_results
 logger = logging.getLogger("workbench-agent")
 
 __all__ = [
+    "handle_analyze",
     "handle_scan",
     "handle_scan_git",
     "handle_blind_scan",

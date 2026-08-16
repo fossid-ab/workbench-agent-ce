@@ -56,7 +56,7 @@ class TestScanHandlerClearBehavior:
     @patch("workbench_agent.handlers.scan.scan_pre_flight_check")
     def test_existing_scan_clears_content_by_default(
         self,
-        _mock_preflight,
+        mock_preflight,
         _mock_workflow,
         _mock_prep,
         _mock_resolve,
@@ -66,6 +66,7 @@ class TestScanHandlerClearBehavior:
         """Default behavior: existing scan content is cleared before upload."""
         handle_scan(mock_client, base_params)
 
+        mock_preflight.assert_called_once_with(mock_client, "scan_code", base_params)
         mock_client.scan_content.remove_uploaded_content.assert_called_once_with("scan_code", "")
 
     @patch(
@@ -141,7 +142,7 @@ class TestScanHandlerClearBehavior:
     @patch("workbench_agent.handlers.scan.scan_pre_flight_check")
     def test_new_scan_without_flag_skips_clear(
         self,
-        _mock_preflight,
+        mock_preflight,
         _mock_workflow,
         _mock_prep,
         mock_resolve,
@@ -153,6 +154,7 @@ class TestScanHandlerClearBehavior:
 
         handle_scan(mock_client, base_params)
 
+        mock_preflight.assert_not_called()
         mock_client.scan_content.remove_uploaded_content.assert_not_called()
 
 

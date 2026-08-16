@@ -3,6 +3,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from workbench_agent.api.exceptions import ApiError, NetworkError
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.vulnerability_display import (
     print_vulnerable_component_count,
     summarize_vulnerability_rows,
@@ -47,7 +48,7 @@ def print_import_summary(
             logger.debug(f"Could not create link to Workbench: {e}")
         return
 
-    print("\n--- Post-Import Summary ---")
+    print_section("Post-Import Summary")
 
     # Determine import type
     is_sbom_import = getattr(params, "command", None) == "import-sbom"
@@ -96,7 +97,7 @@ def print_import_summary(
 
     # --- Identified Components Summary (SBOM imports only) ---
     if is_sbom_import and import_completed:
-        print("\nImported Identifications:")
+        print("Imported Identifications:")
 
         # Count components identified
         num_components = len(kb_components) if kb_components else 0
@@ -114,7 +115,7 @@ def print_import_summary(
     # --- Dependency Analysis Summary ---
     # Only show this section if import was completed
     if import_completed:
-        print("\nDependencies Imported:")
+        print("Dependencies Imported:")
 
         # Count dependencies
         num_dependencies = len(dependencies) if dependencies else 0

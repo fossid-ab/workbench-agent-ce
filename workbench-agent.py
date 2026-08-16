@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright: FossID AB 2022
+# Copyright: FossID AB 2022-2026
 
 import sys
 

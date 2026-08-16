@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from workbench_agent.api.exceptions import ProcessError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.pre_flight_checks import scan_pre_flight_check
 from workbench_agent.utilities.resolve_project_scan import (
     find_or_create_project_and_scan,
@@ -55,7 +56,7 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
         ScanNotFoundError: If scan resolution fails
         ProcessError: If scan operations fail
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     durations: dict = {
         "kb_scan": 0.0,
@@ -66,16 +67,18 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
     # Path existence is validated at CLI layer (cli/validators.py)
 
     # ===== STEP 1: Resolve project and scan =====
-    print("\n--- Project and Scan Checks ---")
-    print("Checking target Project and Scan...")
+    print_section("Project and Scan Checks")
     _, scan_code, scan_is_new = find_or_create_project_and_scan(
         client,
         params,
     )
 
     # ===== STEP 2: Pre-Flight Checks =====
-    print("\n--- Pre-Flight Checks ---")
-    scan_pre_flight_check(client, scan_code, scan_is_new, params)
+    if not scan_is_new:
+        print_section("Pre-Flight Checks")
+        scan_pre_flight_check(client, scan_code, params)
+    else:
+        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
 
     # ===== STEP 3: Clear Existing Content =====
     if not scan_is_new and not params.incremental_upload:
@@ -93,13 +96,14 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
         logger.debug("Skipping content clear - new scan is empty")
 
     # ===== STEP 4: Upload code =====
-    print("\n--- Preparing Scan Target ---")
+    print_section("Preparing Scan Target")
     with prepare_scan_target(params.path) as upload_path:
-        print("\nUploading Code to Workbench...")
+        print("Uploading archive to Workbench...")
         client.scan_content.upload_scan_target(scan_code, upload_path)
+        print("✓ Upload complete")
 
     # ===== STEP 5: Extract archives =====
-    print("\nExtracting Uploaded Archive...")
+    print("Extracting uploaded archive...")
     extraction_triggered = client.scan_content.extract_archives(
         scan_code=scan_code,
         recursively_extract_archives=(params.recursively_extract_archives),
@@ -121,9 +125,10 @@ def handle_scan(client: "WorkbenchClient", params: argparse.Namespace) -> bool:
                 or "Archive extraction failed. " "Scan can not continue."
             )
             raise ProcessError(f"Archive extraction failed for scan " f"'{scan_code}': {error_msg}")
+        print("✓ Archive extracted")
     else:
-        print("No archives to extract. Continuing with scan...")
+        print("No archives to extract")
 
     # ===== STEP 6: Run Scans =====
-    print("\n--- Running Scans ---")
+    print_section("Running Scans")
     return execute_scan_workflow(client, params, scan_code, durations)

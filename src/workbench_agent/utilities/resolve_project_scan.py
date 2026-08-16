@@ -40,7 +40,8 @@ def find_or_create_project_and_scan(
     """
     Find or create a project and scan for a Agent-CE command.
 
-    Prints progress and validates compatibility for existing scans.
+    Prints the resolution outcome and validates compatibility for
+    existing scans.
 
     Returns:
         Tuple of ``(project_code, scan_code, scan_is_new)``
@@ -54,7 +55,6 @@ def find_or_create_project_and_scan(
     try:
         project_code = client.resolver.find_project(params.project_name)
     except ProjectNotFoundError:
-        print(f"Creating project '{params.project_name}'...")
         project_code = client.resolver.create_project(params.project_name)
         project_created = True
 
@@ -68,7 +68,6 @@ def find_or_create_project_and_scan(
         scan_code = resolved.code
         scan_info = resolved.info
     except ScanNotFoundError:
-        print(f"Creating scan '{params.scan_name}' in project " f"'{project_code}'...")
         resolved = client.resolver.create_scan(
             project_code,
             params.scan_name,
@@ -77,12 +76,10 @@ def find_or_create_project_and_scan(
         scan_code = resolved.code
         scan_is_new = True
 
-    _print_resolution_outcome(project_created, scan_is_new)
-
     if not scan_is_new:
-        print("Checking scan compatibility...")
         _ensure_scan_compatible(client, scan_code, params, scan_info=scan_info)
-        print("✓ Compatibility check passed")
+
+    _print_resolution_outcome(project_created, scan_is_new)
 
     return project_code, scan_code, scan_is_new
 
@@ -108,7 +105,8 @@ def _reuse_constraints_from_params(
     """Map CE command params to ``check_scan_reuse`` keyword arguments."""
     command = params.command
 
-    if command in ("scan", "blind-scan"):
+    if command in ("scan", "blind-scan", "analyze"):
+        # analyze KB-scans first-party sources (UPLOAD) then import-da.
         return {"required": ScanType.UPLOAD}
     if command == "scan-git":
         return {

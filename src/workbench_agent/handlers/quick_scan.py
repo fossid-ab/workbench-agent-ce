@@ -5,6 +5,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -60,7 +61,7 @@ def handle_quick_scan(
         - Workbench >= 24.2.0: Response field "noise"
         The client normalizes this to "noise" for consistency.
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     # Read and encode file content
     logger.debug(f"Reading file: {params.path}")
@@ -68,7 +69,7 @@ def handle_quick_scan(
         file_content_b64 = base64.b64encode(f.read()).decode("utf-8")
 
     # Perform quick scan using explicit API
-    print("\nPerforming quick scan...")
+    print("Performing quick scan...")
     logger.info(
         f"Quick scanning file with limit={params.limit}, " f"sensitivity={params.sensitivity}"
     )

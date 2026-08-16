@@ -83,6 +83,7 @@ def mock_main_dependencies():
 
         # Mock all handlers - need to patch them at the main module level where they're imported
         with (
+            patch("workbench_agent.main.handle_analyze") as mock_analyze,
             patch("workbench_agent.main.handle_scan") as mock_scan,
             patch("workbench_agent.main.handle_scan_git") as mock_scan_git,
             patch("workbench_agent.main.handle_blind_scan") as mock_blind_scan,
@@ -95,6 +96,7 @@ def mock_main_dependencies():
             patch("workbench_agent.main.handle_quick_scan") as mock_quick_scan,
         ):
 
+            mocks["handle_analyze"] = mock_analyze
             mocks["handle_scan"] = mock_scan
             mocks["handle_scan_git"] = mock_scan_git
             mocks["handle_blind_scan"] = mock_blind_scan
@@ -188,6 +190,40 @@ class ArgBuilder:
                 path,
             ]
         )
+        return self
+
+    def analyze(
+        self,
+        project="TestProject",
+        scan="TestScan",
+        path=None,
+        ecosystem="bazel",
+        bazel_target="//app:bin",
+    ):
+        self.args.extend(["analyze"])
+        self.args.extend(self.global_args)
+        self.args.extend(
+            [
+                "--project-name",
+                project,
+                "--scan-name",
+                scan,
+                "-e",
+                ecosystem,
+            ]
+        )
+        if path is not None:
+            self.args.extend(["--path", path])
+        if bazel_target is not None:
+            self.args.extend(["--bazel-target", bazel_target])
+        return self
+
+    def flag(self, name, value=None):
+        """Append a bare flag or flag+value to the argument list."""
+        if value is None:
+            self.args.append(name)
+        else:
+            self.args.extend([name, value])
         return self
 
     def import_sbom(self, project="TestProject", scan="TestScan", path="bom.json"):

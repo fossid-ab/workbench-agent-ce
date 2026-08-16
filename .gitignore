@@ -15,6 +15,13 @@ Thumbs.db
 log-agent.txt
 workbench-agent-log.txt
 
+# Local FossID Toolbox binary and filled conf (do not commit; see wiki)
+/fossid-toolbox
+/fossid-toolbox-*
+/toolbox/fossid-toolbox
+/toolbox/fossid-toolbox-*
+/toolbox/fossid.conf
+
 # Local Testing Things and Sample Code
 inspiration/
 test-commands.txt
@@ -39,3 +46,5 @@ __pycache__/
 # Mypy
 .mypy_cache/
 results.json
+wb-agent-analyze.code-workspace
+src/workbench_agent/cli/fossid-da-rust.code-workspace

@@ -17,6 +17,7 @@ from workbench_agent.exceptions import (
     WorkbenchAgentError,
 )
 from workbench_agent.handlers import (
+    handle_analyze,
     handle_blind_scan,
     handle_delete_scan,
     handle_download_reports,
@@ -113,6 +114,7 @@ def main() -> int:
             print_configuration(args, workbench)
 
         COMMAND_HANDLERS = {
+            "analyze": handle_analyze,
             "scan": handle_scan,
             "blind-scan": handle_blind_scan,
             "scan-git": handle_scan_git,

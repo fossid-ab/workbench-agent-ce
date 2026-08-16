@@ -13,6 +13,7 @@ from workbench_agent.api.exceptions import (
 from workbench_agent.api.utils import report_definitions
 from workbench_agent.exceptions import FileSystemError, ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.post_report_summary import print_report_summary
 from workbench_agent.utilities.pre_flight_checks import (
     download_reports_pre_flight_check,
@@ -51,7 +52,7 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
         FileSystemError: If file operations fail
         ApiError: If API operations fail
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     report_types = client.reports.resolve_report_types(
         params.report_scope,
@@ -68,7 +69,7 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
     # Resolve project, scan
     scope_name = params.scan_name if params.report_scope == "scan" else params.project_name
     print(
-        f"\nResolving "
+        f"Resolving "
         f"{'scan' if params.report_scope == 'scan' else 'project'} "
         f"'{scope_name}'..."
     )
