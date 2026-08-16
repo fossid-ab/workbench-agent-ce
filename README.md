@@ -7,7 +7,7 @@ This is the Community Edition (CE) of the Workbench Agent. We use GitHub Issues 
 This repo publishes container images to [GitHub Container Registry](https://github.com/fossid-ab/workbench-agent-ce/pkgs/container/workbench-agent-ce) (`ghcr.io/fossid-ab/workbench-agent-ce`) with several tags:
 
 - **latest** - the latest stable release - use this tag when you want to run the newest stable release
-- **version tag** - a tagged release (for example `0.9.0`) - use this tag in CI for reproducibility
+- **version tag** - a tagged release (for example `0.10.0`) - use this tag in CI for reproducibility
 - **edge** - the latest and greatest in between releases - use this tag carefully, as it may break between releases
 
 ## General Usage
@@ -20,6 +20,7 @@ This shows the Help message and lets you know the container is ready! Each comma
 
 ```bash
 docker run ghcr.io/fossid-ab/workbench-agent-ce:latest scan --help
+docker run ghcr.io/fossid-ab/workbench-agent-ce:latest analyze --help
 docker run ghcr.io/fossid-ab/workbench-agent-ce:latest evaluate-gates --help
 docker run ghcr.io/fossid-ab/workbench-agent-ce:latest download-reports --help
 ```
@@ -30,7 +31,7 @@ The [Workbench Agent Wiki](https://github.com/fossid-ab/workbench-agent-ce/wiki)
 The [Getting Started Guide](https://github.com/fossid-ab/workbench-agent-ce/wiki/Getting-Started) walks through initial setup and running your first scan.
 
 ## Available Scan Settings
-The scanning commands (scan, scan-git, blind-scan) support all the settings available in the Workbench UI. Visit [Customizing Scan Operations](https://github.com/fossid-ab/workbench-agent-ce/wiki/Customizing-Scan-Operations) for details.
+The scanning commands (`scan`, `scan-git`, `blind-scan`, and the first-party KB scan in `analyze`) support the settings available in the Workbench UI. Visit [Customizing Scan Operations](https://github.com/fossid-ab/workbench-agent-ce/wiki/Customizing-Scan-Operations) for details.
 
 ## Contributing
 We welcome contributions to Workbench Agent CE! The best way to contribute is by reporting bugs or by suggesting improvements. Please create an Issue in this repository with bugs or improvement ideas.
