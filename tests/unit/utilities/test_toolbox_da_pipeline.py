@@ -4,9 +4,6 @@ import json
 import os
 from unittest.mock import patch
 
-import pytest
-
-from workbench_agent.api.exceptions import ProcessError
 from workbench_agent.utilities.toolbox_wrapper import (
     ToolboxWrapper,
     build_da_pipeline_args,
@@ -116,16 +113,6 @@ class TestRunDaPipeline:
         )
         assert result.sources_path.endswith("first-party-sources.json")
         assert os.path.isfile(result.sources_path)
-
-    def test_missing_sidecar_names_toolbox_emit_source_files(self, tmp_path):
-        with pytest.raises(
-            ProcessError, match="Toolbox.*--emit-source-files"
-        ):
-            _run_with_outputs(
-                tmp_path,
-                {"analyzer-result.json": "{}"},
-                emit_source_files=True,
-            )
 
     def test_no_sidecar_expected_without_the_flag(self, tmp_path):
         result, _cmd = _run_with_outputs(

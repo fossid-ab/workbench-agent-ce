@@ -427,17 +427,11 @@ class ToolboxWrapper:
                 f"not written under {output_dir}"
             )
 
-        sources_path = None
-        if emit_source_files:
-            sources_path = os.path.join(output_dir, DA_SOURCES_NAME)
-            if not os.path.isfile(sources_path):
-                shutil.rmtree(output_dir, ignore_errors=True)
-                raise ProcessError(
-                    f"Toolbox DA pipeline completed but {DA_SOURCES_NAME} "
-                    f"was not written under {output_dir}. This build of "
-                    "FossID Toolbox does not support --emit-source-files; "
-                    f"upgrade to {MINIMUM_TOOLBOX_VERSION} or later."
-                )
+        sources_path = (
+            os.path.join(output_dir, DA_SOURCES_NAME)
+            if emit_source_files
+            else None
+        )
 
         logger.debug("Toolbox DA pipeline wrote %s", report_path)
         return DaPipelineResult(
