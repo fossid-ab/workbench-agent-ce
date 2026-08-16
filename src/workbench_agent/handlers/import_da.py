@@ -73,7 +73,10 @@ def handle_import_da(client: "WorkbenchClient", params: argparse.Namespace) -> b
     )
 
     # Ensure scan is idle before starting dependency analysis import
-    import_da_pre_flight_check(client, scan_code, scan_is_new, params)
+    if not scan_is_new:
+        import_da_pre_flight_check(client, scan_code, params)
+    else:
+        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
 
     # Upload dependency analysis file
     print_section("Uploading Dependency Analysis File")

@@ -2,17 +2,17 @@
 Handler for the ``analyze`` command.
 
 Orchestrates FossID Toolbox DA pipeline mode (managed dependencies)
-plus a KB scan of first-party Bazel sources (unmanaged code) into the
-same Workbench Project/Scan. Toolbox decides which sources belong to
-the target and reports them in a sidecar; the agent only stages and
+plus a KB scan of first-party sources (unmanaged code) into the same
+Workbench Project/Scan. Toolbox decides which sources belong to the
+analyzed unit and reports them in a sidecar; the agent only stages and
 scans them.
 
 By default first-party sources are uploaded (regular scan). Pass
 ``--blind-scan`` to hash with FossID Toolbox instead of uploading
 source content.
 
-First pass supports Bazel only (``-e bazel``). Maven/Gradle will reuse
-the same CLI surface later.
+Ecosystem-specific flags live in ``analyze_ecosystem``. The handler
+itself is the same for every supported ``-e``.
 """
 
 from __future__ import annotations
@@ -23,10 +23,15 @@ import shutil
 from typing import TYPE_CHECKING
 
 from workbench_agent.api.exceptions import ProcessError, ProcessTimeoutError
-from workbench_agent.exceptions import ValidationError, WorkbenchAgentError
+from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.handlers.blind_scan import (
     resolve_fossid_toolbox_path,
     validate_fossid_file,
+)
+from workbench_agent.utilities.analyze_ecosystem import (
+    da_pipeline_kwargs,
+    ecosystem_scope_label,
+    validate_analyze_ecosystem,
 )
 from workbench_agent.utilities.bazel_sources import (
     load_first_party_sources,
@@ -35,11 +40,7 @@ from workbench_agent.utilities.bazel_sources import (
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.post_analysis_summary import print_analysis_summary
-from workbench_agent.utilities.pre_flight_checks import (
-    blind_scan_pre_flight_check,
-    import_da_pre_flight_check,
-    scan_pre_flight_check,
-)
+from workbench_agent.utilities.pre_flight_checks import scan_pre_flight_check
 from workbench_agent.utilities.resolve_project_scan import (
     find_or_create_project_and_scan,
 )
@@ -57,22 +58,6 @@ if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
 
 logger = logging.getLogger("workbench-agent")
-
-SUPPORTED_ECOSYSTEMS = {"bazel"}
-
-
-def _ensure_bazel_params(params: argparse.Namespace) -> None:
-    ecosystem = (getattr(params, "ecosystem", None) or "").strip().lower()
-    if ecosystem not in SUPPORTED_ECOSYSTEMS:
-        raise ValidationError(
-            f"analyze currently supports only -e bazel "
-            f"(got {ecosystem!r}). Maven/Gradle will be added later."
-        )
-    if not getattr(params, "bazel_target", None):
-        raise ValidationError(
-            "analyze with -e bazel requires --bazel-target "
-            "(e.g. --bazel-target '//myapp:app')."
-        )
 
 
 def _force_kb_only(params: argparse.Namespace) -> None:
@@ -111,8 +96,6 @@ def _run_blind_scan_sources(
         validate_fossid_file(hash_file_path)
         print("Hash validation successful.")
 
-        blind_scan_pre_flight_check(client, scan_code, scan_is_new, params)
-
         if not scan_is_new:
             print("\nClearing existing scan content...")
             try:
@@ -144,10 +127,6 @@ def _run_upload_sources(
     durations: dict,
 ) -> bool:
     """Upload staged sources and run the KB scan (no Workbench DA)."""
-    if not scan_is_new:
-        print_section("Pre-Flight Checks")
-    scan_pre_flight_check(client, scan_code, scan_is_new, params)
-
     if not scan_is_new:
         print("\nClearing existing scan content...")
         try:
@@ -211,9 +190,6 @@ def _import_da_report(
     report_path: str,
 ) -> bool:
     """Upload analyzer-result.json and wait for import-only DA."""
-    # After a KB scan the scan is no longer "new"; always idle-check DA.
-    import_da_pre_flight_check(client, scan_code, False, params, quiet=True)
-
     print("\nImporting dependency analysis results...")
     try:
         client.scan_content.upload_da_results(scan_code=scan_code, path=report_path)
@@ -273,16 +249,16 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     """
     Handler for the ``analyze`` command.
 
-    Workflow (Bazel):
+    Workflow:
     1. Run ``fossid-toolbox da --pipeline`` (with ``--emit-source-files``
        unless ``--dependency-analysis-only``) for managed dependencies
-       and, by default, the list of first-party sources feeding the target
+       and, by default, the list of first-party sources for the unit
     2. KB-scan those sources (upload by default, or ``--blind-scan``)
        unless ``--dependency-analysis-only``
     3. Import the Toolbox ``analyzer-result.json`` into the same scan
     """
     print_section(f"Running {params.command.upper()} Command")
-    _ensure_bazel_params(params)
+    validate_analyze_ecosystem(params)
 
     path = params.path
     blind_scan = bool(getattr(params, "blind_scan", False))
@@ -313,18 +289,21 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
         # --- 1. Managed deps + first-party source list via Toolbox DA ---
         pipeline_result = toolbox_wrapper.run_da_pipeline(
             input_path=path,
-            ecosystem=params.ecosystem,
-            bazel_target=params.bazel_target,
-            bazel_path=getattr(params, "bazel_path", None),
-            bazel_mode=getattr(params, "bazel_mode", None),
             emit_source_files=not da_only,
             fossid_conf_path=getattr(params, "fossid_conf_path", None),
             timeout=int(getattr(params, "da_timeout", 3600)),
+            **da_pipeline_kwargs(params),
         )
 
         # --- 2. First-party KB scan (upload or blind) ---
         print_section("Project and Scan Checks")
         _, scan_code, scan_is_new = find_or_create_project_and_scan(client, params)
+
+        if not scan_is_new:
+            print_section("Pre-Flight Checks")
+            scan_pre_flight_check(client, scan_code, params)
+        else:
+            logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
 
         durations = {
             "kb_scan": 0.0,
@@ -344,8 +323,8 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
             if not sources:
                 print(
                     "\nNo first-party source files found for "
-                    f"{params.bazel_target}; skipping KB scan and importing "
-                    "the dependency graph only."
+                    f"{ecosystem_scope_label(params)}; skipping KB scan and "
+                    "importing the dependency graph only."
                 )
                 print_section("Running Scans")
             else:

@@ -66,8 +66,11 @@ def handle_scan_git(client: "WorkbenchClient", params: argparse.Namespace) -> bo
     )
 
     # ===== STEP 2: Pre-Flight Checks =====
-    print_section("Pre-Flight Checks")
-    scan_git_pre_flight_check(client, scan_code, scan_is_new, params)
+    if not scan_is_new:
+        print_section("Pre-Flight Checks")
+        scan_git_pre_flight_check(client, scan_code, params)
+    else:
+        logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
 
     # ===== STEP 3: Git Clone =====
     print_section("Cloning the Target Repo")

@@ -5,6 +5,7 @@ import os
 from argparse import Namespace
 
 from workbench_agent.exceptions import ValidationError
+from workbench_agent.utilities.analyze_ecosystem import validate_analyze_ecosystem
 
 logger = logging.getLogger("workbench-agent")
 
@@ -80,27 +81,7 @@ def _validate_analyze_command(args: Namespace) -> None:
             f"analyze --path must be a project directory: {path}"
         )
 
-    ecosystem = (getattr(args, "ecosystem", None) or "").strip().lower()
-    if ecosystem != "bazel":
-        raise ValidationError(
-            f"analyze currently supports only -e bazel (got {ecosystem!r})"
-        )
-
-    bazel_target = getattr(args, "bazel_target", None)
-    if not bazel_target or not str(bazel_target).strip():
-        raise ValidationError(
-            "analyze with -e bazel requires --bazel-target "
-            "(e.g. --bazel-target '//myapp:app')"
-        )
-
-    bazel_mode = getattr(args, "bazel_mode", None)
-    if bazel_mode is not None:
-        normalized = str(bazel_mode).strip().upper()
-        if normalized not in {"BZLMOD", "WORKSPACE"}:
-            raise ValidationError(
-                f"invalid --bazel-mode '{bazel_mode}'; expected BZLMOD or WORKSPACE"
-            )
-        args.bazel_mode = normalized
+    validate_analyze_ecosystem(args)
 
     da_timeout = getattr(args, "da_timeout", None)
     if da_timeout is not None and da_timeout <= 0:

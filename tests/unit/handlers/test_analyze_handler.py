@@ -75,7 +75,7 @@ def _stub_toolbox(mock_wrapper_cls, pipeline_result=None):
 class TestHandleAnalyze:
     def test_rejects_non_bazel(self):
         client = MagicMock()
-        with pytest.raises(ValidationError, match="only -e bazel"):
+        with pytest.raises(ValidationError, match="supports -e bazel"):
             handle_analyze(client, _params(ecosystem="maven"))
 
     def test_rejects_missing_target(self):
@@ -265,3 +265,73 @@ class TestHandleAnalyze:
         mock_upload.assert_not_called()
         mock_blind.assert_not_called()
         mock_import.assert_called_once()
+
+    @patch("workbench_agent.handlers.analyze.shutil.rmtree")
+    @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
+    @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
+    @patch("workbench_agent.handlers.analyze.stage_sources", return_value="/tmp/stage")
+    @patch(
+        "workbench_agent.handlers.analyze.load_first_party_sources",
+        return_value=["src/main.rs"],
+    )
+    @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
+    @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
+        return_value="/toolbox",
+    )
+    @patch("workbench_agent.handlers.analyze.scan_pre_flight_check")
+    def test_new_scan_skips_preflight(
+        self,
+        mock_preflight,
+        _resolve_toolbox,
+        mock_wrapper_cls,
+        mock_resolve,
+        _load,
+        _stage,
+        _upload,
+        _import,
+        _rmtree,
+    ):
+        _stub_toolbox(mock_wrapper_cls)
+        mock_resolve.return_value = ("PROJ", "SCAN", True)
+
+        handle_analyze(MagicMock(), _params())
+
+        mock_preflight.assert_not_called()
+
+    @patch("workbench_agent.handlers.analyze.shutil.rmtree")
+    @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
+    @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
+    @patch("workbench_agent.handlers.analyze.stage_sources", return_value="/tmp/stage")
+    @patch(
+        "workbench_agent.handlers.analyze.load_first_party_sources",
+        return_value=["src/main.rs"],
+    )
+    @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
+    @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
+        return_value="/toolbox",
+    )
+    @patch("workbench_agent.handlers.analyze.scan_pre_flight_check")
+    def test_existing_scan_runs_scan_preflight_once(
+        self,
+        mock_preflight,
+        _resolve_toolbox,
+        mock_wrapper_cls,
+        mock_resolve,
+        _load,
+        _stage,
+        _upload,
+        _import,
+        _rmtree,
+    ):
+        _stub_toolbox(mock_wrapper_cls)
+        mock_resolve.return_value = ("PROJ", "SCAN", False)
+        client = MagicMock()
+        params = _params()
+
+        handle_analyze(client, params)
+
+        mock_preflight.assert_called_once_with(client, "SCAN", params)

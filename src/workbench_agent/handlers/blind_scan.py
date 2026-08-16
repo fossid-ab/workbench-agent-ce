@@ -210,7 +210,10 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
             params,
         )
 
-        blind_scan_pre_flight_check(client, scan_code, scan_is_new, params)
+        if not scan_is_new:
+            blind_scan_pre_flight_check(client, scan_code, params)
+        else:
+            logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
 
         if not scan_is_new:
             print("\nClearing existing scan content...")
