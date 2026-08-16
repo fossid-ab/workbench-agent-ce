@@ -20,10 +20,6 @@ from typing import TYPE_CHECKING
 
 from workbench_agent.api.exceptions import ProcessError, ProcessTimeoutError
 from workbench_agent.exceptions import WorkbenchAgentError
-from workbench_agent.handlers.blind_scan import (
-    resolve_fossid_toolbox_path,
-    validate_fossid_file,
-)
 from workbench_agent.utilities.analyze.ecosystem import (
     da_pipeline_kwargs,
     ecosystem_scope_label,
@@ -41,7 +37,11 @@ from workbench_agent.utilities.resolve_project_scan import (
     find_or_create_project_and_scan,
 )
 from workbench_agent.utilities.scan_workflows import execute_scan_workflow
-from workbench_agent.utilities.toolbox_wrapper import ToolboxWrapper
+from workbench_agent.utilities.toolbox_wrapper import (
+    ToolboxWrapper,
+    resolve_fossid_toolbox_path,
+    validate_fossid_file,
+)
 from workbench_agent.utilities.upload_data_prep import (
     cleanup_temp_path,
     prepare_scan_target,

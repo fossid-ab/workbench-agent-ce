@@ -7,6 +7,7 @@ Used for blind-scan hashing (``fossid-toolbox hash``) and for the
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -20,7 +21,7 @@ from typing import List, Optional
 from packaging import version as packaging_version
 
 from workbench_agent.api.exceptions import ProcessError
-from workbench_agent.exceptions import FileSystemError
+from workbench_agent.exceptions import FileSystemError, ValidationError
 from workbench_agent.utilities.upload_data_prep import cleanup_temp_path
 
 logger = logging.getLogger("workbench-agent")
@@ -83,6 +84,100 @@ def build_da_pipeline_args(
     if emit_source_files:
         args.append("--emit-source-files")
     return args
+
+
+def resolve_fossid_toolbox_path(configured: Optional[str]) -> str:
+    """
+    Return the path to the fossid-toolbox executable.
+
+    If ``configured`` is set, it is used as-is. Otherwise ``fossid-toolbox``
+    is resolved via the process environment PATH (``shutil.which``).
+    """
+    if configured:
+        return configured
+    resolved = shutil.which("fossid-toolbox")
+    if not resolved:
+        raise ValidationError(
+            "fossid-toolbox not found in PATH. Install FossID Toolbox or "
+            "pass --fossid-toolbox-path with the path to the executable."
+        )
+    return resolved
+
+
+def validate_fossid_file(file_path: str) -> None:
+    """
+    Validate the encoding and schema of a pre-generated .fossid file.
+
+    The file must be valid UTF-8.
+    Each line must be a JSON object containing at minimum:
+    - path (str): Relative file path
+    - size (int): File size in bytes
+    - hashes_ffm (list): Hash objects, each with format (int) and data (str)
+
+    Args:
+        file_path: Path to the .fossid file to validate
+
+    Raises:
+        ValidationError: If the file is not UTF-8, is empty, or has invalid
+            schema
+    """
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except UnicodeDecodeError as e:
+        raise ValidationError(
+            f"The .fossid file '{file_path}' is not valid UTF-8 "
+            f"(byte {e.start}: {e.reason}). Re-generate it with "
+            f"fossid-toolbox or re-encode it as UTF-8."
+        ) from e
+    except Exception as e:
+        raise ValidationError(f"Failed to read .fossid file '{file_path}': {e}") from e
+
+    if not lines or all(line.strip() == "" for line in lines):
+        raise ValidationError(f"The .fossid file '{file_path}' is empty.")
+
+    required_fields = {"path": str, "size": int, "hashes_ffm": list}
+
+    for line_num, line in enumerate(lines, start=1):
+        line = line.strip()
+        if not line:
+            continue
+
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError as e:
+            raise ValidationError(
+                f"Invalid JSON on line {line_num} of " f"'{file_path}': {e}"
+            ) from e
+
+        if not isinstance(entry, dict):
+            raise ValidationError(f"Line {line_num} of '{file_path}' is not a JSON object.")
+
+        for field, expected_type in required_fields.items():
+            if field not in entry:
+                raise ValidationError(
+                    f"Line {line_num} of '{file_path}' is missing " f"required field '{field}'."
+                )
+            if not isinstance(entry[field], expected_type):
+                raise ValidationError(
+                    f"Line {line_num} of '{file_path}': '{field}' must "
+                    f"be {expected_type.__name__}."
+                )
+
+        for i, hash_entry in enumerate(entry["hashes_ffm"]):
+            if not isinstance(hash_entry, dict):
+                raise ValidationError(
+                    f"Line {line_num} of '{file_path}': " f"'hashes_ffm[{i}]' must be an object."
+                )
+            if "format" not in hash_entry or "data" not in hash_entry:
+                raise ValidationError(
+                    f"Line {line_num} of '{file_path}': "
+                    f"'hashes_ffm[{i}]' must have 'format' and "
+                    f"'data' fields."
+                )
+
+    non_empty = sum(1 for line in lines if line.strip())
+    logger.info(f"Validated .fossid file '{file_path}': {non_empty} entries.")
 
 
 class ToolboxWrapper:
