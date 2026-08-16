@@ -11,8 +11,8 @@ By default first-party sources are uploaded (regular scan). Pass
 ``--blind-scan`` to hash with FossID Toolbox instead of uploading
 source content.
 
-Ecosystem-specific flags live in ``analyze_ecosystem``. The handler
-itself is the same for every supported ``-e``.
+Ecosystem-specific flags live in ``utilities.analyze.ecosystem``. The
+handler itself is the same for every supported ``-e``.
 """
 
 from __future__ import annotations
@@ -28,18 +28,18 @@ from workbench_agent.handlers.blind_scan import (
     resolve_fossid_toolbox_path,
     validate_fossid_file,
 )
-from workbench_agent.utilities.analyze_ecosystem import (
+from workbench_agent.utilities.analyze.ecosystem import (
     da_pipeline_kwargs,
     ecosystem_scope_label,
     validate_analyze_ecosystem,
 )
-from workbench_agent.utilities.bazel_sources import (
+from workbench_agent.utilities.analyze.first_party_sources import (
     load_first_party_sources,
     stage_sources,
 )
+from workbench_agent.utilities.analyze.summary import print_analysis_summary
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.section import print_section
-from workbench_agent.utilities.post_analysis_summary import print_analysis_summary
 from workbench_agent.utilities.pre_flight_checks import scan_pre_flight_check
 from workbench_agent.utilities.resolve_project_scan import (
     find_or_create_project_and_scan,
@@ -311,22 +311,21 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
             "extraction_duration": 0.0,
         }
         kb_performed = False
+        skip_kb_message = None
 
         if da_only:
-            print(
-                "\n--dependency-analysis-only: skipping first-party "
+            skip_kb_message = (
+                "--dependency-analysis-only: skipping first-party "
                 "source discovery and KB scan."
             )
-            print_section("Running Scans")
         else:
             sources = load_first_party_sources(pipeline_result.sources_path)
             if not sources:
-                print(
-                    "\nNo first-party source files found for "
+                skip_kb_message = (
+                    "No first-party source files found for "
                     f"{ecosystem_scope_label(params)}; skipping KB scan and "
                     "importing the dependency graph only."
                 )
-                print_section("Running Scans")
             else:
                 staging_dir = stage_sources(path, sources)
                 if blind_scan:
@@ -340,6 +339,10 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
                 if not kb_ok:
                     return False
                 kb_performed = True
+
+        if skip_kb_message:
+            print_section("Running Scans")
+            print(skip_kb_message)
 
         # --- 3. Import Toolbox DA report into the same scan ---
         import_ok = _import_da_report(

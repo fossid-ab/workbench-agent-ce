@@ -389,7 +389,7 @@ class ToolboxWrapper:
 
         run_timeout = timeout if timeout is not None else int(self.timeout)
         logger.debug("Running Toolbox DA pipeline: %s", " ".join(cmd))
-        print("\nRunning Toolbox DA pipeline...")
+        print("Scanning Project with Toolbox Dependency Analysis...")
 
         try:
             result = subprocess.run(

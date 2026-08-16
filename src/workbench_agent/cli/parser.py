@@ -25,7 +25,7 @@ def parse_cmdline_args():
         ValidationError: If validation fails
     """
     # Import here to avoid circular imports
-    from workbench_agent.utilities.analyze_ecosystem import supported_ecosystems
+    from workbench_agent.utilities.analyze.ecosystem import supported_ecosystems
 
     from .parent_parsers import create_common_parent_parsers
     from .validators import validate_parsed_args

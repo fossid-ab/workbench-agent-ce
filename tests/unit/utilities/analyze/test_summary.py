@@ -2,7 +2,7 @@
 
 import argparse
 
-from workbench_agent.utilities.post_analysis_summary import print_analysis_summary
+from workbench_agent.utilities.analyze.summary import print_analysis_summary
 
 
 def _params(**overrides):

@@ -5,7 +5,7 @@ import argparse
 import pytest
 
 from workbench_agent.exceptions import ValidationError
-from workbench_agent.utilities.analyze_ecosystem import (
+from workbench_agent.utilities.analyze.ecosystem import (
     da_pipeline_kwargs,
     ecosystem_scope_label,
     supported_ecosystems,

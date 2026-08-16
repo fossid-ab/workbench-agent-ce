@@ -6,7 +6,7 @@ import os
 import pytest
 
 from workbench_agent.exceptions import FileSystemError, ValidationError
-from workbench_agent.utilities.bazel_sources import (
+from workbench_agent.utilities.analyze.first_party_sources import (
     load_first_party_sources,
     stage_sources,
 )

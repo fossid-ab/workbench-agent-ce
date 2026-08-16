@@ -2,15 +2,15 @@
 First-party source handling for the ``analyze`` command.
 
 ``fossid-toolbox da --pipeline --emit-source-files`` decides which workspace
-files feed the analyzed Bazel target and writes them to a
-``first-party-sources.json`` sidecar. This module reads that list and stages
-the files so they can be KB-scanned (unmanaged / first-party code) via upload
-or ``--blind-scan``. Managed package coordinates come from the Toolbox DA
-report separately.
+files feed the analyzed unit (Bazel target, Maven module, …) and writes
+them to a ``first-party-sources.json`` sidecar. This module reads that
+list and stages the files so they can be KB-scanned (unmanaged /
+first-party code) via upload or ``--blind-scan``. Managed package
+coordinates come from the Toolbox DA report separately.
 
-Discovery lives in Toolbox DA, not here: it already runs the Bazel queries
-for the dependency graph, so keeping one source of truth avoids the agent
-and Toolbox disagreeing about what is in the target.
+Discovery lives in Toolbox DA, not here: it already walks the dependency
+graph, so keeping one source of truth avoids the agent and Toolbox
+disagreeing about what belongs to the unit.
 """
 
 from __future__ import annotations
@@ -94,11 +94,10 @@ def stage_sources(
     """
     if not relative_paths:
         raise ValidationError(
-            "No first-party source files were found for the Bazel target. "
-            "Check that --bazel-target is correct."
+            "No first-party source files were found to stage."
         )
 
-    staging_dir = tempfile.mkdtemp(prefix="workbench_agent_bazel_src_")
+    staging_dir = tempfile.mkdtemp(prefix="workbench_agent_src_")
     linked = 0
     for rel in relative_paths:
         src = os.path.join(workspace_path, rel)

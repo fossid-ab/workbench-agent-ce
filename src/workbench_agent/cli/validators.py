@@ -5,7 +5,7 @@ import os
 from argparse import Namespace
 
 from workbench_agent.exceptions import ValidationError
-from workbench_agent.utilities.analyze_ecosystem import validate_analyze_ecosystem
+from workbench_agent.utilities.analyze.ecosystem import validate_analyze_ecosystem
 
 logger = logging.getLogger("workbench-agent")
 
