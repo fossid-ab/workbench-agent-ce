@@ -1,9 +1,8 @@
 """Ecosystem registry for the ``analyze`` command.
 
-Adding a Toolbox DA ecosystem later means a new ``AnalyzeEcosystem`` entry
-here (required flags, optional normalizer) and, if Toolbox needs new
-flags, those attr names on ``TOOLBOX_PIPELINE_ATTRS``. The handler and
-CLI validators stay generic.
+Adding a Toolbox DA ecosystem means a new ``AnalyzeEcosystem`` entry here.
+If Toolbox needs new flags, those attr names on ``TOOLBOX_PIPELINE_ATTRS``.
+The handler and CLI validators stay generic.
 """
 
 from __future__ import annotations

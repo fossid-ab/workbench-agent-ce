@@ -216,15 +216,14 @@ class ToolboxWrapper:
 
             error_msg = (
                 f"FossID Toolbox {detected} is not supported. Workbench Agent "
-                f"CE {__version__} requires FossID Toolbox {minimum} or later "
-                f"for {purpose}. Please download a newer version of FossID "
-                f"Toolbox."
+                f"CE {__version__} requires Toolbox {minimum} or later."
+                f"Please download a newer version of Toolbox."
             )
             logger.error(error_msg)
             raise ProcessError(error_msg)
 
         logger.debug(
-            f"Toolbox version {detected} satisfies minimum supported " f"version {minimum}"
+            f"Toolbox {detected} satisfies minimum supported " f"version {minimum}"
         )
 
     def generate_hashes(
@@ -358,7 +357,7 @@ class ToolboxWrapper:
         Run ``fossid-toolbox da --pipeline`` and return the report path.
 
         With ``emit_source_files``, Toolbox also writes the first-party
-        source list used for the KB scan; its path comes back as
+        source list for the KB scan; its path comes back as
         ``DaPipelineResult.sources_path``.
 
         A temporary output directory is created for the report. Callers

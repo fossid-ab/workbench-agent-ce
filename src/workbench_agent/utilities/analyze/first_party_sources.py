@@ -2,15 +2,10 @@
 First-party source handling for the ``analyze`` command.
 
 ``fossid-toolbox da --pipeline --emit-source-files`` decides which workspace
-files feed the analyzed unit (Bazel target, Maven module, …) and writes
-them to a ``first-party-sources.json`` sidecar. This module reads that
-list and stages the files so they can be KB-scanned (unmanaged /
-first-party code) via upload or ``--blind-scan``. Managed package
-coordinates come from the Toolbox DA report separately.
+files feed the analyzed unit and writes them to a ``first-party-sources.json``.
+This module reads that list and stages the files so they can be scanned.
+Managed package coordinates come from the Toolbox DA report separately.
 
-Discovery lives in Toolbox DA, not here: it already walks the dependency
-graph, so keeping one source of truth avoids the agent and Toolbox
-disagreeing about what belongs to the unit.
 """
 
 from __future__ import annotations
@@ -36,7 +31,7 @@ def load_first_party_sources(sidecar_path: str) -> List[str]:
 
     Reads the ``first-party-sources.json`` written by
     ``fossid-toolbox da --pipeline --emit-source-files``. An empty list
-    is a valid result (nothing to KB-scan); a malformed or
+    is a valid result (nothing to scan); a malformed or
     unknown-version file is an error.
     """
     try:

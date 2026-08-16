@@ -21,9 +21,7 @@ def print_analysis_summary(
     """
     Single end-of-run summary for ``analyze``.
 
-    Combines first-party KB scan results and the imported Toolbox DA
-    graph so the command does not emit a post-scan summary (which would
-    claim DA was skipped) and a post-import summary (duplicate link).
+    Combines KB scan results and the imported Toolbox DA graph.
     """
     no_wait = getattr(params, "no_wait", False)
     print_scan_summary(

@@ -2,17 +2,13 @@
 Handler for the ``analyze`` command.
 
 Orchestrates FossID Toolbox DA pipeline mode (managed dependencies)
-plus a KB scan of first-party sources (unmanaged code) into the same
+plus a scan of first-party sources (unmanaged code) into the same
 Workbench Project/Scan. Toolbox decides which sources belong to the
-analyzed unit and reports them in a sidecar; the agent only stages and
-scans them.
+analyzed unit and reports them; the agent stages and scans them.
 
-By default first-party sources are uploaded (regular scan). Pass
-``--blind-scan`` to hash with FossID Toolbox instead of uploading
-source content.
+By default first-party sources are uploaded. Pass ``--blind-scan``
+to hash with FossID Toolbox instead of uploading source.
 
-Ecosystem-specific flags live in ``utilities.analyze.ecosystem``. The
-handler itself is the same for every supported ``-e``.
 """
 
 from __future__ import annotations
@@ -123,7 +119,7 @@ def _run_upload_sources(
     staging_dir: str,
     durations: dict,
 ) -> bool:
-    """Upload staged sources and run the KB scan (no Workbench DA)."""
+    """Upload staged sources and run the KB scan."""
     if not scan_is_new:
         print("\nClearing existing scan content...")
         try:
