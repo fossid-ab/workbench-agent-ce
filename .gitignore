@@ -39,3 +39,5 @@ __pycache__/
 # Mypy
 .mypy_cache/
 results.json
+wb-agent-analyze.code-workspace
+src/workbench_agent/cli/fossid-da-rust.code-workspace
