@@ -27,7 +27,7 @@ def parse_cmdline_args():
     # Import here to avoid circular imports
     from workbench_agent.utilities.analyze.ecosystem import supported_ecosystems
 
-    from .parent_parsers import create_common_parent_parsers
+    from .parent_parsers import create_common_parent_parsers, create_projectscan_parser
     from .validators import validate_parsed_args
 
     # Create parent parsers for common argument groups
@@ -74,6 +74,7 @@ For more information on a specific command, use:
             parent_parsers["workbench_connection"],
             parent_parsers["archive_operations"],
             parent_parsers["scan_operations"],
+            parent_parsers["projectscan"],
             parent_parsers["scan_control"],
             parent_parsers["project_scan_target"],
             parent_parsers["id_assist_control"],
@@ -121,6 +122,7 @@ Examples:
             parent_parsers["project_scan_target"],
             parent_parsers["fossid_toolbox"],
             parent_parsers["scan_operations"],
+            parent_parsers["projectscan"],
             parent_parsers["scan_control"],
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],
@@ -184,6 +186,7 @@ Examples:
             parent_parsers["archive_operations"],
             parent_parsers["fossid_toolbox"],
             parent_parsers["scan_control"],
+            create_projectscan_parser(default_use_projectscan=True),
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],
             parent_parsers["monitoring"],
@@ -629,6 +632,7 @@ Examples:
             parent_parsers["project_scan_target"],
             parent_parsers["git_options"],
             parent_parsers["scan_operations"],
+            parent_parsers["projectscan"],
             parent_parsers["scan_control"],
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],

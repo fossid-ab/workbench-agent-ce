@@ -177,6 +177,13 @@ class TestFlagsAndDefaults:
         assert parsed.run_dependency_analysis is False  # Default
         assert parsed.use_projectscan is False  # Default
 
+    def test_analyze_defaults_use_projectscan(self, args, arg_parser, mock_path_exists):
+        """analyze enables projectscan by default."""
+        with patch("os.path.isdir", return_value=True):
+            cmd_args = args().analyze(bazel_target="//:t").build()
+            parsed = arg_parser(cmd_args)
+        assert parsed.use_projectscan is True
+
     def test_use_projectscan_flag(self, args, arg_parser, mock_path_exists):
         """Test --use-projectscan flag parsing on scan command."""
         cmd_args = args().scan().build()

@@ -71,6 +71,11 @@ _SCAN_OPERATION_PARAMS = frozenset(
         "run_dependency_analysis",
         "dependency_analysis_only",
         "scan_failed_only",
+    }
+)
+
+_PROJECTSCAN_PARAMS = frozenset(
+    {
         "use_projectscan",
     }
 )
@@ -114,6 +119,7 @@ _KNOWN_PARAMS = (
     |     _IDENTIFICATION_PARAMS
     | _ANALYZE_PARAMS
     | _SCAN_OPERATION_PARAMS
+    | _PROJECTSCAN_PARAMS
     | _SCAN_TARGET_PARAMS
     | _REPORT_GENERATION_PARAMS
 )
@@ -180,6 +186,12 @@ def _print_scan_operation_settings(params: Any) -> None:
     """Render the Scan Operation Settings section."""
     items = {k: v for k, v in _user_params(params).items() if k in _SCAN_OPERATION_PARAMS}
     _print_section("🔬 Scan Operation Settings:", items)
+
+
+def _print_projectscan_settings(params: Any) -> None:
+    """Render the Projectscan section."""
+    items = {k: v for k, v in _user_params(params).items() if k in _PROJECTSCAN_PARAMS}
+    _print_section("📁 Projectscan:", items)
 
 
 def _print_identification_settings(params: Any) -> None:
@@ -258,6 +270,7 @@ def print_configuration(params: Any, workbench_api: Any) -> None:
     _print_scan_target(params)
     _print_analyze_parameters(params)
     _print_scan_operation_settings(params)
+    _print_projectscan_settings(params)
     _print_identification_settings(params)
     _print_result_display(params)
     _print_report_generation(params)

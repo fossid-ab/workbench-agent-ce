@@ -224,22 +224,23 @@ def create_scan_operations_parser():
         action="store_true",
         default=False,
     )
-    scan_ops_args.add_argument(
-        "--full-file-only",
-        help="Return only full file matches regardless of sensitivity.",
-        action="store_true",
-        default=False,
-    )
-    scan_ops_args.add_argument(
+    return scan_operations_parent
+
+
+def create_projectscan_parser(*, default_use_projectscan: bool = False):
+    """Create parent parser for Workbench projectscan mode options."""
+    projectscan_parent = argparse.ArgumentParser(add_help=False)
+    projectscan_args = projectscan_parent.add_argument_group("Projectscan")
+    projectscan_args.add_argument(
         "--use-projectscan",
         help=(
             "Run Workbench projectscan mode on the scan server "
             "(setscan + grouped filescan) instead of classic file scan."
         ),
         action="store_true",
-        default=False,
+        default=default_use_projectscan,
     )
-    return scan_operations_parent
+    return projectscan_parent
 
 
 def create_monitoring_parser():
@@ -428,6 +429,7 @@ def create_common_parent_parsers():
         "scan_control": create_scan_control_parser(),
         "archive_operations": create_archive_operations_parser(),
         "scan_operations": create_scan_operations_parser(),
+        "projectscan": create_projectscan_parser(),
         "monitoring": create_monitoring_parser(),
         "result_options": create_result_options_parser(),
         "project_scan_target": create_project_scan_target_parser(),
