@@ -63,6 +63,7 @@ def fixture_mock_params(mocker):
     params.show_dependencies = True
     params.show_scan_metrics = False
     params.show_policy_warnings = True
+    params.show_project_policy_warnings = False
     params.show_vulnerabilities = False
     params.result_save_path = "/tmp/results"
 

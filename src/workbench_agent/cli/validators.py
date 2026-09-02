@@ -262,6 +262,7 @@ def _validate_show_results_command(args: Namespace) -> None:
         getattr(args, "show_dependencies", False),
         getattr(args, "show_scan_metrics", False),
         getattr(args, "show_policy_warnings", False),
+        getattr(args, "show_project_policy_warnings", False),
         getattr(args, "show_vulnerabilities", False),
     ]
     if not any(show_flags):

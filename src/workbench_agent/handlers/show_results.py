@@ -77,7 +77,7 @@ def handle_show_results(client: "WorkbenchClient", params: argparse.Namespace) -
 
     # Fetch and display results
     print(f"\nFetching results for scan '{scan_code}'...")
-    fetch_display_save_results(client, params, scan_code)
+    fetch_display_save_results(client, params, scan_code, project_code=project_code)
 
     logger.info("Results displayed successfully")
     return True

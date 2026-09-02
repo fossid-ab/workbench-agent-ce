@@ -277,6 +277,10 @@ class ArgBuilder:
         self.args.append("--show-matches")
         return self
 
+    def show_project_policy_warnings(self):
+        self.args.append("--show-project-policy-warnings")
+        return self
+
     def id_reuse(self, reuse_type="any", source=None):
         """Build new mutually exclusive reuse arguments for testing."""
         if reuse_type == "any":

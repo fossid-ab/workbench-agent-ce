@@ -30,6 +30,7 @@ _RESULT_DISPLAY_PARAMS = frozenset(
         "show_dependencies",
         "show_scan_metrics",
         "show_policy_warnings",
+        "show_project_policy_warnings",
         "show_vulnerabilities",
         "result_save_path",
     }

@@ -303,6 +303,12 @@ def create_result_options_parser():
         default=False,
     )
     results_display_args.add_argument(
+        "--show-project-policy-warnings",
+        help="Shows project-level policy warnings across scans (projects.get_policy_warnings_info).",
+        action="store_true",
+        default=False,
+    )
+    results_display_args.add_argument(
         "--show-vulnerabilities",
         help="Shows a summary of vulnerabilities found in the scan.",
         action="store_true",
