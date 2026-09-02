@@ -14,9 +14,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger("workbench-agent")
 
 
-def parse_cmdline_args():
+def parse_cmdline_args(argv=None):
     """
     Parse modern command-based arguments with dash-separated options.
+
+    Args:
+        argv: Optional argument list (excluding program name). Defaults to sys.argv.
 
     Returns:
         argparse.Namespace: Parsed modern arguments
@@ -703,7 +706,7 @@ Examples:
         default=False,
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Validate the parsed arguments
     validate_parsed_args(args)

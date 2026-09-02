@@ -94,7 +94,21 @@ def mock_main_dependencies():
             patch("workbench_agent.main.handle_download_reports") as mock_download,
             patch("workbench_agent.main.handle_evaluate_gates") as mock_gates,
             patch("workbench_agent.main.handle_quick_scan") as mock_quick_scan,
+            patch("workbench_agent.main.build_legacy_pipeline", return_value=None),
         ):
+            from workbench_agent.main import COMMAND_HANDLERS
+
+            COMMAND_HANDLERS["analyze"] = mock_analyze
+            COMMAND_HANDLERS["scan"] = mock_scan
+            COMMAND_HANDLERS["blind-scan"] = mock_blind_scan
+            COMMAND_HANDLERS["scan-git"] = mock_scan_git
+            COMMAND_HANDLERS["import-da"] = mock_import
+            COMMAND_HANDLERS["import-sbom"] = mock_import_sbom
+            COMMAND_HANDLERS["show-results"] = mock_show
+            COMMAND_HANDLERS["delete-scan"] = mock_delete_scan
+            COMMAND_HANDLERS["download-reports"] = mock_download
+            COMMAND_HANDLERS["evaluate-gates"] = mock_gates
+            COMMAND_HANDLERS["quick-scan"] = mock_quick_scan
 
             mocks["handle_analyze"] = mock_analyze
             mocks["handle_scan"] = mock_scan
