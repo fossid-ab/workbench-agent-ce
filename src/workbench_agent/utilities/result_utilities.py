@@ -44,6 +44,7 @@ def fetch_results(
         - dependency_analysis: List of dependencies (if requested)
         - kb_licenses: List of licenses (if requested)
         - kb_components: List of components (if requested)
+        - kb_matches: List of raw KB matches (if requested)
         - scan_metrics: Metrics dictionary (if requested)
         - policy_warnings: Warnings dictionary (if requested)
         - vulnerabilities: List of vulnerabilities (if requested)
@@ -51,6 +52,7 @@ def fetch_results(
     # Check if any results are requested
     should_fetch_licenses = getattr(params, "show_licenses", False)
     should_fetch_components = getattr(params, "show_components", False)
+    should_fetch_matches = getattr(params, "show_matches", False)
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
     should_fetch_metrics = getattr(params, "show_scan_metrics", False)
     should_fetch_policy = getattr(params, "show_policy_warnings", False)
@@ -60,6 +62,7 @@ def fetch_results(
         [
             should_fetch_licenses,
             should_fetch_components,
+            should_fetch_matches,
             should_fetch_dependencies,
             should_fetch_metrics,
             should_fetch_policy,
@@ -118,6 +121,16 @@ def fetch_results(
             logger.warning("Could not fetch KB Identified Scan Components: %s", e)
             print("Warning: Could not fetch KB Identified Scan Components: " f"{e}")
 
+    if should_fetch_matches:
+        try:
+            kb_matches = workbench.scans.get_results(scan_code)
+            if kb_matches:
+                collected_results["kb_matches"] = kb_matches
+                logger.info("Fetched %d KB scan matches", len(kb_matches))
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch KB Scan Matches: %s", e)
+            print(f"Warning: Could not fetch KB Scan Matches: {e}")
+
     if should_fetch_metrics:
         try:
             metrics = workbench.identification.get_scan_metrics(scan_code)
@@ -157,6 +170,7 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
     """
     should_fetch_licenses = getattr(params, "show_licenses", False)
     should_fetch_components = getattr(params, "show_components", False)
+    should_fetch_matches = getattr(params, "show_matches", False)
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
     should_fetch_metrics = getattr(params, "show_scan_metrics", False)
     should_fetch_policy = getattr(params, "show_policy_warnings", False)
@@ -165,6 +179,7 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
     da_results_data = collected_results.get("dependency_analysis")
     kb_licenses_data = collected_results.get("kb_licenses")
     kb_components_data = collected_results.get("kb_components")
+    kb_matches_data = collected_results.get("kb_matches")
     scan_metrics_data = collected_results.get("scan_metrics")
     policy_warnings_data = collected_results.get("policy_warnings")
     vulnerabilities_data = collected_results.get("vulnerabilities")
@@ -237,6 +252,22 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
             print("-" * 25)
         else:
             print("No KB Scan Components found to report.")
+
+    # Display KB Matches
+    if should_fetch_matches:
+        print("\n=== KB Scan Matches ===")
+        displayed_something = True
+        if kb_matches_data:
+            print(f"Found {len(kb_matches_data)} matches:")
+            for match in kb_matches_data:
+                local_path = match.get("local_path", "N/A")
+                artifact = match.get("artifact", "N/A")
+                version = match.get("version", "N/A")
+                match_type = match.get("match_type", "N/A")
+                print(f"  - {local_path} -> {artifact} {version} ({match_type})")
+            print("-" * 25)
+        else:
+            print("No KB scan matches found to report.")
 
     # Display Dependencies
     if should_fetch_dependencies:
@@ -343,6 +374,7 @@ def fetch_display_save_results(
         for flag in [
             "show_licenses",
             "show_components",
+            "show_matches",
             "show_dependencies",
             "show_scan_metrics",
             "show_policy_warnings",

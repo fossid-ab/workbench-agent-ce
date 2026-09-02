@@ -124,6 +124,7 @@ def mock_params(mocker):
     # Set defaults for flags often checked
     params.show_licenses = False
     params.show_components = False
+    params.show_matches = False
     params.show_policy_warnings = False
     params.result_save_path = None
     params.policy_check = False

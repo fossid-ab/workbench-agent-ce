@@ -615,6 +615,52 @@ def test_get_scan_identified_components_success(mock_send, scans_client):
 
 
 @patch.object(BaseAPI, "_send_request")
+def test_get_results_success(mock_send, scans_client):
+    mock_send.return_value = {
+        "status": "1",
+        "data": {
+            "10": {
+                "id": "10",
+                "local_path": "src/b.c",
+                "artifact": "zlib",
+                "version": "1.2.11",
+                "match_type": "full",
+            },
+            "5": {
+                "id": "5",
+                "local_path": "src/a.c",
+                "artifact": "openssl",
+                "version": "1.1.1",
+                "match_type": "partial",
+            },
+        },
+    }
+    matches = scans_client.get_results("scan1")
+    assert len(matches) == 2
+    assert matches[0]["local_path"] == "src/a.c"
+    assert matches[1]["artifact"] == "zlib"
+    mock_send.assert_called_once()
+    payload = mock_send.call_args[0][0]
+    assert payload["group"] == "scans"
+    assert payload["action"] == "get_results"
+    assert payload["data"]["scan_code"] == "scan1"
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_results_not_run(mock_send, scans_client):
+    mock_send.return_value = {"status": "1", "data": False}
+    matches = scans_client.get_results("scan1")
+    assert matches == []
+
+
+@patch.object(BaseAPI, "_send_request")
+def test_get_results_scan_not_found(mock_send, scans_client):
+    mock_send.return_value = {"status": "0", "error": "row_not_found"}
+    with pytest.raises(ScanNotFoundError, match="Scan 'scan1' not found"):
+        scans_client.get_results("scan1")
+
+
+@patch.object(BaseAPI, "_send_request")
 def test_get_scan_identified_licenses_success(mock_send, scans_client):
     mock_send.return_value = {
         "status": "1",

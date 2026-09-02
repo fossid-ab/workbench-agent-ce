@@ -279,6 +279,12 @@ def create_result_options_parser():
         default=False,
     )
     results_display_args.add_argument(
+        "--show-matches",
+        help="Shows raw KB scan matches (scans.get_results).",
+        action="store_true",
+        default=False,
+    )
+    results_display_args.add_argument(
         "--show-dependencies",
         help="Shows all components found by Dependency Analysis.",
         action="store_true",

@@ -158,6 +158,19 @@ class TestBasicCommandParsing:
         assert parsed.show_licenses is True
         assert parsed.show_components is False  # Default
 
+    def test_parse_show_matches_flag(self, args, arg_parser, mock_path_exists):
+        cmd_args = (
+            args()
+            .show_results(project="ShowProject", scan="ShowScan")
+            .show_matches()
+            .build()
+        )
+        parsed = arg_parser(cmd_args)
+
+        assert parsed.command == "show-results"
+        assert parsed.show_matches is True
+        assert parsed.show_licenses is False
+
 
 class TestFlagsAndDefaults:
     """Test flag parsing and default values."""

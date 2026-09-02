@@ -20,6 +20,7 @@ This client wraps the `scans` group; orchestration lives in `api/services/`.
 | `get_folder_metrics` | `get_scan_folder_metrics` |
 | `get_scan_identified_components` | `get_scan_identified_components` |
 | `get_scan_identified_licenses` | `get_scan_identified_licenses` |
+| `get_results` | `get_results` |
 | `get_dependency_analysis_results` | `get_dependency_analysis_results` |
 | `add_dependency_analysis_results` | `add_dependency_analysis_results` |
 | `update_dependency_analysis_results` | `update_dependency_analysis_results` |

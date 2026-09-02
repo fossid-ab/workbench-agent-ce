@@ -258,6 +258,7 @@ def _validate_show_results_command(args: Namespace) -> None:
     show_flags = [
         getattr(args, "show_licenses", False),
         getattr(args, "show_components", False),
+        getattr(args, "show_matches", False),
         getattr(args, "show_dependencies", False),
         getattr(args, "show_scan_metrics", False),
         getattr(args, "show_policy_warnings", False),

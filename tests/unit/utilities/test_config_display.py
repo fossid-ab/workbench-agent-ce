@@ -59,6 +59,7 @@ def fixture_mock_params(mocker):
     # Result display
     params.show_licenses = True
     params.show_components = False
+    params.show_matches = False
     params.show_dependencies = True
     params.show_scan_metrics = False
     params.show_policy_warnings = True

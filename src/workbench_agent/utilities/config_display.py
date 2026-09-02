@@ -26,6 +26,7 @@ _RESULT_DISPLAY_PARAMS = frozenset(
     {
         "show_licenses",
         "show_components",
+        "show_matches",
         "show_dependencies",
         "show_scan_metrics",
         "show_policy_warnings",
