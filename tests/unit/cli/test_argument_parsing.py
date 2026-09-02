@@ -155,6 +155,16 @@ class TestFlagsAndDefaults:
         assert parsed.autoid_pending_ids is True
         assert parsed.autoid_file_licenses is False  # Default
         assert parsed.run_dependency_analysis is False  # Default
+        assert parsed.use_projectscan is False  # Default
+
+    def test_use_projectscan_flag(self, args, arg_parser, mock_path_exists):
+        """Test --use-projectscan flag parsing on scan command."""
+        cmd_args = args().scan().build()
+        cmd_args.append("--use-projectscan")
+
+        parsed = arg_parser(cmd_args)
+
+        assert parsed.use_projectscan is True
 
     def test_id_reuse_parameters(self, args, arg_parser, mock_path_exists):
         """Test new mutually exclusive ID reuse parameter parsing."""

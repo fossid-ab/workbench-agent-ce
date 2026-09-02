@@ -221,6 +221,7 @@ def execute_scan_workflow(
             advanced_match_scoring=getattr(params, "advanced_match_scoring", True),
             match_filtering_threshold=getattr(params, "match_filtering_threshold", None),
             scan_host=getattr(params, "scan_host", None),
+            use_projectscan=getattr(params, "use_projectscan", False),
         )
 
         if getattr(params, "no_wait", False):
@@ -276,6 +277,7 @@ def execute_scan_workflow(
                     advanced_match_scoring=getattr(params, "advanced_match_scoring", True),
                     match_filtering_threshold=getattr(params, "match_filtering_threshold", None),
                     scan_host=getattr(params, "scan_host", None),
+                    use_projectscan=getattr(params, "use_projectscan", False),
                 )
                 kb_scan_result = _wait_for_kb_scan(client, scan_code, params)
                 durations["kb_scan"] += kb_scan_result.duration or 0.0

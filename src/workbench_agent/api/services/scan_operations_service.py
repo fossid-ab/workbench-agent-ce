@@ -59,6 +59,7 @@ class ScanOperationsService:
         advanced_match_scoring: bool = True,
         match_filtering_threshold: Optional[int] = None,
         scan_host: Optional[str] = None,
+        use_projectscan: bool = False,
     ):
         """
         Start a KB scan with resolved ID reuse parameters.
@@ -86,6 +87,7 @@ class ScanOperationsService:
             advanced_match_scoring: Whether to use advanced match scoring
             match_filtering_threshold: Minimum snippet length for filtering
             scan_host: Specify which scan server to use
+            use_projectscan: Use Workbench projectscan mode instead of classic scan
 
         Raises:
             ApiError: If there are API issues
@@ -141,6 +143,9 @@ class ScanOperationsService:
         if scan_host is not None:
             payload_data["scan_host"] = scan_host
 
+        if use_projectscan:
+            payload_data["use_projectscan"] = "1"
+
         logger.debug(
             f"Built run scan payload with {len(payload_data)} parameters " f"for scan '{scan_code}'"
         )
@@ -165,6 +170,7 @@ class ScanOperationsService:
         advanced_match_scoring: bool = True,
         match_filtering_threshold: Optional[int] = None,
         scan_host: Optional[str] = None,
+        use_projectscan: bool = False,
     ):
         """
         Start a KB scan for files that failed in a previous scan.
@@ -189,6 +195,7 @@ class ScanOperationsService:
             advanced_match_scoring=advanced_match_scoring,
             match_filtering_threshold=match_filtering_threshold,
             scan_host=scan_host,
+            use_projectscan=use_projectscan,
         )
 
     def start_da_only(self, scan_code: str):

@@ -86,7 +86,6 @@ def create_id_assist_control_parser():
         type=int,
         metavar="CHARS",
     )
-    # TODO: Add ProjectScan Control
     return id_assist_control_parent
 
 
@@ -228,6 +227,15 @@ def create_scan_operations_parser():
     scan_ops_args.add_argument(
         "--full-file-only",
         help="Return only full file matches regardless of sensitivity.",
+        action="store_true",
+        default=False,
+    )
+    scan_ops_args.add_argument(
+        "--use-projectscan",
+        help=(
+            "Run Workbench projectscan mode on the scan server "
+            "(setscan + grouped filescan) instead of classic file scan."
+        ),
         action="store_true",
         default=False,
     )

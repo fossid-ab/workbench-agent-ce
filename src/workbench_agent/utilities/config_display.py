@@ -56,6 +56,7 @@ _SCAN_OPERATION_PARAMS = frozenset(
         "run_dependency_analysis",
         "dependency_analysis_only",
         "scan_failed_only",
+        "use_projectscan",
     }
 )
 
