@@ -131,13 +131,13 @@ def create_identification_control_parser():
     )
     reuse_group.add_argument(
         "--reuse-scan-ids",
-        help="Reuse identifications from a specific scan.",
-        metavar="SCAN_NAME",
+        help="Reuse identifications from a specific scan (code or name).",
+        metavar="CODE_OR_NAME",
     )
     reuse_group.add_argument(
         "--reuse-project-ids",
-        help="Reuse identifications from a specific project.",
-        metavar="PROJECT_NAME",
+        help="Reuse identifications from a specific project (code or name).",
+        metavar="CODE_OR_NAME",
     )
 
     identification_control_args.add_argument(
@@ -308,14 +308,22 @@ def create_project_scan_target_parser():
     target_args.add_argument(
         "--project-name",
         help="The Name of the Workbench Project to interact with.",
-        required=True,
         metavar="NAME",
+    )
+    target_args.add_argument(
+        "--project-code",
+        help="Internal Workbench project code (bypasses name resolution).",
+        metavar="CODE",
     )
     target_args.add_argument(
         "--scan-name",
         help="The Name of the Workbench Scan to interact with.",
-        required=True,
         metavar="NAME",
+    )
+    target_args.add_argument(
+        "--scan-code",
+        help="Internal Workbench scan code (requires --project-code).",
+        metavar="CODE",
     )
     return project_scan_target_parent
 

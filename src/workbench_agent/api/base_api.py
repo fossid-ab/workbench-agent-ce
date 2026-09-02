@@ -164,6 +164,15 @@ class BaseAPI:
                                     "get_user_permissions_list",
                                 )
                             )
+                            or (
+                                payload.get("group") == "scans"
+                                and payload.get("action")
+                                in (
+                                    "get_information",
+                                    "get_folder_metrics",
+                                    "get_pending_files",
+                                )
+                            )
                             or (payload.get("group") == "components")
                             or (payload.get("group") == "files_and_folders")
                         )

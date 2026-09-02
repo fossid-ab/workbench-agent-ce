@@ -346,6 +346,10 @@ Examples:
   workbench-agent download-reports --project-name "MyProject" \\
       --scan-name "v1.0.0" --report-scope scan
 
+  # Target by internal codes (lookup-only)
+  workbench-agent download-reports --project-code PROJ123 \\
+      --scan-code BUILD_42 --report-scope scan
+
   # Download specific report types (scan-level)
   workbench-agent download-reports --project-name "MyProject" --scan-name "v1.0.0" \\
       --report-scope scan --report-type xlsx,spdx --report-save-path ./reports/
@@ -366,9 +370,19 @@ Examples:
         metavar="NAME",
     )
     download_reports_parser.add_argument(
+        "--project-code",
+        help=("Internal Workbench project code (bypasses name resolution)."),
+        metavar="CODE",
+    )
+    download_reports_parser.add_argument(
         "--scan-name",
         help=("The Scan to download reports from. Required for scan reports."),
         metavar="NAME",
+    )
+    download_reports_parser.add_argument(
+        "--scan-code",
+        help=("Internal Workbench scan code (requires --project-code)."),
+        metavar="CODE",
     )
     download_reports_parser.add_argument(
         "--report-scope",

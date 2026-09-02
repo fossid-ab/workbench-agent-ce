@@ -116,6 +116,32 @@ class ProjectNotFoundError(NotFoundError):
     """
 
 
+class ScanWrongProjectError(WorkbenchApiError):
+    """Raised when a scan code exists but not under the requested project."""
+
+    def __init__(
+        self,
+        *,
+        scan_code: str,
+        requested_project_code: str,
+        actual_project_code: Optional[str] = None,
+    ):
+        self.scan_code = scan_code
+        self.requested_project_code = requested_project_code
+        self.actual_project_code = actual_project_code
+        if actual_project_code and actual_project_code != requested_project_code:
+            message = (
+                f"Scan code '{scan_code}' already exists in project "
+                f"'{actual_project_code}', not in '{requested_project_code}'."
+            )
+        else:
+            message = (
+                f"Scan code '{scan_code}' already exists in Workbench but does "
+                f"not belong to project '{requested_project_code}'."
+            )
+        super().__init__(message, code="scan_wrong_project")
+
+
 class ProcessError(WorkbenchApiError):
     """Raised for failures during background Workbench processes.
 

@@ -14,6 +14,7 @@ from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.pre_flight_checks import (
     evaluate_gates_pre_flight_check,
 )
+from workbench_agent.utilities.resolve_project_scan import resolve_project_and_scan
 
 logger = logging.getLogger("workbench-agent")
 
@@ -415,12 +416,10 @@ def handle_evaluate_gates(client: "WorkbenchClient", params: "argparse.Namespace
 
     # Resolve project and scan (find only - don't create)
     print("\nResolving scan for gate evaluation...")
-    _, scan = client.resolver.find_project_and_scan(
-        params.project_name,
-        params.scan_name,
-    )
-    scan_code = scan.code
-    scan_id = scan.id
+    targets = resolve_project_and_scan(client, params, allow_create=False)
+    scan_code = targets.scan_code
+    scan_info = targets.scan_info or client.scans.get_information(scan_code)
+    scan_id = int(scan_info.get("id", scan_info.get("scan_id", 0)))
 
     # Ensure scan processes are idle before evaluating gates
     try:

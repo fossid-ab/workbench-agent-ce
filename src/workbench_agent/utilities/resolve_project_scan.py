@@ -1,9 +1,11 @@
 """
 Utilities for resolving project/scan targets before scan operations.
 
-Orchestrates the slim ResolverService with CLI parameter mapping,
+Orchestrates CE ``ResolverService`` with CLI parameter mapping,
 compatibility checks, and terminal output.
 """
+
+from __future__ import annotations
 
 import argparse
 import logging
@@ -24,11 +26,69 @@ from workbench_agent.api.utils.scan_type import (
     check_scan_reuse,
     infer_scan_type,
 )
+from workbench_agent.services.resolver_service import ResolverService
+from workbench_agent.services.types import ResolvedTargets, target_label
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
 
 logger = logging.getLogger("workbench-agent")
+
+
+def _strip(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    stripped = str(value).strip()
+    return stripped or None
+
+
+def resolve_project_and_scan(
+    client: "WorkbenchClient",
+    params: argparse.Namespace,
+    *,
+    allow_create: bool = True,
+    import_from_report: bool = False,
+    scan_required: bool = True,
+) -> ResolvedTargets:
+    """
+    Resolve CLI project/scan targets to Workbench codes.
+
+    Args:
+        client: Workbench API client
+        params: Parsed CLI namespace with target flags
+        allow_create: When False, lookup-only (read handlers)
+        import_from_report: Pass-through for SBOM import scan creation
+        scan_required: When False, resolve project only (download-reports project scope)
+
+    Returns:
+        ResolvedTargets with project_code, scan_code, and creation flags
+    """
+    scan_data = _build_scan_create_data(params, import_from_report=import_from_report)
+    resolver = ResolverService(client.projects, client.scans)
+
+    targets = resolver.resolve_targets(
+        project_name=_strip(getattr(params, "project_name", None)),
+        project_code=_strip(getattr(params, "project_code", None)),
+        scan_name=_strip(getattr(params, "scan_name", None)),
+        scan_code=_strip(getattr(params, "scan_code", None)),
+        scan_data=scan_data,
+        allow_create=allow_create,
+        scan_required=scan_required,
+    )
+
+    if allow_create and scan_required:
+        _print_resolution_outcome(targets.project_created, targets.scan_is_new)
+        if not targets.scan_is_new:
+            print("Checking scan compatibility...")
+            _ensure_scan_compatible(
+                client,
+                targets.scan_code,
+                params,
+                scan_info=targets.scan_info,
+            )
+            print("✓ Compatibility check passed")
+
+    return targets
 
 
 def find_or_create_project_and_scan(
@@ -38,53 +98,17 @@ def find_or_create_project_and_scan(
     import_from_report: bool = False,
 ) -> Tuple[str, str, bool]:
     """
-    Find or create a project and scan for a Agent-CE command.
+    Find or create a project and scan for an Agent-CE write command.
 
-    Prints progress and validates compatibility for existing scans.
-
-    Returns:
-        Tuple of ``(project_code, scan_code, scan_is_new)``
-
-    Raises:
-        CompatibilityError: If existing scan is incompatible with command
+    Backward-compatible wrapper returning ``(project_code, scan_code, scan_is_new)``.
     """
-    scan_data = _build_scan_create_data(params, import_from_report=import_from_report)
-
-    project_created = False
-    try:
-        project_code = client.resolver.find_project(params.project_name)
-    except ProjectNotFoundError:
-        print(f"Creating project '{params.project_name}'...")
-        project_code = client.resolver.create_project(params.project_name)
-        project_created = True
-
-    scan_is_new = False
-    scan_info: Optional[dict] = None
-    try:
-        resolved = client.resolver.find_scan(
-            params.scan_name,
-            project_code=project_code,
-        )
-        scan_code = resolved.code
-        scan_info = resolved.info
-    except ScanNotFoundError:
-        print(f"Creating scan '{params.scan_name}' in project " f"'{project_code}'...")
-        resolved = client.resolver.create_scan(
-            project_code,
-            params.scan_name,
-            scan_data,
-        )
-        scan_code = resolved.code
-        scan_is_new = True
-
-    _print_resolution_outcome(project_created, scan_is_new)
-
-    if not scan_is_new:
-        print("Checking scan compatibility...")
-        _ensure_scan_compatible(client, scan_code, params, scan_info=scan_info)
-        print("✓ Compatibility check passed")
-
-    return project_code, scan_code, scan_is_new
+    targets = resolve_project_and_scan(
+        client,
+        params,
+        allow_create=True,
+        import_from_report=import_from_report,
+    )
+    return targets.project_code, targets.scan_code, targets.scan_is_new
 
 
 def _git_target_from_params(params: argparse.Namespace) -> GitTarget:
@@ -243,6 +267,8 @@ def _print_resolution_outcome(project_created: bool, scan_is_new: bool) -> None:
         print("✓ Created new Project and Scan")
     elif scan_is_new:
         print("✓ Created New Scan in Existing Project")
+    elif project_created:
+        print("✓ Created New Project; Found Existing Scan")
     else:
         print("✓ Found existing Project and Scan")
 
@@ -307,3 +333,11 @@ def _ensure_scan_compatible(
             f"Reusing existing scan '{scan_code}' for SBOM import "
             f"(report scan: {scan_type == ScanType.SBOM})."
         )
+
+
+__all__ = [
+    "find_or_create_project_and_scan",
+    "format_reuse_issue",
+    "resolve_project_and_scan",
+    "target_label",
+]

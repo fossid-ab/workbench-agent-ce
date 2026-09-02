@@ -162,6 +162,8 @@ class TestValidationEdgeCases:
             api_user="test",
             api_token="token",
             path="/non/existent/path",
+            project_name="TestProject",
+            scan_name="TestScan",
         )
 
         with pytest.raises(ValidationError, match="Path does not exist"):
@@ -176,6 +178,8 @@ class TestValidationEdgeCases:
                 api_user="test",
                 api_token="token",
                 path="/valid/path",
+                project_name="TestProject",
+                scan_name="TestScan",
             )
 
             # Should not raise an exception
@@ -190,6 +194,8 @@ class TestValidationEdgeCases:
                 api_user="test",
                 api_token="token",
                 path="/valid/path",
+                project_name="TestProject",
+                scan_name="TestScan",
             )
 
             validate_parsed_args(args)
@@ -213,6 +219,8 @@ class TestValidationSpecialCases:
                 api_user="test",
                 api_token="token",
                 path="/valid/path/to/analyzer-result.json",
+                project_name="TestProject",
+                scan_name="TestScan",
             )
 
             # Should not raise for import commands when path is provided
@@ -239,7 +247,9 @@ class TestValidationSpecialCases:
             api_url="https://test.com",
             api_user="test",
             api_token="token",
-            show_components=True,  # Need at least one show flag
+            project_name="TestProject",
+            scan_name="TestScan",
+            show_components=True,
         )
 
         # Should not raise for show-results command when show flags are provided

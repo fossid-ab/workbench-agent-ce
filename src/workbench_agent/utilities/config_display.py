@@ -62,7 +62,9 @@ _SCAN_OPERATION_PARAMS = frozenset(
 _SCAN_TARGET_PARAMS = frozenset(
     {
         "project_name",
+        "project_code",
         "scan_name",
+        "scan_code",
         "path",
         "incremental_upload",
         "jar_file_extraction",

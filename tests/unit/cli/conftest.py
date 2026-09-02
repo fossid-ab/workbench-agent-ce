@@ -215,8 +215,16 @@ class ArgBuilder:
         self.args.extend(["--project-name", name])
         return self
 
+    def project_code(self, code):
+        self.args.extend(["--project-code", code])
+        return self
+
     def scan_name(self, name):
         self.args.extend(["--scan-name", name])
+        return self
+
+    def scan_code(self, code):
+        self.args.extend(["--scan-code", code])
         return self
 
     def show_results(self, project="TestProject", scan="TestScan"):

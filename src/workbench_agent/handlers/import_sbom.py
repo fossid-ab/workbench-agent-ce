@@ -183,7 +183,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
         # Resolve project and scan (find or create)
         print("\n--- Project and Scan Checks ---")
         print("Checking target Project and Scan...")
-        _, scan_code, scan_is_new = find_or_create_project_and_scan(
+        project_code, scan_code, scan_is_new = find_or_create_project_and_scan(
             client,
             params,
             import_from_report=True,

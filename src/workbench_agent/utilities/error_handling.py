@@ -18,7 +18,9 @@ from workbench_agent.api.exceptions import (
     ProcessTimeoutError,
     ProjectNotFoundError,
     ScanNotFoundError,
+    ScanWrongProjectError,
 )
+from workbench_agent.services.types import target_label
 from workbench_agent.exceptions import (
     ConfigurationError,
     FileSystemError,
@@ -67,48 +69,75 @@ def format_and_print_error(error: Exception, context: str, params: argparse.Name
         print("   • You have the necessary permissions")
 
     elif isinstance(error, ProjectNotFoundError):
+        project_label = target_label(params, "project")
+        used_code = bool(getattr(params, "project_code", None))
         if is_read_only:
             print("\n❌ Cannot continue: The requested project does not exist")
-            print(f"   Project '{getattr(params, 'project_name', 'unknown')}' not found.")
+            print(f"   Project '{project_label}' not found.")
             print("\n💡 Please check:")
-            print("   • The project name is spelled correctly")
+            if used_code:
+                print("   • The project code is correct")
+            else:
+                print("   • The project name is spelled correctly")
             print("   • The project exists in your Workbench instance")
             print("   • You have access to the project")
         else:
             print(f"\n❌ Error executing '{command}' command: {error_message}")
-            print(f"  → Project '{getattr(params, 'project_name', 'unknown')}' not found")
+            print(f"  → Project '{project_label}' not found")
+
+    elif isinstance(error, ScanWrongProjectError):
+        scan_label = target_label(params, "scan")
+        project_label = target_label(params, "project")
+        print("\n❌ Scan code already used in another project")
+        print(f"   {error.message}")
+        print("\n💡 Please check:")
+        print(f"   • Scan code '{scan_label}' is already taken in Workbench")
+        if error.actual_project_code:
+            print(
+                f"   • It belongs to project '{error.actual_project_code}', "
+                f"not '{project_label}'"
+            )
+        else:
+            print(f"   • It does not belong to project '{project_label}'")
+        print("   • Use a different --scan-code, or target the correct --project-code")
 
     elif isinstance(error, ScanNotFoundError):
+        scan_label = target_label(params, "scan")
+        project_label = target_label(params, "project")
+        used_scan_code = bool(getattr(params, "scan_code", None))
         if is_read_only:
             print("\n❌ Cannot continue: The requested scan does not exist")
-            scan_name = getattr(params, "scan_name", "unknown")
-            project_name = getattr(params, "project_name", None)
-
-            if project_name:
-                print(f"   Scan '{scan_name}' was not found in project '{project_name}'.")
+            if getattr(params, "project_name", None) or getattr(params, "project_code", None):
+                print(f"   Scan '{scan_label}' was not found in project '{project_label}'.")
             else:
-                print(f"   Scan '{scan_name}' was not found in Workbench.")
+                print(f"   Scan '{scan_label}' was not found in Workbench.")
 
             print("\n💡 Please check:")
-            print("   • The scan name is spelled correctly")
-            if project_name:
-                print(f"   • The scan exists in the '{project_name}' project")
+            if used_scan_code:
+                print("   • The scan code is correct")
+            else:
+                print("   • The scan name is spelled correctly")
+            if getattr(params, "project_name", None) or getattr(params, "project_code", None):
+                print(f"   • The scan exists in the '{project_label}' project")
             else:
                 print("   • The scan exists in your Workbench instance")
                 print(
-                    "   • Consider specifying --project-name if the scan is in a specific project"
+                    "   • Consider specifying --project-name or --project-code "
+                    "if the scan is in a specific project"
                 )
             print("   • You have access to the scan")
         else:
             print(f"\n❌ Error executing '{command}' command: {error_message}")
-            print(f"  → Scan '{getattr(params, 'scan_name', 'unknown')}' was not found")
-            if hasattr(params, "project_name"):
+            print(f"  → Scan '{scan_label}' was not found")
+            if getattr(params, "project_name", None) or getattr(params, "project_code", None):
                 print(
-                    f"  → Check the scan name or verify it exists in project '{params.project_name}'"
+                    f"  → Check the scan identifier or verify it exists in "
+                    f"project '{project_label}'"
                 )
             else:
                 print(
-                    "  → Check the scan name or specify --project-name if it exists in a specific project"
+                    "  → Check the scan identifier or specify --project-name "
+                    "or --project-code if it exists in a specific project"
                 )
 
     elif isinstance(error, NetworkError):
@@ -257,6 +286,7 @@ def handler_error_wrapper(handler_func: Callable) -> Callable:
             NetworkError,
             ProcessError,  # Covers ProcessTimeoutError
             CompatibilityError,
+            ScanWrongProjectError,
             ValidationError,
             FileSystemError,
             WorkbenchAgentError,  # Covers ConfigurationError

@@ -3,10 +3,18 @@
 import logging
 import os
 from argparse import Namespace
+from typing import Optional
 
 from workbench_agent.exceptions import ValidationError
 
 logger = logging.getLogger("workbench-agent")
+
+
+def _strip(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    stripped = str(value).strip()
+    return stripped or None
 
 
 def validate_parsed_args(args: Namespace) -> None:
@@ -51,18 +59,56 @@ def _fix_api_url_format(args: Namespace) -> None:
         args.api_url = api_url
 
 
+def _validate_project_scan_target(args: Namespace, *, scan_required: bool) -> None:
+    """Validate project/scan target flag combinations."""
+    project_name = _strip(getattr(args, "project_name", None))
+    project_code = _strip(getattr(args, "project_code", None))
+    scan_name = _strip(getattr(args, "scan_name", None))
+    scan_code = _strip(getattr(args, "scan_code", None))
+
+    if project_name and project_code:
+        raise ValidationError("Provide --project-name or --project-code (not both)")
+    if not project_name and not project_code:
+        raise ValidationError("Provide --project-name or --project-code")
+
+    if scan_required:
+        if scan_name and scan_code:
+            raise ValidationError("Provide --scan-name or --scan-code (not both)")
+        if not scan_name and not scan_code:
+            raise ValidationError("Provide --scan-name or --scan-code")
+        if project_name and scan_code:
+            raise ValidationError(
+                "Cannot combine --project-name with --scan-code; "
+                "use --project-code with --scan-code, or use "
+                "--project-name with --scan-name"
+            )
+        if scan_code and not project_code:
+            raise ValidationError(
+                "Cannot use --scan-code without --project-code; "
+                "use --project-code with --scan-code, or use "
+                "--project-name with --scan-name"
+            )
+
+
 def _validate_command_specific_args(args: Namespace) -> None:
     """Validate command-specific arguments."""
     command = getattr(args, "command", None)
 
     if command in ["scan", "scan-git", "blind-scan"]:
+        _validate_project_scan_target(args, scan_required=True)
         _validate_scan_commands(args)
     elif command in ["import-da", "import-sbom"]:
+        _validate_project_scan_target(args, scan_required=True)
         _validate_import_commands(args)
     elif command == "download-reports":
         _validate_download_reports_command(args)
     elif command == "show-results":
+        _validate_project_scan_target(args, scan_required=True)
         _validate_show_results_command(args)
+    elif command == "delete-scan":
+        _validate_project_scan_target(args, scan_required=True)
+    elif command == "evaluate-gates":
+        _validate_project_scan_target(args, scan_required=True)
     elif command == "quick-scan":
         _validate_quick_scan_command(args)
 
@@ -114,10 +160,10 @@ def _validate_id_reuse_args(args: Namespace) -> None:
 
     # Validate required parameters are provided for arguments that need them
     if getattr(args, "reuse_scan_ids", None) is not None and not args.reuse_scan_ids.strip():
-        raise ValidationError("--reuse-scan-ids requires a non-empty scan name.")
+        raise ValidationError("--reuse-scan-ids requires a non-empty scan code or name.")
 
     if getattr(args, "reuse_project_ids", None) is not None and not args.reuse_project_ids.strip():
-        raise ValidationError("--reuse-project-ids requires a non-empty project name.")
+        raise ValidationError("--reuse-project-ids requires a non-empty project code or name.")
 
 
 def _validate_import_commands(args: Namespace) -> None:
@@ -164,13 +210,8 @@ def _validate_da_results_file(path: str) -> None:
 def _validate_download_reports_command(args: Namespace) -> None:
     """Validate download-reports command."""
     report_scope = getattr(args, "report_scope", None) or "scan"
-    project_name = (getattr(args, "project_name", None) or "").strip()
-    scan_name = (getattr(args, "scan_name", None) or "").strip()
-
-    if not project_name:
-        raise ValidationError("Please provide a project name (use --project-name)")
-    if report_scope == "scan" and not scan_name:
-        raise ValidationError("Scan scope reports require the scan name (use --scan-name)")
+    scan_required = report_scope == "scan"
+    _validate_project_scan_target(args, scan_required=scan_required)
 
 
 def _validate_show_results_command(args: Namespace) -> None:

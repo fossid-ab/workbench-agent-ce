@@ -17,6 +17,10 @@ from workbench_agent.utilities.post_report_summary import print_report_summary
 from workbench_agent.utilities.pre_flight_checks import (
     download_reports_pre_flight_check,
 )
+from workbench_agent.utilities.resolve_project_scan import (
+    resolve_project_and_scan,
+    target_label,
+)
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -66,7 +70,10 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
         os.makedirs(output_dir, exist_ok=True)
 
     # Resolve project, scan
-    scope_name = params.scan_name if params.report_scope == "scan" else params.project_name
+    scope_name = target_label(
+        params,
+        "scan" if params.report_scope == "scan" else "project",
+    )
     print(
         f"\nResolving "
         f"{'scan' if params.report_scope == 'scan' else 'project'} "
@@ -77,13 +84,17 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
     scan_code = None
 
     if params.report_scope == "scan":
-        project_code, scan = client.resolver.find_project_and_scan(
-            params.project_name,
-            params.scan_name,
-        )
-        scan_code = scan.code
+        targets = resolve_project_and_scan(client, params, allow_create=False)
+        project_code = targets.project_code
+        scan_code = targets.scan_code
     elif params.report_scope == "project":
-        project_code = client.resolver.find_project(params.project_name)
+        targets = resolve_project_and_scan(
+            client,
+            params,
+            allow_create=False,
+            scan_required=False,
+        )
+        project_code = targets.project_code
 
     # Check scan completion status for scan-scope reports
     if params.report_scope == "scan" and scan_code:
