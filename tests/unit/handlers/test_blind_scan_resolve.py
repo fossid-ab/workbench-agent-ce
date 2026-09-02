@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from workbench_agent.exceptions import ValidationError
-from workbench_agent.handlers.blind_scan import resolve_fossid_toolbox_path
+from workbench_agent.utilities.toolbox_wrapper import resolve_fossid_toolbox_path
 
 
 class TestResolveFossidToolboxPath:
@@ -15,7 +15,7 @@ class TestResolveFossidToolboxPath:
 
     def test_uses_path_lookup_when_not_configured(self):
         with patch(
-            "workbench_agent.handlers.blind_scan.shutil.which",
+            "workbench_agent.utilities.toolbox_wrapper.shutil.which",
             return_value="/usr/local/bin/fossid-toolbox",
         ) as mock_which:
             expected = "/usr/local/bin/fossid-toolbox"
@@ -24,7 +24,7 @@ class TestResolveFossidToolboxPath:
 
     def test_raises_when_not_on_path(self):
         with patch(
-            "workbench_agent.handlers.blind_scan.shutil.which",
+            "workbench_agent.utilities.toolbox_wrapper.shutil.which",
             return_value=None,
         ):
             with pytest.raises(ValidationError, match="fossid-toolbox not found"):

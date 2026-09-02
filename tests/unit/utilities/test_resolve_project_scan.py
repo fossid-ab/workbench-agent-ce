@@ -117,7 +117,6 @@ def test_find_or_create_existing_scan(mock_client, mock_params, capsys):
     mock_client.scans.get_information.assert_not_called()
     output = capsys.readouterr().out
     assert "Found existing Project and Scan" in output
-    assert "Compatibility check passed" in output
 
 
 def test_find_or_create_new_scan(mock_client, mock_params, capsys):

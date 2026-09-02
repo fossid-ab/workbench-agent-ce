@@ -1,12 +1,10 @@
 import argparse
-import json
 import logging
 import os
-import shutil
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.pre_flight_checks import (
     blind_scan_pre_flight_check,
 )
@@ -16,107 +14,17 @@ from workbench_agent.utilities.resolve_project_scan import (
 from workbench_agent.utilities.scan_workflows import (
     execute_scan_workflow,
 )
-from workbench_agent.utilities.toolbox_wrapper import ToolboxWrapper
+from workbench_agent.utilities.toolbox_wrapper import (
+    ToolboxWrapper,
+    resolve_fossid_toolbox_path,
+    validate_fossid_file,
+)
 from workbench_agent.utilities.upload_data_prep import cleanup_temp_path
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
 
 logger = logging.getLogger("workbench-agent")
-
-
-def resolve_fossid_toolbox_path(configured: Optional[str]) -> str:
-    """
-    Return the path to the fossid-toolbox executable.
-
-    If ``configured`` is set, it is used as-is. Otherwise ``fossid-toolbox``
-    is resolved via the process environment PATH (``shutil.which``).
-    """
-    if configured:
-        return configured
-    resolved = shutil.which("fossid-toolbox")
-    if not resolved:
-        raise ValidationError(
-            "fossid-toolbox not found in PATH. Install FossID Toolbox or "
-            "pass --fossid-toolbox-path with the path to the executable."
-        )
-    return resolved
-
-
-def validate_fossid_file(file_path: str) -> None:
-    """
-    Validate the encoding and schema of a pre-generated .fossid file.
-
-    The file must be valid UTF-8.
-    Each line must be a JSON object containing at minimum:
-    - path (str): Relative file path
-    - size (int): File size in bytes
-    - hashes_ffm (list): Hash objects, each with format (int) and data (str)
-
-    Args:
-        file_path: Path to the .fossid file to validate
-
-    Raises:
-        ValidationError: If the file is not UTF-8, is empty, or has invalid
-            schema
-    """
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-    except UnicodeDecodeError as e:
-        raise ValidationError(
-            f"The .fossid file '{file_path}' is not valid UTF-8 "
-            f"(byte {e.start}: {e.reason}). Re-generate it with "
-            f"fossid-toolbox or re-encode it as UTF-8."
-        ) from e
-    except Exception as e:
-        raise ValidationError(f"Failed to read .fossid file '{file_path}': {e}") from e
-
-    if not lines or all(line.strip() == "" for line in lines):
-        raise ValidationError(f"The .fossid file '{file_path}' is empty.")
-
-    required_fields = {"path": str, "size": int, "hashes_ffm": list}
-
-    for line_num, line in enumerate(lines, start=1):
-        line = line.strip()
-        if not line:
-            continue
-
-        try:
-            entry = json.loads(line)
-        except json.JSONDecodeError as e:
-            raise ValidationError(
-                f"Invalid JSON on line {line_num} of " f"'{file_path}': {e}"
-            ) from e
-
-        if not isinstance(entry, dict):
-            raise ValidationError(f"Line {line_num} of '{file_path}' is not a JSON object.")
-
-        for field, expected_type in required_fields.items():
-            if field not in entry:
-                raise ValidationError(
-                    f"Line {line_num} of '{file_path}' is missing " f"required field '{field}'."
-                )
-            if not isinstance(entry[field], expected_type):
-                raise ValidationError(
-                    f"Line {line_num} of '{file_path}': '{field}' must "
-                    f"be {expected_type.__name__}."
-                )
-
-        for i, hash_entry in enumerate(entry["hashes_ffm"]):
-            if not isinstance(hash_entry, dict):
-                raise ValidationError(
-                    f"Line {line_num} of '{file_path}': " f"'hashes_ffm[{i}]' must be an object."
-                )
-            if "format" not in hash_entry or "data" not in hash_entry:
-                raise ValidationError(
-                    f"Line {line_num} of '{file_path}': "
-                    f"'hashes_ffm[{i}]' must have 'format' and "
-                    f"'data' fields."
-                )
-
-    non_empty = sum(1 for line in lines if line.strip())
-    logger.info(f"Validated .fossid file '{file_path}': {non_empty} entries.")
 
 
 @handler_error_wrapper
@@ -155,7 +63,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
         FileSystemError: If specified paths don't exist
         ProcessError: If Toolbox execution fails
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     durations: dict = {
         "kb_scan": 0.0,
@@ -171,13 +79,13 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
     try:
         if is_pregenerated:
-            print("\nValidating pre-generated .fossid file...")
+            print("Validating pre-generated .fossid file...")
             validate_fossid_file(params.path)
             hash_file_path = params.path
             print("Validation successful. Skipping hash generation.")
         else:
             # ===== STEP 2: Validate Toolbox and generate hashes =====
-            print("\nValidating FossID Toolbox...")
+            logger.debug("Validating FossID Toolbox...")
             toolbox_wrapper = ToolboxWrapper(
                 toolbox_path=resolve_fossid_toolbox_path(
                     getattr(params, "fossid_toolbox_path", None)
@@ -186,14 +94,11 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
             )
 
             version = toolbox_wrapper.get_version()
-            print(f"Using {version}")
-
-            # Enforce the agent-to-Toolbox compatibility matrix for blind-scan.
             toolbox_wrapper.validate_toolbox_version(version)
 
             enable_lac = not getattr(params, "skip_lac_extraction", False)
 
-            print("\nHashing Target Path with Toolbox...")
+            print("Hashing Target Path with Toolbox...")
             hash_file_path = toolbox_wrapper.generate_hashes(
                 path=params.path,
                 run_dependency_analysis=getattr(params, "run_dependency_analysis", False),
@@ -206,14 +111,16 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
             print("Validation successful.")
 
         # ===== STEP 3: Resolve/create project and scan =====
-        print("\n--- Project and Scan Checks ---")
-        print("Checking target Project and Scan...")
+        print_section("Project and Scan Checks")
         project_code, scan_code, scan_is_new = find_or_create_project_and_scan(
             client,
             params,
         )
 
-        blind_scan_pre_flight_check(client, scan_code, scan_is_new, params)
+        if not scan_is_new:
+            blind_scan_pre_flight_check(client, scan_code, params)
+        else:
+            logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
 
         if not scan_is_new:
             print("\nClearing existing scan content...")

@@ -25,6 +25,8 @@ def parse_cmdline_args():
         ValidationError: If validation fails
     """
     # Import here to avoid circular imports
+    from workbench_agent.utilities.analyze.ecosystem import supported_ecosystems
+
     from .parent_parsers import create_common_parent_parsers
     from .validators import validate_parsed_args
 
@@ -81,15 +83,15 @@ For more information on a specific command, use:
         epilog="""
 Examples:
   # Basic scan with dependency analysis
-  workbench-agent scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src --run-dependency-analysis
 
   # Dependency analysis only (skip KB scan)
-  workbench-agent scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src --dependency-analysis-only
 
   # Start scan and exit without waiting
-  workbench-agent scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src --no-wait
 """,
     )
@@ -127,20 +129,20 @@ Examples:
         epilog="""
 Examples:
   # Basic blind scan
-  workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent blind-scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src
 
   # Blind scan with dependency analysis
-  workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent blind-scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src --run-dependency-analysis
 
   # Blind scan with custom fossid-toolbox path and timeout
-  workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent blind-scan --project "MyProject" --scan "v1.0.0" \\
       --path ./src --fossid-toolbox-path /usr/local/bin/fossid-toolbox \\
       --fossid-toolbox-timeout 600
 
   # Blind scan with a pre-generated .fossid file (skips hashing)
-  workbench-agent blind-scan --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent blind-scan --project "MyProject" --scan "v1.0.0" \\
       --path ./signatures.fossid
 """,
     )
@@ -149,6 +151,182 @@ Examples:
         help="Local directory to hash, or a pre-generated .fossid file",
         required=True,
         metavar="PATH",
+    )
+
+    # --- 'analyze' Subcommand ---
+    analyze_parser = subparsers.add_parser(
+        "analyze",
+        help=(
+            "Run FossID Toolbox DA pipeline mode and import results into "
+            "Workbench (Bazel: also KB-scans first-party sources)"
+        ),
+        description=(
+            "Analyze a build-tool project with FossID Toolbox DA pipeline "
+            "mode (fossid-toolbox da) and import the dependency graph into "
+            "a Workbench scan.\n\n"
+            "Requires FossID Toolbox 1.7.11 or later.\n\n"
+            "For Bazel, first-party sources of --bazel-target are also "
+            "KB-scanned into the same Project/Scan so managed packages "
+            "(Toolbox DA) and unmanaged/source matches (KB) land together. "
+            "Toolbox reports which sources feed the target "
+            "(--emit-source-files); the agent stages and scans exactly "
+            "that list.\n\n"
+            "By default those sources are uploaded (regular scan). Pass "
+            "--blind-scan to hash with FossID Toolbox instead.\n\n"
+            "Pipeline flags are passed through to fossid-toolbox da "
+            "--pipeline. First pass supports Bazel only (-e bazel)."
+        ),
+        formatter_class=RawTextHelpFormatter,
+        parents=[
+            parent_parsers["cli_behaviors"],
+            parent_parsers["workbench_connection"],
+            parent_parsers["project_scan_target"],
+            parent_parsers["archive_operations"],
+            parent_parsers["fossid_toolbox"],
+            parent_parsers["scan_control"],
+            parent_parsers["id_assist_control"],
+            parent_parsers["identification_control"],
+            parent_parsers["monitoring"],
+        ],
+        epilog="""
+Examples:
+  # From the workspace root (--path defaults to cwd)
+  workbench-agent analyze \\
+      -e bazel --bazel-target //myapp:app \\
+      --project "MyApp" --scan "myapp@1.0.0"
+
+  # Same, but blind-scan first-party sources (hashes only)
+  workbench-agent analyze \\
+      --path /path/to/workspace -e bazel --bazel-target //myapp:app \\
+      --project "MyApp" --scan "myapp@1.0.0" \\
+      --blind-scan
+
+  # Custom fossid-toolbox / bazel binaries
+  workbench-agent analyze \\
+      --path . -e bazel --bazel-target //:bin \\
+      --fossid-toolbox-path /opt/fossid/fossid-toolbox --bazel-path /usr/local/bin/bazelisk \\
+      --project "MyApp" --scan "bin@HEAD"
+
+  # Dependency graph only (no first-party KB scan)
+  workbench-agent analyze \\
+      -e bazel --bazel-target //myapp:app \\
+      --project "MyApp" --scan "myapp@1.0.0" \\
+      --dependency-analysis-only
+""",
+    )
+    analyze_parser.add_argument(
+        "--path",
+        dest="path",
+        help="Project / workspace directory to analyze (Default: current working directory)",
+        required=False,
+        default=".",
+        metavar="PATH",
+    )
+    analyze_parser.add_argument(
+        "-e",
+        "--ecosystem",
+        dest="ecosystem",
+        help=(
+            "Build-tool ecosystem for Toolbox DA pipeline mode. "
+            "First pass: bazel only (maven/gradle coming later)."
+        ),
+        required=True,
+        choices=list(supported_ecosystems()),
+        metavar="ECOSYSTEM",
+    )
+    analyze_parser.add_argument(
+        "--bazel-target",
+        dest="bazel_target",
+        help=(
+            "Bazel build target whose deps() are analyzed, "
+            "e.g. //myapp:app (required for -e bazel)"
+        ),
+        required=False,
+        metavar="TARGET",
+    )
+    analyze_parser.add_argument(
+        "--bazel-path",
+        dest="bazel_path",
+        help="Path to the bazel executable (default: bazel/bazelisk on PATH)",
+        required=False,
+        metavar="PATH",
+    )
+    analyze_parser.add_argument(
+        "--bazel-mode",
+        dest="bazel_mode",
+        help="Force Bazel mode: BZLMOD or WORKSPACE (auto-detected if omitted)",
+        required=False,
+        choices=["BZLMOD", "WORKSPACE", "bzlmod", "workspace"],
+        metavar="MODE",
+    )
+    analyze_parser.add_argument(
+        "-c",
+        "--fossid-conf-path",
+        dest="fossid_conf_path",
+        help=(
+            "Path to fossid.conf passed through to fossid-toolbox da "
+            "(writable da_logs_path, KB host, …)"
+        ),
+        required=False,
+        metavar="PATH",
+    )
+    analyze_parser.add_argument(
+        "--da-timeout",
+        dest="da_timeout",
+        help=(
+            "Maximum seconds to wait for fossid-toolbox da --pipeline "
+            "(Default: 3600)"
+        ),
+        type=int,
+        default=3600,
+        metavar="SECONDS",
+    )
+    analyze_parser.add_argument(
+        "--blind-scan",
+        dest="blind_scan",
+        help=(
+            "Hash first-party sources with FossID Toolbox instead of "
+            "uploading source content (default: upload)."
+        ),
+        action="store_true",
+        default=False,
+    )
+    analyze_parser.add_argument(
+        "--dependency-analysis-only",
+        dest="dependency_analysis_only",
+        help=(
+            "Skip first-party source discovery and the KB scan. "
+            "Runs Toolbox DA pipeline without --emit-source-files "
+            "and imports the dependency graph only."
+        ),
+        action="store_true",
+        default=False,
+    )
+    analyze_parser.add_argument(
+        "--run-dependency-analysis",
+        dest="run_dependency_analysis",
+        help=(
+            "Accepted for compatibility with scan commands and ignored. "
+            "analyze always imports the Toolbox DA graph."
+        ),
+        action="store_true",
+        default=False,
+    )
+    analyze_parser.add_argument(
+        "--no-wait",
+        help="Exit after starting scans/imports instead of waiting.",
+        action="store_true",
+        default=False,
+    )
+    # Defaults expected by execute_scan_workflow / start_scan / upload path.
+    analyze_parser.set_defaults(
+        run_dependency_analysis=False,
+        dependency_analysis_only=False,
+        delta_scan=False,
+        scan_failed_only=False,
+        full_file_only=False,
+        replace_existing_identifications=False,
+        incremental_upload=False,
     )
 
     # --- 'import-da' Subcommand ---
@@ -166,7 +344,7 @@ Examples:
         epilog="""
 Examples:
   # Import analyzer-result.json from ORT
-  workbench-agent import-da --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent import-da --project "MyProject" --scan "v1.0.0" \\
       --path ./ort-output/analyzer-result.json
 """,
     )
@@ -193,15 +371,15 @@ Examples:
         epilog="""
 Examples:
   # Import CycloneDX SBOM
-  workbench-agent import-sbom --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent import-sbom --project "MyProject" --scan "v1.0" \\
       --path ./cyclonedx-bom.json
 
   # Import SPDX SBOM (JSON; uploaded directly on Workbench 2025.2.0+)
-  workbench-agent import-sbom --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent import-sbom --project "MyProject" --scan "v1.0" \\
       --path ./spdx-document.json
 
   # Import SPDX SBOM (RDF format)
-  workbench-agent import-sbom --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent import-sbom --project "MyProject" --scan "v1.0" \\
       --path ./spdx-document.rdf
 
 On Workbench versions before 2025.2.0, SPDX JSON is automatically converted
@@ -235,12 +413,12 @@ to RDF before upload. RDF and XML SPDX files are always uploaded as-is.
         epilog="""
 Examples:
   # Show all available results
-  workbench-agent show-results --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent show-results --project "MyProject" --scan "v1.0" \\
       --show-licenses --show-components --show-dependencies \\
       --show-scan-metrics --show-vulnerabilities --show-policy-warnings
 
   # Save results to JSON file
-  workbench-agent show-results --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent show-results --project "MyProject" --scan "v1.0" \\
       --show-licenses --show-components --result-save-path ./results.json
 
 """,
@@ -266,10 +444,10 @@ Examples:
         epilog="""
 Examples:
   # Delete a scan (default: keep identifications metadata behavior per API)
-  workbench-agent delete-scan --project-name "MyProject" --scan-name "v1.0"
+  workbench-agent delete-scan --project "MyProject" --scan "v1.0"
 
   # Delete scan and request identifications removal per API
-  workbench-agent delete-scan --project-name "MyProject" --scan-name "v1.0" \\
+  workbench-agent delete-scan --project "MyProject" --scan "v1.0" \\
       --delete-identifications
 """,
     )
@@ -295,19 +473,19 @@ Examples:
         epilog="""
 Examples:
   # Fail on policy violations
-  workbench-agent evaluate-gates --project-name "MyProj" --scan-name "v1.0" \\
+  workbench-agent evaluate-gates --project "MyProj" --scan "v1.0" \\
       --fail-on-policy
 
   # Fail on pending identifications
-  workbench-agent evaluate-gates --project-name "MyProj" --scan-name "v1.0" \\
+  workbench-agent evaluate-gates --project "MyProj" --scan "v1.0" \\
       --fail-on-pending
 
   # Fail on critical or high severity vulnerabilities
-  workbench-agent evaluate-gates --project-name "MyProj" --scan-name "v1.0" \\
+  workbench-agent evaluate-gates --project "MyProj" --scan "v1.0" \\
       --fail-on-vuln-severity high
 
   # Multiple gate conditions
-  workbench-agent evaluate-gates --project-name "MyProj" --scan-name "v1.0" \\
+  workbench-agent evaluate-gates --project "MyProj" --scan "v1.0" \\
       --fail-on-policy --fail-on-pending --fail-on-vuln-severity critical
 """,
     )
@@ -343,29 +521,31 @@ Examples:
         epilog="""
 Examples:
   # Download all scan-level reports
-  workbench-agent download-reports --project-name "MyProject" \\
-      --scan-name "v1.0.0" --report-scope scan
+  workbench-agent download-reports --project "MyProject" \\
+      --scan "v1.0.0" --report-scope scan
 
   # Target by internal codes (lookup-only)
   workbench-agent download-reports --project-code PROJ123 \\
       --scan-code BUILD_42 --report-scope scan
 
   # Download specific report types (scan-level)
-  workbench-agent download-reports --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent download-reports --project "MyProject" --scan "v1.0.0" \\
       --report-scope scan --report-type xlsx,spdx --report-save-path ./reports/
 
   # Download project-level reports
-  workbench-agent download-reports --project-name "MyProject" \\
+  workbench-agent download-reports --project "MyProject" \\
       --report-scope project --report-type xlsx,cyclonedx
 
   # Download reports with license filtering
-  workbench-agent download-reports --project-name "MyProject" --scan-name "v1.0.0" \\
+  workbench-agent download-reports --project "MyProject" --scan "v1.0.0" \\
       --report-scope scan --report-type xlsx \\
       --selection-type include_foss --selection-view all
 """,
     )
     download_reports_parser.add_argument(
         "--project-name",
+        "--project",
+        dest="project_name",
         help=("The Project to download reports from."),
         metavar="NAME",
     )
@@ -376,6 +556,8 @@ Examples:
     )
     download_reports_parser.add_argument(
         "--scan-name",
+        "--scan",
+        dest="scan_name",
         help=("The Scan to download reports from. Required for scan reports."),
         metavar="NAME",
     )
@@ -455,20 +637,20 @@ Examples:
         epilog="""
 Examples:
   # Scan a branch
-  workbench-agent scan-git --project-name "GitProject" --scan-name "main-branch" \\
+  workbench-agent scan-git --project "GitProject" --scan "main-branch" \\
       --git-url https://github.com/owner/repo.git --git-branch main
 
   # Scan a tag
-  workbench-agent scan-git --project-name "GitProject" --scan-name "v1.0.0" \\
+  workbench-agent scan-git --project "GitProject" --scan "v1.0.0" \\
       --git-url https://github.com/owner/repo.git --git-tag "v1.0.0"
 
   # Scan a specific commit
-  workbench-agent scan-git --project-name "GitProject" --scan-name "commit-abc123" \\
+  workbench-agent scan-git --project "GitProject" --scan "commit-abc123" \\
       --git-url https://github.com/owner/repo.git \\
       --git-commit ffac537e6cbbf934b08745a378932722df287a53
 
   # Scan with dependency analysis and summary
-  workbench-agent scan-git --project-name "GitProject" --scan-name "main-branch" \\
+  workbench-agent scan-git --project "GitProject" --scan "main-branch" \\
       --git-url https://github.com/owner/repo.git --git-branch main \\
       --run-dependency-analysis --show-summary
 """,

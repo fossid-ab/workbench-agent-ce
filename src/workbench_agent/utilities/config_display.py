@@ -4,6 +4,8 @@ Configuration display utility to render the configuration at startup.
 
 from typing import Any, Dict
 
+from workbench_agent.utilities.section import print_section
+
 # ===== Parameter groups =====
 # Each frozenset names the params owned by a single section.
 
@@ -42,6 +44,19 @@ _IDENTIFICATION_PARAMS = frozenset(
         "reuse_project_ids",
         "reuse_scan_ids",
         "replace_existing_identifications",
+        "skip_lac_extraction",
+    }
+)
+
+_ANALYZE_PARAMS = frozenset(
+    {
+        "ecosystem",
+        "bazel_target",
+        "bazel_path",
+        "bazel_mode",
+        "fossid_conf_path",
+        "da_timeout",
+        "blind_scan",
     }
 )
 
@@ -96,7 +111,8 @@ _SKIPPED_PARAMS = frozenset({"command", "api_url", "api_user", "api_token"})
 _KNOWN_PARAMS = (
     _AGENT_CONFIG_PARAMS
     | _RESULT_DISPLAY_PARAMS
-    | _IDENTIFICATION_PARAMS
+    |     _IDENTIFICATION_PARAMS
+    | _ANALYZE_PARAMS
     | _SCAN_OPERATION_PARAMS
     | _SCAN_TARGET_PARAMS
     | _REPORT_GENERATION_PARAMS
@@ -152,6 +168,12 @@ def _print_scan_target(params: Any) -> None:
     """Render the Scan Target section."""
     items = {k: v for k, v in _user_params(params).items() if k in _SCAN_TARGET_PARAMS}
     _print_section("🎯 Scan Target:", items)
+
+
+def _print_analyze_parameters(params: Any) -> None:
+    """Render the Analyze Parameters section."""
+    items = {k: v for k, v in _user_params(params).items() if k in _ANALYZE_PARAMS}
+    _print_section("📦 Analyze Parameters:", items)
 
 
 def _print_scan_operation_settings(params: Any) -> None:
@@ -228,12 +250,13 @@ def print_configuration(params: Any, workbench_api: Any) -> None:
         params: Parsed command line parameters
         workbench_api: WorkbenchClient instance for connection info
     """
-    print("--- Workbench Agent Configuration ---")
+    print_section("Workbench Agent Configuration")
     print(f"Command: {params.command}")
 
     _print_connection_info(params, workbench_api)
     _print_agent_config(params)
     _print_scan_target(params)
+    _print_analyze_parameters(params)
     _print_scan_operation_settings(params)
     _print_identification_settings(params)
     _print_result_display(params)

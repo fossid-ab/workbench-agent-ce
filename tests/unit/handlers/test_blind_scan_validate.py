@@ -5,7 +5,7 @@ import json
 import pytest
 
 from workbench_agent.exceptions import ValidationError
-from workbench_agent.handlers.blind_scan import validate_fossid_file
+from workbench_agent.utilities.toolbox_wrapper import validate_fossid_file
 
 
 def _write_valid_entry(path) -> None:

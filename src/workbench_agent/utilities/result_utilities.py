@@ -11,13 +11,14 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, Dict
 
-if TYPE_CHECKING:
-    from workbench_agent.api import WorkbenchClient
-
 from workbench_agent.api.exceptions import ApiError, NetworkError
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.vulnerability_display import (
     print_vulnerability_results,
 )
+
+if TYPE_CHECKING:
+    from workbench_agent.api import WorkbenchClient
 
 logger = logging.getLogger("workbench-agent")
 
@@ -168,12 +169,12 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
     policy_warnings_data = collected_results.get("policy_warnings")
     vulnerabilities_data = collected_results.get("vulnerabilities")
 
-    print("\n--- Results Summary ---")
+    print_section("Results Summary")
     displayed_something = False
 
     # Display Scan Metrics
     if should_fetch_metrics:
-        print("\n=== Scan File Metrics ===")
+        print("=== Scan File Metrics ===")
         displayed_something = True
         if scan_metrics_data:
             total = scan_metrics_data.get("total", "N/A")

@@ -9,6 +9,7 @@ from workbench_agent.utilities.resolve_project_scan import (
     resolve_project_and_scan,
     target_label,
 )
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.pre_flight_checks import (
     show_results_pre_flight_check,
 )
@@ -53,13 +54,13 @@ def handle_show_results(client: "WorkbenchClient", params: argparse.Namespace) -
         projects or scans. It will wait for in-progress scans to complete
         before displaying results.
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     # Note: --show-* flag validation is done at CLI layer (cli/validators.py)
     # We trust that at least one flag is provided
 
     # Resolve project and scan (find only - don't create)
-    print("\nResolving scan for results display...")
+    print("Resolving scan for results display...")
     project_label = target_label(params, "project")
     scan_label = target_label(params, "scan")
     logger.info(f"Looking for scan '{scan_label}' in project '{project_label}'")

@@ -383,3 +383,9 @@ class TestToolboxWrapperValidateVersion:
     def test_unparseable_version_does_not_raise(self, wrapper):
         """A version string without a number is tolerated with a warning."""
         wrapper.validate_toolbox_version("FossID Toolbox (dev build)")
+
+    def test_version_just_below_minimum_raises(self, wrapper):
+        """1.7.10 is below the unified 1.7.11 minimum."""
+        with pytest.raises(ProcessError) as exc_info:
+            wrapper.validate_toolbox_version("FossID Toolbox version 1.7.10")
+        assert MINIMUM_TOOLBOX_VERSION in str(exc_info.value)

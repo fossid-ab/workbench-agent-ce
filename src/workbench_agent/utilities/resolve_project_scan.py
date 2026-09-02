@@ -132,7 +132,8 @@ def _reuse_constraints_from_params(
     """Map CE command params to ``check_scan_reuse`` keyword arguments."""
     command = params.command
 
-    if command in ("scan", "blind-scan"):
+    if command in ("scan", "blind-scan", "analyze"):
+        # analyze KB-scans first-party sources (UPLOAD) then import-da.
         return {"required": ScanType.UPLOAD}
     if command == "scan-git":
         return {

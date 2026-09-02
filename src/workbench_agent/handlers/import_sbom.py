@@ -11,6 +11,7 @@ from workbench_agent.api.exceptions import (
 )
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.post_import_summary import print_import_summary
 from workbench_agent.utilities.pre_flight_checks import (
     import_sbom_pre_flight_check,
@@ -149,7 +150,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
         ProcessTimeoutError: If process times out
         Exception: If an unexpected error occurs
     """
-    print(f"\n--- Running {params.command.upper()} Command ---")
+    print_section(f"Running {params.command.upper()} Command")
 
     # Track upload path for cleanup
     upload_path = None
@@ -157,7 +158,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
 
     try:
         # Validate SBOM file FIRST - before any project/scan creation
-        print("\n--- Validating SBOM File ---")
+        print_section("Validating SBOM File")
         (
             sbom_format,
             version,
@@ -167,7 +168,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
         _print_validation_summary(sbom_format, version, metadata)
 
         # Prepare SBOM file for upload (convert if needed)
-        print("\n--- Preparing SBOM for Upload ---")
+        print_section("Preparing SBOM for Upload")
         upload_path, temp_file_created = _prepare_sbom_for_upload(
             params.path,
             sbom_format,
@@ -181,19 +182,21 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
             print("  Using original file format")
 
         # Resolve project and scan (find or create)
-        print("\n--- Project and Scan Checks ---")
-        print("Checking target Project and Scan...")
-        project_code, scan_code, scan_is_new = find_or_create_project_and_scan(
+        print_section("Project and Scan Checks")
+        _, scan_code, scan_is_new = find_or_create_project_and_scan(
             client,
             params,
             import_from_report=True,
         )
 
         # Ensure scan is idle before starting SBOM import
-        import_sbom_pre_flight_check(client, scan_code, scan_is_new, params)
+        if not scan_is_new:
+            import_sbom_pre_flight_check(client, scan_code, params)
+        else:
+            logger.debug("Skipping idle checks - new scan is guaranteed to be idle")
 
         # Upload SBOM file using the prepared upload path
-        print("\n--- Uploading SBOM File ---")
+        print_section("Uploading SBOM File")
         try:
             client.scan_content.upload_sbom_file(scan_code=scan_code, path=upload_path)
             print(f"SBOM uploaded successfully from: {upload_path}")
@@ -208,7 +211,7 @@ def handle_import_sbom(client: "WorkbenchClient", params: argparse.Namespace) ->
             ) from e
 
         # Start SBOM import
-        print("\n--- Starting SBOM Import ---")
+        print_section("Starting SBOM Import")
 
         try:
             client.scan_operations.start_sbom_import(scan_code=scan_code)
