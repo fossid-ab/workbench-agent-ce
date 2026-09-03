@@ -6,7 +6,8 @@ environment (same variables CI uses).
 
     pytest tests/api/clients/scans/test_scans_live.py -m requires_workbench -v
 
-Successful paths are fast; invalid-scan probes are in ``test_scans_errors_live.py``.
+Successful paths are fast; invalid-scan error contracts live in the SDK repo
+(``workbench-python-sdk/tests/clients/scans/test_scans_errors_live.py``).
 """
 
 import pytest

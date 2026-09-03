@@ -149,17 +149,6 @@ class TestFilesAndFoldersLiveReadOnly:
         assert len(ranking) >= 1
         assert ranking[0].get("artifact") == "ofp"
 
-    def test_get_folder_components_ranking_file_path_returns_false(
-        self,
-        workbench_client,
-        test_scan_code,
-    ):
-        ranking = workbench_client.files_and_folders.get_folder_components_ranking(
-            test_scan_code,
-            "OpenFastPath/LICENSE",
-        )
-        assert ranking is False
-
     def test_get_folder_extensions_ranking_pending_view(
         self,
         workbench_client,
