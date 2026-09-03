@@ -127,7 +127,8 @@ result = wb.resolver.find_or_create("MyProject", "MyScan", scan_data={})
 | `reports` | `ReportService` | Report generation, validation, waiting, download |
 | `status_check` | `StatusCheckService` | Poll async operation status (Git, scan, reports, delete, …) |
 | `user_permissions` | `UserPermissionsService` | Permissions for the configured API user |
-| `quick_scan_service` | `QuickScanService` | Single-file quick scan wrapper over `quick_scan` client |
+
+Use the `quick_scan` client directly for single-file quick scans (no service wrapper).
 
 CE orchestration (CLI params, compatibility, terminal output) lives outside
 this tree — for example ``utilities.resolve_project_scan`` (find-or-create +

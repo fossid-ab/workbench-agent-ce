@@ -9,7 +9,6 @@ from .dependency_service import DependencyService
 from .identification_service import IdentificationService
 from .links_service import LinksService, WorkbenchLinks
 from .policy_service import PolicyService
-from .quick_scan_service import QuickScanService
 from .report_service import ReportService
 from .resolver_service import (
     ResolutionResult,
@@ -28,7 +27,6 @@ __all__ = [
     "ComponentService",
     "DependencyService",
     "IdentificationService",
-    "QuickScanService",
     "ReportService",
     "LinksService",
     "PolicyService",

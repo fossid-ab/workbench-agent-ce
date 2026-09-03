@@ -430,9 +430,6 @@ def mock_workbench_api(mocker):
     mock_client.scan_content.upload_sbom_file.return_value = None
     mock_client.scan_content.extract_archives.return_value = True
 
-    mock_client.quick_scan_service = MagicMock()
-    mock_client.quick_scan_service.scan_one_file.return_value = []
-
     # --- Mock Scan Operations Service ---
     mock_client.scan_operations = MagicMock()
     mock_client.scan_operations.run_scan = MagicMock()

@@ -29,7 +29,6 @@ from workbench_agent.api.services import (
     IdentificationService,
     LinksService,
     PolicyService,
-    QuickScanService,
     ReportService,
     ResolverService,
     ScanContentService,
@@ -71,7 +70,6 @@ class WorkbenchClient:
     - `scan_operations`: Scan execution with standardized behavior
     - `scan_deletion`: Queue scan delete and wait until complete
     - `user_permissions`: Check Workbench permissions for the API user
-    - `quick_scan_service`: Quick single-file scan
     - `dependencies`: Dependency analysis result read/write workflows
     - `identification`: Scan file identification read/write workflows
     - `vulnerability`: CVE listing and VEX create/update
@@ -177,8 +175,6 @@ class WorkbenchClient:
             uploads_client=self.uploads,
             status_check_service=self.status_check,
         )
-
-        self.quick_scan_service = QuickScanService(quick_scan_client=self.quick_scan)
 
         self.reports = ReportService(
             projects_client=self.projects,
