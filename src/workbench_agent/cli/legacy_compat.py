@@ -122,6 +122,14 @@ SHARED_ARG_FLAGS = frozenset(
     }
 )
 
+# Archive extraction applies to upload/git scan only — not blind-scan.
+BLIND_SCAN_EXCLUDED_LEGACY_FLAGS = frozenset(
+    {
+        "--recursively_extract_archives",
+        "--jar_file_extraction",
+    }
+)
+
 
 @dataclass(frozen=True)
 class LegacyPipeline:
@@ -172,7 +180,7 @@ def build_legacy_pipeline(argv: Sequence[str]) -> Optional[LegacyPipeline]:
         )
 
     shared = _shared_ce_args(options)
-    scan_specific = _scan_ce_args(options)
+    scan_specific = _scan_ce_args(options, scan_command=scan_command)
     show_flag = resolve_legacy_show_flag(options)
     show_specific = [show_flag]
     if "--path-result" in options:
@@ -248,13 +256,15 @@ def _shared_ce_args(options: Dict[str, str]) -> List[str]:
     return args
 
 
-def _scan_ce_args(options: Dict[str, str]) -> List[str]:
+def _scan_ce_args(options: Dict[str, str], *, scan_command: str) -> List[str]:
     args: List[str] = []
 
     for legacy_flag, ce_flag in LEGACY_FLAG_MAP.items():
         if legacy_flag in LEGACY_SPECIAL_FLAGS:
             continue
         if legacy_flag in SHARED_ARG_FLAGS:
+            continue
+        if scan_command == "blind-scan" and legacy_flag in BLIND_SCAN_EXCLUDED_LEGACY_FLAGS:
             continue
         if legacy_flag not in options:
             continue
@@ -264,7 +274,7 @@ def _scan_ce_args(options: Dict[str, str]) -> List[str]:
             args.extend([ce_flag, options[legacy_flag]])
 
     args.extend(_translate_reuse_flags(options))
-    args.extend(_apply_legacy_defaults(options))
+    args.extend(_apply_legacy_defaults(options, scan_command=scan_command))
     return args
 
 
@@ -299,12 +309,13 @@ def _translate_reuse_flags(options: Dict[str, str]) -> List[str]:
     )
 
 
-def _apply_legacy_defaults(options: Dict[str, str]) -> List[str]:
+def _apply_legacy_defaults(options: Dict[str, str], *, scan_command: str) -> List[str]:
     """Inject CE flags so behavior matches legacy defaults."""
     args: List[str] = []
 
-    if "--recursively_extract_archives" not in options:
-        args.append("--no-recursively-extract-archives")
+    if scan_command != "blind-scan":
+        if "--recursively_extract_archives" not in options:
+            args.append("--no-recursively-extract-archives")
 
     if "--log" not in options:
         args.extend(["--log", "ERROR"])

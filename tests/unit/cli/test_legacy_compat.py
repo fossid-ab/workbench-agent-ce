@@ -76,6 +76,18 @@ class TestLegacyTranslation:
     def test_blind_scan_routing(self):
         pipeline = build_legacy_pipeline(_legacy_argv("--blind_scan"))
         assert pipeline.scan_argv[0] == "blind-scan"
+        assert "--no-recursively-extract-archives" not in pipeline.scan_argv
+        assert "--recursively-extract-archives" not in pipeline.scan_argv
+        assert "--jar-file-extraction" not in pipeline.scan_argv
+
+    def test_blind_scan_ignores_explicit_archive_flags(self):
+        pipeline = build_legacy_pipeline(
+            _legacy_argv("--blind_scan", "--recursively_extract_archives", "--jar_file_extraction")
+        )
+        assert pipeline.scan_argv[0] == "blind-scan"
+        assert "--no-recursively-extract-archives" not in pipeline.scan_argv
+        assert "--recursively-extract-archives" not in pipeline.scan_argv
+        assert "--jar-file-extraction" not in pipeline.scan_argv
 
     def test_flag_rename_matrix(self):
         pipeline = build_legacy_pipeline(
