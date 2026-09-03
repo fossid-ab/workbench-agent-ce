@@ -6,6 +6,10 @@ from typing import TYPE_CHECKING
 
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.resolve_project_scan import (
+    resolve_project_and_scan,
+    target_label,
+)
 from workbench_agent.utilities.section import print_section
 
 if TYPE_CHECKING:
@@ -40,14 +44,11 @@ def handle_delete_scan(client: "WorkbenchClient", params: argparse.Namespace) ->
     print_section("Resolving scan")
     logger.info(
         "Looking up scan '%s' in project '%s'",
-        params.scan_name,
-        params.project_name,
+        target_label(params, "scan"),
+        target_label(params, "project"),
     )
-    _, scan = client.resolver.find_project_and_scan(
-        params.project_name,
-        params.scan_name,
-    )
-    scan_code = scan.code
+    targets = resolve_project_and_scan(client, params, allow_create=False)
+    scan_code = targets.scan_code
     logger.debug("Resolved scan_code=%s", scan_code)
 
     if not client.user_permissions.can_delete_scan(scan_code):

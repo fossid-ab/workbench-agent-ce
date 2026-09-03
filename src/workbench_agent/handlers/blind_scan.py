@@ -112,7 +112,7 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
 
         # ===== STEP 3: Resolve/create project and scan =====
         print_section("Project and Scan Checks")
-        _, scan_code, scan_is_new = find_or_create_project_and_scan(
+        project_code, scan_code, scan_is_new = find_or_create_project_and_scan(
             client,
             params,
         )
@@ -139,7 +139,13 @@ def handle_blind_scan(client: "WorkbenchClient", params: argparse.Namespace) -> 
         print("Hashes uploaded successfully!")
 
         # ===== STEP 5: Run scans, wait, display results =====
-        return execute_scan_workflow(client, params, scan_code, durations)
+        return execute_scan_workflow(
+            client,
+            params,
+            scan_code,
+            durations,
+            target_project_code=project_code,
+        )
 
     finally:
         # ===== STEP 6: Clean up temporary hash file =====

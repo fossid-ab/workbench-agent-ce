@@ -9,7 +9,7 @@ import argparse
 import json
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from workbench_agent.api.exceptions import ApiError, NetworkError
 from workbench_agent.utilities.section import print_section
@@ -27,6 +27,8 @@ def fetch_results(
     workbench: "WorkbenchClient",
     params: argparse.Namespace,
     scan_code: str,
+    *,
+    project_code: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Fetches requested scan results based on --show-* flags.
@@ -38,31 +40,38 @@ def fetch_results(
         workbench: WorkbenchClient instance
         params: Command-line parameters with --show-* flags
         scan_code: Scan code to fetch results from
+        project_code: Project code (required for project-level policy warnings)
 
     Returns:
         Dictionary containing requested results:
         - dependency_analysis: List of dependencies (if requested)
         - kb_licenses: List of licenses (if requested)
         - kb_components: List of components (if requested)
+        - kb_matches: List of raw KB matches (if requested)
         - scan_metrics: Metrics dictionary (if requested)
-        - policy_warnings: Warnings dictionary (if requested)
+        - policy_warnings: Scan-level warning counts (if requested)
+        - project_policy_warnings: Project-level policy warnings (if requested)
         - vulnerabilities: List of vulnerabilities (if requested)
     """
     # Check if any results are requested
     should_fetch_licenses = getattr(params, "show_licenses", False)
     should_fetch_components = getattr(params, "show_components", False)
+    should_fetch_matches = getattr(params, "show_matches", False)
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
     should_fetch_metrics = getattr(params, "show_scan_metrics", False)
     should_fetch_policy = getattr(params, "show_policy_warnings", False)
+    should_fetch_project_policy = getattr(params, "show_project_policy_warnings", False)
     should_fetch_vulnerabilities = getattr(params, "show_vulnerabilities", False)
 
     if not any(
         [
             should_fetch_licenses,
             should_fetch_components,
+            should_fetch_matches,
             should_fetch_dependencies,
             should_fetch_metrics,
             should_fetch_policy,
+            should_fetch_project_policy,
             should_fetch_vulnerabilities,
         ]
     ):
@@ -118,6 +127,16 @@ def fetch_results(
             logger.warning("Could not fetch KB Identified Scan Components: %s", e)
             print("Warning: Could not fetch KB Identified Scan Components: " f"{e}")
 
+    if should_fetch_matches:
+        try:
+            kb_matches = workbench.scans.get_results(scan_code)
+            if kb_matches:
+                collected_results["kb_matches"] = kb_matches
+                logger.info("Fetched %d KB scan matches", len(kb_matches))
+        except (ApiError, NetworkError) as e:
+            logger.warning("Could not fetch KB Scan Matches: %s", e)
+            print(f"Warning: Could not fetch KB Scan Matches: {e}")
+
     if should_fetch_metrics:
         try:
             metrics = workbench.identification.get_scan_metrics(scan_code)
@@ -138,6 +157,22 @@ def fetch_results(
             logger.warning("Could not fetch Scan Policy Warnings: %s", e)
             print(f"Warning: Could not fetch Scan Policy Warnings: {e}")
 
+    if should_fetch_project_policy:
+        if not project_code:
+            logger.warning("Project code missing; cannot fetch project policy warnings")
+            print("Warning: Project code is required for project policy warnings.")
+        else:
+            try:
+                project_warnings = workbench.policy.get_project_identification_policy_warnings(
+                    project_code
+                )
+                if project_warnings:
+                    collected_results["project_policy_warnings"] = project_warnings
+                    logger.info("Fetched project policy warnings")
+            except (ApiError, NetworkError) as e:
+                logger.warning("Could not fetch Project Policy Warnings: %s", e)
+                print(f"Warning: Could not fetch Project Policy Warnings: {e}")
+
     if should_fetch_vulnerabilities:
         try:
             vulnerabilities = workbench.vulnerability.list_scan_vulnerabilities(scan_code)
@@ -157,16 +192,20 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
     """
     should_fetch_licenses = getattr(params, "show_licenses", False)
     should_fetch_components = getattr(params, "show_components", False)
+    should_fetch_matches = getattr(params, "show_matches", False)
     should_fetch_dependencies = getattr(params, "show_dependencies", False)
     should_fetch_metrics = getattr(params, "show_scan_metrics", False)
     should_fetch_policy = getattr(params, "show_policy_warnings", False)
+    should_fetch_project_policy = getattr(params, "show_project_policy_warnings", False)
     should_fetch_vulnerabilities = getattr(params, "show_vulnerabilities", False)
 
     da_results_data = collected_results.get("dependency_analysis")
     kb_licenses_data = collected_results.get("kb_licenses")
     kb_components_data = collected_results.get("kb_components")
+    kb_matches_data = collected_results.get("kb_matches")
     scan_metrics_data = collected_results.get("scan_metrics")
     policy_warnings_data = collected_results.get("policy_warnings")
+    project_policy_warnings_data = collected_results.get("project_policy_warnings")
     vulnerabilities_data = collected_results.get("vulnerabilities")
 
     print_section("Results Summary")
@@ -238,6 +277,22 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
         else:
             print("No KB Scan Components found to report.")
 
+    # Display KB Matches
+    if should_fetch_matches:
+        print("\n=== KB Scan Matches ===")
+        displayed_something = True
+        if kb_matches_data:
+            print(f"Found {len(kb_matches_data)} matches:")
+            for match in kb_matches_data:
+                local_path = match.get("local_path", "N/A")
+                artifact = match.get("artifact", "N/A")
+                version = match.get("version", "N/A")
+                match_type = match.get("match_type", "N/A")
+                print(f"  - {local_path} -> {artifact} {version} ({match_type})")
+            print("-" * 25)
+        else:
+            print("No KB scan matches found to report.")
+
     # Display Dependencies
     if should_fetch_dependencies:
         print("\n=== Dependency Analysis Results ===")
@@ -301,6 +356,30 @@ def display_results(collected_results: Dict[str, Any], params: argparse.Namespac
             print("Policy warnings counter could not be fetched.")
         print("-" * 25)
 
+    # Display Project Policy Warnings
+    if should_fetch_project_policy:
+        print("\n=== Project Policy Warnings ===")
+        displayed_something = True
+        if project_policy_warnings_data is not None:
+            scans_with_warnings = project_policy_warnings_data.get("scans_with_warnings")
+            warnings_counter = int(project_policy_warnings_data.get("warnings_counter") or 0)
+            scans_list = project_policy_warnings_data.get("scans_list") or []
+
+            if warnings_counter > 0:
+                print(f"  - Scans with warnings: {scans_with_warnings}")
+                print(f"  - Total warnings: {warnings_counter}")
+                if scans_list:
+                    print("  - Affected scans:")
+                    for scan in scans_list:
+                        scan_name = scan.get("scan_name", "N/A")
+                        scan_code = scan.get("scan_code", "N/A")
+                        print(f"      * {scan_name} ({scan_code})")
+            else:
+                print("No project policy warnings found.")
+        else:
+            print("Project policy warnings could not be fetched.")
+        print("-" * 25)
+
     # Display Vulnerability Summary
     if should_fetch_vulnerabilities:
         displayed_something = True
@@ -329,6 +408,8 @@ def fetch_display_save_results(
     workbench: "WorkbenchClient",
     params: argparse.Namespace,
     scan_code: str,
+    *,
+    project_code: Optional[str] = None,
 ):
     """
     Orchestrates fetching, displaying, and saving scan results.
@@ -337,20 +418,28 @@ def fetch_display_save_results(
         workbench: WorkbenchClient instance from apiv2
         params: Command line parameters
         scan_code: Scan code to fetch results for
+        project_code: Project code for project-level result fetches
     """
     any_results_requested = any(
         getattr(params, flag, False)
         for flag in [
             "show_licenses",
             "show_components",
+            "show_matches",
             "show_dependencies",
             "show_scan_metrics",
             "show_policy_warnings",
+            "show_project_policy_warnings",
             "show_vulnerabilities",
         ]
     )
 
-    collected_results = fetch_results(workbench, params, scan_code)
+    collected_results = fetch_results(
+        workbench,
+        params,
+        scan_code,
+        project_code=project_code,
+    )
 
     if any_results_requested:
         display_results(collected_results, params)

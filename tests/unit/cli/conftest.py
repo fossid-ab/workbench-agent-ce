@@ -58,20 +58,9 @@ def mock_main_dependencies():
         # Mock _check_version_compatibility to avoid actual API calls during init
         mocks["workbench_instance"]._check_version_compatibility = MagicMock()
 
-        # Set up common API methods that handlers might use
-        # Note: These are now accessed via client composition (e.g., workbench.resolver, workbench.scans, etc.)
-        mocks["workbench_instance"].resolver = MagicMock()
-        mocks["workbench_instance"].resolver.find_project.return_value = "TEST_PROJECT_CODE"
-        from workbench_agent.api.services.resolver_service import ResolvedScan
-
-        mock_scan = ResolvedScan(code="TEST_SCAN_CODE", id=123, info={})
-        mocks["workbench_instance"].resolver.find_scan.return_value = mock_scan
-        mocks["workbench_instance"].resolver.find_project_and_scan.return_value = (
-            "TEST_PROJECT_CODE",
-            mock_scan,
-        )
-
+        mocks["workbench_instance"].projects = MagicMock()
         mocks["workbench_instance"].scans = MagicMock()
+
         mocks["workbench_instance"].scans.get_scan_folder_metrics.return_value = {}
         mocks["workbench_instance"].scans.get_dependency_analysis_results.return_value = []
         mocks["workbench_instance"].scans.get_scan_identified_licenses.return_value = []
@@ -94,7 +83,21 @@ def mock_main_dependencies():
             patch("workbench_agent.main.handle_download_reports") as mock_download,
             patch("workbench_agent.main.handle_evaluate_gates") as mock_gates,
             patch("workbench_agent.main.handle_quick_scan") as mock_quick_scan,
+            patch("workbench_agent.main.build_legacy_pipeline", return_value=None),
         ):
+            from workbench_agent.main import COMMAND_HANDLERS
+
+            COMMAND_HANDLERS["analyze"] = mock_analyze
+            COMMAND_HANDLERS["scan"] = mock_scan
+            COMMAND_HANDLERS["blind-scan"] = mock_blind_scan
+            COMMAND_HANDLERS["scan-git"] = mock_scan_git
+            COMMAND_HANDLERS["import-da"] = mock_import
+            COMMAND_HANDLERS["import-sbom"] = mock_import_sbom
+            COMMAND_HANDLERS["show-results"] = mock_show
+            COMMAND_HANDLERS["delete-scan"] = mock_delete_scan
+            COMMAND_HANDLERS["download-reports"] = mock_download
+            COMMAND_HANDLERS["evaluate-gates"] = mock_gates
+            COMMAND_HANDLERS["quick-scan"] = mock_quick_scan
 
             mocks["handle_analyze"] = mock_analyze
             mocks["handle_scan"] = mock_scan
@@ -251,8 +254,16 @@ class ArgBuilder:
         self.args.extend(["--project-name", name])
         return self
 
+    def project_code(self, code):
+        self.args.extend(["--project-code", code])
+        return self
+
     def scan_name(self, name):
         self.args.extend(["--scan-name", name])
+        return self
+
+    def scan_code(self, code):
+        self.args.extend(["--scan-code", code])
         return self
 
     def show_results(self, project="TestProject", scan="TestScan"):
@@ -263,6 +274,14 @@ class ArgBuilder:
 
     def show_licenses(self):
         self.args.append("--show-licenses")
+        return self
+
+    def show_matches(self):
+        self.args.append("--show-matches")
+        return self
+
+    def show_project_policy_warnings(self):
+        self.args.append("--show-project-policy-warnings")
         return self
 
     def id_reuse(self, reuse_type="any", source=None):

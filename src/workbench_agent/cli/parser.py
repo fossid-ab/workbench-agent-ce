@@ -14,9 +14,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger("workbench-agent")
 
 
-def parse_cmdline_args():
+def parse_cmdline_args(argv=None):
     """
     Parse modern command-based arguments with dash-separated options.
+
+    Args:
+        argv: Optional argument list (excluding program name). Defaults to sys.argv.
 
     Returns:
         argparse.Namespace: Parsed modern arguments
@@ -27,7 +30,7 @@ def parse_cmdline_args():
     # Import here to avoid circular imports
     from workbench_agent.utilities.analyze.ecosystem import supported_ecosystems
 
-    from .parent_parsers import create_common_parent_parsers
+    from .parent_parsers import create_common_parent_parsers, create_projectscan_parser
     from .validators import validate_parsed_args
 
     # Create parent parsers for common argument groups
@@ -74,6 +77,7 @@ For more information on a specific command, use:
             parent_parsers["workbench_connection"],
             parent_parsers["archive_operations"],
             parent_parsers["scan_operations"],
+            parent_parsers["projectscan"],
             parent_parsers["scan_control"],
             parent_parsers["project_scan_target"],
             parent_parsers["id_assist_control"],
@@ -121,6 +125,7 @@ Examples:
             parent_parsers["project_scan_target"],
             parent_parsers["fossid_toolbox"],
             parent_parsers["scan_operations"],
+            parent_parsers["projectscan"],
             parent_parsers["scan_control"],
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],
@@ -184,6 +189,7 @@ Examples:
             parent_parsers["archive_operations"],
             parent_parsers["fossid_toolbox"],
             parent_parsers["scan_control"],
+            create_projectscan_parser(default_use_projectscan=True),
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],
             parent_parsers["monitoring"],
@@ -524,6 +530,10 @@ Examples:
   workbench-agent download-reports --project "MyProject" \\
       --scan "v1.0.0" --report-scope scan
 
+  # Target by internal codes (lookup-only)
+  workbench-agent download-reports --project-code PROJ123 \\
+      --scan-code BUILD_42 --report-scope scan
+
   # Download specific report types (scan-level)
   workbench-agent download-reports --project "MyProject" --scan "v1.0.0" \\
       --report-scope scan --report-type xlsx,spdx --report-save-path ./reports/
@@ -546,11 +556,21 @@ Examples:
         metavar="NAME",
     )
     download_reports_parser.add_argument(
+        "--project-code",
+        help=("Internal Workbench project code (bypasses name resolution)."),
+        metavar="CODE",
+    )
+    download_reports_parser.add_argument(
         "--scan-name",
         "--scan",
         dest="scan_name",
         help=("The Scan to download reports from. Required for scan reports."),
         metavar="NAME",
+    )
+    download_reports_parser.add_argument(
+        "--scan-code",
+        help=("Internal Workbench scan code (requires --project-code)."),
+        metavar="CODE",
     )
     download_reports_parser.add_argument(
         "--report-scope",
@@ -615,6 +635,7 @@ Examples:
             parent_parsers["project_scan_target"],
             parent_parsers["git_options"],
             parent_parsers["scan_operations"],
+            parent_parsers["projectscan"],
             parent_parsers["scan_control"],
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],
@@ -685,7 +706,7 @@ Examples:
         default=False,
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Validate the parsed arguments
     validate_parsed_args(args)

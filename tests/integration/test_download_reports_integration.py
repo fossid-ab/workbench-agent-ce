@@ -176,12 +176,7 @@ class TestDownloadReportsIntegration:
         report_dir = tmp_path / "reports"
         report_dir.mkdir()
 
-        # Mock resolver to raise ProjectNotFoundError
-        from workbench_agent.api.exceptions import ProjectNotFoundError
-
-        mock_workbench_api.resolver.find_project_and_scan.side_effect = ProjectNotFoundError(
-            "Project 'NonExistentProj' not found"
-        )
+        mock_workbench_api.projects.list_projects.return_value = []
 
         args = [
             "workbench-agent",
@@ -220,12 +215,8 @@ class TestDownloadReportsIntegration:
         report_dir = tmp_path / "reports"
         report_dir.mkdir()
 
-        # Mock scan resolver to raise ScanNotFoundError
-        from workbench_agent.api.exceptions import ScanNotFoundError
-
-        mock_workbench_api.resolver.find_project_and_scan.side_effect = ScanNotFoundError(
-            "Scan 'NonExistentScan' not found in project 'TestProj'"
-        )
+        # Mock scan lookup to return no rows for this project
+        mock_workbench_api.projects.get_all_scans.return_value = []
 
         args = [
             "workbench-agent",

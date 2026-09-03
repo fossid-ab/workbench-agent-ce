@@ -39,6 +39,7 @@ class TestAnalyzeParsing:
         assert parsed.run_dependency_analysis is False
         assert parsed.recursively_extract_archives is True
         assert parsed.da_timeout == 3600
+        assert parsed.use_projectscan is True
 
     def test_parse_blind_scan(self, args, arg_parser, mock_path_exists):
         with patch("os.path.isdir", return_value=True):
@@ -53,6 +54,7 @@ class TestAnalyzeParsing:
 
         assert parsed.blind_scan is True
         assert parsed.bazel_mode == "BZLMOD"
+        assert parsed.use_projectscan is True
 
     def test_parse_dependency_analysis_only(self, args, arg_parser, mock_path_exists):
         with patch("os.path.isdir", return_value=True):

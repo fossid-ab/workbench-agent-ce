@@ -149,6 +149,32 @@ class TestExecuteScanWorkflow:
         assert wait_kwargs["wait"] is True
         assert callable(wait_kwargs["progress_callback"])
 
+    def test_kb_scan_passes_use_projectscan(
+        self,
+        mocker,
+        mock_client,
+        scan_workflow_params,
+    ):
+        """use_projectscan from CLI params should reach start_scan."""
+        mocker.patch("workbench_agent.utilities.post_scan_summary.print_scan_summary")
+        mock_client.status_check.check_scan_status.return_value = StatusResult(
+            status="FINISHED",
+            raw_data={},
+            duration=12.0,
+        )
+        scan_workflow_params.use_projectscan = True
+
+        execute_scan_workflow(
+            mock_client,
+            scan_workflow_params,
+            "SCAN123",
+            {},
+        )
+
+        assert (
+            mock_client.scan_operations.start_scan.call_args.kwargs["use_projectscan"] is True
+        )
+
     def test_create_scan_progress_callback_prints_status(self, capsys):
         callback = create_scan_progress_callback("SCAN123")
         raw_data = {

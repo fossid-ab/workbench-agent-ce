@@ -65,6 +65,48 @@ def temp_reports_dir(tmp_path):
     return reports_dir
 
 
+@pytest.fixture(scope="session")
+def project_code(workbench_config, project_name):
+    """
+    Resolve the functional test project's internal code from its display name.
+
+    Legacy CLI tests target scans by ``--project_code`` / ``--scan_code``.
+    """
+    from workbench_agent.api import WorkbenchClient
+    from workbench_agent.api.exceptions import NetworkError, ProjectNotFoundError
+    from workbench_agent.services.resolver_service import ResolverService
+
+    client = WorkbenchClient(
+        api_url=workbench_config["url"],
+        api_user=workbench_config["user"],
+        api_token=workbench_config["token"],
+    )
+    resolver = ResolverService(client.projects, client.scans)
+    try:
+        return resolver.find_project(name=project_name)
+    except ProjectNotFoundError as exc:
+        pytest.skip(
+            f"Functional test project {project_name!r} not found on Workbench: {exc}"
+        )
+    except NetworkError as exc:
+        pytest.skip(f"Workbench unavailable for functional tests: {exc}")
+
+
+@pytest.fixture
+def unique_scan_code(request):
+    """
+    Generate a unique scan code for legacy CLI tests.
+
+    Uses alphanumeric characters only (Workbench scan codes).
+    """
+    import uuid
+
+    test_class = request.node.cls.__name__ if request.node.cls else "Test"
+    prefix = "".join(ch for ch in test_class if ch.isalnum())[:8] or "Legacy"
+    unique_id = str(uuid.uuid4()).replace("-", "")[:12]
+    return f"{prefix}{unique_id}"[:32]
+
+
 @pytest.fixture
 def unique_scan_name(request):
     """
@@ -84,7 +126,7 @@ def unique_scan_name(request):
     return f"{test_class}-{unique_id}"
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def project_name():
     """Return the standard project name used for functional tests."""
     return "FunctionalTestProject"

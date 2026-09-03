@@ -2,7 +2,7 @@
 FossID Workbench Agent - Modular API client for automated scanning
 """
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 # Import main API client
 from .api.workbench_client import WorkbenchClient

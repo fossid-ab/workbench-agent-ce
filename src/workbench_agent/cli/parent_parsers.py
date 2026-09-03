@@ -86,7 +86,6 @@ def create_id_assist_control_parser():
         type=int,
         metavar="CHARS",
     )
-    # TODO: Add ProjectScan Control
     return id_assist_control_parent
 
 
@@ -131,13 +130,13 @@ def create_identification_control_parser():
     )
     reuse_group.add_argument(
         "--reuse-scan-ids",
-        help="Reuse identifications from a specific scan.",
-        metavar="SCAN_NAME",
+        help="Reuse identifications from a specific scan (code or name).",
+        metavar="CODE_OR_NAME",
     )
     reuse_group.add_argument(
         "--reuse-project-ids",
-        help="Reuse identifications from a specific project.",
-        metavar="PROJECT_NAME",
+        help="Reuse identifications from a specific project (code or name).",
+        metavar="CODE_OR_NAME",
     )
 
     identification_control_args.add_argument(
@@ -225,13 +224,23 @@ def create_scan_operations_parser():
         action="store_true",
         default=False,
     )
-    scan_ops_args.add_argument(
-        "--full-file-only",
-        help="Return only full file matches regardless of sensitivity.",
-        action="store_true",
-        default=False,
-    )
     return scan_operations_parent
+
+
+def create_projectscan_parser(*, default_use_projectscan: bool = False):
+    """Create parent parser for Workbench projectscan mode options."""
+    projectscan_parent = argparse.ArgumentParser(add_help=False)
+    projectscan_args = projectscan_parent.add_argument_group("Projectscan")
+    projectscan_args.add_argument(
+        "--use-projectscan",
+        help=(
+            "Run Workbench projectscan mode on the scan server "
+            "(setscan + grouped filescan) instead of classic file scan."
+        ),
+        action="store_true",
+        default=default_use_projectscan,
+    )
+    return projectscan_parent
 
 
 def create_monitoring_parser():
@@ -270,6 +279,12 @@ def create_result_options_parser():
         default=False,
     )
     results_display_args.add_argument(
+        "--show-matches",
+        help="Shows raw KB scan matches (scans.get_results).",
+        action="store_true",
+        default=False,
+    )
+    results_display_args.add_argument(
         "--show-dependencies",
         help="Shows all components found by Dependency Analysis.",
         action="store_true",
@@ -284,6 +299,12 @@ def create_result_options_parser():
     results_display_args.add_argument(
         "--show-policy-warnings",
         help="Shows Policy Warnings in identified components or dependencies.",
+        action="store_true",
+        default=False,
+    )
+    results_display_args.add_argument(
+        "--show-project-policy-warnings",
+        help="Shows project-level policy warnings across scans (projects.get_policy_warnings_info).",
         action="store_true",
         default=False,
     )
@@ -310,16 +331,24 @@ def create_project_scan_target_parser():
         "--project",
         dest="project_name",
         help="The Name of the Workbench Project to interact with.",
-        required=True,
         metavar="NAME",
+    )
+    target_args.add_argument(
+        "--project-code",
+        help="Internal Workbench project code (bypasses name resolution).",
+        metavar="CODE",
     )
     target_args.add_argument(
         "--scan-name",
         "--scan",
         dest="scan_name",
         help="The Name of the Workbench Scan to interact with.",
-        required=True,
         metavar="NAME",
+    )
+    target_args.add_argument(
+        "--scan-code",
+        help="Internal Workbench scan code (requires --project-code).",
+        metavar="CODE",
     )
     return project_scan_target_parent
 
@@ -412,6 +441,7 @@ def create_common_parent_parsers():
         "scan_control": create_scan_control_parser(),
         "archive_operations": create_archive_operations_parser(),
         "scan_operations": create_scan_operations_parser(),
+        "projectscan": create_projectscan_parser(),
         "monitoring": create_monitoring_parser(),
         "result_options": create_result_options_parser(),
         "project_scan_target": create_project_scan_target_parser(),

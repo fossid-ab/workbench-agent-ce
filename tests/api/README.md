@@ -78,22 +78,23 @@ pytest tests/api -m "not requires_workbench"
 
 ### Test Project / Test Scans
 
-Test Project holds two scans over the same **Project Sample Mix**:
+Live tests target project **`SDK-TEST-DND`** with four scans:
 
 | Scan | Use |
 |------|-----|
-| **Unidentified Test Scan** | Pending files, mutations, auditor workflow |
-| **Identified Test Scan** | Stable identified components, licenses, read-only ID state |
-| **Dependency Analysis Test Scan** | DA-only import (no KB matches); `get_dependency_analysis_results` |
+| **UNIDENTIFIED** | Pending files, mutations, auditor workflow |
+| **IDENTIFIED** | Stable identified components, licenses, read-only ID state |
+| **IDENTIFIED-WITH-DA** | Dependency Analysis results (`get_dependency_analysis_results`) |
+| **UNIDENTIFIED-WITH-DA** | Pending identification plus DA (e.g. vulnerability fallback) |
 
-**Policy tests** (`clients/scans/`, `clients/projects/`, `services/policy/`): Test
-Project policies include one **license-category** rule and one **license** rule; both
-can appear in `scans.get_policy_warnings_info` on Identified Test Scan.
+**Policy tests** (`clients/scans/`, `clients/projects/`, `services/policy/`): project
+policies should include at least one **license-category** rule and one **license** rule;
+both can appear in `scans.get_policy_warnings_info` on **IDENTIFIED**.
 
 **Vulnerability / VEX tests** (`clients/vulnerabilities/`, `services/vulnerability/`):
 CVE listing requires identified components and/or DA results. Live tests use
-`scan_has_vulnerabilities` (probes Identified Test Scan, then Dependency Analysis
-Test Scan). Prefer `workbench.vulnerability` for agent workflows;
+`scan_has_vulnerabilities` (probes **IDENTIFIED**, then **IDENTIFIED-WITH-DA**, then
+**UNIDENTIFIED-WITH-DA**). Prefer `workbench.vulnerability` for agent workflows;
 `workbench.vulnerabilities` remains the raw client. Mutations need
 `WORKBENCH_ALLOW_MUTATIONS=1`.
 
@@ -110,15 +111,20 @@ Test Scan). Prefer `workbench.vulnerability` for agent workflows;
 Fixtures: `pending_files`, `pending_paths`, `pending_path` (session-scoped from step 1).
 
 ```bash
-export WORKBENCH_TEST_PROJECT_NAME="Test Project"
-export WORKBENCH_TEST_UNIDENTIFIED_SCAN_NAME="Unidentified Test Scan"  # default
-export WORKBENCH_TEST_IDENTIFIED_SCAN_NAME="Identified Test Scan"    # default
-export WORKBENCH_TEST_DA_SCAN_NAME="Dependency Analysis Test Scan" # default
-export WORKBENCH_TEST_SCAN_NAME="Unidentified Test Scan"             # alias for unidentified
-export WORKBENCH_TEST_SCAN_CODE="..."                                # unidentified override
-export WORKBENCH_TEST_IDENTIFIED_SCAN_CODE="..."                     # optional
-export WORKBENCH_TEST_DA_SCAN_CODE="..."                             # optional
-export WORKBENCH_TEST_SNIPPET_FILE_PATH="..."                        # optional override
+export WORKBENCH_TEST_PROJECT_NAME="SDK-TEST-DND"
+export WORKBENCH_TEST_UNIDENTIFIED_SCAN_NAME="UNIDENTIFIED"              # default
+export WORKBENCH_TEST_IDENTIFIED_SCAN_NAME="IDENTIFIED"                  # default
+export WORKBENCH_TEST_IDENTIFIED_WITH_DA_SCAN_NAME="IDENTIFIED-WITH-DA"  # default
+export WORKBENCH_TEST_UNIDENTIFIED_WITH_DA_SCAN_NAME="UNIDENTIFIED-WITH-DA"  # default
+export WORKBENCH_TEST_SCAN_NAME="UNIDENTIFIED"                           # alias for unidentified
+export WORKBENCH_TEST_SCAN_CODE="..."                                    # unidentified override
+export WORKBENCH_TEST_UNIDENTIFIED_SCAN_CODE="..."                       # optional
+export WORKBENCH_TEST_IDENTIFIED_SCAN_CODE="..."                         # optional
+export WORKBENCH_TEST_IDENTIFIED_WITH_DA_SCAN_CODE="..."                 # optional
+export WORKBENCH_TEST_UNIDENTIFIED_WITH_DA_SCAN_CODE="..."               # optional
+export WORKBENCH_TEST_DA_SCAN_NAME="IDENTIFIED-WITH-DA"                  # legacy alias
+export WORKBENCH_TEST_DA_SCAN_CODE="..."                                 # legacy alias
+export WORKBENCH_TEST_SNIPPET_FILE_PATH="..."                            # optional override
 export WORKBENCH_TEST_OPENFASTPATH_DIR="OpenFastPath"
 ```
 

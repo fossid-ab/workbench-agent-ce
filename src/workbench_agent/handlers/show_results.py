@@ -5,6 +5,10 @@ import logging
 from typing import TYPE_CHECKING
 
 from workbench_agent.utilities.error_handling import handler_error_wrapper
+from workbench_agent.utilities.resolve_project_scan import (
+    resolve_project_and_scan,
+    target_label,
+)
 from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.pre_flight_checks import (
     show_results_pre_flight_check,
@@ -57,15 +61,15 @@ def handle_show_results(client: "WorkbenchClient", params: argparse.Namespace) -
 
     # Resolve project and scan (find only - don't create)
     print("Resolving scan for results display...")
-    logger.info(f"Looking for scan '{params.scan_name}' in project " f"'{params.project_name}'")
+    project_label = target_label(params, "project")
+    scan_label = target_label(params, "scan")
+    logger.info(f"Looking for scan '{scan_label}' in project '{project_label}'")
 
-    # Use explicit resolver API (read-only)
-    project_code, scan = client.resolver.find_project_and_scan(
-        params.project_name,
-        params.scan_name,
-    )
-    scan_code = scan.code
-    scan_id = scan.id
+    targets = resolve_project_and_scan(client, params, allow_create=False)
+    project_code = targets.project_code
+    scan_code = targets.scan_code
+    scan_info = targets.scan_info or client.scans.get_information(scan_code)
+    scan_id = int(scan_info.get("id", scan_info.get("scan_id", 0)))
     logger.debug(f"Found project: {project_code}, scan: {scan_code} (ID: {scan_id})")
 
     # Ensure scan processes are idle before fetching results
@@ -73,7 +77,7 @@ def handle_show_results(client: "WorkbenchClient", params: argparse.Namespace) -
 
     # Fetch and display results
     print(f"\nFetching results for scan '{scan_code}'...")
-    fetch_display_save_results(client, params, scan_code)
+    fetch_display_save_results(client, params, scan_code, project_code=project_code)
 
     logger.info("Results displayed successfully")
     return True

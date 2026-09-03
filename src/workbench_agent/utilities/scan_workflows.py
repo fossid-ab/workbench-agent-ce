@@ -8,7 +8,7 @@ This module exposes a single public entry point:
 
 import argparse
 import logging
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
 from workbench_agent.api.utils.process_waiter import StatusResult
 from workbench_agent.utilities.post_scan_summary import print_scan_summary
@@ -152,6 +152,7 @@ def execute_scan_workflow(
     scan_code: str,
     durations: Dict[str, float],
     *,
+    target_project_code: Optional[str] = None,
     emit_summary: bool = True,
 ) -> bool:
     """
@@ -205,7 +206,11 @@ def execute_scan_workflow(
     if scan_operations["run_kb_scan"]:
         print("Starting Scan Process...")
 
-        id_reuse_type, id_reuse_specific_code = resolve_id_reuse(client, params)
+        id_reuse_type, id_reuse_specific_code = resolve_id_reuse(
+            client,
+            params,
+            target_project_code=target_project_code,
+        )
 
         client.scan_operations.start_scan(
             scan_code=scan_code,
@@ -228,6 +233,7 @@ def execute_scan_workflow(
             advanced_match_scoring=getattr(params, "advanced_match_scoring", True),
             match_filtering_threshold=getattr(params, "match_filtering_threshold", None),
             scan_host=getattr(params, "scan_host", None),
+            use_projectscan=getattr(params, "use_projectscan", False),
         )
 
         if getattr(params, "no_wait", False):
@@ -283,6 +289,7 @@ def execute_scan_workflow(
                     advanced_match_scoring=getattr(params, "advanced_match_scoring", True),
                     match_filtering_threshold=getattr(params, "match_filtering_threshold", None),
                     scan_host=getattr(params, "scan_host", None),
+                    use_projectscan=getattr(params, "use_projectscan", False),
                 )
                 kb_scan_result = _wait_for_kb_scan(client, scan_code, params)
                 durations["kb_scan"] += kb_scan_result.duration or 0.0

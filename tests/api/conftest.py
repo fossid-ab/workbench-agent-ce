@@ -11,10 +11,16 @@ from workbench_agent.api.exceptions import (
     ScanNotFoundError,
 )
 from workbench_agent.api.utils.version import normalize_workbench_version
+from workbench_agent.services.resolver_service import ResolverService
 
-DEFAULT_UNIDENTIFIED_SCAN_NAME = "Unidentified Test Scan"
-DEFAULT_IDENTIFIED_SCAN_NAME = "Identified Test Scan"
-DEFAULT_DEPENDENCY_ANALYSIS_SCAN_NAME = "Dependency Analysis Test Scan"
+DEFAULT_TEST_PROJECT_NAME = "SDK-TEST-DND"
+DEFAULT_UNIDENTIFIED_SCAN_NAME = "UNIDENTIFIED"
+DEFAULT_IDENTIFIED_SCAN_NAME = "IDENTIFIED"
+DEFAULT_IDENTIFIED_WITH_DA_SCAN_NAME = "IDENTIFIED-WITH-DA"
+DEFAULT_UNIDENTIFIED_WITH_DA_SCAN_NAME = "UNIDENTIFIED-WITH-DA"
+
+# Backward-compatible alias for DA-focused tests (same scan as IDENTIFIED-WITH-DA).
+DEFAULT_DEPENDENCY_ANALYSIS_SCAN_NAME = DEFAULT_IDENTIFIED_WITH_DA_SCAN_NAME
 
 # Substrings for known test-data layout (same Project Sample Mix on both scans).
 SNIPPET_PATH_MARKER = os.environ.get("WORKBENCH_TEST_SNIPPET_PATH_MARKER", "Snippet")
@@ -26,10 +32,9 @@ def _resolve_scan_code(
     project_name: str,
     scan_name: str,
 ) -> str:
-    _, scan = workbench_client.resolver.find_project_and_scan(
-        project_name,
-        scan_name,
-    )
+    resolver = ResolverService(workbench_client.projects, workbench_client.scans)
+    project_code = resolver.find_project(project_name)
+    scan = resolver.find_scan(name=scan_name, project_code=project_code)
     return scan.code
 
 
@@ -109,7 +114,7 @@ def workbench_version(workbench_client, workbench_version_raw):
 
 @pytest.fixture(scope="session")
 def test_project_name():
-    return os.environ.get("WORKBENCH_TEST_PROJECT_NAME", "Test Project")
+    return os.environ.get("WORKBENCH_TEST_PROJECT_NAME", DEFAULT_TEST_PROJECT_NAME)
 
 
 @pytest.fixture(scope="session")
@@ -138,26 +143,36 @@ def identified_test_scan_name():
 @pytest.fixture(scope="session")
 def dependency_analysis_test_scan_name():
     """
-    Scan with Dependency Analysis only (no KB / FossID matches).
+    Scan with Dependency Analysis results (``IDENTIFIED-WITH-DA`` by default).
 
     Used for ``get_dependency_analysis_results`` and related read tests.
     """
+    return (
+        os.environ.get("WORKBENCH_TEST_IDENTIFIED_WITH_DA_SCAN_NAME")
+        or os.environ.get("WORKBENCH_TEST_DA_SCAN_NAME")
+        or DEFAULT_IDENTIFIED_WITH_DA_SCAN_NAME
+    )
+
+
+@pytest.fixture(scope="session")
+def unidentified_with_da_test_scan_name():
+    """Scan with pending identification and Dependency Analysis results."""
     return os.environ.get(
-        "WORKBENCH_TEST_DA_SCAN_NAME",
-        DEFAULT_DEPENDENCY_ANALYSIS_SCAN_NAME,
+        "WORKBENCH_TEST_UNIDENTIFIED_WITH_DA_SCAN_NAME",
+        DEFAULT_UNIDENTIFIED_WITH_DA_SCAN_NAME,
     )
 
 
 @pytest.fixture(scope="session")
 def test_scan_name(unidentified_test_scan_name):
-    """Default live-test scan: Unidentified Test Scan (pending files)."""
+    """Default live-test scan: UNIDENTIFIED (pending files)."""
     return unidentified_test_scan_name
 
 
 @pytest.fixture(scope="session")
 def test_project_code(workbench_client, test_project_name):
     """
-    Project code for Test Project (resolver lookup).
+    Project code for the SDK test project (resolver lookup).
 
     Set WORKBENCH_TEST_PROJECT_CODE to skip name resolution.
     """
@@ -165,18 +180,19 @@ def test_project_code(workbench_client, test_project_name):
     if override:
         return override
     try:
-        return workbench_client.resolver.find_project(test_project_name)
+        resolver = ResolverService(workbench_client.projects, workbench_client.scans)
+        return resolver.find_project(test_project_name)
     except ProjectNotFoundError as exc:
         pytest.skip(
             f"Test project not found ({test_project_name!r}): {exc}. "
-            "Create Test Project or set WORKBENCH_TEST_PROJECT_CODE."
+            f"Create {DEFAULT_TEST_PROJECT_NAME!r} or set WORKBENCH_TEST_PROJECT_CODE."
         )
 
 
 @pytest.fixture(scope="session")
 def test_scan_code(workbench_client, test_project_name, test_scan_name):
     """
-    Unidentified Test Scan code — pending files, mutations, auditor workflow.
+    UNIDENTIFIED scan code — pending files, mutations, auditor workflow.
 
     Set ``WORKBENCH_TEST_SCAN_CODE`` (or ``WORKBENCH_TEST_UNIDENTIFIED_SCAN_CODE``)
     to skip name resolution.
@@ -197,7 +213,7 @@ def test_scan_code(workbench_client, test_project_name, test_scan_name):
 
 @pytest.fixture(scope="session")
 def identified_test_scan_code(workbench_client, test_project_name, identified_test_scan_name):
-    """Identified Test Scan code — stable identified components and licenses."""
+    """IDENTIFIED scan code — stable identified components and licenses."""
     return _scan_code_fixture(
         workbench_client,
         test_project_name,
@@ -211,13 +227,32 @@ def identified_test_scan_code(workbench_client, test_project_name, identified_te
 def dependency_analysis_test_scan_code(
     workbench_client, test_project_name, dependency_analysis_test_scan_name
 ):
-    """Dependency Analysis Test Scan code — DA import, no KB identified components."""
+    """IDENTIFIED-WITH-DA scan code — Dependency Analysis results."""
+    override = os.environ.get("WORKBENCH_TEST_IDENTIFIED_WITH_DA_SCAN_CODE") or os.environ.get(
+        "WORKBENCH_TEST_DA_SCAN_CODE"
+    )
+    if override:
+        return override
     return _scan_code_fixture(
         workbench_client,
         test_project_name,
         dependency_analysis_test_scan_name,
-        env_override_key="WORKBENCH_TEST_DA_SCAN_CODE",
-        label="Dependency Analysis test scan",
+        env_override_key="WORKBENCH_TEST_IDENTIFIED_WITH_DA_SCAN_CODE",
+        label="Identified-with-DA test scan",
+    )
+
+
+@pytest.fixture(scope="session")
+def unidentified_with_da_test_scan_code(
+    workbench_client, test_project_name, unidentified_with_da_test_scan_name
+):
+    """UNIDENTIFIED-WITH-DA scan code — pending identification plus DA results."""
+    return _scan_code_fixture(
+        workbench_client,
+        test_project_name,
+        unidentified_with_da_test_scan_name,
+        env_override_key="WORKBENCH_TEST_UNIDENTIFIED_WITH_DA_SCAN_CODE",
+        label="Unidentified-with-DA test scan",
     )
 
 
@@ -295,7 +330,7 @@ def snippet_file_path(pending_paths):
     if not path:
         pytest.skip(
             f"No pending path containing {SNIPPET_PATH_MARKER!r}. "
-            "Ensure Unidentified Test Scan includes Files with Snippets test data."
+            "Ensure UNIDENTIFIED scan includes Files with Snippets test data."
         )
     return path
 
@@ -315,7 +350,7 @@ def openfastpath_dir(pending_paths):
         return OPENFASTPATH_MARKER
     pytest.skip(
         f"No pending paths under {OPENFASTPATH_MARKER!r}. "
-        "Ensure Unidentified Test Scan includes OpenFastPath test data."
+        "Ensure UNIDENTIFIED scan includes OpenFastPath test data."
     )
 
 
@@ -339,35 +374,34 @@ def scan_has_pending(workbench_client, test_scan_code):
     if pending < 1:
         pytest.skip(
             f"Scan {test_scan_code!r} has no pending_identification "
-            f"(metrics: {metrics}). Re-run the scan on Unidentified Test Scan."
+            f"(metrics: {metrics}). Re-run the scan on UNIDENTIFIED."
         )
     return metrics
 
 
 @pytest.fixture(scope="session")
 def scan_has_identified(workbench_client, identified_test_scan_code):
-    """Ensure Identified Test Scan has at least one identified file."""
+    """Ensure IDENTIFIED scan has at least one identified file."""
     metrics = workbench_client.identification.get_scan_metrics(identified_test_scan_code)
     identified = int(metrics.get("identified_files", 0) or 0)
     if identified < 1:
         pytest.skip(
             f"Scan {identified_test_scan_code!r} has no identified_files "
-            f"(metrics: {metrics}). Use Identified Test Scan."
+            f"(metrics: {metrics}). Use IDENTIFIED scan."
         )
     return metrics
 
 
 @pytest.fixture(scope="session")
 def scan_has_da_results(workbench_client, dependency_analysis_test_scan_code):
-    """Ensure Dependency Analysis Test Scan has dependency analysis results."""
+    """Ensure IDENTIFIED-WITH-DA scan has dependency analysis results."""
     results = workbench_client.scans.get_dependency_analysis_results(
         dependency_analysis_test_scan_code
     )
     if not results:
         pytest.skip(
             f"Scan {dependency_analysis_test_scan_code!r} has no dependency "
-            "analysis results. Run Dependency Analysis on Dependency Analysis "
-            "Test Scan."
+            "analysis results. Run Dependency Analysis on IDENTIFIED-WITH-DA."
         )
     return results
 
@@ -377,15 +411,17 @@ def scan_has_vulnerabilities(
     workbench_client,
     identified_test_scan_code,
     dependency_analysis_test_scan_code,
+    unidentified_with_da_test_scan_code,
 ):
     """
-    First test scan (identified, then DA) that returns CVE rows.
+    First SDK test scan (identified, identified+DA, unidentified+DA) with CVE rows.
 
     CVE listing requires identified components and/or dependency analysis.
     """
     for scan_code in (
         identified_test_scan_code,
         dependency_analysis_test_scan_code,
+        unidentified_with_da_test_scan_code,
     ):
         vulnerabilities = workbench_client.vulnerability.list_scan_vulnerabilities(scan_code)
         if vulnerabilities:
@@ -394,7 +430,7 @@ def scan_has_vulnerabilities(
                 "vulnerabilities": vulnerabilities,
             }
     pytest.skip(
-        "Neither Identified Test Scan nor Dependency Analysis Test Scan "
+        "None of IDENTIFIED, IDENTIFIED-WITH-DA, or UNIDENTIFIED-WITH-DA "
         "returned vulnerabilities. Ensure KB CVE data is available for "
         "sample components."
     )
@@ -403,10 +439,10 @@ def scan_has_vulnerabilities(
 @pytest.fixture(scope="session")
 def identified_file_path(openfastpath_file_path):
     """
-    File path with catalog linkage on Identified Test Scan.
+    File path with catalog linkage on IDENTIFIED scan.
 
-    Same relative paths exist on both scans (Project Sample Mix); discovery
-    uses pending files on Unidentified Test Scan. Snippet files may be marked
+    Same relative paths exist on both unidentified scans; discovery
+    uses pending files on UNIDENTIFIED. Snippet files may be marked
     identified with a file license only — prefer OpenFastPath for linked
     catalog components.
     """
@@ -423,7 +459,7 @@ def allow_mutations():
     ):
         pytest.skip(
             "Set WORKBENCH_ALLOW_MUTATIONS=1 to run mutation tests "
-            "against the shared Unidentified Test Scan."
+            "against the shared UNIDENTIFIED scan."
         )
 
 

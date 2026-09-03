@@ -383,3 +383,78 @@ class TestEdgeCases:
             assert parsed.api_url == "https://env.com/api.php"  # From env
             assert parsed.api_user == "cmduser"  # From command line
             assert parsed.api_token == "cmdtoken"  # From command line
+
+
+class TestProjectScanTargetValidation:
+    """Validate --project-code / --scan-code flag combinations."""
+
+    def test_scan_with_project_and_scan_code(self, arg_parser, mock_path_exists):
+        cmd_args = [
+            "workbench-agent",
+            "scan",
+            "--api-url",
+            "https://test.com",
+            "--api-user",
+            "testuser",
+            "--api-token",
+            "testtoken",
+            "--project-code",
+            "PROJ123",
+            "--scan-code",
+            "BUILD_42",
+            "--path",
+            ".",
+        ]
+        parsed = arg_parser(cmd_args)
+        assert parsed.project_code == "PROJ123"
+        assert parsed.scan_code == "BUILD_42"
+
+    def test_reject_project_name_with_scan_code(self, arg_parser, mock_path_exists):
+        cmd_args = [
+            "workbench-agent",
+            "scan",
+            "--api-url",
+            "https://test.com",
+            "--api-user",
+            "testuser",
+            "--api-token",
+            "testtoken",
+            "--project-name",
+            "MyApp",
+            "--scan-code",
+            "SCN456",
+            "--path",
+            ".",
+        ]
+        with pytest.raises(ValidationError, match="project-name.*scan-code"):
+            arg_parser(cmd_args)
+
+    def test_reject_scan_code_without_project_code(self, arg_parser, mock_path_exists):
+        cmd_args = [
+            "workbench-agent",
+            "scan",
+            "--api-url",
+            "https://test.com",
+            "--api-user",
+            "testuser",
+            "--api-token",
+            "testtoken",
+            "--project-name",
+            "MyApp",
+            "--scan-code",
+            "SCN456",
+            "--path",
+            ".",
+        ]
+        with pytest.raises(ValidationError):
+            arg_parser(cmd_args)
+
+    def test_download_reports_accepts_project_code(self, args, arg_parser):
+        cmd_args = (
+            args()
+            .download_reports(scope="project")
+            .project_code("PROJ123")
+            .build()
+        )
+        parsed = arg_parser(cmd_args)
+        assert parsed.project_code == "PROJ123"

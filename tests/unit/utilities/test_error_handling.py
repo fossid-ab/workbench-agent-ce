@@ -12,6 +12,7 @@ from workbench_agent.api.exceptions import (
     ProcessTimeoutError,
     ProjectNotFoundError,
     ScanNotFoundError,
+    ScanWrongProjectError,
 )
 from workbench_agent.exceptions import (
     ConfigurationError,
@@ -68,6 +69,28 @@ def test_format_and_print_error_project_not_found_write_operation(mock_print, mo
     print_calls = [call.args[0] for call in mock_print.call_args_list]
     assert any("Error executing 'scan' command" in call for call in print_calls)
     assert any("Project 'test_project' not found" in call for call in print_calls)
+
+
+@patch("builtins.print")
+def test_format_and_print_error_scan_wrong_project(mock_print, mock_params):
+    """Test error formatting when scan code exists in another project."""
+    mock_params.command = "scan"
+    mock_params.project_code = "testing-code23"
+    mock_params.scan_code = "testing-code2"
+    mock_params.project_name = None
+    mock_params.scan_name = None
+    error = ScanWrongProjectError(
+        scan_code="testing-code2",
+        requested_project_code="testing-code23",
+        actual_project_code="other-project",
+    )
+
+    format_and_print_error(error, "test_handler", mock_params)
+
+    print_calls = [call.args[0] for call in mock_print.call_args_list]
+    assert any("Scan code already used in another project" in call for call in print_calls)
+    assert any("already exists in project 'other-project'" in call for call in print_calls)
+    assert any("Use a different --scan-code" in call for call in print_calls)
 
 
 @patch("builtins.print")

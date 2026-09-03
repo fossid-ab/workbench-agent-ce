@@ -29,9 +29,7 @@ from workbench_agent.api.services import (
     IdentificationService,
     LinksService,
     PolicyService,
-    QuickScanService,
     ReportService,
-    ResolverService,
     ScanContentService,
     ScanDeletionService,
     ScanOperationsService,
@@ -62,7 +60,6 @@ class WorkbenchClient:
     - `files_and_folders`: File identification and audit operations
 
     **Services (High-level orchestration):**
-    - `resolver`: Resolve project/scan names to codes, create if needed
     - `status_check`: Check status of async operations (specialized methods)
     - `scan_content`: Scan file directory (upload, extract, remove, Git)
     - `reports`: Report generation with validation and waiting
@@ -71,7 +68,6 @@ class WorkbenchClient:
     - `scan_operations`: Scan execution with standardized behavior
     - `scan_deletion`: Queue scan delete and wait until complete
     - `user_permissions`: Check Workbench permissions for the API user
-    - `quick_scan_service`: Quick single-file scan
     - `dependencies`: Dependency analysis result read/write workflows
     - `identification`: Scan file identification read/write workflows
     - `vulnerability`: CVE listing and VEX create/update
@@ -91,9 +87,6 @@ class WorkbenchClient:
         ... )
         >>>
         >>> # High-level workflows via services
-        >>> result = workbench.resolver.find_or_create(
-        ...     "MyProject", "MyScan", scan_data={}
-        ... )
         >>> process_id = workbench.reports.generate_project_report(
         ...     project_code, "xlsx"
         ... )
@@ -166,8 +159,6 @@ class WorkbenchClient:
         # Services coordinate multiple clients for complex workflows
         logger.debug("Initializing Services...")
 
-        self.resolver = ResolverService(projects_client=self.projects, scans_client=self.scans)
-
         self.status_check = StatusCheckService(
             scans_client=self.scans, projects_client=self.projects
         )
@@ -177,8 +168,6 @@ class WorkbenchClient:
             uploads_client=self.uploads,
             status_check_service=self.status_check,
         )
-
-        self.quick_scan_service = QuickScanService(quick_scan_client=self.quick_scan)
 
         self.reports = ReportService(
             projects_client=self.projects,
@@ -215,9 +204,7 @@ class WorkbenchClient:
             workbench_version=self._workbench_version,
         )
 
-        self.scan_operations = ScanOperationsService(
-            scans_client=self.scans, resolver_service=self.resolver
-        )
+        self.scan_operations = ScanOperationsService(scans_client=self.scans)
 
         self.scan_deletion = ScanDeletionService(
             scans_client=self.scans,

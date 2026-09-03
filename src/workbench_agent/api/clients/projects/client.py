@@ -188,13 +188,17 @@ class ProjectsClient:
         comment: Optional[str] = None,
         limit_date: Optional[str] = None,
         jira_project_key: Optional[str] = None,
+        project_code: Optional[str] = None,
     ) -> str:
         """
-        Create a project (Workbench assigns ``project_code``).
+        Create a project.
 
-        Required: ``project_name``. Optional fields — see ``schema.md``.
+        Required: ``project_name``. Optional ``project_code`` when the client
+        supplies the internal identifier; otherwise Workbench assigns one.
         """
         payload_data: Dict[str, Any] = {"project_name": project_name}
+        if project_code:
+            payload_data["project_code"] = project_code
         if product_code:
             payload_data["product_code"] = product_code
         if product_name:
@@ -213,13 +217,15 @@ class ProjectsClient:
         )
 
         if response.get("status") == "1":
-            project_code = response.get("data", {}).get("project_code")
-            if not project_code:
+            returned_code = response.get("data", {}).get("project_code")
+            if project_code:
+                return str(project_code)
+            if not returned_code:
                 raise ApiError(
                     "Project created but no code returned",
                     details=response,
                 )
-            return project_code
+            return str(returned_code)
 
         helpers.try_raise_create_parsing_request_error(response, project_name=project_name)
         error_msg = response.get("error", "Unknown error")

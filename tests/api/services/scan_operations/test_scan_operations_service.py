@@ -14,16 +14,9 @@ def mock_scans_client(mocker):
 
 
 @pytest.fixture
-def mock_resolver_service(mocker):
-    """Create a mock ResolverService."""
-    service = mocker.MagicMock()
-    return service
-
-
-@pytest.fixture
-def scan_operations_service(mock_scans_client, mock_resolver_service):
+def scan_operations_service(mock_scans_client):
     """Create a ScanOperationsService instance for testing."""
-    return ScanOperationsService(mock_scans_client, mock_resolver_service)
+    return ScanOperationsService(mock_scans_client)
 
 
 # --- Test start_scan ---
@@ -88,6 +81,45 @@ def test_start_scan_with_optional_params(scan_operations_service, mock_scans_cli
     assert call_args["full_file_only"] == "1"
     assert call_args["advanced_match_scoring"] == "0"
     assert call_args["match_filtering_threshold"] == "100"
+
+
+def test_start_scan_with_use_projectscan(scan_operations_service, mock_scans_client):
+    """Test starting a scan with projectscan mode enabled."""
+    mock_scans_client.run.return_value = None
+
+    scan_operations_service.start_scan(
+        scan_code="test_scan",
+        limit=100,
+        sensitivity=80,
+        autoid_file_licenses=True,
+        autoid_file_copyrights=False,
+        autoid_pending_ids=True,
+        delta_scan=False,
+        use_projectscan=True,
+    )
+
+    call_args = mock_scans_client.run.call_args[0][0]
+    assert call_args["use_projectscan"] == "1"
+
+
+def test_start_scan_without_use_projectscan_omits_field(
+    scan_operations_service, mock_scans_client
+):
+    """Test that use_projectscan is omitted from payload when disabled."""
+    mock_scans_client.run.return_value = None
+
+    scan_operations_service.start_scan(
+        scan_code="test_scan",
+        limit=100,
+        sensitivity=80,
+        autoid_file_licenses=True,
+        autoid_file_copyrights=False,
+        autoid_pending_ids=True,
+        delta_scan=False,
+    )
+
+    call_args = mock_scans_client.run.call_args[0][0]
+    assert "use_projectscan" not in call_args
 
 
 def test_start_scan_with_specific_id_reuse(scan_operations_service, mock_scans_client):

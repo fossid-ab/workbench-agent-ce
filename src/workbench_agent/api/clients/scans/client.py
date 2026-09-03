@@ -252,6 +252,75 @@ class ScansClient:
                 details=response,
             )
 
+    def get_results(self, scan_code: str) -> List[Dict[str, Any]]:
+        """
+        Get raw KB scan matches for a scan (``scans.get_results``).
+
+        Returns file-client match rows (``local_path``, ``match_type``,
+        ``artifact``, ``version``, etc.). Empty when the scan has not been run
+        or has no matches.
+
+        Args:
+            scan_code: Code of the scan to get matches from
+
+        Returns:
+            List of match records sorted by ``local_path`` then ``id``
+
+        Raises:
+            ApiError: If there are API issues
+            ScanNotFoundError: If the scan doesn't exist
+            NetworkError: If there are network issues
+        """
+        logger.debug("Fetching KB scan matches for scan '%s'...", scan_code)
+        payload = {
+            "group": "scans",
+            "action": "get_results",
+            "data": {"scan_code": scan_code},
+        }
+        response = self._api._send_request(payload)
+
+        if response.get("status") == "1" and "data" in response:
+            data = response["data"]
+            if data is False:
+                logger.info("Scan '%s' has not been run or has no KB matches.", scan_code)
+                return []
+            if isinstance(data, dict):
+                matches = list(data.values())
+                matches.sort(
+                    key=lambda row: (
+                        str(row.get("local_path", "")).lower(),
+                        str(row.get("id", "")),
+                    )
+                )
+                logger.debug(
+                    "Successfully fetched %d KB matches for scan '%s'.",
+                    len(matches),
+                    scan_code,
+                )
+                return matches
+            if isinstance(data, list):
+                return data
+            logger.warning(
+                "Unexpected data type for get_results on scan '%s': %s",
+                scan_code,
+                type(data),
+            )
+            return []
+        if response.get("status") == "1":
+            logger.warning(
+                "API returned success for get_results but no 'data' key for scan '%s'.",
+                scan_code,
+            )
+            return []
+
+        error_msg = response.get("error", f"Unexpected response: {response}")
+        if helpers.is_scan_not_found(error_msg):
+            helpers.raise_scan_not_found(scan_code)
+        raise ApiError(
+            f"Error getting KB scan matches for scan '{scan_code}': {error_msg}",
+            details=response,
+        )
+
     def get_dependency_analysis_results(self, scan_code: str) -> List[Dict[str, Any]]:
         """
         Gets dependency analysis results.

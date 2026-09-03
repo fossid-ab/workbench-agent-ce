@@ -109,7 +109,6 @@ vulns = wb.vulnerability.list_scan_vulnerabilities(scan_code)
 links = wb.links.get_workbench_links(scan_code)
 warnings = wb.policy.get_policy_warnings(scan_code)
 catalog = wb.component_catalog.resolve("abbrev", "1.1.1", "ISC")
-result = wb.resolver.find_or_create("MyProject", "MyScan", scan_data={})
 ```
 
 | `WorkbenchClient` attribute | Class | Role |
@@ -123,15 +122,16 @@ result = wb.resolver.find_or_create("MyProject", "MyScan", scan_data={})
 | `scan_content` | `ScanContentService` | Scan file directory: upload (target/DA/SBOM), extract, remove, Git |
 | `scan_operations` | `ScanOperationsService` | Process scan files: KB scan, DA run/import, SBOM import |
 | `scan_deletion` | `ScanDeletionService` | Queue scan delete and wait until complete |
-| `resolver` | `ResolverService` | Resolve project/scan names to codes; returns `ResolvedScan` / `ResolutionResult` with listing metadata |
 | `reports` | `ReportService` | Report generation, validation, waiting, download |
 | `status_check` | `StatusCheckService` | Poll async operation status (Git, scan, reports, delete, …) |
 | `user_permissions` | `UserPermissionsService` | Permissions for the configured API user |
-| `quick_scan_service` | `QuickScanService` | Single-file quick scan wrapper over `quick_scan` client |
+
+Use the `quick_scan` client directly for single-file quick scans (no service wrapper).
 
 CE orchestration (CLI params, compatibility, terminal output) lives outside
-this tree — for example ``utilities.resolve_project_scan`` (find-or-create +
-reuse checks) and ``utilities.resolve_id_reuse`` (ID reuse source lookup).
+this tree — for example ``workbench_agent.services.resolver_service.ResolverService``
+(find-or-create + lookup), ``utilities.resolve_project_scan`` (CLI wrapper +
+reuse checks), and ``utilities.resolve_id_reuse`` (ID reuse source lookup).
 
 Prefer **services** in application and agent code. Reach for **clients** when
 you need direct access to a single API action, contract tests, or a method not

@@ -2,6 +2,7 @@ import argparse
 import logging
 from typing import TYPE_CHECKING, Optional, Set
 
+from workbench_agent.services.types import target_label
 from workbench_agent.utilities.section import print_section
 
 if TYPE_CHECKING:
@@ -110,7 +111,10 @@ def print_report_summary(
 
     # Report Scope
     scope_label = "Project" if params.report_scope == "project" else "Scan"
-    scope_name = params.project_name if params.report_scope == "project" else params.scan_name
+    scope_name = target_label(
+        params,
+        "project" if params.report_scope == "project" else "scan",
+    )
     print(f"Report Scope: {scope_label} '{scope_name}'")
 
     # Output Directory

@@ -158,6 +158,32 @@ class TestBasicCommandParsing:
         assert parsed.show_licenses is True
         assert parsed.show_components is False  # Default
 
+    def test_parse_show_matches_flag(self, args, arg_parser, mock_path_exists):
+        cmd_args = (
+            args()
+            .show_results(project="ShowProject", scan="ShowScan")
+            .show_matches()
+            .build()
+        )
+        parsed = arg_parser(cmd_args)
+
+        assert parsed.command == "show-results"
+        assert parsed.show_matches is True
+        assert parsed.show_licenses is False
+
+    def test_parse_show_project_policy_warnings_flag(self, args, arg_parser, mock_path_exists):
+        cmd_args = (
+            args()
+            .show_results(project="ShowProject", scan="ShowScan")
+            .show_project_policy_warnings()
+            .build()
+        )
+        parsed = arg_parser(cmd_args)
+
+        assert parsed.command == "show-results"
+        assert parsed.show_project_policy_warnings is True
+        assert parsed.show_policy_warnings is False
+
 
 class TestFlagsAndDefaults:
     """Test flag parsing and default values."""
@@ -175,6 +201,23 @@ class TestFlagsAndDefaults:
         assert parsed.autoid_pending_ids is True
         assert parsed.autoid_file_licenses is False  # Default
         assert parsed.run_dependency_analysis is False  # Default
+        assert parsed.use_projectscan is False  # Default
+
+    def test_analyze_defaults_use_projectscan(self, args, arg_parser, mock_path_exists):
+        """analyze enables projectscan by default."""
+        with patch("os.path.isdir", return_value=True):
+            cmd_args = args().analyze(bazel_target="//:t").build()
+            parsed = arg_parser(cmd_args)
+        assert parsed.use_projectscan is True
+
+    def test_use_projectscan_flag(self, args, arg_parser, mock_path_exists):
+        """Test --use-projectscan flag parsing on scan command."""
+        cmd_args = args().scan().build()
+        cmd_args.append("--use-projectscan")
+
+        parsed = arg_parser(cmd_args)
+
+        assert parsed.use_projectscan is True
 
     def test_id_reuse_parameters(self, args, arg_parser, mock_path_exists):
         """Test new mutually exclusive ID reuse parameter parsing."""

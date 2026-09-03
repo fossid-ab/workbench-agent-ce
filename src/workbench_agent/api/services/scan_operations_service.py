@@ -21,22 +21,20 @@ class ScanOperationsService:
     - SBOM report import
 
     Example:
-        >>> scan_ops = ScanOperationsService(scans_client, resolver_service)
+        >>> scan_ops = ScanOperationsService(scans_client)
         >>> scan_ops.start_scan(scan_code="S1", limit=10, sensitivity=6, ...)
         >>> scan_ops.start_da_import(scan_code="S1")
         >>> scan_ops.start_sbom_import(scan_code="S1")
     """
 
-    def __init__(self, scans_client, resolver_service):
+    def __init__(self, scans_client):
         """
         Initialize ScanOperationsService.
 
         Args:
             scans_client: ScansClient instance for raw API calls
-            resolver_service: ResolverService instance for name→code resolution
         """
         self._scans = scans_client
-        self._resolver = resolver_service
         logger.debug("ScanOperationsService initialized")
 
     # ===== SCANNING OPERATIONS =====
@@ -59,6 +57,7 @@ class ScanOperationsService:
         advanced_match_scoring: bool = True,
         match_filtering_threshold: Optional[int] = None,
         scan_host: Optional[str] = None,
+        use_projectscan: bool = False,
     ):
         """
         Start a KB scan with resolved ID reuse parameters.
@@ -86,6 +85,7 @@ class ScanOperationsService:
             advanced_match_scoring: Whether to use advanced match scoring
             match_filtering_threshold: Minimum snippet length for filtering
             scan_host: Specify which scan server to use
+            use_projectscan: Use Workbench projectscan mode instead of classic scan
 
         Raises:
             ApiError: If there are API issues
@@ -141,6 +141,9 @@ class ScanOperationsService:
         if scan_host is not None:
             payload_data["scan_host"] = scan_host
 
+        if use_projectscan:
+            payload_data["use_projectscan"] = "1"
+
         logger.debug(
             f"Built run scan payload with {len(payload_data)} parameters " f"for scan '{scan_code}'"
         )
@@ -165,6 +168,7 @@ class ScanOperationsService:
         advanced_match_scoring: bool = True,
         match_filtering_threshold: Optional[int] = None,
         scan_host: Optional[str] = None,
+        use_projectscan: bool = False,
     ):
         """
         Start a KB scan for files that failed in a previous scan.
@@ -189,6 +193,7 @@ class ScanOperationsService:
             advanced_match_scoring=advanced_match_scoring,
             match_filtering_threshold=match_filtering_threshold,
             scan_host=scan_host,
+            use_projectscan=use_projectscan,
         )
 
     def start_da_only(self, scan_code: str):

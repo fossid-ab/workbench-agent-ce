@@ -8,7 +8,7 @@ from workbench_agent.api.exceptions import (
     CompatibilityError,
     ScanNotFoundError,
 )
-from workbench_agent.api.services.resolver_service import ResolvedScan
+from workbench_agent.services.types import ResolvedScan
 from workbench_agent.api.utils.scan_type import (
     ScanReuseIssue,
     ScanReuseIssueCode,
@@ -32,14 +32,29 @@ def _scan_info(**overrides):
     return info
 
 
+def _scan_row(**overrides):
+    row = {
+        "name": "TestScan",
+        "code": "SCAN456",
+        "id": "789",
+        "is_from_report": "0",
+        "git_repo_url": None,
+        "git_branch": None,
+        "git_ref_type": None,
+    }
+    row.update(overrides)
+    return row
+
+
 @pytest.fixture
 def mock_params(mocker):
     params = mocker.MagicMock(spec=argparse.Namespace)
     params.project_name = "TestProject"
+    params.project_code = None
     params.scan_name = "TestScan"
+    params.scan_code = None
     params.command = "scan"
     params.description = None
-    params.target_path = "/tmp/src"
     params.git_url = None
     params.git_branch = None
     params.git_tag = None
@@ -51,18 +66,19 @@ def mock_params(mocker):
 @pytest.fixture
 def mock_client(mocker):
     client = mocker.MagicMock()
-    client.resolver.find_project.return_value = "PROJ123"
-    client.resolver.find_scan.return_value = ResolvedScan(
-        code="SCAN456",
-        id=789,
-        info=_scan_info(),
-    )
+    client.projects.list_projects.return_value = [
+        {"project_name": "TestProject", "project_code": "PROJ123"},
+    ]
+    client.projects.get_all_scans.return_value = [_scan_row()]
+    client.projects.create.return_value = "PROJ123"
+    client.scans.create.return_value = 1
+    client.scans.get_information.return_value = {"id": 888, "code": "SCAN999"}
     return client
 
 
-def test_build_scan_create_data_path_upload(mock_params):
+def test_build_scan_create_data_empty(mock_params):
     data = _build_scan_create_data(mock_params)
-    assert data == {"target_path": "/tmp/src"}
+    assert data == {}
 
 
 def test_build_scan_create_data_git(mock_params):
@@ -97,19 +113,16 @@ def test_find_or_create_existing_scan(mock_client, mock_params, capsys):
     assert project_code == "PROJ123"
     assert scan_code == "SCAN456"
     assert scan_is_new is False
-    mock_client.resolver.find_project.assert_called_once_with("TestProject")
     mock_client.scans.get_information.assert_not_called()
     output = capsys.readouterr().out
     assert "Found existing Project and Scan" in output
 
 
 def test_find_or_create_new_scan(mock_client, mock_params, capsys):
-    mock_client.resolver.find_scan.side_effect = ScanNotFoundError("missing")
-    mock_client.resolver.create_scan.return_value = ResolvedScan(
-        code="SCAN999",
-        id=888,
-        info=_scan_info(),
-    )
+    mock_client.projects.get_all_scans.side_effect = [
+        [],
+        [_scan_row(name="TestScan", code="SCAN999", id=888)],
+    ]
 
     project_code, scan_code, scan_is_new = find_or_create_project_and_scan(mock_client, mock_params)
 
@@ -121,15 +134,13 @@ def test_find_or_create_new_scan(mock_client, mock_params, capsys):
 
 
 def test_find_or_create_incompatible_scan(mock_client, mock_params, capsys):
-    mock_client.resolver.find_scan.return_value = ResolvedScan(
-        code="SCAN456",
-        id=789,
-        info=_scan_info(
+    mock_client.projects.get_all_scans.return_value = [
+        _scan_row(
             git_repo_url="https://github.com/example/repo.git",
             git_branch="main",
             git_ref_type="branch",
         ),
-    )
+    ]
 
     with pytest.raises(CompatibilityError, match="cannot be reused for code upload"):
         find_or_create_project_and_scan(mock_client, mock_params)
