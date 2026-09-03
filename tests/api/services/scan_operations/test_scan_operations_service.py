@@ -14,16 +14,9 @@ def mock_scans_client(mocker):
 
 
 @pytest.fixture
-def mock_resolver_service(mocker):
-    """Create a mock ResolverService."""
-    service = mocker.MagicMock()
-    return service
-
-
-@pytest.fixture
-def scan_operations_service(mock_scans_client, mock_resolver_service):
+def scan_operations_service(mock_scans_client):
     """Create a ScanOperationsService instance for testing."""
-    return ScanOperationsService(mock_scans_client, mock_resolver_service)
+    return ScanOperationsService(mock_scans_client)
 
 
 # --- Test start_scan ---

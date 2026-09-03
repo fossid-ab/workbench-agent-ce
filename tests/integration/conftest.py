@@ -6,8 +6,6 @@ from unittest.mock import MagicMock, Mock, call, patch
 import pytest
 import requests
 
-from workbench_agent.api.exceptions import ScanNotFoundError
-
 # Add a fallback mocker fixture for environments where pytest-mock is not installed
 if importlib.util.find_spec("pytest_mock") is None:
 
@@ -357,18 +355,64 @@ def mock_workbench_api(mocker):
     # Mock version compatibility check to avoid API calls during init
     mock_client._check_version_compatibility = MagicMock()
 
-    # --- Mock Resolver Service ---
-    mock_client.resolver = MagicMock()
-    mock_client.resolver.find_project.return_value = "PRJ-MOCK"
-    from workbench_agent.api.services.resolver_service import ResolvedScan
+    def _scan_row(name: str, code: str, scan_id: int = 12345, **overrides):
+        row = {
+            "name": name,
+            "code": code,
+            "id": scan_id,
+            "is_from_report": "0",
+            "git_repo_url": None,
+            "git_branch": None,
+            "git_ref_type": None,
+        }
+        row.update(overrides)
+        return row
 
-    mock_scan = ResolvedScan(code="SCN-MOCK", id=12345, info={})
-    mock_client.resolver.find_scan.side_effect = ScanNotFoundError("Scan not found")
-    mock_client.resolver.create_scan.return_value = mock_scan
-    mock_client.resolver.find_project_and_scan.return_value = (
-        "PRJ-MOCK",
-        mock_scan,
-    )
+    _projects = [
+        {"project_name": "TestProj", "project_code": "PRJ-MOCK"},
+        {"project_name": "TestGitProj", "project_code": "PRJ-GIT"},
+    ]
+    _scans_by_project = {
+        "PRJ-MOCK": [_scan_row("TestScan", "SCN-MOCK")],
+        "PRJ-GIT": [
+            _scan_row(
+                "TestGitScan",
+                "SCN-GIT",
+                git_repo_url="https://github.com/example/repo.git",
+                git_branch="main",
+                git_ref_type="branch",
+            ),
+            _scan_row(
+                "TestGitTagScan",
+                "SCN-GIT-TAG",
+                git_repo_url="https://github.com/example/repo.git",
+                git_branch="v1.0.0",
+                git_ref_type="tag",
+            ),
+        ],
+    }
+
+    def _append_scan(project_code: str, scan_name: str, scan_data: dict | None = None) -> dict:
+        """Register a scan created via scans.create for subsequent lookups."""
+        scan_data = scan_data or {}
+        existing = _scans_by_project.setdefault(project_code, [])
+        scan_id = 12345 + len(existing)
+        scan_code = f"SCN-NEW-{scan_id}"
+        row = _scan_row(
+            scan_name,
+            scan_code,
+            scan_id=scan_id,
+            git_repo_url=scan_data.get("git_repo_url"),
+            git_branch=scan_data.get("git_branch"),
+            git_ref_type=scan_data.get("git_ref_type"),
+        )
+        existing.append(row)
+        return {"scan_id": scan_id, "code": scan_code}
+
+    def _create_scan(payload: dict):
+        project_code = payload.get("project_code", "PRJ-MOCK")
+        scan_name = payload.get("scan_name", "NewScan")
+        return _append_scan(project_code, scan_name, payload)
 
     # --- Mock Scans Client ---
     mock_client.scans = MagicMock()
@@ -380,16 +424,19 @@ def mock_workbench_api(mocker):
     }
     mock_client.scans.get_dependency_analysis_results.return_value = {}
     mock_client.scans.get_scan_identified_licenses.return_value = []
-    mock_client.scans.get_all_scans.return_value = []  # Empty list for scan lookup
-    mock_client.scans.create.return_value = {"scan_id": 12345}
+    mock_client.scans.create.side_effect = _create_scan
 
     mock_client.quick_scan = MagicMock()
     mock_client.quick_scan.scan_one_file.return_value = []
 
-    # --- Mock Projects Client ---
+    # --- Mock Projects Client (ResolverService uses list_projects / get_all_scans) ---
     mock_client.projects = MagicMock()
-    mock_client.projects.list.return_value = []  # Empty list for project lookup
-    mock_client.projects.create.return_value = {"project_code": "PRJ-MOCK"}
+    mock_client.projects.list_projects.return_value = list(_projects)
+    mock_client.projects.get_information.return_value = {"project_code": "PRJ-MOCK"}
+    mock_client.projects.get_all_scans.side_effect = (
+        lambda project_code: list(_scans_by_project.get(project_code, []))
+    )
+    mock_client.projects.create.return_value = "PRJ-MOCK"
 
     # --- Mock Vulnerabilities Client ---
     mock_client.vulnerabilities = MagicMock()

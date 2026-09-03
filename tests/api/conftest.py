@@ -11,6 +11,7 @@ from workbench_agent.api.exceptions import (
     ScanNotFoundError,
 )
 from workbench_agent.api.utils.version import normalize_workbench_version
+from workbench_agent.services.resolver_service import ResolverService
 
 DEFAULT_TEST_PROJECT_NAME = "SDK-TEST-DND"
 DEFAULT_UNIDENTIFIED_SCAN_NAME = "UNIDENTIFIED"
@@ -31,10 +32,9 @@ def _resolve_scan_code(
     project_name: str,
     scan_name: str,
 ) -> str:
-    _, scan = workbench_client.resolver.find_project_and_scan(
-        project_name,
-        scan_name,
-    )
+    resolver = ResolverService(workbench_client.projects, workbench_client.scans)
+    project_code = resolver.find_project(project_name)
+    scan = resolver.find_scan(name=scan_name, project_code=project_code)
     return scan.code
 
 
@@ -180,7 +180,8 @@ def test_project_code(workbench_client, test_project_name):
     if override:
         return override
     try:
-        return workbench_client.resolver.find_project(test_project_name)
+        resolver = ResolverService(workbench_client.projects, workbench_client.scans)
+        return resolver.find_project(test_project_name)
     except ProjectNotFoundError as exc:
         pytest.skip(
             f"Test project not found ({test_project_name!r}): {exc}. "

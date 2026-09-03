@@ -105,10 +105,6 @@ class ResolverService:
             return self._find_project_by_name(resolved_name)
         raise ValueError("Project name or code is required")
 
-    def find_project_by_code(self, project_code: str) -> str:
-        """Resolve a project by internal code (read-only)."""
-        return self._find_project_by_code(project_code)
-
     def find_scan(
         self,
         scan_name: Optional[str] = None,
@@ -152,27 +148,9 @@ class ResolverService:
             project_name=project_name,
         )
 
-    def find_scan_by_code(self, scan_code: str) -> ResolvedScan:
-        """Resolve a scan by internal code globally (read-only)."""
-        return self._find_scan_by_code_global(scan_code)
-
     def find_scan_globally(self, scan_name: str) -> ResolvedScan:
         """Resolve a scan by name across all projects (read-only, heavy)."""
         return self._find_scan_globally(scan_name)
-
-    def find_project_and_scan(
-        self,
-        project_name: str,
-        scan_name: str,
-    ) -> Tuple[str, ResolvedScan]:
-        """Resolve project and scan names to codes in one pass (read-only)."""
-        project_code = self._find_project_by_name(project_name)
-        scan = self._find_scan_by_name_in_project(
-            scan_name,
-            project_code,
-            project_name=project_name,
-        )
-        return project_code, scan
 
     # ===== Create API =====
 
@@ -373,20 +351,6 @@ class ResolverService:
             project_created=project_created,
             scan_is_new=scan_is_new,
             scan_info=None if scan_is_new else resolved_scan.info,
-        )
-
-    def find_or_create(
-        self,
-        project_name: str,
-        scan_name: str,
-        scan_data: dict,
-    ) -> ResolvedTargets:
-        """Find or create a project and scan by name (legacy entry point)."""
-        return self.resolve_targets(
-            project_name=project_name,
-            scan_name=scan_name,
-            scan_data=scan_data,
-            allow_create=True,
         )
 
     # ===== Private lookup helpers =====

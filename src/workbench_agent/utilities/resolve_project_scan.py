@@ -237,9 +237,6 @@ def _build_scan_create_data(
     if hasattr(params, "description") and params.description:
         scan_data["description"] = params.description
 
-    if hasattr(params, "target_path") and params.target_path:
-        scan_data["target_path"] = params.target_path
-
     if hasattr(params, "git_url") and params.git_url:
         scan_data["git_repo_url"] = params.git_url
 

@@ -58,20 +58,9 @@ def mock_main_dependencies():
         # Mock _check_version_compatibility to avoid actual API calls during init
         mocks["workbench_instance"]._check_version_compatibility = MagicMock()
 
-        # Set up common API methods that handlers might use
-        # Note: These are now accessed via client composition (e.g., workbench.resolver, workbench.scans, etc.)
-        mocks["workbench_instance"].resolver = MagicMock()
-        mocks["workbench_instance"].resolver.find_project.return_value = "TEST_PROJECT_CODE"
-        from workbench_agent.api.services.resolver_service import ResolvedScan
-
-        mock_scan = ResolvedScan(code="TEST_SCAN_CODE", id=123, info={})
-        mocks["workbench_instance"].resolver.find_scan.return_value = mock_scan
-        mocks["workbench_instance"].resolver.find_project_and_scan.return_value = (
-            "TEST_PROJECT_CODE",
-            mock_scan,
-        )
-
+        mocks["workbench_instance"].projects = MagicMock()
         mocks["workbench_instance"].scans = MagicMock()
+
         mocks["workbench_instance"].scans.get_scan_folder_metrics.return_value = {}
         mocks["workbench_instance"].scans.get_dependency_analysis_results.return_value = []
         mocks["workbench_instance"].scans.get_scan_identified_licenses.return_value = []

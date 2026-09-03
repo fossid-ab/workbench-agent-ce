@@ -21,22 +21,20 @@ class ScanOperationsService:
     - SBOM report import
 
     Example:
-        >>> scan_ops = ScanOperationsService(scans_client, resolver_service)
+        >>> scan_ops = ScanOperationsService(scans_client)
         >>> scan_ops.start_scan(scan_code="S1", limit=10, sensitivity=6, ...)
         >>> scan_ops.start_da_import(scan_code="S1")
         >>> scan_ops.start_sbom_import(scan_code="S1")
     """
 
-    def __init__(self, scans_client, resolver_service):
+    def __init__(self, scans_client):
         """
         Initialize ScanOperationsService.
 
         Args:
             scans_client: ScansClient instance for raw API calls
-            resolver_service: ResolverService instance for name→code resolution
         """
         self._scans = scans_client
-        self._resolver = resolver_service
         logger.debug("ScanOperationsService initialized")
 
     # ===== SCANNING OPERATIONS =====

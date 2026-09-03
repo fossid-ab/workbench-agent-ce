@@ -10,12 +10,6 @@ from .identification_service import IdentificationService
 from .links_service import LinksService, WorkbenchLinks
 from .policy_service import PolicyService
 from .report_service import ReportService
-from .resolver_service import (
-    ResolutionResult,
-    ResolvedScan,
-    ResolvedTargets,
-    ResolverService,
-)
 from .scan_content_service import ScanContentService
 from .scan_deletion import ScanDeletionService
 from .scan_operations_service import ScanOperationsService
@@ -30,10 +24,6 @@ __all__ = [
     "ReportService",
     "LinksService",
     "PolicyService",
-    "ResolutionResult",
-    "ResolvedScan",
-    "ResolvedTargets",
-    "ResolverService",
     "ScanContentService",
     "WorkbenchLinks",
     "ScanDeletionService",

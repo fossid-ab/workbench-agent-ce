@@ -55,7 +55,6 @@ def mock_params(mocker):
     params.scan_code = None
     params.command = "scan"
     params.description = None
-    params.target_path = "/tmp/src"
     params.git_url = None
     params.git_branch = None
     params.git_tag = None
@@ -77,9 +76,9 @@ def mock_client(mocker):
     return client
 
 
-def test_build_scan_create_data_path_upload(mock_params):
+def test_build_scan_create_data_empty(mock_params):
     data = _build_scan_create_data(mock_params)
-    assert data == {"target_path": "/tmp/src"}
+    assert data == {}
 
 
 def test_build_scan_create_data_git(mock_params):

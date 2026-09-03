@@ -27,10 +27,6 @@ class ResolvedTargets:
     scan_info: Optional[dict] = None
 
 
-# Backward-compatible alias until in-tree api/ is removed.
-ResolutionResult = ResolvedTargets
-
-
 def target_label(
     params: argparse.Namespace,
     entity: Literal["project", "scan"],

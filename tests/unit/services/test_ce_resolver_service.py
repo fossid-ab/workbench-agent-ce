@@ -1,4 +1,4 @@
-"""Tests for CE ResolverService (api/services shim delegates here)."""
+"""Tests for CE ResolverService."""
 
 import pytest
 
@@ -8,12 +8,8 @@ from workbench_agent.api.exceptions import (
     ScanNotFoundError,
     ScanWrongProjectError,
 )
-from workbench_agent.api.services.resolver_service import (
-    ResolutionResult,
-    ResolverService as ShimResolverService,
-)
 from workbench_agent.services.resolver_service import ResolverService
-from workbench_agent.services.types import ResolvedScan, ResolvedTargets
+from workbench_agent.services.types import ResolvedTargets
 
 
 def _scan_row(**overrides):
@@ -64,10 +60,6 @@ def resolver_service(mock_projects_client, mock_scans_client):
     return ResolverService(mock_projects_client, mock_scans_client)
 
 
-def test_api_shim_is_subclass():
-    assert issubclass(ShimResolverService, ResolverService)
-
-
 def test_find_project_existing(resolver_service, mock_projects_client):
     mock_projects_client.list_projects.return_value = [
         {"project_name": "TestProject", "project_code": "PROJ123"},
@@ -95,8 +87,9 @@ def test_find_project_and_scan_existing(resolver_service, mock_projects_client):
     mock_projects_client.get_all_scans.return_value = [
         _scan_row(name="TestScan", code="SCAN456", id=789),
     ]
-    pc, scan = resolver_service.find_project_and_scan("TestProject", "TestScan")
-    assert pc == "PROJ123"
+    project_code = resolver_service.find_project("TestProject")
+    scan = resolver_service.find_scan(name="TestScan", project_code=project_code)
+    assert project_code == "PROJ123"
     assert scan.code == "SCAN456"
 
 
@@ -130,14 +123,18 @@ def test_find_or_create_never_creates_when_disabled(resolver_service, mock_proje
         resolver_service.find_or_create_project(name="Missing", allow_create=False)
 
 
-def test_find_or_create_both_exist(resolver_service, mock_projects_client):
+def test_resolve_targets_both_exist(resolver_service, mock_projects_client):
     row = _scan_row(name="TestScan", code="SCAN456", id=789)
     mock_projects_client.list_projects.return_value = [
         {"project_name": "TestProject", "project_code": "PROJ123"}
     ]
     mock_projects_client.get_all_scans.return_value = [row]
-    result = resolver_service.find_or_create("TestProject", "TestScan", scan_data={})
-    assert result == ResolutionResult(
+    result = resolver_service.resolve_targets(
+        project_name="TestProject",
+        scan_name="TestScan",
+        scan_data={},
+    )
+    assert result == ResolvedTargets(
         project_code="PROJ123",
         scan_code="SCAN456",
         project_created=False,
