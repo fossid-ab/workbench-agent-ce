@@ -1,7 +1,7 @@
 import importlib
 import logging
 import sys
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 from workbench_agent.api.exceptions import (
     ApiError,
@@ -10,7 +10,6 @@ from workbench_agent.api.exceptions import (
     NetworkError,
     ProcessError,
 )
-from workbench_agent.api.workbench_client import WorkbenchClient
 from workbench_agent.cli import parse_cmdline_args
 from workbench_agent.cli.legacy_compat import LegacyPipeline, build_legacy_pipeline
 from workbench_agent.exceptions import (
@@ -22,6 +21,9 @@ from workbench_agent.exceptions import (
 from workbench_agent.utilities.config_display import print_configuration
 from workbench_agent.utilities.error_handling import format_and_print_error
 from workbench_agent.utilities.redaction import redact_cli_args_for_logging
+
+if TYPE_CHECKING:
+    from workbench_agent.api.workbench_client import WorkbenchClient
 
 # Values are ``module:attr`` import specs. Tests may replace entries with
 # callables; ``_resolve_handler`` accepts both.
@@ -50,6 +52,22 @@ def _resolve_handler(command_key: str) -> Optional[Callable]:
     module_name, _, attr_name = spec.partition(":")
     module = importlib.import_module(module_name)
     return getattr(module, attr_name)
+
+
+def _create_workbench_client(
+    *,
+    api_url: str,
+    api_user: str,
+    api_token: str,
+) -> "WorkbenchClient":
+    """Construct the embedded API client (imported on first use)."""
+    from workbench_agent.api.workbench_client import WorkbenchClient
+
+    return WorkbenchClient(
+        api_url=api_url,
+        api_user=api_user,
+        api_token=api_token,
+    )
 
 
 def setup_logging(log_level: str) -> logging.Logger:
@@ -98,7 +116,9 @@ def setup_logging(log_level: str) -> logging.Logger:
     return app_logger
 
 
-def _dispatch_command(args, logger: logging.Logger, workbench: WorkbenchClient) -> int:
+def _dispatch_command(
+    args, logger: logging.Logger, workbench: "WorkbenchClient"
+) -> int:
     """Run a parsed command and return its exit code."""
     if getattr(args, "show_config", False):
         print_configuration(args, workbench)
@@ -133,7 +153,7 @@ def _run_parsed_command(
     argv: Optional[list],
     *,
     logger: Optional[logging.Logger] = None,
-    workbench: Optional[WorkbenchClient] = None,
+    workbench: Optional["WorkbenchClient"] = None,
     announce_success: bool = True,
     captured_args: Optional[list] = None,
 ) -> int:
@@ -150,7 +170,7 @@ def _run_parsed_command(
 
     if workbench is None:
         logger.info("Initializing WorkbenchClient...")
-        workbench = WorkbenchClient(
+        workbench = _create_workbench_client(
             api_url=args.api_url,
             api_user=args.api_user,
             api_token=args.api_token,
@@ -177,7 +197,7 @@ def _run_legacy_pipeline(
     logger.debug("Legacy scan argv: %s", pipeline.scan_argv)
 
     logger.info("Initializing WorkbenchClient...")
-    workbench = WorkbenchClient(
+    workbench = _create_workbench_client(
         api_url=scan_args.api_url,
         api_user=scan_args.api_user,
         api_token=scan_args.api_token,

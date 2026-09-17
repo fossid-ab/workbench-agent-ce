@@ -535,7 +535,7 @@ def mock_workbench_api(mocker):
             side_effect=mock_new,
         ),
         patch(
-            "workbench_agent.main.WorkbenchClient",
+            "workbench_agent.main._create_workbench_client",
             return_value=mock_client,
         ),
     ):

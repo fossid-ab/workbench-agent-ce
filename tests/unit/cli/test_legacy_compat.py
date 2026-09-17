@@ -5,6 +5,10 @@ import os
 import pytest
 
 from workbench_agent.cli.legacy_compat import (
+    LEGACY_DROPPED_FLAGS,
+    LEGACY_FLAG_MAP,
+    LEGACY_RESULT_FLAG_NAMES,
+    LEGACY_SPECIAL_FLAGS,
     build_legacy_pipeline,
     is_legacy_argv,
     normalize_result_save_path,
@@ -172,6 +176,276 @@ class TestLegacyTranslation:
             build_legacy_pipeline(
                 _legacy_argv("--blind_scan", "--run_only_dependency_analysis")
             )
+
+    @pytest.mark.parametrize(
+        "legacy_flags,expected_scan_tokens,forbidden_scan_tokens",
+        [
+            (["--limit", "7"], ["--limit", "7"], []),
+            (["--sensitivity", "3"], ["--sensitivity", "3"], []),
+            (
+                ["--jar_file_extraction"],
+                ["--jar-file-extraction"],
+                [],
+            ),
+            (
+                ["--run_only_dependency_analysis"],
+                ["--dependency-analysis-only"],
+                ["--run-dependency-analysis"],
+            ),
+            (
+                ["--auto_identification_detect_declaration"],
+                ["--autoid-file-licenses"],
+                [],
+            ),
+            (
+                ["--auto_identification_detect_copyright"],
+                ["--autoid-file-copyrights"],
+                [],
+            ),
+            (
+                ["--auto_identification_resolve_pending_ids"],
+                ["--autoid-pending-ids"],
+                [],
+            ),
+            (
+                ["--no_advanced_match_scoring"],
+                ["--no-advanced-match-scoring"],
+                [],
+            ),
+            (
+                ["--match_filtering_threshold", "50"],
+                ["--match-filtering-threshold", "50"],
+                ["-1"],
+            ),
+            (
+                ["--scan_number_of_tries", "12"],
+                ["--scan-number-of-tries", "12"],
+                [],
+            ),
+            (
+                ["--scan_wait_time", "8"],
+                ["--scan-wait-time", "8"],
+                [],
+            ),
+            (["--log", "DEBUG"], ["--log", "DEBUG"], ["ERROR"]),
+            (["--chunked_upload"], [], ["--chunked_upload", "--chunked-upload"]),
+        ],
+    )
+    def test_individual_legacy_flag_translation(
+        self,
+        legacy_flags,
+        expected_scan_tokens,
+        forbidden_scan_tokens,
+    ):
+        pipeline = build_legacy_pipeline(_legacy_argv(*legacy_flags))
+        scan_argv = pipeline.scan_argv
+        for token in expected_scan_tokens:
+            assert token in scan_argv
+        for token in forbidden_scan_tokens:
+            assert token not in scan_argv
+
+    def test_equals_style_legacy_flags(self):
+        pipeline = build_legacy_pipeline(
+            _legacy_argv("--limit=4", "--sensitivity=2", "--log=WARNING")
+        )
+        assert pipeline.scan_argv[pipeline.scan_argv.index("--limit") + 1] == "4"
+        assert pipeline.scan_argv[pipeline.scan_argv.index("--sensitivity") + 1] == "2"
+        assert pipeline.scan_argv[pipeline.scan_argv.index("--log") + 1] == "WARNING"
+
+    def test_reuse_defaults_to_any(self):
+        pipeline = build_legacy_pipeline(_legacy_argv("--reuse_identifications"))
+        assert "--reuse-any-identification" in pipeline.scan_argv
+
+    def test_reuse_only_me(self):
+        pipeline = build_legacy_pipeline(
+            _legacy_argv(
+                "--reuse_identifications",
+                "--identification_reuse_type",
+                "only_me",
+            )
+        )
+        assert "--reuse-my-identifications" in pipeline.scan_argv
+
+    def test_reuse_specific_project(self):
+        pipeline = build_legacy_pipeline(
+            _legacy_argv(
+                "--reuse_identifications",
+                "--identification_reuse_type",
+                "specific_project",
+                "--specific_code",
+                "SRC_PROJ",
+            )
+        )
+        assert "--reuse-project-ids" in pipeline.scan_argv
+        assert "SRC_PROJ" in pipeline.scan_argv
+
+    def test_reuse_specific_project_requires_code(self):
+        with pytest.raises(ValidationError, match="specific_code"):
+            build_legacy_pipeline(
+                _legacy_argv(
+                    "--reuse_identifications",
+                    "--identification_reuse_type",
+                    "specific_project",
+                )
+            )
+
+    def test_reuse_specific_scan_requires_code(self):
+        with pytest.raises(ValidationError, match="specific_code"):
+            build_legacy_pipeline(
+                _legacy_argv(
+                    "--reuse_identifications",
+                    "--identification_reuse_type",
+                    "specific_scan",
+                )
+            )
+
+    def test_unsupported_reuse_type(self):
+        with pytest.raises(ValidationError, match="identification_reuse_type"):
+            build_legacy_pipeline(
+                _legacy_argv(
+                    "--reuse_identifications",
+                    "--identification_reuse_type",
+                    "something_else",
+                )
+            )
+
+    def test_get_scan_identified_components_maps_to_show(self):
+        pipeline = build_legacy_pipeline(
+            _legacy_argv("--get_scan_identified_components")
+        )
+        assert "--show-components" in pipeline.show_argv
+        assert "--show-licenses" not in pipeline.show_argv
+
+    def test_result_flag_priority_components_over_policy_and_matches(self):
+        pipeline = build_legacy_pipeline(
+            _legacy_argv(
+                "--get_scan_identified_components",
+                "--scans_get_policy_warnings_counter",
+                "--projects_get_policy_warnings_info",
+                "--scans_get_results",
+            )
+        )
+        assert "--show-components" in pipeline.show_argv
+        assert "--show-policy-warnings" not in pipeline.show_argv
+        assert "--show-project-policy-warnings" not in pipeline.show_argv
+        assert "--show-matches" not in pipeline.show_argv
+
+    def test_kitchen_sink_scan_flags_present_on_scan_not_show(self):
+        pipeline = build_legacy_pipeline(
+            _legacy_argv(
+                "--limit",
+                "9",
+                "--sensitivity",
+                "4",
+                "--recursively_extract_archives",
+                "--jar_file_extraction",
+                "--run_dependency_analysis",
+                "--auto_identification_detect_declaration",
+                "--auto_identification_detect_copyright",
+                "--auto_identification_resolve_pending_ids",
+                "--delta_only",
+                "--reuse_identifications",
+                "--identification_reuse_type",
+                "only_me",
+                "--no_advanced_match_scoring",
+                "--match_filtering_threshold",
+                "25",
+                "--chunked_upload",
+                "--use_projectscan",
+                "--scan_number_of_tries",
+                "11",
+                "--scan_wait_time",
+                "6",
+                "--log",
+                "INFO",
+            )
+        )
+        scan = pipeline.scan_argv
+        show = pipeline.show_argv
+        assert scan[0] == "scan"
+        for token in (
+            "--limit",
+            "--sensitivity",
+            "--recursively-extract-archives",
+            "--jar-file-extraction",
+            "--run-dependency-analysis",
+            "--autoid-file-licenses",
+            "--autoid-file-copyrights",
+            "--autoid-pending-ids",
+            "--delta-scan",
+            "--reuse-my-identifications",
+            "--no-advanced-match-scoring",
+            "--match-filtering-threshold",
+            "--use-projectscan",
+            "--scan-number-of-tries",
+            "--scan-wait-time",
+            "--log",
+        ):
+            assert token in scan
+        assert "--chunked_upload" not in scan
+        assert "--chunked-upload" not in scan
+        assert "--show-licenses" in show
+        assert "--run-dependency-analysis" not in show
+        assert "--autoid-file-licenses" not in show
+        assert show[show.index("--scan-number-of-tries") + 1] == "11"
+        assert show[show.index("--scan-wait-time") + 1] == "6"
+
+    def test_both_da_flags_translate_and_ce_prefers_da_only(self):
+        pipeline = build_legacy_pipeline(
+            _legacy_argv(
+                "--run_dependency_analysis",
+                "--run_only_dependency_analysis",
+            )
+        )
+        assert "--run-dependency-analysis" in pipeline.scan_argv
+        assert "--dependency-analysis-only" in pipeline.scan_argv
+
+    def test_documented_legacy_flags_are_classified(self):
+        """Every public legacy flag is mapped, dropped, or handled specially."""
+        documented = {
+            "--api_url",
+            "--api_user",
+            "--api_token",
+            "--project_code",
+            "--scan_code",
+            "--limit",
+            "--sensitivity",
+            "--recursively_extract_archives",
+            "--jar_file_extraction",
+            "--blind_scan",
+            "--run_dependency_analysis",
+            "--run_only_dependency_analysis",
+            "--auto_identification_detect_declaration",
+            "--auto_identification_detect_copyright",
+            "--auto_identification_resolve_pending_ids",
+            "--delta_only",
+            "--reuse_identifications",
+            "--identification_reuse_type",
+            "--specific_code",
+            "--no_advanced_match_scoring",
+            "--match_filtering_threshold",
+            "--target_path",
+            "--chunked_upload",
+            "--scan_number_of_tries",
+            "--scan_wait_time",
+            "--path",
+            "--log",
+            "--path-result",
+            "--get_scan_identified_components",
+            "--scans_get_policy_warnings_counter",
+            "--projects_get_policy_warnings_info",
+            "--use_projectscan",
+            "--scans_get_results",
+        }
+        classified = (
+            set(LEGACY_FLAG_MAP)
+            | LEGACY_SPECIAL_FLAGS
+            | LEGACY_DROPPED_FLAGS
+            | LEGACY_RESULT_FLAG_NAMES
+            | {"--blind_scan"}
+        )
+        missing = documented - classified
+        assert not missing, f"Unclassified legacy flags: {sorted(missing)}"
 
 
 class TestNormalizeResultSavePath:

@@ -6,7 +6,6 @@ from typing import Optional
 
 from workbench_agent.api.validation.field_limits import validate_project_scan_target_fields
 from workbench_agent.exceptions import ValidationError
-from workbench_agent.utilities.analyze.ecosystem import validate_analyze_ecosystem
 
 
 def _strip(value: Optional[str]) -> Optional[str]:
@@ -132,6 +131,10 @@ def _validate_analyze_command(args: Namespace) -> None:
         raise ValidationError(
             f"analyze --path must be a project directory: {path}"
         )
+
+    from workbench_agent.utilities.analyze.ecosystem import (
+        validate_analyze_ecosystem,
+    )
 
     validate_analyze_ecosystem(args)
 

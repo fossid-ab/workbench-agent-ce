@@ -143,7 +143,7 @@ class TestMainFunctionExceptionHandling:
                 "workbench_agent.main.parse_cmdline_args",
                 return_value=mock_args,
             ),
-            patch("workbench_agent.main.WorkbenchClient") as mock_client,
+            patch("workbench_agent.main._create_workbench_client") as mock_client,
         ):
             mock_client.side_effect = ConfigurationError("Test config error")
 
@@ -160,7 +160,7 @@ class TestMainFunctionExceptionHandling:
                 "workbench_agent.main.parse_cmdline_args",
                 return_value=mock_args,
             ),
-            patch("workbench_agent.main.WorkbenchClient") as mock_client,
+            patch("workbench_agent.main._create_workbench_client") as mock_client,
         ):
             mock_client.side_effect = AuthenticationError("Auth error")
 

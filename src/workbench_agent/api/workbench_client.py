@@ -22,7 +22,7 @@ from workbench_agent.api.clients import (
     UsersClient,
     VulnerabilitiesClient,
 )
-from workbench_agent.api.exceptions import ApiError, CompatibilityError
+from workbench_agent.api.exceptions import ApiError, CompatibilityError, NetworkError
 from workbench_agent.api.services import (
     ComponentService,
     DependencyService,
@@ -286,22 +286,14 @@ class WorkbenchClient:
                 )
 
         except Exception as e:
-            # Let CompatibilityError bubble up
-            if e.__class__.__name__ == "CompatibilityError":
+            if isinstance(e, CompatibilityError):
                 raise
-            # Wrap other errors
-            from workbench_agent.api.exceptions import (
-                ApiError,
-                NetworkError,
-            )
-
             if isinstance(e, (ApiError, NetworkError)):
                 raise
-            else:
-                raise ApiError(
-                    f"Failed to check Workbench version compatibility: {e}",
-                    details={"error": str(e)},
-                ) from e
+            raise ApiError(
+                f"Failed to check Workbench version compatibility: {e}",
+                details={"error": str(e)},
+            ) from e
 
     # ===== PUBLIC PROPERTIES =====
 

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 from workbench_agent.main import COMMAND_HANDLERS, main
 
 
-@patch("workbench_agent.main.WorkbenchClient")
+@patch("workbench_agent.main._create_workbench_client")
 @patch("workbench_agent.main.setup_logging")
 def test_legacy_pipeline_invokes_scan_then_show(
     mock_setup_logging,

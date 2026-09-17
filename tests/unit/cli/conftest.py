@@ -50,7 +50,7 @@ def mock_main_dependencies():
     mocks = {}
 
     # Mock WorkbenchClient (replaces WorkbenchAPI)
-    with patch("workbench_agent.main.WorkbenchClient") as mock_wb:
+    with patch("workbench_agent.main._create_workbench_client") as mock_wb:
         mocks["workbench_client"] = mock_wb
         mocks["workbench_instance"] = MagicMock()
         mock_wb.return_value = mocks["workbench_instance"]

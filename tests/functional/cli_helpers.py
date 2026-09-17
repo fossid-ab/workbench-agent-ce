@@ -57,6 +57,33 @@ def assert_delete_scan_succeeded(
     )
 
 
+def run_legacy_workbench_agent(*extra: str) -> subprocess.CompletedProcess:
+    """Run a legacy (no-subcommand) workbench-agent invocation."""
+    return subprocess.run(
+        ["workbench-agent", *extra],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def assert_legacy_succeeded(
+    result: subprocess.CompletedProcess,
+    *,
+    expected_scan_section: str = "SCAN",
+) -> str:
+    """Assert a legacy two-phase run exited 0 and ran scan then show-results."""
+    combined = result.stdout + result.stderr
+    assert result.returncode == 0, (
+        f"Legacy command failed with exit code {result.returncode}\n"
+        f"STDOUT: {result.stdout}\n"
+        f"STDERR: {result.stderr}"
+    )
+    assert expected_scan_section in combined
+    assert "SHOW-RESULTS" in combined
+    return combined
+
+
 def assert_delete_scan_by_code_succeeded(
     result: subprocess.CompletedProcess,
     project_code: str,
