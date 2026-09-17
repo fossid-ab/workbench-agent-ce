@@ -12,16 +12,14 @@ from workbench_agent.api.exceptions import (
 )
 from workbench_agent.api.utils import report_definitions
 from workbench_agent.exceptions import FileSystemError, ValidationError
+from workbench_agent.services.types import target_label
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.post_report_summary import print_report_summary
 from workbench_agent.utilities.pre_flight_checks import (
     download_reports_pre_flight_check,
 )
-from workbench_agent.utilities.resolve_project_scan import (
-    resolve_project_and_scan,
-    target_label,
-)
+from workbench_agent.utilities.resolve_project_scan import resolve_project_and_scan
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient

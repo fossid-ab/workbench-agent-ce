@@ -1,11 +1,6 @@
-import os
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 
 @pytest.fixture
@@ -60,15 +55,7 @@ def mock_main_dependencies():
 
         mocks["workbench_instance"].projects = MagicMock()
         mocks["workbench_instance"].scans = MagicMock()
-
-        mocks["workbench_instance"].scans.get_scan_folder_metrics.return_value = {}
-        mocks["workbench_instance"].scans.get_dependency_analysis_results.return_value = []
-        mocks["workbench_instance"].scans.get_scan_identified_licenses.return_value = []
-        mocks["workbench_instance"].scans.get_scan_identified_components.return_value = []
-        mocks["workbench_instance"].scans.get_policy_warnings_counter.return_value = {}
-
         mocks["workbench_instance"].vulnerabilities = MagicMock()
-        mocks["workbench_instance"].vulnerabilities.list_vulnerabilities.return_value = []
 
         mock_analyze = MagicMock()
         mock_scan = MagicMock()

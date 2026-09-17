@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 PolicyWarningType = Literal["identifications", "dependencies", "all"]
 
-from workbench_agent.api.exceptions import ApiError, ValidationError
+from workbench_agent.api.exceptions import ApiError
 from workbench_agent.api.validation.field_limits import validate_project_create_fields
 
 from . import helpers

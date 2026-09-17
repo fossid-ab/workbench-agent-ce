@@ -94,9 +94,6 @@ LEGACY_SPECIAL_FLAGS = LEGACY_RESULT_FLAG_NAMES | LEGACY_DROPPED_FLAGS | {
 
 LEGACY_MARKERS = frozenset(LEGACY_FLAG_MAP) | frozenset(
     {
-        "--api_url",
-        "--project_code",
-        "--scan_code",
         "--blind_scan",
         "--path-result",
         "--chunked_upload",
