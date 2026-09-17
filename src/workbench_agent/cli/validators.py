@@ -1,6 +1,5 @@
 # workbench_agent/cli/validators.py
 
-import logging
 import os
 from argparse import Namespace
 from typing import Optional
@@ -8,8 +7,6 @@ from typing import Optional
 from workbench_agent.api.validation.field_limits import validate_project_scan_target_fields
 from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.analyze.ecosystem import validate_analyze_ecosystem
-
-logger = logging.getLogger("workbench-agent")
 
 
 def _strip(value: Optional[str]) -> Optional[str]:

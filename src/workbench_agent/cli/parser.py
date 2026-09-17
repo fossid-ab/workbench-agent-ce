@@ -1,17 +1,9 @@
 # workbench_agent/cli/parser.py
 
 import argparse
-import logging
 from argparse import RawTextHelpFormatter
-from typing import TYPE_CHECKING
 
 from workbench_agent import __version__
-
-if TYPE_CHECKING:
-    # Import for type checking only to avoid circular imports
-    pass
-
-logger = logging.getLogger("workbench-agent")
 
 
 def parse_cmdline_args(argv=None):

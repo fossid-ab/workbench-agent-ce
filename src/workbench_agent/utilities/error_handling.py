@@ -7,7 +7,7 @@ This module contains functions that standardize error handling across handlers.
 import argparse
 import functools
 import logging
-from typing import Callable
+from typing import Callable, Optional
 
 from workbench_agent.api.exceptions import (
     ApiError,
@@ -31,7 +31,11 @@ from workbench_agent.exceptions import (
 logger = logging.getLogger("workbench-agent")
 
 
-def format_and_print_error(error: Exception, context: str, params: argparse.Namespace):
+def format_and_print_error(
+    error: Exception,
+    context: str,
+    params: Optional[argparse.Namespace],
+):
     """
     Formats and prints a standardized error message for CLI users.
 

@@ -209,6 +209,27 @@ class TestMainFunctionExceptionHandling:
 
         assert result == 1  # Unexpected error exit code
 
+    def test_main_passes_parsed_args_to_error_formatter(self, mock_main_dependencies):
+        """Handler failures should format errors with the parsed command args."""
+        mock_args = MagicMock(command="scan", log="INFO")
+        mock_main_dependencies["handle_scan"].side_effect = ValidationError(
+            "bad name"
+        )
+
+        with (
+            patch(
+                "workbench_agent.main.parse_cmdline_args",
+                return_value=mock_args,
+            ),
+            patch("workbench_agent.main.format_and_print_error") as mock_fmt,
+        ):
+            result = main()
+
+        assert result == 2
+        mock_fmt.assert_called_once()
+        assert mock_fmt.call_args[0][1] == "scan"
+        assert mock_fmt.call_args[0][2] is mock_args
+
 
 class TestEvaluateGatesSpecialHandling:
     """Test special exit code handling for evaluate-gates command."""

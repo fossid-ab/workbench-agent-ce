@@ -1,6 +1,7 @@
+import importlib
 import logging
 import sys
-from typing import Optional
+from typing import Callable, Optional
 
 from workbench_agent.api.exceptions import (
     ApiError,
@@ -18,36 +19,37 @@ from workbench_agent.exceptions import (
     ValidationError,
     WorkbenchAgentError,
 )
-from workbench_agent.handlers import (
-    handle_analyze,
-    handle_blind_scan,
-    handle_delete_scan,
-    handle_download_reports,
-    handle_evaluate_gates,
-    handle_import_da,
-    handle_import_sbom,
-    handle_quick_scan,
-    handle_scan,
-    handle_scan_git,
-    handle_show_results,
-)
 from workbench_agent.utilities.config_display import print_configuration
 from workbench_agent.utilities.error_handling import format_and_print_error
 from workbench_agent.utilities.redaction import redact_cli_args_for_logging
 
+# Values are ``module:attr`` import specs. Tests may replace entries with
+# callables; ``_resolve_handler`` accepts both.
 COMMAND_HANDLERS = {
-    "analyze": handle_analyze,
-    "scan": handle_scan,
-    "blind-scan": handle_blind_scan,
-    "scan-git": handle_scan_git,
-    "delete-scan": handle_delete_scan,
-    "show-results": handle_show_results,
-    "import-da": handle_import_da,
-    "evaluate-gates": handle_evaluate_gates,
-    "import-sbom": handle_import_sbom,
-    "download-reports": handle_download_reports,
-    "quick-scan": handle_quick_scan,
+    "analyze": "workbench_agent.handlers.analyze:handle_analyze",
+    "scan": "workbench_agent.handlers.scan:handle_scan",
+    "blind-scan": "workbench_agent.handlers.blind_scan:handle_blind_scan",
+    "scan-git": "workbench_agent.handlers.scan_git:handle_scan_git",
+    "delete-scan": "workbench_agent.handlers.delete_scan:handle_delete_scan",
+    "show-results": "workbench_agent.handlers.show_results:handle_show_results",
+    "import-da": "workbench_agent.handlers.import_da:handle_import_da",
+    "evaluate-gates": "workbench_agent.handlers.evaluate_gates:handle_evaluate_gates",
+    "import-sbom": "workbench_agent.handlers.import_sbom:handle_import_sbom",
+    "download-reports": "workbench_agent.handlers.download_reports:handle_download_reports",
+    "quick-scan": "workbench_agent.handlers.quick_scan:handle_quick_scan",
 }
+
+
+def _resolve_handler(command_key: str) -> Optional[Callable]:
+    """Return the handler for ``command_key``, importing it on first use."""
+    spec = COMMAND_HANDLERS.get(command_key)
+    if spec is None:
+        return None
+    if callable(spec):
+        return spec
+    module_name, _, attr_name = spec.partition(":")
+    module = importlib.import_module(module_name)
+    return getattr(module, attr_name)
 
 
 def setup_logging(log_level: str) -> logging.Logger:
@@ -102,7 +104,7 @@ def _dispatch_command(args, logger: logging.Logger, workbench: WorkbenchClient) 
         print_configuration(args, workbench)
 
     command_key = args.command
-    handler = COMMAND_HANDLERS.get(command_key)
+    handler = _resolve_handler(command_key)
     if not handler:
         print(f"Error: Unknown command '{command_key}'.")
         logger.error("Unknown command '%s' encountered in main dispatch.", command_key)
@@ -133,9 +135,13 @@ def _run_parsed_command(
     logger: Optional[logging.Logger] = None,
     workbench: Optional[WorkbenchClient] = None,
     announce_success: bool = True,
+    captured_args: Optional[list] = None,
 ) -> int:
     """Parse argv, initialize client if needed, and dispatch one command."""
     args = parse_cmdline_args(argv)
+    if captured_args is not None:
+        captured_args.clear()
+        captured_args.append(args)
 
     if logger is None:
         logger = setup_logging(args.log)
@@ -157,9 +163,15 @@ def _run_parsed_command(
     return exit_code
 
 
-def _run_legacy_pipeline(pipeline: LegacyPipeline) -> int:
+def _run_legacy_pipeline(
+    pipeline: LegacyPipeline,
+    captured_args: Optional[list] = None,
+) -> int:
     """Execute legacy scan → show-results pipeline."""
     scan_args = parse_cmdline_args(pipeline.scan_argv)
+    if captured_args is not None:
+        captured_args.clear()
+        captured_args.append(scan_args)
     logger = setup_logging(scan_args.log)
     logger.info("Workbench Agent starting (legacy compatibility mode)...")
     logger.debug("Legacy scan argv: %s", pipeline.scan_argv)
@@ -180,7 +192,25 @@ def _run_legacy_pipeline(pipeline: LegacyPipeline) -> int:
         pipeline.show_argv,
         logger=logger,
         workbench=workbench,
+        captured_args=captured_args,
     )
+
+
+def _report_failure(
+    error: Exception,
+    args,
+    *,
+    log_message: str,
+    default_context: str,
+    exc_info: bool = False,
+) -> None:
+    logging.getLogger("workbench-agent").error(
+        log_message,
+        error,
+        exc_info=exc_info,
+    )
+    context = getattr(args, "command", default_context)
+    format_and_print_error(error, context, args)
 
 
 def main() -> int:
@@ -190,24 +220,21 @@ def main() -> int:
     Returns:
         int: Exit code (0 for success, non-zero for failure)
     """
-    args = None
+    captured_args: list = []
     try:
         pipeline = build_legacy_pipeline(sys.argv)
         if pipeline is not None:
-            return _run_legacy_pipeline(pipeline)
-        return _run_parsed_command(None)
+            return _run_legacy_pipeline(pipeline, captured_args)
+        return _run_parsed_command(None, captured_args=captured_args)
 
     except (ValidationError, ConfigurationError, AuthenticationError) as e:
-        try:
-            logger = logging.getLogger("workbench-agent")
-            logger.error("Configuration error: %s", e)
-        except Exception:
-            pass
-        try:
-            context = getattr(args, "command", "cli")
-            format_and_print_error(e, context, args)
-        except NameError:
-            print(f"Error: {getattr(e, 'message', str(e))}")
+        args = captured_args[0] if captured_args else None
+        _report_failure(
+            e,
+            args,
+            log_message="Configuration error: %s",
+            default_context="cli",
+        )
         return 2
 
     except (
@@ -217,39 +244,34 @@ def main() -> int:
         FileSystemError,
         CompatibilityError,
     ) as e:
-        try:
-            logging.getLogger("workbench-agent").error("Runtime error: %s", e)
-        except Exception:
-            pass
-        try:
-            context = getattr(args, "command", "init")
-            format_and_print_error(e, context, args)
-        except NameError:
-            print(f"Error: {getattr(e, 'message', str(e))}")
+        args = captured_args[0] if captured_args else None
+        _report_failure(
+            e,
+            args,
+            log_message="Runtime error: %s",
+            default_context="init",
+        )
         return 1
 
     except WorkbenchAgentError as e:
-        try:
-            logging.getLogger("workbench-agent").error("Workbench Agent error: %s", e)
-        except Exception:
-            pass
-        try:
-            context = getattr(args, "command", "unknown")
-            format_and_print_error(e, context, args)
-        except NameError:
-            print(f"Error: {getattr(e, 'message', str(e))}")
+        args = captured_args[0] if captured_args else None
+        _report_failure(
+            e,
+            args,
+            log_message="Workbench Agent error: %s",
+            default_context="unknown",
+        )
         return 1
 
     except Exception as e:
-        try:
-            logging.getLogger("workbench-agent").error("Unexpected error: %s", e, exc_info=True)
-        except Exception:
-            pass
-        try:
-            context = getattr(args, "command", "unknown")
-            format_and_print_error(e, context, args)
-        except NameError:
-            print(f"Unexpected error: {e}")
+        args = captured_args[0] if captured_args else None
+        _report_failure(
+            e,
+            args,
+            log_message="Unexpected error: %s",
+            default_context="unknown",
+            exc_info=True,
+        )
         return 1
 
 
