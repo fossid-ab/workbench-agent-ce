@@ -1,11 +1,6 @@
-import os
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "src"))
 
 
 @pytest.fixture
@@ -50,7 +45,7 @@ def mock_main_dependencies():
     mocks = {}
 
     # Mock WorkbenchClient (replaces WorkbenchAPI)
-    with patch("workbench_agent.main.WorkbenchClient") as mock_wb:
+    with patch("workbench_agent.main._create_workbench_client") as mock_wb:
         mocks["workbench_client"] = mock_wb
         mocks["workbench_instance"] = MagicMock()
         mock_wb.return_value = mocks["workbench_instance"]
@@ -60,45 +55,41 @@ def mock_main_dependencies():
 
         mocks["workbench_instance"].projects = MagicMock()
         mocks["workbench_instance"].scans = MagicMock()
-
-        mocks["workbench_instance"].scans.get_scan_folder_metrics.return_value = {}
-        mocks["workbench_instance"].scans.get_dependency_analysis_results.return_value = []
-        mocks["workbench_instance"].scans.get_scan_identified_licenses.return_value = []
-        mocks["workbench_instance"].scans.get_scan_identified_components.return_value = []
-        mocks["workbench_instance"].scans.get_policy_warnings_counter.return_value = {}
-
         mocks["workbench_instance"].vulnerabilities = MagicMock()
-        mocks["workbench_instance"].vulnerabilities.list_vulnerabilities.return_value = []
 
-        # Mock all handlers - need to patch them at the main module level where they're imported
+        mock_analyze = MagicMock()
+        mock_scan = MagicMock()
+        mock_scan_git = MagicMock()
+        mock_blind_scan = MagicMock()
+        mock_import = MagicMock()
+        mock_import_sbom = MagicMock()
+        mock_show = MagicMock()
+        mock_delete_scan = MagicMock()
+        mock_download = MagicMock()
+        mock_gates = MagicMock()
+        mock_quick_scan = MagicMock()
+
+        from workbench_agent.main import COMMAND_HANDLERS
+
         with (
-            patch("workbench_agent.main.handle_analyze") as mock_analyze,
-            patch("workbench_agent.main.handle_scan") as mock_scan,
-            patch("workbench_agent.main.handle_scan_git") as mock_scan_git,
-            patch("workbench_agent.main.handle_blind_scan") as mock_blind_scan,
-            patch("workbench_agent.main.handle_import_da") as mock_import,
-            patch("workbench_agent.main.handle_import_sbom") as mock_import_sbom,
-            patch("workbench_agent.main.handle_show_results") as mock_show,
-            patch("workbench_agent.main.handle_delete_scan") as mock_delete_scan,
-            patch("workbench_agent.main.handle_download_reports") as mock_download,
-            patch("workbench_agent.main.handle_evaluate_gates") as mock_gates,
-            patch("workbench_agent.main.handle_quick_scan") as mock_quick_scan,
             patch("workbench_agent.main.build_legacy_pipeline", return_value=None),
+            patch.dict(
+                COMMAND_HANDLERS,
+                {
+                    "analyze": mock_analyze,
+                    "scan": mock_scan,
+                    "blind-scan": mock_blind_scan,
+                    "scan-git": mock_scan_git,
+                    "import-da": mock_import,
+                    "import-sbom": mock_import_sbom,
+                    "show-results": mock_show,
+                    "delete-scan": mock_delete_scan,
+                    "download-reports": mock_download,
+                    "evaluate-gates": mock_gates,
+                    "quick-scan": mock_quick_scan,
+                },
+            ),
         ):
-            from workbench_agent.main import COMMAND_HANDLERS
-
-            COMMAND_HANDLERS["analyze"] = mock_analyze
-            COMMAND_HANDLERS["scan"] = mock_scan
-            COMMAND_HANDLERS["blind-scan"] = mock_blind_scan
-            COMMAND_HANDLERS["scan-git"] = mock_scan_git
-            COMMAND_HANDLERS["import-da"] = mock_import
-            COMMAND_HANDLERS["import-sbom"] = mock_import_sbom
-            COMMAND_HANDLERS["show-results"] = mock_show
-            COMMAND_HANDLERS["delete-scan"] = mock_delete_scan
-            COMMAND_HANDLERS["download-reports"] = mock_download
-            COMMAND_HANDLERS["evaluate-gates"] = mock_gates
-            COMMAND_HANDLERS["quick-scan"] = mock_quick_scan
-
             mocks["handle_analyze"] = mock_analyze
             mocks["handle_scan"] = mock_scan
             mocks["handle_scan_git"] = mock_scan_git

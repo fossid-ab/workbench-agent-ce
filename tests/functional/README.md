@@ -127,6 +127,12 @@ Each test file validates a complete end-to-end workflow:
 - Imports SBOM in CycloneDX format
 - Validates all follow-up commands
 
+### `test_legacy_workflow.py`
+**Workflow:** legacy (no-subcommand) scan → show-results → delete-scan
+- Uses underscore flags (`--project_code`, `--scan_code`, `--api_url`, …)
+- Covers default licenses, `--scans_get_results`, blind scan, DA-only, result-flag modes, kitchen-sink scan flags + `--path-result`, identification reuse, and rejected `--target_path`
+- Display text may differ from the original agent; API behavior should match CE `scan` / `blind-scan` + `show-results`
+
 ## Fixtures
 
 Shared test fixtures are defined in `conftest.py`:
@@ -135,7 +141,9 @@ Shared test fixtures are defined in `conftest.py`:
 - **`temp_source_dir`**: Creates temporary source directory with sample files
 - **`temp_reports_dir`**: Creates temporary directory for downloaded reports
 - **`unique_scan_name`**: Generates unique scan names using process ID
+- **`unique_scan_code`**: Generates unique alphanumeric scan codes for legacy CLI tests
 - **`project_name`**: Standard project name for all tests
+- **`project_code`**: Resolves the functional test project's internal Workbench code
 - **`fixtures_dir`**: Path to test fixture files
 
 ## Best Practices

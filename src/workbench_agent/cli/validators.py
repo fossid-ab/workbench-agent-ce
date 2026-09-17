@@ -1,14 +1,11 @@
 # workbench_agent/cli/validators.py
 
-import logging
 import os
 from argparse import Namespace
 from typing import Optional
 
+from workbench_agent.api.validation.field_limits import validate_project_scan_target_fields
 from workbench_agent.exceptions import ValidationError
-from workbench_agent.utilities.analyze.ecosystem import validate_analyze_ecosystem
-
-logger = logging.getLogger("workbench-agent")
 
 
 def _strip(value: Optional[str]) -> Optional[str]:
@@ -90,6 +87,14 @@ def _validate_project_scan_target(args: Namespace, *, scan_required: bool) -> No
                 "--project-name with --scan-name"
             )
 
+    validate_project_scan_target_fields(
+        project_name=project_name,
+        project_code=project_code,
+        scan_name=scan_name,
+        scan_code=scan_code,
+        scan_required=scan_required,
+    )
+
 
 def _validate_command_specific_args(args: Namespace) -> None:
     """Validate command-specific arguments."""
@@ -126,6 +131,10 @@ def _validate_analyze_command(args: Namespace) -> None:
         raise ValidationError(
             f"analyze --path must be a project directory: {path}"
         )
+
+    from workbench_agent.utilities.analyze.ecosystem import (
+        validate_analyze_ecosystem,
+    )
 
     validate_analyze_ecosystem(args)
 

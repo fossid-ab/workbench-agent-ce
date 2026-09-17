@@ -27,7 +27,7 @@ from workbench_agent.api.utils.scan_type import (
     infer_scan_type,
 )
 from workbench_agent.services.resolver_service import ResolverService
-from workbench_agent.services.types import ResolvedTargets, target_label
+from workbench_agent.services.types import ResolvedTargets
 
 if TYPE_CHECKING:
     from workbench_agent.api import WorkbenchClient
@@ -337,5 +337,4 @@ __all__ = [
     "find_or_create_project_and_scan",
     "format_reuse_issue",
     "resolve_project_and_scan",
-    "target_label",
 ]

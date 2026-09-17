@@ -6,9 +6,7 @@ functionality.
 """
 
 from .parser import parse_cmdline_args
-from .validators import validate_parsed_args
 
 __all__ = [
     "parse_cmdline_args",
-    "validate_parsed_args",
 ]

@@ -30,6 +30,7 @@ workbench-agent-log.txt
 .venv/
 .env-*
 src/workbench_agent.egg-info/
+src/workbench_agent_ce.egg-info/
 build
 reports/
 

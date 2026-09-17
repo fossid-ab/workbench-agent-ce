@@ -4,11 +4,9 @@ import argparse
 import logging
 from typing import TYPE_CHECKING
 
+from workbench_agent.services.types import target_label
 from workbench_agent.utilities.error_handling import handler_error_wrapper
-from workbench_agent.utilities.resolve_project_scan import (
-    resolve_project_and_scan,
-    target_label,
-)
+from workbench_agent.utilities.resolve_project_scan import resolve_project_and_scan
 from workbench_agent.utilities.section import print_section
 from workbench_agent.utilities.pre_flight_checks import (
     show_results_pre_flight_check,
