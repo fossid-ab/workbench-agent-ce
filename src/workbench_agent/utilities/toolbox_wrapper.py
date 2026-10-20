@@ -44,6 +44,18 @@ class DaPipelineResult:
     sources_path: Optional[str] = None
 
 
+# Namespace / kwargs attrs → Toolbox da --pipeline flags (string values).
+_DA_PIPELINE_STRING_FLAGS = (
+    ("ecosystem", "--ecosystem"),
+    ("bazel_target", "--bazel-target"),
+    ("bazel_path", "--bazel-path"),
+    ("bazel_mode", "--bazel-mode"),
+    ("gradle_project", "--gradle-project"),
+    ("maven_path", "--maven-path"),
+    ("gradle_path", "--gradle-path"),
+)
+
+
 def build_da_pipeline_args(
     *,
     input_path: str,
@@ -53,6 +65,8 @@ def build_da_pipeline_args(
     bazel_path: Optional[str] = None,
     bazel_mode: Optional[str] = None,
     gradle_project: Optional[str] = None,
+    maven_path: Optional[str] = None,
+    gradle_path: Optional[str] = None,
     force_pipeline_build: bool = False,
     emit_source_files: bool = False,
 ) -> List[str]:
@@ -69,16 +83,19 @@ def build_da_pipeline_args(
         "--output",
         output_dir,
     ]
-    if ecosystem:
-        args.extend(["--ecosystem", ecosystem])
-    if bazel_target:
-        args.extend(["--bazel-target", bazel_target])
-    if bazel_path:
-        args.extend(["--bazel-path", bazel_path])
-    if bazel_mode:
-        args.extend(["--bazel-mode", bazel_mode])
-    if gradle_project:
-        args.extend(["--gradle-project", gradle_project])
+    values = {
+        "ecosystem": ecosystem,
+        "bazel_target": bazel_target,
+        "bazel_path": bazel_path,
+        "bazel_mode": bazel_mode,
+        "gradle_project": gradle_project,
+        "maven_path": maven_path,
+        "gradle_path": gradle_path,
+    }
+    for attr, flag in _DA_PIPELINE_STRING_FLAGS:
+        value = values.get(attr)
+        if value is not None and value != "":
+            args.extend([flag, str(value)])
     if force_pipeline_build:
         args.append("--force-pipeline-build")
     if emit_source_files:
@@ -443,6 +460,8 @@ class ToolboxWrapper:
         bazel_path: Optional[str] = None,
         bazel_mode: Optional[str] = None,
         gradle_project: Optional[str] = None,
+        maven_path: Optional[str] = None,
+        gradle_path: Optional[str] = None,
         force_pipeline_build: bool = False,
         emit_source_files: bool = False,
         fossid_conf_path: Optional[str] = None,
@@ -467,6 +486,8 @@ class ToolboxWrapper:
             bazel_path=bazel_path,
             bazel_mode=bazel_mode,
             gradle_project=gradle_project,
+            maven_path=maven_path,
+            gradle_path=gradle_path,
             force_pipeline_build=force_pipeline_build,
             emit_source_files=emit_source_files,
         )

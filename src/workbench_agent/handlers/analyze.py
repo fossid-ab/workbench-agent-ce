@@ -3,8 +3,9 @@ Handler for the ``analyze`` command.
 
 Orchestrates FossID Toolbox DA pipeline mode (managed dependencies)
 plus a scan of first-party sources (unmanaged code) into the same
-Workbench Project/Scan. Toolbox decides which sources belong to the
-analyzed unit and reports them; the agent stages and scans them.
+Workbench Project/Scan. How first-party sources are chosen is
+ecosystem-specific (Toolbox sidecar for Bazel; project ``--path`` for
+Maven) via the analyze ecosystem registry.
 
 By default first-party sources are uploaded. Pass ``--blind-scan``
 to hash with FossID Toolbox instead of uploading source.
@@ -22,12 +23,13 @@ from workbench_agent.api.exceptions import ProcessError, ProcessTimeoutError
 from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.utilities.analyze.ecosystem import (
     da_pipeline_kwargs,
+    ecosystem_first_party_strategy,
     ecosystem_scope_label,
     validate_analyze_ecosystem,
 )
-from workbench_agent.utilities.analyze.first_party_sources import (
-    load_first_party_sources,
-    stage_sources,
+from workbench_agent.utilities.analyze.first_party import (
+    FirstPartyStrategy,
+    resolve_first_party,
 )
 from workbench_agent.utilities.analyze.summary import print_analysis_summary
 from workbench_agent.utilities.error_handling import handler_error_wrapper
@@ -118,6 +120,7 @@ def _run_upload_sources(
     scan_is_new: bool,
     staging_dir: str,
     durations: dict,
+    archive_exclusions=None,
 ) -> bool:
     """Upload staged sources and run the KB scan."""
     if not scan_is_new:
@@ -130,7 +133,9 @@ def _run_upload_sources(
             print("Continuing with upload...")
 
     print_section("Preparing Scan Target")
-    with prepare_scan_target(staging_dir) as upload_path:
+    with prepare_scan_target(
+        staging_dir, exclusions=archive_exclusions
+    ) as upload_path:
         print("Uploading archive to Workbench...")
         client.scan_content.upload_scan_target(scan_code, upload_path)
         print("✓ Upload complete")
@@ -243,15 +248,16 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     Handler for the ``analyze`` command.
 
     Workflow:
-    1. Run ``fossid-toolbox da --pipeline`` (with ``--emit-source-files``
-       unless ``--dependency-analysis-only``) for managed dependencies
-       and, by default, the list of first-party sources for the unit
-    2. KB-scan those sources (upload by default, or ``--blind-scan``)
-       unless ``--dependency-analysis-only``
+    1. Run ``fossid-toolbox da --pipeline`` for managed dependencies
+       (``--emit-source-files`` when the ecosystem uses the sidecar
+       first-party strategy and KB scan is enabled)
+    2. KB-scan first-party sources per ecosystem strategy (sidecar list
+       or project ``--path``), unless ``--dependency-analysis-only``
     3. Import the Toolbox ``analyzer-result.json`` into the same scan
     """
     print_section(f"Running {params.command.upper()} Command")
-    validate_analyze_ecosystem(params)
+    eco = validate_analyze_ecosystem(params)
+    first_party_strategy = ecosystem_first_party_strategy(params)
 
     path = params.path
     blind_scan = bool(getattr(params, "blind_scan", False))
@@ -273,12 +279,18 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
 
     pipeline_result = None
     staging_dir = None
+    staging_owned = False
+
+    # Sidecar ecosystems need --emit-source-files; path strategy does not.
+    emit_sources = (not da_only) and (
+        first_party_strategy is FirstPartyStrategy.SIDECAR
+    )
 
     try:
-        # --- 1. Managed deps + first-party source list via Toolbox DA ---
+        # --- 1. Managed deps via Toolbox DA ---
         pipeline_result = toolbox_wrapper.run_da_pipeline(
             input_path=path,
-            emit_source_files=not da_only,
+            emit_source_files=emit_sources,
             fossid_conf_path=getattr(params, "fossid_conf_path", None),
             timeout=int(getattr(params, "da_timeout", 3600)),
             **da_pipeline_kwargs(params),
@@ -308,22 +320,40 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
                 "source discovery and KB scan."
             )
         else:
-            sources = load_first_party_sources(pipeline_result.sources_path)
-            if not sources:
+            resolved = resolve_first_party(
+                strategy=first_party_strategy,
+                project_path=path,
+                sources_sidecar=pipeline_result.sources_path,
+                user_excludes=getattr(params, "exclude", None),
+                blind_scan=blind_scan,
+            )
+            if resolved.scan_root is None:
                 skip_kb_message = (
                     "No first-party source files found for "
                     f"{ecosystem_scope_label(params)}; skipping KB scan and "
                     "importing the dependency graph only."
                 )
             else:
-                staging_dir = stage_sources(path, sources)
+                staging_dir = resolved.scan_root
+                staging_owned = resolved.owned
+                logger.info(
+                    "First-party KB via %s strategy for -e %s",
+                    first_party_strategy.value,
+                    eco.name,
+                )
                 if blind_scan:
                     kb_ok = _run_blind_scan_sources(
                         client, params, scan_code, scan_is_new, staging_dir, durations
                     )
                 else:
                     kb_ok = _run_upload_sources(
-                        client, params, scan_code, scan_is_new, staging_dir, durations
+                        client,
+                        params,
+                        scan_code,
+                        scan_is_new,
+                        staging_dir,
+                        durations,
+                        archive_exclusions=resolved.archive_exclusions,
                     )
                 if not kb_ok:
                     return False
@@ -353,7 +383,7 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
         )
         return True
     finally:
-        if staging_dir:
+        if staging_dir and staging_owned:
             shutil.rmtree(staging_dir, ignore_errors=True)
         if pipeline_result:
             shutil.rmtree(pipeline_result.output_dir, ignore_errors=True)

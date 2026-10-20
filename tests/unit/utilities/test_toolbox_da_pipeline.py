@@ -55,6 +55,16 @@ class TestBuildDaPipelineArgs:
         )
         assert "--force-pipeline-build" in args
 
+    def test_maven_path_flag(self):
+        args = build_da_pipeline_args(
+            input_path="/p",
+            output_dir="/o",
+            ecosystem="maven",
+            maven_path="./mvnw",
+        )
+        assert "--maven-path" in args
+        assert "./mvnw" in args
+
     def test_emit_source_files_is_opt_in(self):
         without = build_da_pipeline_args(input_path="/p", output_dir="/o")
         assert "--emit-source-files" not in without

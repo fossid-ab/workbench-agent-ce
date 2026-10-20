@@ -51,7 +51,10 @@ def cleanup_temp_path(path: Optional[str]) -> None:
 
 
 @contextmanager
-def prepare_scan_target(path: str) -> Iterator[str]:
+def prepare_scan_target(
+    path: str,
+    exclusions: Optional[Set[str]] = None,
+) -> Iterator[str]:
     """
     Yield a file path ready to upload as a scan target.
 
@@ -62,6 +65,8 @@ def prepare_scan_target(path: str) -> Iterator[str]:
 
     Args:
         path: Source path (directory or file) to prepare for upload.
+        exclusions: Optional directory/file name patterns for the ZIP
+            (defaults to :attr:`UploadArchivePrep.DEFAULT_EXCLUSIONS`).
 
     Yields:
         str: A file path safe to hand to ``ScanContentService.upload_scan_target``.
@@ -69,7 +74,9 @@ def prepare_scan_target(path: str) -> Iterator[str]:
     if os.path.isdir(path):
         logger.debug("Target path is a directory; creating ZIP for upload")
         print("Compressing target path...")
-        archive_path = UploadArchivePrep.create_zip_archive(path)
+        archive_path = UploadArchivePrep.create_zip_archive(
+            path, exclusions=exclusions
+        )
         temp_dir = os.path.dirname(archive_path)
         print("✓ Archived target path")
         try:
