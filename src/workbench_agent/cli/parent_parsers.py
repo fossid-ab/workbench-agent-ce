@@ -439,12 +439,24 @@ def create_analyze_shared_parser():
         dest="exclude",
         help=(
             "Comma-separated directory or file names to skip when the "
-            "KB scan covers the project tree (Maven). Merged with defaults "
-            "(.git, node_modules, target, …). Bazel uses the Toolbox source "
-            "list and ignores this flag."
+            "KB scan covers the project tree (Maven pipeline and --buildless). "
+            "Merged with defaults (.git, node_modules, target, …). "
+            "Bazel pipeline uses the Toolbox source list and ignores this flag."
         ),
         required=False,
         metavar="NAMES",
+    )
+    analyze_shared_args.add_argument(
+        "--buildless",
+        dest="buildless",
+        help=(
+            "Resolve dependencies from manifests with FossID Toolbox "
+            "(fossid-toolbox da, no --pipeline) instead of the build tool. "
+            "Covers every ecosystem Toolbox DA supports. The project tree "
+            "is still KB-scanned unless --dependency-analysis-only is set."
+        ),
+        action="store_true",
+        default=False,
     )
     analyze_shared_args.add_argument(
         "--force-pipeline-build",

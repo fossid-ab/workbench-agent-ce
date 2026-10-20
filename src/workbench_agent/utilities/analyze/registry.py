@@ -7,12 +7,16 @@ The handler and CLI validators stay generic: add a module under
 
 from __future__ import annotations
 
+import logging
+import os
 from argparse import ArgumentParser, Namespace, _ArgumentGroup
 from dataclasses import dataclass, field
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.analyze.first_party import FirstPartyStrategy
+
+logger = logging.getLogger("workbench-agent")
 
 NormalizeFn = Callable[[Namespace], None]
 PrepareFn = Callable[[Namespace], None]
@@ -24,6 +28,8 @@ class AnalyzeEcosystem:
     """How ``analyze`` validates and talks to Toolbox for one ecosystem."""
 
     name: str
+    #: Project-root filenames that identify this ecosystem. Used when ``-e`` is omitted.
+    manifests: Tuple[str, ...] = ()
     first_party: FirstPartyStrategy = FirstPartyStrategy.SIDECAR
     # (namespace attr, CLI flag, optional example value)
     required_flags: Tuple[Tuple[str, str, Optional[str]], ...] = ()
@@ -81,7 +87,14 @@ def supported_ecosystems() -> Tuple[str, ...]:
 
 
 def all_config_display_keys() -> frozenset[str]:
-    keys = {"ecosystem", "da_timeout", "blind_scan", "fossid_conf_path", "exclude"}
+    keys = {
+        "ecosystem",
+        "da_timeout",
+        "blind_scan",
+        "fossid_conf_path",
+        "exclude",
+        "buildless",
+    }
     for spec in ECOSYSTEMS.values():
         keys.update(spec.config_display_keys)
         keys.update(spec.pipeline_attrs)
@@ -98,8 +111,21 @@ def register_ecosystem_cli_arguments(parser: ArgumentParser) -> None:
         spec.add_arguments(group)
 
 
+def detect_ecosystems(project_dir: str) -> List[str]:
+    """Return supported ecosystems whose marker files exist in ``project_dir``."""
+    found: List[str] = []
+    for name in supported_ecosystems():
+        spec = ECOSYSTEMS[name]
+        if any(os.path.isfile(os.path.join(project_dir, marker)) for marker in spec.manifests):
+            found.append(name)
+    return found
+
+
 def resolve_analyze_ecosystem(params: Namespace) -> AnalyzeEcosystem:
     name = (getattr(params, "ecosystem", None) or "").strip().lower()
+    if not name:
+        name = _autodetect_ecosystem(params)
+        params.ecosystem = name
     spec = ECOSYSTEMS.get(name)
     if spec is None:
         supported = ", ".join(f"-e {eco}" for eco in supported_ecosystems())
@@ -107,6 +133,63 @@ def resolve_analyze_ecosystem(params: Namespace) -> AnalyzeEcosystem:
             f"analyze currently supports {supported} (got {name!r})"
         )
     return spec
+
+
+def _autodetect_ecosystem(params: Namespace) -> str:
+    """Pick the ecosystem when ``-e`` was omitted. Exactly one marker set must match."""
+    project_dir = getattr(params, "path", None) or "."
+    found = detect_ecosystems(project_dir)
+    supported = ", ".join(f"-e {eco}" for eco in supported_ecosystems())
+    if len(found) == 1:
+        chosen = found[0]
+        print(
+            f"Detected {chosen} project in {project_dir}. "
+            f"Pass -e to choose a different build tool."
+        )
+        logger.info("Auto-selected analyze ecosystem %s for %s", chosen, project_dir)
+        return chosen
+    if not found:
+        raise ValidationError(
+            f"No supported build tool detected in {project_dir}. "
+            f"Pass {supported}."
+        )
+    listed = ", ".join(found)
+    raise ValidationError(
+        f"Several build tools detected in {project_dir} ({listed}). "
+        f"Pass {supported} to choose one."
+    )
+
+
+# Flags that only apply to ``fossid-toolbox da --pipeline``.
+_PIPELINE_ONLY_FLAGS = (
+    ("force_pipeline_build", "--force-pipeline-build"),
+    ("bazel_target", "--bazel-target"),
+    ("bazel_path", "--bazel-path"),
+    ("bazel_mode", "--bazel-mode"),
+    ("maven_path", "--maven-path"),
+)
+
+
+def reject_buildless_pipeline_flags(params: Namespace) -> None:
+    """``--buildless`` resolves manifests; pipeline flags do not apply."""
+    if not getattr(params, "buildless", False):
+        return
+    for attr, flag in _PIPELINE_ONLY_FLAGS:
+        value = getattr(params, attr, None)
+        if value:
+            raise ValidationError(f"{flag} cannot be used with --buildless")
+
+
+def prepare_analyze_run(params: Namespace) -> Optional[AnalyzeEcosystem]:
+    """Validate analyze flags.
+
+    Returns the ecosystem plugin for a pipeline run, or ``None`` for
+    ``--buildless`` (any Toolbox DA ecosystem, no build tool).
+    """
+    if getattr(params, "buildless", False):
+        reject_buildless_pipeline_flags(params)
+        return None
+    return validate_analyze_ecosystem(params)
 
 
 def validate_analyze_ecosystem(params: Namespace) -> AnalyzeEcosystem:

@@ -52,6 +52,7 @@ def _add_bazel_arguments(group: _ArgumentGroup) -> None:
 BAZEL = register_ecosystem(
     AnalyzeEcosystem(
         name="bazel",
+        manifests=("MODULE.bazel", "WORKSPACE.bazel", "WORKSPACE"),
         first_party=FirstPartyStrategy.SIDECAR,
         required_flags=(("bazel_target", "--bazel-target", "//myapp:app"),),
         pipeline_attrs=("bazel_target", "bazel_path", "bazel_mode"),

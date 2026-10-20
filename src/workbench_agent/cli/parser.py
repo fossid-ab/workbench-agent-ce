@@ -165,6 +165,10 @@ Examples:
             "mode (fossid-toolbox da) and import the dependency graph into "
             "a Workbench scan.\n\n"
             "Requires FossID Toolbox 1.7.11 or later.\n\n"
+            "Pass -e to force a build tool. When -e is omitted, analyze "
+            "detects the tool from the project directory when exactly one "
+            "is present (pom.xml for Maven, MODULE.bazel or WORKSPACE for "
+            "Bazel).\n\n"
             "Managed packages come from the Toolbox graph. First-party "
             "sources are KB-scanned into the same Project/Scan:\n"
             "  - Bazel: Toolbox lists sources for --bazel-target "
@@ -198,10 +202,9 @@ Examples:
       -e bazel --bazel-target //myapp:app \\
       --project "MyApp" --scan "myapp@1.0.0"
 
-  # Maven — project tree under --path + dependency graph
-  # (uses ./mvnw when present; point --path at a module in monorepos)
+  # Maven — -e is optional when the directory contains only pom.xml
   workbench-agent analyze \\
-      -e maven --path ./services/payments \\
+      --path ./services/payments \\
       --project "Payments" --scan "payments@1.0.0"
 
   # Maven from repo root with extra KB excludes
@@ -219,6 +222,11 @@ Examples:
   workbench-agent analyze \\
       -e maven --dependency-analysis-only \\
       --project "MyApp" --scan "myapp@1.0.0"
+
+  # Buildless: manifest resolution for any Toolbox DA ecosystem
+  workbench-agent analyze \\
+      --buildless --path . \\
+      --project "MyApp" --scan "manifests@HEAD"
 """,
     )
     analyze_parser.add_argument(
@@ -234,11 +242,12 @@ Examples:
         "--ecosystem",
         dest="ecosystem",
         help=(
-            "Build-tool ecosystem for Toolbox DA pipeline mode "
-            f"({', '.join(supported_ecosystems())})"
+            "Package manager for Toolbox DA. Pipeline mode "
+            f"({', '.join(supported_ecosystems())}) detects a single build "
+            "tool when this is omitted. --buildless accepts any ecosystem "
+            "Toolbox DA supports and, when omitted, scans every manifest."
         ),
-        required=True,
-        choices=list(supported_ecosystems()),
+        required=False,
         metavar="ECOSYSTEM",
     )
     analyze_parser.add_argument(

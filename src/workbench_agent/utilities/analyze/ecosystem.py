@@ -14,6 +14,7 @@ from workbench_agent.utilities.analyze.registry import (  # noqa: F401
     da_pipeline_kwargs,
     ecosystem_first_party_strategy,
     ecosystem_scope_label,
+    prepare_analyze_run,
     register_ecosystem_cli_arguments,
     resolve_analyze_ecosystem,
     supported_ecosystems,

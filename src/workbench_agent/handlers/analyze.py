@@ -4,8 +4,7 @@ Handler for the ``analyze`` command.
 Orchestrates FossID Toolbox DA pipeline mode (managed dependencies)
 plus a scan of first-party sources (unmanaged code) into the same
 Workbench Project/Scan. How first-party sources are chosen is
-ecosystem-specific (Toolbox sidecar for Bazel; project ``--path`` for
-Maven) via the analyze ecosystem registry.
+ecosystem-specific via the analyze ecosystem registry.
 
 By default first-party sources are uploaded. Pass ``--blind-scan``
 to hash with FossID Toolbox instead of uploading source.
@@ -25,7 +24,7 @@ from workbench_agent.utilities.analyze.ecosystem import (
     da_pipeline_kwargs,
     ecosystem_first_party_strategy,
     ecosystem_scope_label,
-    validate_analyze_ecosystem,
+    prepare_analyze_run,
 )
 from workbench_agent.utilities.analyze.first_party import (
     FirstPartyStrategy,
@@ -248,16 +247,25 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
     Handler for the ``analyze`` command.
 
     Workflow:
-    1. Run ``fossid-toolbox da --pipeline`` for managed dependencies
-       (``--emit-source-files`` when the ecosystem uses the sidecar
-       first-party strategy and KB scan is enabled)
+    1. Run FossID Toolbox DA for managed dependencies. The default is
+       ``da --pipeline``. ``--buildless`` runs a manifest scan instead
+       (every ecosystem Toolbox DA supports).
     2. KB-scan first-party sources per ecosystem strategy (sidecar list
-       or project ``--path``), unless ``--dependency-analysis-only``
+       or project ``--path``), unless ``--dependency-analysis-only``.
+       ``--buildless`` always uses the project tree.
     3. Import the Toolbox ``analyzer-result.json`` into the same scan
     """
     print_section(f"Running {params.command.upper()} Command")
-    eco = validate_analyze_ecosystem(params)
-    first_party_strategy = ecosystem_first_party_strategy(params)
+    buildless = bool(getattr(params, "buildless", False))
+    eco = prepare_analyze_run(params)
+    if buildless:
+        first_party_strategy = FirstPartyStrategy.PATH
+        print(
+            "Buildless mode: resolving dependencies from manifests "
+            "with Toolbox DA (not the build tool)."
+        )
+    else:
+        first_party_strategy = ecosystem_first_party_strategy(params)
 
     path = params.path
     blind_scan = bool(getattr(params, "blind_scan", False))
@@ -288,13 +296,22 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
 
     try:
         # --- 1. Managed deps via Toolbox DA ---
-        pipeline_result = toolbox_wrapper.run_da_pipeline(
-            input_path=path,
-            emit_source_files=emit_sources,
-            fossid_conf_path=getattr(params, "fossid_conf_path", None),
-            timeout=int(getattr(params, "da_timeout", 3600)),
-            **da_pipeline_kwargs(params),
-        )
+        if buildless:
+            ecosystem = (getattr(params, "ecosystem", None) or "").strip() or None
+            pipeline_result = toolbox_wrapper.run_da_manifest_scan(
+                input_path=path,
+                ecosystem=ecosystem,
+                fossid_conf_path=getattr(params, "fossid_conf_path", None),
+                timeout=int(getattr(params, "da_timeout", 3600)),
+            )
+        else:
+            pipeline_result = toolbox_wrapper.run_da_pipeline(
+                input_path=path,
+                emit_source_files=emit_sources,
+                fossid_conf_path=getattr(params, "fossid_conf_path", None),
+                timeout=int(getattr(params, "da_timeout", 3600)),
+                **da_pipeline_kwargs(params),
+            )
 
         # --- 2. First-party KB scan (upload or blind) ---
         print_section("Project and Scan Checks")
@@ -328,18 +345,25 @@ def handle_analyze(client: "WorkbenchClient", params: argparse.Namespace) -> boo
                 blind_scan=blind_scan,
             )
             if resolved.scan_root is None:
+                if buildless:
+                    scope_label = (
+                        (getattr(params, "ecosystem", None) or "").strip()
+                        or "manifests"
+                    )
+                else:
+                    scope_label = ecosystem_scope_label(params)
                 skip_kb_message = (
                     "No first-party source files found for "
-                    f"{ecosystem_scope_label(params)}; skipping KB scan and "
+                    f"{scope_label}; skipping KB scan and "
                     "importing the dependency graph only."
                 )
             else:
                 staging_dir = resolved.scan_root
                 staging_owned = resolved.owned
                 logger.info(
-                    "First-party KB via %s strategy for -e %s",
+                    "First-party KB via %s strategy for %s",
                     first_party_strategy.value,
-                    eco.name,
+                    eco.name if eco is not None else "buildless",
                 )
                 if blind_scan:
                     kb_ok = _run_blind_scan_sources(

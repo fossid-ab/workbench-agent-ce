@@ -135,6 +135,48 @@ def test_scope_label_is_bazel_target():
     assert ecosystem_scope_label(_params()) == "//app:bin"
 
 
+def test_autodetect_maven_from_pom(tmp_path, capsys):
+    (tmp_path / "pom.xml").write_text("<project/>")
+    params = _params(ecosystem=None, bazel_target=None, path=str(tmp_path))
+    spec = validate_analyze_ecosystem(params)
+    assert spec.name == "maven"
+    assert params.ecosystem == "maven"
+    assert "Detected maven project" in capsys.readouterr().out
+
+
+def test_autodetect_bazel_from_module(tmp_path, capsys):
+    (tmp_path / "MODULE.bazel").write_text("module(name = 'app')")
+    params = _params(ecosystem=None, path=str(tmp_path))
+    spec = validate_analyze_ecosystem(params)
+    assert spec.name == "bazel"
+    assert "Detected bazel project" in capsys.readouterr().out
+
+
+def test_autodetect_rejects_multiple_tools(tmp_path):
+    (tmp_path / "pom.xml").write_text("<project/>")
+    (tmp_path / "WORKSPACE").write_text("")
+    with pytest.raises(ValidationError, match="Several build tools"):
+        validate_analyze_ecosystem(
+            _params(ecosystem=None, path=str(tmp_path))
+        )
+
+
+def test_autodetect_rejects_empty_directory(tmp_path):
+    with pytest.raises(ValidationError, match="No supported build tool"):
+        validate_analyze_ecosystem(
+            _params(ecosystem=None, bazel_target=None, path=str(tmp_path))
+        )
+
+
+def test_explicit_ecosystem_skips_autodetect(tmp_path, capsys):
+    (tmp_path / "pom.xml").write_text("<project/>")
+    (tmp_path / "WORKSPACE").write_text("")
+    params = _params(ecosystem="maven", bazel_target=None, path=str(tmp_path))
+    spec = validate_analyze_ecosystem(params)
+    assert spec.name == "maven"
+    assert capsys.readouterr().out == ""
+
+
 def test_scope_label_maven_is_ecosystem_name():
     assert (
         ecosystem_scope_label(_params(ecosystem="maven", bazel_target=None)) == "maven"

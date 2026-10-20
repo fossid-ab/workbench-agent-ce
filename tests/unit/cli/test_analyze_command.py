@@ -181,3 +181,43 @@ class TestAnalyzeValidation:
             )
             parsed = arg_parser(cmd_args)
         assert parsed.ecosystem == "maven"
+
+    def test_omitting_ecosystem_detects_maven(self, args, arg_parser, tmp_path):
+        (tmp_path / "pom.xml").write_text("<project/>")
+        builder = args()
+        builder.args.extend(["analyze"])
+        builder.args.extend(builder.global_args)
+        builder.args.extend(
+            [
+                "--project-name",
+                "P",
+                "--scan-name",
+                "S",
+                "--path",
+                str(tmp_path),
+            ]
+        )
+        parsed = arg_parser(builder.build())
+        assert parsed.ecosystem == "maven"
+
+    def test_buildless_allows_any_ecosystem(self, args, arg_parser, tmp_path):
+        cmd_args = (
+            args()
+            .analyze(path=str(tmp_path), bazel_target=None, ecosystem="npm")
+            .flag("--buildless")
+            .build()
+        )
+        parsed = arg_parser(cmd_args)
+        assert parsed.buildless is True
+        assert parsed.ecosystem == "npm"
+
+    def test_buildless_rejects_pipeline_flags(self, args, arg_parser, tmp_path):
+        cmd_args = (
+            args()
+            .analyze(path=str(tmp_path), bazel_target=None, ecosystem="maven")
+            .flag("--buildless")
+            .flag("--force-pipeline-build")
+            .build()
+        )
+        with pytest.raises(ValidationError, match="--force-pipeline-build"):
+            arg_parser(cmd_args)

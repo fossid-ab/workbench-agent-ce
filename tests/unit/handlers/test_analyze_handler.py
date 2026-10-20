@@ -377,3 +377,42 @@ class TestHandleAnalyze:
         handle_analyze(client, params)
 
         mock_preflight.assert_called_once_with(client, "SCAN", params)
+
+    @patch("workbench_agent.handlers.analyze.shutil.rmtree")
+    @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
+    @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_first_party",
+        return_value=ResolvedFirstParty(
+            scan_root="/ws", owned=False, archive_exclusions={".git"}
+        ),
+    )
+    @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
+    @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
+        return_value="/toolbox",
+    )
+    def test_buildless_uses_manifest_scan_and_path_kb(
+        self,
+        _resolve_toolbox,
+        mock_wrapper_cls,
+        mock_resolve,
+        _first_party,
+        mock_upload,
+        _import,
+        _rmtree,
+    ):
+        mock_wrapper = _stub_toolbox(mock_wrapper_cls)
+        mock_resolve.return_value = ("PROJ", "SCAN", True)
+
+        ok = handle_analyze(
+            MagicMock(),
+            _params(buildless=True, ecosystem="npm", bazel_target=None),
+        )
+
+        assert ok is True
+        mock_wrapper.run_da_manifest_scan.assert_called_once()
+        assert mock_wrapper.run_da_manifest_scan.call_args.kwargs["ecosystem"] == "npm"
+        mock_wrapper.run_da_pipeline.assert_not_called()
+        mock_upload.assert_called_once()

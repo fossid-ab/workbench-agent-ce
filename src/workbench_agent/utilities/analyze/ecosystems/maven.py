@@ -45,6 +45,7 @@ def _add_maven_arguments(group: _ArgumentGroup) -> None:
 MAVEN = register_ecosystem(
     AnalyzeEcosystem(
         name="maven",
+        manifests=("pom.xml",),
         first_party=FirstPartyStrategy.PATH,
         required_flags=(),
         pipeline_attrs=("maven_path", "force_pipeline_build"),
