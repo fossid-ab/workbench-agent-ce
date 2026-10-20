@@ -189,6 +189,7 @@ Examples:
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],
             parent_parsers["monitoring"],
+            parent_parsers["analyze_shared"],
         ],
         epilog="""
 Examples:
@@ -239,17 +240,6 @@ Examples:
         required=True,
         choices=list(supported_ecosystems()),
         metavar="ECOSYSTEM",
-    )
-    analyze_parser.add_argument(
-        "--exclude",
-        dest="exclude",
-        help=(
-            "Comma-separated directory/file names to exclude from the "
-            "first-party KB scan when using path strategy (e.g. Maven). "
-            "Merged with defaults (.git, node_modules, target, …)"
-        ),
-        required=False,
-        metavar="NAMES",
     )
     analyze_parser.add_argument(
         "-c",

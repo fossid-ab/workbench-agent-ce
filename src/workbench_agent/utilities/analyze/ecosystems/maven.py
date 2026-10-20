@@ -40,16 +40,6 @@ def _add_maven_arguments(group: _ArgumentGroup) -> None:
         required=False,
         metavar="PATH",
     )
-    group.add_argument(
-        "--force-pipeline-build",
-        dest="force_pipeline_build",
-        help=(
-            "Run mvn clean install before dependency:tree "
-            "(needed when generated modules must exist first)"
-        ),
-        action="store_true",
-        default=False,
-    )
 
 
 MAVEN = register_ecosystem(
