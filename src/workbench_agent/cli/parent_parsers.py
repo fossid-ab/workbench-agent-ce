@@ -426,6 +426,51 @@ def create_git_options_parser():
     return git_options_parent
 
 
+def create_analyze_shared_parser():
+    """Flags shared by every ``analyze`` ecosystem.
+
+    Ecosystem plugins add their own flags (``--bazel-target``, ``--maven-path``).
+    A flag belongs here when the next ecosystem would otherwise redeclare it.
+    """
+    analyze_shared_parent = argparse.ArgumentParser(add_help=False)
+    analyze_shared_args = analyze_shared_parent.add_argument_group("Analyze")
+    analyze_shared_args.add_argument(
+        "--exclude",
+        dest="exclude",
+        help=(
+            "Comma-separated directory or file names to skip when the "
+            "KB scan covers the project tree (Maven pipeline and --buildless). "
+            "Merged with defaults (.git, node_modules, target, …). "
+            "Bazel pipeline uses the Toolbox source list and ignores this flag."
+        ),
+        required=False,
+        metavar="NAMES",
+    )
+    analyze_shared_args.add_argument(
+        "--buildless",
+        dest="buildless",
+        help=(
+            "Resolve dependencies from manifests with FossID Toolbox "
+            "(fossid-toolbox da, no --pipeline) instead of the build tool. "
+            "Covers every ecosystem Toolbox DA supports. The project tree "
+            "is still KB-scanned unless --dependency-analysis-only is set."
+        ),
+        action="store_true",
+        default=False,
+    )
+    analyze_shared_args.add_argument(
+        "--force-pipeline-build",
+        dest="force_pipeline_build",
+        help=(
+            "Build the project before extracting the dependency graph "
+            "(mvn clean install). Used by Maven. Ignored for Bazel."
+        ),
+        action="store_true",
+        default=False,
+    )
+    return analyze_shared_parent
+
+
 def create_common_parent_parsers():
     """
     Create parent parsers for common argument groups.
@@ -447,4 +492,5 @@ def create_common_parent_parsers():
         "project_scan_target": create_project_scan_target_parser(),
         "fossid_toolbox": create_fossid_toolbox_parser(),
         "git_options": create_git_options_parser(),
+        "analyze_shared": create_analyze_shared_parser(),
     }

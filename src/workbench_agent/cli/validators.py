@@ -132,11 +132,9 @@ def _validate_analyze_command(args: Namespace) -> None:
             f"analyze --path must be a project directory: {path}"
         )
 
-    from workbench_agent.utilities.analyze.ecosystem import (
-        validate_analyze_ecosystem,
-    )
+    from workbench_agent.utilities.analyze.ecosystem import prepare_analyze_run
 
-    validate_analyze_ecosystem(args)
+    prepare_analyze_run(args)
 
     da_timeout = getattr(args, "da_timeout", None)
     if da_timeout is not None and da_timeout <= 0:

@@ -1,48 +1,68 @@
 """Tests for the analyze ecosystem registry."""
 
 import argparse
+from unittest.mock import patch
 
 import pytest
 
 from workbench_agent.exceptions import ValidationError
 from workbench_agent.utilities.analyze.ecosystem import (
     da_pipeline_kwargs,
+    ecosystem_first_party_strategy,
     ecosystem_scope_label,
     supported_ecosystems,
     validate_analyze_ecosystem,
 )
+from workbench_agent.utilities.analyze.first_party import FirstPartyStrategy
 
 
 def _params(**overrides):
     ns = argparse.Namespace(
         ecosystem="bazel",
+        path=".",
         bazel_target="//app:bin",
         bazel_path=None,
         bazel_mode=None,
-        gradle_project=None,
+        maven_path=None,
+        force_pipeline_build=False,
     )
     for key, value in overrides.items():
         setattr(ns, key, value)
     return ns
 
 
-def test_supported_ecosystems_lists_bazel():
+def test_supported_ecosystems_lists_bazel_and_maven():
     assert "bazel" in supported_ecosystems()
+    assert "maven" in supported_ecosystems()
 
 
 def test_validate_bazel_ok():
     spec = validate_analyze_ecosystem(_params())
     assert spec.name == "bazel"
+    assert ecosystem_first_party_strategy(_params()) is FirstPartyStrategy.SIDECAR
+
+
+def test_validate_maven_ok():
+    spec = validate_analyze_ecosystem(_params(ecosystem="maven", bazel_target=None))
+    assert spec.name == "maven"
+    assert (
+        ecosystem_first_party_strategy(_params(ecosystem="maven", bazel_target=None))
+        is FirstPartyStrategy.PATH
+    )
 
 
 def test_rejects_unknown_ecosystem():
-    with pytest.raises(ValidationError, match="supports -e bazel"):
-        validate_analyze_ecosystem(_params(ecosystem="maven"))
+    with pytest.raises(ValidationError, match="supports -e"):
+        validate_analyze_ecosystem(_params(ecosystem="npm"))
 
 
 def test_requires_bazel_target():
     with pytest.raises(ValidationError, match="--bazel-target"):
         validate_analyze_ecosystem(_params(bazel_target=None))
+
+
+def test_maven_does_not_require_bazel_target():
+    validate_analyze_ecosystem(_params(ecosystem="maven", bazel_target=None))
 
 
 def test_normalizes_bazel_mode():
@@ -69,10 +89,124 @@ def test_pipeline_kwargs_forwards_set_toolbox_flags():
     assert kwargs["bazel_mode"] == "WORKSPACE"
 
 
-def test_pipeline_kwargs_forwards_gradle_project_when_present():
-    kwargs = da_pipeline_kwargs(_params(gradle_project=":app"))
-    assert kwargs["gradle_project"] == ":app"
+def test_pipeline_kwargs_does_not_forward_other_eco_attrs():
+    kwargs = da_pipeline_kwargs(_params())
+    assert "gradle_project" not in kwargs
+    assert "maven_path" not in kwargs
+
+
+def test_maven_pipeline_kwargs_force_build():
+    kwargs = da_pipeline_kwargs(
+        _params(
+            ecosystem="maven",
+            bazel_target=None,
+            force_pipeline_build=True,
+            maven_path="./mvnw",
+        )
+    )
+    assert kwargs == {
+        "ecosystem": "maven",
+        "maven_path": "./mvnw",
+        "force_pipeline_build": True,
+    }
+
+
+def test_maven_auto_detects_mvnw(tmp_path):
+    wrapper = tmp_path / "mvnw"
+    wrapper.write_text("#!/bin/sh\n")
+    params = _params(ecosystem="maven", bazel_target=None, path=str(tmp_path))
+    validate_analyze_ecosystem(params)
+    assert params.maven_path == "./mvnw"
+
+
+def test_maven_prefers_cmd_wrapper_on_windows(tmp_path):
+    (tmp_path / "mvnw").write_text("#!/bin/sh\n")
+    (tmp_path / "mvnw.cmd").write_text("@echo off\n")
+    params = _params(ecosystem="maven", bazel_target=None, path=str(tmp_path))
+    with patch(
+        "workbench_agent.utilities.analyze.ecosystems.maven.os.name", "nt"
+    ):
+        validate_analyze_ecosystem(params)
+    assert params.maven_path == "./mvnw.cmd"
+
+
+def test_maven_falls_back_to_shell_wrapper_on_windows(tmp_path):
+    (tmp_path / "mvnw").write_text("#!/bin/sh\n")
+    params = _params(ecosystem="maven", bazel_target=None, path=str(tmp_path))
+    with patch(
+        "workbench_agent.utilities.analyze.ecosystems.maven.os.name", "nt"
+    ):
+        validate_analyze_ecosystem(params)
+    assert params.maven_path == "./mvnw"
+
+
+def test_maven_uses_cmd_wrapper_when_it_is_the_only_one(tmp_path):
+    (tmp_path / "mvnw.cmd").write_text("@echo off\n")
+    params = _params(ecosystem="maven", bazel_target=None, path=str(tmp_path))
+    validate_analyze_ecosystem(params)
+    assert params.maven_path == "./mvnw.cmd"
+
+
+def test_maven_respects_explicit_maven_path(tmp_path):
+    wrapper = tmp_path / "mvnw"
+    wrapper.write_text("#!/bin/sh\n")
+    params = _params(
+        ecosystem="maven",
+        bazel_target=None,
+        path=str(tmp_path),
+        maven_path="/usr/bin/mvn",
+    )
+    validate_analyze_ecosystem(params)
+    assert params.maven_path == "/usr/bin/mvn"
 
 
 def test_scope_label_is_bazel_target():
     assert ecosystem_scope_label(_params()) == "//app:bin"
+
+
+def test_autodetect_maven_from_pom(tmp_path, capsys):
+    (tmp_path / "pom.xml").write_text("<project/>")
+    params = _params(ecosystem=None, bazel_target=None, path=str(tmp_path))
+    spec = validate_analyze_ecosystem(params)
+    assert spec.name == "maven"
+    assert params.ecosystem == "maven"
+    assert "Detected maven project" in capsys.readouterr().out
+
+
+def test_autodetect_bazel_from_module(tmp_path, capsys):
+    (tmp_path / "MODULE.bazel").write_text("module(name = 'app')")
+    params = _params(ecosystem=None, path=str(tmp_path))
+    spec = validate_analyze_ecosystem(params)
+    assert spec.name == "bazel"
+    assert "Detected bazel project" in capsys.readouterr().out
+
+
+def test_autodetect_rejects_multiple_tools(tmp_path):
+    (tmp_path / "pom.xml").write_text("<project/>")
+    (tmp_path / "WORKSPACE").write_text("")
+    with pytest.raises(ValidationError, match="Several build tools"):
+        validate_analyze_ecosystem(
+            _params(ecosystem=None, path=str(tmp_path))
+        )
+
+
+def test_autodetect_rejects_empty_directory(tmp_path):
+    with pytest.raises(ValidationError, match="No supported build tool"):
+        validate_analyze_ecosystem(
+            _params(ecosystem=None, bazel_target=None, path=str(tmp_path))
+        )
+
+
+def test_explicit_ecosystem_skips_autodetect(tmp_path, capsys):
+    (tmp_path / "pom.xml").write_text("<project/>")
+    (tmp_path / "WORKSPACE").write_text("")
+    params = _params(ecosystem="maven", bazel_target=None, path=str(tmp_path))
+    spec = validate_analyze_ecosystem(params)
+    assert spec.name == "maven"
+    assert capsys.readouterr().out == ""
+
+
+def test_scope_label_maven_is_ecosystem_name():
+    assert (
+        ecosystem_scope_label(_params(ecosystem="maven", bazel_target=None)) == "maven"
+    )

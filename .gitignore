@@ -44,6 +44,9 @@ tests/api/recorded/
 .pytest_cache/
 __pycache__/
 
+# OpenSpec CLI (package-lock.json is committed)
+node_modules/
+
 # Mypy
 .mypy_cache/
 results.json

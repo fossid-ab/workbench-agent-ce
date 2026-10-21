@@ -20,7 +20,10 @@ def parse_cmdline_args(argv=None):
         ValidationError: If validation fails
     """
     # Import here to avoid circular imports
-    from workbench_agent.utilities.analyze.ecosystem import supported_ecosystems
+    from workbench_agent.utilities.analyze.ecosystem import (
+        register_ecosystem_cli_arguments,
+        supported_ecosystems,
+    )
 
     from .parent_parsers import create_common_parent_parsers, create_projectscan_parser
     from .validators import validate_parsed_args
@@ -154,24 +157,29 @@ Examples:
     analyze_parser = subparsers.add_parser(
         "analyze",
         help=(
-            "Run FossID Toolbox DA pipeline mode and import results into "
-            "Workbench (Bazel: also KB-scans first-party sources)"
+            "Run FossID Toolbox DA pipeline and import results into "
+            "Workbench (with first-party KB scan)"
         ),
         description=(
             "Analyze a build-tool project with FossID Toolbox DA pipeline "
             "mode (fossid-toolbox da) and import the dependency graph into "
             "a Workbench scan.\n\n"
             "Requires FossID Toolbox 1.7.11 or later.\n\n"
-            "For Bazel, first-party sources of --bazel-target are also "
-            "KB-scanned into the same Project/Scan so managed packages "
-            "(Toolbox DA) and unmanaged/source matches (KB) land together. "
-            "Toolbox reports which sources feed the target "
-            "(--emit-source-files); the agent stages and scans exactly "
-            "that list.\n\n"
+            "Pass -e to force a build tool. When -e is omitted, analyze "
+            "detects the tool from the project directory when exactly one "
+            "is present (pom.xml for Maven, MODULE.bazel or WORKSPACE for "
+            "Bazel).\n\n"
+            "Managed packages come from the Toolbox graph. First-party "
+            "sources are KB-scanned into the same Project/Scan:\n"
+            "  - Bazel: Toolbox lists sources for --bazel-target "
+            "(--emit-source-files)\n"
+            "  - Maven: the tree under --path is KB-scanned "
+            "(use --path to scope monorepos; --exclude for noise)\n\n"
             "By default those sources are uploaded (regular scan). Pass "
             "--blind-scan to hash with FossID Toolbox instead.\n\n"
-            "Pipeline flags are passed through to fossid-toolbox da "
-            "--pipeline. First pass supports Bazel only (-e bazel)."
+            "Supported ecosystems: "
+            + ", ".join(supported_ecosystems())
+            + "."
         ),
         formatter_class=RawTextHelpFormatter,
         parents=[
@@ -185,31 +193,40 @@ Examples:
             parent_parsers["id_assist_control"],
             parent_parsers["identification_control"],
             parent_parsers["monitoring"],
+            parent_parsers["analyze_shared"],
         ],
         epilog="""
 Examples:
-  # From the workspace root (--path defaults to cwd)
+  # Bazel — target-scoped sources + dependency graph
   workbench-agent analyze \\
       -e bazel --bazel-target //myapp:app \\
       --project "MyApp" --scan "myapp@1.0.0"
 
-  # Same, but blind-scan first-party sources (hashes only)
+  # Maven — -e is optional when the directory contains only pom.xml
   workbench-agent analyze \\
-      --path /path/to/workspace -e bazel --bazel-target //myapp:app \\
-      --project "MyApp" --scan "myapp@1.0.0" \\
-      --blind-scan
+      --path ./services/payments \\
+      --project "Payments" --scan "payments@1.0.0"
 
-  # Custom fossid-toolbox / bazel binaries
+  # Maven from repo root with extra KB excludes
   workbench-agent analyze \\
-      --path . -e bazel --bazel-target //:bin \\
-      --fossid-toolbox-path /opt/fossid/fossid-toolbox --bazel-path /usr/local/bin/bazelisk \\
-      --project "MyApp" --scan "bin@HEAD"
+      -e maven --exclude node_modules,.git \\
+      --project "MyApp" --scan "main@HEAD"
 
-  # Dependency graph only (no first-party KB scan)
+  # Blind-scan first-party sources (hashes only)
   workbench-agent analyze \\
       -e bazel --bazel-target //myapp:app \\
       --project "MyApp" --scan "myapp@1.0.0" \\
-      --dependency-analysis-only
+      --blind-scan
+
+  # Dependency graph only (no first-party KB scan)
+  workbench-agent analyze \\
+      -e maven --dependency-analysis-only \\
+      --project "MyApp" --scan "myapp@1.0.0"
+
+  # Buildless: manifest resolution for any Toolbox DA ecosystem
+  workbench-agent analyze \\
+      --buildless --path . \\
+      --project "MyApp" --scan "manifests@HEAD"
 """,
     )
     analyze_parser.add_argument(
@@ -225,37 +242,13 @@ Examples:
         "--ecosystem",
         dest="ecosystem",
         help=(
-            "Build-tool ecosystem for Toolbox DA pipeline mode. "
-            "First pass: bazel only (maven/gradle coming later)."
+            "Package manager for Toolbox DA. Pipeline mode "
+            f"({', '.join(supported_ecosystems())}) detects a single build "
+            "tool when this is omitted. --buildless accepts any ecosystem "
+            "Toolbox DA supports and, when omitted, scans every manifest."
         ),
-        required=True,
-        choices=list(supported_ecosystems()),
+        required=False,
         metavar="ECOSYSTEM",
-    )
-    analyze_parser.add_argument(
-        "--bazel-target",
-        dest="bazel_target",
-        help=(
-            "Bazel build target whose deps() are analyzed, "
-            "e.g. //myapp:app (required for -e bazel)"
-        ),
-        required=False,
-        metavar="TARGET",
-    )
-    analyze_parser.add_argument(
-        "--bazel-path",
-        dest="bazel_path",
-        help="Path to the bazel executable (default: bazel/bazelisk on PATH)",
-        required=False,
-        metavar="PATH",
-    )
-    analyze_parser.add_argument(
-        "--bazel-mode",
-        dest="bazel_mode",
-        help="Force Bazel mode: BZLMOD or WORKSPACE (auto-detected if omitted)",
-        required=False,
-        choices=["BZLMOD", "WORKSPACE", "bzlmod", "workspace"],
-        metavar="MODE",
     )
     analyze_parser.add_argument(
         "-c",
@@ -268,6 +261,7 @@ Examples:
         required=False,
         metavar="PATH",
     )
+    register_ecosystem_cli_arguments(analyze_parser)
     analyze_parser.add_argument(
         "--da-timeout",
         dest="da_timeout",

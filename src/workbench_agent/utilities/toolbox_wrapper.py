@@ -44,6 +44,42 @@ class DaPipelineResult:
     sources_path: Optional[str] = None
 
 
+# Namespace / kwargs attrs → Toolbox da --pipeline flags (string values).
+_DA_PIPELINE_STRING_FLAGS = (
+    ("ecosystem", "--ecosystem"),
+    ("bazel_target", "--bazel-target"),
+    ("bazel_path", "--bazel-path"),
+    ("bazel_mode", "--bazel-mode"),
+    ("gradle_project", "--gradle-project"),
+    ("maven_path", "--maven-path"),
+    ("gradle_path", "--gradle-path"),
+)
+
+
+def build_da_manifest_args(
+    *,
+    input_path: str,
+    output_dir: str,
+    ecosystem: Optional[str] = None,
+) -> List[str]:
+    """
+    Build the argument list for a manifest scan (``fossid-toolbox da``
+    without ``--pipeline``).
+
+    Toolbox resolves coordinates from the manifests under ``input_path``.
+    ``--ecosystem`` limits the scan to one package manager when set.
+    """
+    args = [
+        "--input",
+        input_path,
+        "--output",
+        output_dir,
+    ]
+    if ecosystem:
+        args.extend(["--ecosystem", ecosystem])
+    return args
+
+
 def build_da_pipeline_args(
     *,
     input_path: str,
@@ -53,6 +89,8 @@ def build_da_pipeline_args(
     bazel_path: Optional[str] = None,
     bazel_mode: Optional[str] = None,
     gradle_project: Optional[str] = None,
+    maven_path: Optional[str] = None,
+    gradle_path: Optional[str] = None,
     force_pipeline_build: bool = False,
     emit_source_files: bool = False,
 ) -> List[str]:
@@ -69,16 +107,19 @@ def build_da_pipeline_args(
         "--output",
         output_dir,
     ]
-    if ecosystem:
-        args.extend(["--ecosystem", ecosystem])
-    if bazel_target:
-        args.extend(["--bazel-target", bazel_target])
-    if bazel_path:
-        args.extend(["--bazel-path", bazel_path])
-    if bazel_mode:
-        args.extend(["--bazel-mode", bazel_mode])
-    if gradle_project:
-        args.extend(["--gradle-project", gradle_project])
+    values = {
+        "ecosystem": ecosystem,
+        "bazel_target": bazel_target,
+        "bazel_path": bazel_path,
+        "bazel_mode": bazel_mode,
+        "gradle_project": gradle_project,
+        "maven_path": maven_path,
+        "gradle_path": gradle_path,
+    }
+    for attr, flag in _DA_PIPELINE_STRING_FLAGS:
+        value = values.get(attr)
+        if value is not None and value != "":
+            args.extend([flag, str(value)])
     if force_pipeline_build:
         args.append("--force-pipeline-build")
     if emit_source_files:
@@ -443,6 +484,8 @@ class ToolboxWrapper:
         bazel_path: Optional[str] = None,
         bazel_mode: Optional[str] = None,
         gradle_project: Optional[str] = None,
+        maven_path: Optional[str] = None,
+        gradle_path: Optional[str] = None,
         force_pipeline_build: bool = False,
         emit_source_files: bool = False,
         fossid_conf_path: Optional[str] = None,
@@ -467,9 +510,61 @@ class ToolboxWrapper:
             bazel_path=bazel_path,
             bazel_mode=bazel_mode,
             gradle_project=gradle_project,
+            maven_path=maven_path,
+            gradle_path=gradle_path,
             force_pipeline_build=force_pipeline_build,
             emit_source_files=emit_source_files,
         )
+        return self._execute_da(
+            args,
+            output_dir=output_dir,
+            fossid_conf_path=fossid_conf_path,
+            timeout=timeout,
+            emit_source_files=emit_source_files,
+            mode_label="pipeline",
+        )
+
+    def run_da_manifest_scan(
+        self,
+        *,
+        input_path: str,
+        ecosystem: Optional[str] = None,
+        fossid_conf_path: Optional[str] = None,
+        timeout: Optional[int] = None,
+    ) -> DaPipelineResult:
+        """
+        Run ``fossid-toolbox da`` without ``--pipeline`` and return the report.
+
+        Manifest resolution covers every ecosystem Toolbox DA supports.
+        No first-party sidecar is written. Callers own cleanup of
+        ``DaPipelineResult.output_dir``.
+        """
+        output_dir = tempfile.mkdtemp(prefix="workbench_agent_da_")
+        args = build_da_manifest_args(
+            input_path=input_path,
+            output_dir=output_dir,
+            ecosystem=ecosystem,
+        )
+        return self._execute_da(
+            args,
+            output_dir=output_dir,
+            fossid_conf_path=fossid_conf_path,
+            timeout=timeout,
+            emit_source_files=False,
+            mode_label="manifest",
+        )
+
+    def _execute_da(
+        self,
+        args: List[str],
+        *,
+        output_dir: str,
+        fossid_conf_path: Optional[str],
+        timeout: Optional[int],
+        emit_source_files: bool,
+        mode_label: str,
+    ) -> DaPipelineResult:
+        """Run ``fossid-toolbox da`` and return the written report."""
         cmd = [self.toolbox_path]
         if fossid_conf_path:
             cmd.extend(["-c", fossid_conf_path])
@@ -477,7 +572,7 @@ class ToolboxWrapper:
         cmd.extend(args)
 
         run_timeout = timeout if timeout is not None else int(self.timeout)
-        logger.debug("Running Toolbox DA pipeline: %s", " ".join(cmd))
+        logger.debug("Running Toolbox DA %s: %s", mode_label, " ".join(cmd))
         print("Scanning Project with Toolbox Dependency Analysis...")
 
         try:
@@ -493,7 +588,7 @@ class ToolboxWrapper:
         except subprocess.TimeoutExpired as e:
             shutil.rmtree(output_dir, ignore_errors=True)
             raise ProcessError(
-                f"Toolbox DA pipeline timed out after {run_timeout} seconds"
+                f"Toolbox DA {mode_label} scan timed out after {run_timeout} seconds"
             ) from e
         except OSError as e:
             shutil.rmtree(output_dir, ignore_errors=True)
@@ -510,7 +605,7 @@ class ToolboxWrapper:
             detail = (result.stderr or result.stdout or "").strip()
             shutil.rmtree(output_dir, ignore_errors=True)
             raise ProcessError(
-                f"Toolbox DA pipeline failed with exit code {result.returncode}"
+                f"Toolbox DA {mode_label} scan failed with exit code {result.returncode}"
                 + (f": {detail}" if detail else "")
             )
 
@@ -518,7 +613,7 @@ class ToolboxWrapper:
         if not os.path.isfile(report_path):
             shutil.rmtree(output_dir, ignore_errors=True)
             raise ProcessError(
-                f"Toolbox DA pipeline completed but {DA_REPORT_NAME} was "
+                f"Toolbox DA {mode_label} scan completed but {DA_REPORT_NAME} was "
                 f"not written under {output_dir}"
             )
 
@@ -528,7 +623,7 @@ class ToolboxWrapper:
             else None
         )
 
-        logger.debug("Toolbox DA pipeline wrote %s", report_path)
+        logger.debug("Toolbox DA %s scan wrote %s", mode_label, report_path)
         return DaPipelineResult(
             report_path=report_path,
             output_dir=output_dir,

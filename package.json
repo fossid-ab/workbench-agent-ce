@@ -1,0 +1,12 @@
+{
+  "name": "workbench-agent-ce-openspec",
+  "private": true,
+  "description": "Local OpenSpec tooling for Workbench Agent CE. Not published.",
+  "devDependencies": {
+    "@fission-ai/openspec": "^1.4.1"
+  },
+  "scripts": {
+    "openspec": "openspec",
+    "openspec:validate": "openspec validate --all --strict"
+  }
+}

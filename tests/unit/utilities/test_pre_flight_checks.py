@@ -140,32 +140,47 @@ class TestErrorPolicy:
         client.status_check.check_scan_status.assert_called_once()
         client.status_check.check_dependency_analysis_status.assert_called_once()
 
-    def test_evaluate_gates_propagates_timeout(self):
+    @pytest.mark.parametrize(
+        "preflight",
+        [
+            evaluate_gates_pre_flight_check,
+            show_results_pre_flight_check,
+            download_reports_pre_flight_check,
+        ],
+    )
+    def test_read_commands_propagate_timeout(self, preflight):
         client = _client()
         client.status_check.check_scan_status.side_effect = ProcessTimeoutError(
             "KB timed out"
         )
 
         with pytest.raises(ProcessTimeoutError, match="KB timed out"):
-            evaluate_gates_pre_flight_check(client, "SCAN", _params())
+            preflight(client, "SCAN", _params())
 
-    def test_show_results_swallows_errors(self):
+    @pytest.mark.parametrize(
+        "preflight",
+        [
+            evaluate_gates_pre_flight_check,
+            show_results_pre_flight_check,
+            download_reports_pre_flight_check,
+        ],
+    )
+    def test_read_commands_propagate_status_errors(self, preflight):
         client = _client()
         client.status_check.check_scan_status.side_effect = RuntimeError("no status")
-        client.status_check.check_dependency_analysis_status.side_effect = RuntimeError(
-            "no da"
-        )
+
+        with pytest.raises(RuntimeError, match="no status"):
+            preflight(client, "SCAN", _params())
+
+    def test_read_commands_wait_when_kb_active(self):
+        client = _client()
+        client.status_check.check_scan_status.side_effect = [_active(), _idle()]
 
         show_results_pre_flight_check(client, "SCAN", _params())
 
-    def test_download_reports_swallows_errors(self):
-        client = _client()
-        client.status_check.check_scan_status.side_effect = RuntimeError("no status")
-        client.status_check.check_dependency_analysis_status.side_effect = RuntimeError(
-            "no da"
-        )
-
-        download_reports_pre_flight_check(client, "SCAN", _params())
+        kwargs = _wait_kwargs(client.status_check.check_scan_status)
+        assert kwargs["wait_retry_count"] == 5
+        assert kwargs["wait_retry_interval"] == 2
 
 
 class TestImportDaQuiet:

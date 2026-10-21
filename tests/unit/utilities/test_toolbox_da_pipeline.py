@@ -55,6 +55,38 @@ class TestBuildDaPipelineArgs:
         )
         assert "--force-pipeline-build" in args
 
+    def test_manifest_scan_omits_pipeline(self):
+        from workbench_agent.utilities.toolbox_wrapper import build_da_manifest_args
+
+        args = build_da_manifest_args(
+            input_path="/ws",
+            output_dir="/tmp/out",
+        )
+        assert args == ["--input", "/ws", "--output", "/tmp/out"]
+        assert "--pipeline" not in args
+
+    def test_manifest_scan_passes_ecosystem(self):
+        from workbench_agent.utilities.toolbox_wrapper import build_da_manifest_args
+
+        args = build_da_manifest_args(
+            input_path="/ws",
+            output_dir="/tmp/out",
+            ecosystem="npm",
+        )
+        assert "--ecosystem" in args
+        assert "npm" in args
+        assert "--pipeline" not in args
+
+    def test_maven_path_flag(self):
+        args = build_da_pipeline_args(
+            input_path="/p",
+            output_dir="/o",
+            ecosystem="maven",
+            maven_path="./mvnw",
+        )
+        assert "--maven-path" in args
+        assert "./mvnw" in args
+
     def test_emit_source_files_is_opt_in(self):
         without = build_da_pipeline_args(input_path="/p", output_dir="/o")
         assert "--emit-source-files" not in without

@@ -1,0 +1,42 @@
+schema: spec-driven
+
+context: |
+  Workbench Agent CE is a Python 3.10+ CLI (`workbench-agent`) for FossID Workbench.
+  OpenSpec covers product behavior owned by CE: command handlers, CE services, and
+  utilities. The in-tree HTTP layer under src/workbench_agent/api/ is an extractable
+  SDK and is out of scope. Do not copy Workbench request or response field schemas
+  into specs; reference existing api/clients schema docs only when a CE flag or
+  user-facing outcome depends on them.
+
+  Baseline specs live in openspec/specs/<capability>/spec.md. Command capabilities
+  are named <command>-command and are the collaboration surface for that handler.
+  Shared capabilities define reusable service and utility contracts. A command spec
+  MUST reference a shared capability instead of restating it.
+
+  Active change proposals live in openspec/changes/<kebab-name>/ and use delta
+  specs. Completed changes archive to openspec/changes/archive/YYYY-MM-DD-<name>/.
+
+  Handlers return bool. main.py maps True to exit 0. evaluate-gates maps False to
+  exit 1 with a gates-failed message. Configuration and authentication failures
+  exit 2. Other handler failures exit 1.
+
+  Verify behavior with pytest markers: unit, integration, functional,
+  requires_workbench, and requires_toolbox. Functional tests need a real Workbench.
+
+rules:
+  proposal:
+    - Keep proposals under 500 words.
+    - Name the command or shared capability being changed.
+    - Include a Non-goals section.
+    - Do not propose HTTP client or Workbench wire-schema work unless the user explicitly expands scope.
+  specs:
+    - Use requirement and scenario headings that OpenSpec can validate.
+    - Write normative statements with SHALL or MUST.
+    - Keep command-specific behavior in the command spec and shared behavior in the shared capability.
+    - Reference shared capabilities by directory name instead of duplicating their requirements.
+  design:
+    - Name the handler, service, and utility modules affected.
+    - Keep the API/SDK boundary explicit.
+  tasks:
+    - Break work into reviewable chunks.
+    - Include the unit or functional tests that prove each behavior change.

@@ -95,7 +95,7 @@ def handle_download_reports(client: "WorkbenchClient", params: argparse.Namespac
         )
         project_code = targets.project_code
 
-    # Check scan completion status for scan-scope reports
+    # Wait until the scan is idle before scan-scope reports (errors abort)
     if params.report_scope == "scan" and scan_code:
         download_reports_pre_flight_check(client, scan_code, params)
 

@@ -7,6 +7,7 @@ import pytest
 
 from workbench_agent.exceptions import ValidationError
 from workbench_agent.handlers.analyze import handle_analyze
+from workbench_agent.utilities.analyze.first_party import ResolvedFirstParty
 from workbench_agent.utilities.toolbox_wrapper import DaPipelineResult
 
 
@@ -26,6 +27,9 @@ def _params(**overrides):
         bazel_target="//app:bin",
         bazel_path=None,
         bazel_mode=None,
+        maven_path=None,
+        force_pipeline_build=False,
+        exclude=None,
         da_timeout=3600,
         blind_scan=False,
         no_wait=False,
@@ -72,11 +76,15 @@ def _stub_toolbox(mock_wrapper_cls, pipeline_result=None):
     return mock_wrapper
 
 
+def _staged_sidecar():
+    return ResolvedFirstParty(scan_root="/tmp/stage", owned=True)
+
+
 class TestHandleAnalyze:
-    def test_rejects_non_bazel(self):
+    def test_rejects_unknown_ecosystem(self):
         client = MagicMock()
-        with pytest.raises(ValidationError, match="supports -e bazel"):
-            handle_analyze(client, _params(ecosystem="maven"))
+        with pytest.raises(ValidationError, match="supports -e"):
+            handle_analyze(client, _params(ecosystem="npm"))
 
     def test_rejects_missing_target(self):
         client = MagicMock()
@@ -86,10 +94,9 @@ class TestHandleAnalyze:
     @patch("workbench_agent.handlers.analyze.shutil.rmtree")
     @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
     @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
-    @patch("workbench_agent.handlers.analyze.stage_sources", return_value="/tmp/stage")
     @patch(
-        "workbench_agent.handlers.analyze.load_first_party_sources",
-        return_value=["src/main.rs"],
+        "workbench_agent.handlers.analyze.resolve_first_party",
+        return_value=_staged_sidecar(),
     )
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
     @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
@@ -102,8 +109,7 @@ class TestHandleAnalyze:
         _resolve_toolbox,
         mock_wrapper_cls,
         mock_resolve,
-        mock_load,
-        mock_stage,
+        mock_first_party,
         mock_upload,
         mock_import,
         _rmtree,
@@ -115,7 +121,7 @@ class TestHandleAnalyze:
         ok = handle_analyze(client, _params())
 
         assert ok is True
-        mock_stage.assert_called_once()
+        mock_first_party.assert_called_once()
         mock_upload.assert_called_once()
         mock_import.assert_called_once()
         assert mock_upload.call_args.args[2] == "SCAN"
@@ -123,10 +129,9 @@ class TestHandleAnalyze:
     @patch("workbench_agent.handlers.analyze.shutil.rmtree")
     @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
     @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
-    @patch("workbench_agent.handlers.analyze.stage_sources", return_value="/tmp/stage")
     @patch(
-        "workbench_agent.handlers.analyze.load_first_party_sources",
-        return_value=["src/main.rs"],
+        "workbench_agent.handlers.analyze.resolve_first_party",
+        return_value=_staged_sidecar(),
     )
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
     @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
@@ -134,35 +139,77 @@ class TestHandleAnalyze:
         "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
         return_value="/toolbox",
     )
-    def test_sources_come_from_the_toolbox_da_sidecar(
+    def test_bazel_emits_source_files(
         self,
         _resolve_toolbox,
         mock_wrapper_cls,
         mock_resolve,
-        mock_load,
-        _stage,
+        mock_first_party,
         _upload,
         _import,
         _rmtree,
     ):
         mock_wrapper = _stub_toolbox(mock_wrapper_cls)
         mock_resolve.return_value = ("PROJ", "SCAN", True)
-        client = MagicMock()
 
-        handle_analyze(client, _params())
+        handle_analyze(MagicMock(), _params())
 
-        # Toolbox DA is asked for the source list, and the agent reads
-        # exactly the sidecar it reported — no bazel query of its own.
         assert mock_wrapper.run_da_pipeline.call_args.kwargs["emit_source_files"] is True
-        mock_load.assert_called_once_with("/tmp/out/first-party-sources.json")
+        assert mock_first_party.call_args.kwargs["sources_sidecar"] == (
+            "/tmp/out/first-party-sources.json"
+        )
+
+    @patch("workbench_agent.handlers.analyze.shutil.rmtree")
+    @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
+    @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_first_party",
+        return_value=ResolvedFirstParty(
+            scan_root="/ws", owned=False, archive_exclusions={"target", ".git"}
+        ),
+    )
+    @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
+    @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
+        return_value="/toolbox",
+    )
+    def test_maven_path_strategy_skips_emit_and_kb_scans_path(
+        self,
+        _resolve_toolbox,
+        mock_wrapper_cls,
+        mock_resolve,
+        mock_first_party,
+        mock_upload,
+        mock_import,
+        mock_rmtree,
+    ):
+        mock_wrapper = _stub_toolbox(mock_wrapper_cls)
+        mock_resolve.return_value = ("PROJ", "SCAN", True)
+
+        ok = handle_analyze(
+            MagicMock(), _params(ecosystem="maven", bazel_target=None)
+        )
+
+        assert ok is True
+        assert mock_wrapper.run_da_pipeline.call_args.kwargs["emit_source_files"] is False
+        assert mock_wrapper.run_da_pipeline.call_args.kwargs["ecosystem"] == "maven"
+        mock_upload.assert_called_once()
+        assert mock_upload.call_args.kwargs["archive_exclusions"] == {
+            "target",
+            ".git",
+        }
+        # Path strategy does not own the project directory — do not rmtree it.
+        for call in mock_rmtree.call_args_list:
+            assert call.args[0] != "/ws"
+        mock_import.assert_called_once()
 
     @patch("workbench_agent.handlers.analyze.shutil.rmtree")
     @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
     @patch("workbench_agent.handlers.analyze._run_blind_scan_sources", return_value=True)
-    @patch("workbench_agent.handlers.analyze.stage_sources", return_value="/tmp/stage")
     @patch(
-        "workbench_agent.handlers.analyze.load_first_party_sources",
-        return_value=["src/main.rs"],
+        "workbench_agent.handlers.analyze.resolve_first_party",
+        return_value=_staged_sidecar(),
     )
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
     @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
@@ -175,8 +222,7 @@ class TestHandleAnalyze:
         _resolve_toolbox,
         mock_wrapper_cls,
         mock_resolve,
-        mock_load,
-        mock_stage,
+        mock_first_party,
         mock_blind,
         mock_import,
         _rmtree,
@@ -216,8 +262,8 @@ class TestHandleAnalyze:
         client = MagicMock()
 
         with patch(
-            "workbench_agent.handlers.analyze.load_first_party_sources",
-            return_value=[],
+            "workbench_agent.handlers.analyze.resolve_first_party",
+            return_value=ResolvedFirstParty(scan_root=None, owned=False),
         ), patch(
             "workbench_agent.handlers.analyze._run_upload_sources"
         ) as mock_upload, patch(
@@ -251,8 +297,8 @@ class TestHandleAnalyze:
         client = MagicMock()
 
         with patch(
-            "workbench_agent.handlers.analyze.load_first_party_sources"
-        ) as mock_load, patch(
+            "workbench_agent.handlers.analyze.resolve_first_party"
+        ) as mock_first_party, patch(
             "workbench_agent.handlers.analyze._run_upload_sources"
         ) as mock_upload, patch(
             "workbench_agent.handlers.analyze._run_blind_scan_sources"
@@ -261,7 +307,7 @@ class TestHandleAnalyze:
 
         assert ok is True
         assert mock_wrapper.run_da_pipeline.call_args.kwargs["emit_source_files"] is False
-        mock_load.assert_not_called()
+        mock_first_party.assert_not_called()
         mock_upload.assert_not_called()
         mock_blind.assert_not_called()
         mock_import.assert_called_once()
@@ -269,10 +315,9 @@ class TestHandleAnalyze:
     @patch("workbench_agent.handlers.analyze.shutil.rmtree")
     @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
     @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
-    @patch("workbench_agent.handlers.analyze.stage_sources", return_value="/tmp/stage")
     @patch(
-        "workbench_agent.handlers.analyze.load_first_party_sources",
-        return_value=["src/main.rs"],
+        "workbench_agent.handlers.analyze.resolve_first_party",
+        return_value=_staged_sidecar(),
     )
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
     @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
@@ -287,8 +332,7 @@ class TestHandleAnalyze:
         _resolve_toolbox,
         mock_wrapper_cls,
         mock_resolve,
-        _load,
-        _stage,
+        _first_party,
         _upload,
         _import,
         _rmtree,
@@ -303,10 +347,9 @@ class TestHandleAnalyze:
     @patch("workbench_agent.handlers.analyze.shutil.rmtree")
     @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
     @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
-    @patch("workbench_agent.handlers.analyze.stage_sources", return_value="/tmp/stage")
     @patch(
-        "workbench_agent.handlers.analyze.load_first_party_sources",
-        return_value=["src/main.rs"],
+        "workbench_agent.handlers.analyze.resolve_first_party",
+        return_value=_staged_sidecar(),
     )
     @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
     @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
@@ -321,8 +364,7 @@ class TestHandleAnalyze:
         _resolve_toolbox,
         mock_wrapper_cls,
         mock_resolve,
-        _load,
-        _stage,
+        _first_party,
         _upload,
         _import,
         _rmtree,
@@ -335,3 +377,42 @@ class TestHandleAnalyze:
         handle_analyze(client, params)
 
         mock_preflight.assert_called_once_with(client, "SCAN", params)
+
+    @patch("workbench_agent.handlers.analyze.shutil.rmtree")
+    @patch("workbench_agent.handlers.analyze._import_da_report", return_value=True)
+    @patch("workbench_agent.handlers.analyze._run_upload_sources", return_value=True)
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_first_party",
+        return_value=ResolvedFirstParty(
+            scan_root="/ws", owned=False, archive_exclusions={".git"}
+        ),
+    )
+    @patch("workbench_agent.handlers.analyze.find_or_create_project_and_scan")
+    @patch("workbench_agent.handlers.analyze.ToolboxWrapper")
+    @patch(
+        "workbench_agent.handlers.analyze.resolve_fossid_toolbox_path",
+        return_value="/toolbox",
+    )
+    def test_buildless_uses_manifest_scan_and_path_kb(
+        self,
+        _resolve_toolbox,
+        mock_wrapper_cls,
+        mock_resolve,
+        _first_party,
+        mock_upload,
+        _import,
+        _rmtree,
+    ):
+        mock_wrapper = _stub_toolbox(mock_wrapper_cls)
+        mock_resolve.return_value = ("PROJ", "SCAN", True)
+
+        ok = handle_analyze(
+            MagicMock(),
+            _params(buildless=True, ecosystem="npm", bazel_target=None),
+        )
+
+        assert ok is True
+        mock_wrapper.run_da_manifest_scan.assert_called_once()
+        assert mock_wrapper.run_da_manifest_scan.call_args.kwargs["ecosystem"] == "npm"
+        mock_wrapper.run_da_pipeline.assert_not_called()
+        mock_upload.assert_called_once()

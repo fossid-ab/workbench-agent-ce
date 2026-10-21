@@ -33,5 +33,7 @@ The scanning commands (`scan`, `scan-git`, `blind-scan`, and the first-party KB 
 ## Contributing
 We welcome contributions to Workbench Agent CE! The best way to contribute is by reporting bugs or by suggesting improvements. Please create an Issue in this repository with bugs or improvement ideas.
 
+Command, service, and utility behavior is specified in [`openspec/`](openspec/README.md). Read the matching `openspec/specs/<command>-command/spec.md` before changing a handler, and propose behavior changes as an OpenSpec change rather than editing the baseline directly.
+
 We also welcome Pull requests! Please note that the Workbench-Agent is licensed under MIT license.
 The submission of your contribution implies that you agree with MIT licensing terms.

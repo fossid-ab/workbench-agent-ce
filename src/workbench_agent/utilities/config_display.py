@@ -50,17 +50,12 @@ _IDENTIFICATION_PARAMS = frozenset(
     }
 )
 
-_ANALYZE_PARAMS = frozenset(
-    {
-        "ecosystem",
-        "bazel_target",
-        "bazel_path",
-        "bazel_mode",
-        "fossid_conf_path",
-        "da_timeout",
-        "blind_scan",
-    }
-)
+def _analyze_params() -> frozenset:
+    """Analyze section keys (includes per-ecosystem pipeline attrs)."""
+    from workbench_agent.utilities.analyze.ecosystem import all_config_display_keys
+
+    return all_config_display_keys()
+
 
 _SCAN_OPERATION_PARAMS = frozenset(
     {
@@ -115,16 +110,17 @@ _REPORT_GENERATION_PARAMS = frozenset(
 # Params surfaced separately (connection block) or never displayed.
 _SKIPPED_PARAMS = frozenset({"command", "api_url", "api_user", "api_token"})
 
-_KNOWN_PARAMS = (
-    _AGENT_CONFIG_PARAMS
-    | _RESULT_DISPLAY_PARAMS
-    |     _IDENTIFICATION_PARAMS
-    | _ANALYZE_PARAMS
-    | _SCAN_OPERATION_PARAMS
-    | _PROJECTSCAN_PARAMS
-    | _SCAN_TARGET_PARAMS
-    | _REPORT_GENERATION_PARAMS
-)
+def _known_params() -> frozenset:
+    return (
+        _AGENT_CONFIG_PARAMS
+        | _RESULT_DISPLAY_PARAMS
+        | _IDENTIFICATION_PARAMS
+        | _analyze_params()
+        | _SCAN_OPERATION_PARAMS
+        | _PROJECTSCAN_PARAMS
+        | _SCAN_TARGET_PARAMS
+        | _REPORT_GENERATION_PARAMS
+    )
 
 
 # ===== Rendering primitives =====
@@ -180,7 +176,8 @@ def _print_scan_target(params: Any) -> None:
 
 def _print_analyze_parameters(params: Any) -> None:
     """Render the Analyze Parameters section."""
-    items = {k: v for k, v in _user_params(params).items() if k in _ANALYZE_PARAMS}
+    analyze_keys = _analyze_params()
+    items = {k: v for k, v in _user_params(params).items() if k in analyze_keys}
     _print_section("📦 Analyze Parameters:", items)
 
 
@@ -216,7 +213,8 @@ def _print_report_generation(params: Any) -> None:
 
 def _print_other_parameters(params: Any) -> None:
     """Render any params not claimed by a named group."""
-    items = {k: v for k, v in _user_params(params).items() if k not in _KNOWN_PARAMS}
+    known = _known_params()
+    items = {k: v for k, v in _user_params(params).items() if k not in known}
     _print_section("📋 Other Parameters:", items)
 
 

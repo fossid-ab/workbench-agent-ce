@@ -193,6 +193,7 @@ class ArgBuilder:
         path=None,
         ecosystem="bazel",
         bazel_target="//app:bin",
+        maven_path=None,
     ):
         self.args.extend(["analyze"])
         self.args.extend(self.global_args)
@@ -208,8 +209,10 @@ class ArgBuilder:
         )
         if path is not None:
             self.args.extend(["--path", path])
-        if bazel_target is not None:
+        if ecosystem == "bazel" and bazel_target is not None:
             self.args.extend(["--bazel-target", bazel_target])
+        if maven_path is not None:
+            self.args.extend(["--maven-path", maven_path])
         return self
 
     def flag(self, name, value=None):
