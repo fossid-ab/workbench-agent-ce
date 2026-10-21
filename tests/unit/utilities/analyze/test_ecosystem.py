@@ -1,6 +1,7 @@
 """Tests for the analyze ecosystem registry."""
 
 import argparse
+from unittest.mock import patch
 
 import pytest
 
@@ -116,6 +117,34 @@ def test_maven_auto_detects_mvnw(tmp_path):
     params = _params(ecosystem="maven", bazel_target=None, path=str(tmp_path))
     validate_analyze_ecosystem(params)
     assert params.maven_path == "./mvnw"
+
+
+def test_maven_prefers_cmd_wrapper_on_windows(tmp_path):
+    (tmp_path / "mvnw").write_text("#!/bin/sh\n")
+    (tmp_path / "mvnw.cmd").write_text("@echo off\n")
+    params = _params(ecosystem="maven", bazel_target=None, path=str(tmp_path))
+    with patch(
+        "workbench_agent.utilities.analyze.ecosystems.maven.os.name", "nt"
+    ):
+        validate_analyze_ecosystem(params)
+    assert params.maven_path == "./mvnw.cmd"
+
+
+def test_maven_falls_back_to_shell_wrapper_on_windows(tmp_path):
+    (tmp_path / "mvnw").write_text("#!/bin/sh\n")
+    params = _params(ecosystem="maven", bazel_target=None, path=str(tmp_path))
+    with patch(
+        "workbench_agent.utilities.analyze.ecosystems.maven.os.name", "nt"
+    ):
+        validate_analyze_ecosystem(params)
+    assert params.maven_path == "./mvnw"
+
+
+def test_maven_uses_cmd_wrapper_when_it_is_the_only_one(tmp_path):
+    (tmp_path / "mvnw.cmd").write_text("@echo off\n")
+    params = _params(ecosystem="maven", bazel_target=None, path=str(tmp_path))
+    validate_analyze_ecosystem(params)
+    assert params.maven_path == "./mvnw.cmd"
 
 
 def test_maven_respects_explicit_maven_path(tmp_path):

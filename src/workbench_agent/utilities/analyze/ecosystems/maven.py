@@ -12,16 +12,24 @@ from workbench_agent.utilities.analyze.registry import AnalyzeEcosystem, registe
 logger = logging.getLogger("workbench-agent")
 
 
+def _wrapper_names() -> tuple[str, ...]:
+    """Native wrapper first, then the other platform's script if that is all the repo ships."""
+    if os.name == "nt":
+        return ("mvnw.cmd", "mvnw")
+    return ("mvnw", "mvnw.cmd")
+
+
 def _prepare_maven(params: Namespace) -> None:
     """Prefer the project Maven wrapper when ``--maven-path`` is unset."""
     if getattr(params, "maven_path", None):
         return
     project = getattr(params, "path", None) or "."
-    for name in ("mvnw", "mvnw.cmd"):
+    for name in _wrapper_names():
         candidate = os.path.join(project, name)
         if os.path.isfile(candidate):
-            # Relative to project dir — FDA resolves against --input.
-            params.maven_path = f"./{name}" if name == "mvnw" else name
+            # ``./`` makes FDA resolve the wrapper against --input on every OS.
+            # A bare name would be a PATH lookup.
+            params.maven_path = f"./{name}"
             logger.info(
                 "Using Maven wrapper at %s (pass --maven-path to override)",
                 candidate,
@@ -34,8 +42,8 @@ def _add_maven_arguments(group: _ArgumentGroup) -> None:
         "--maven-path",
         dest="maven_path",
         help=(
-            "Path to mvn or the project wrapper (e.g. ./mvnw). "
-            "Default: ./mvnw under --path when present, else mvn on PATH"
+            "Path to mvn or the project wrapper (e.g. ./mvnw or ./mvnw.cmd). "
+            "Default: the wrapper under --path when present, else mvn on PATH"
         ),
         required=False,
         metavar="PATH",
