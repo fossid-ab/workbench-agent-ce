@@ -295,6 +295,44 @@ def import_sbom_pre_flight_check(
         logger.debug(f"Report import check skipped: {e}")
 
 
+def _wait_for_kb_and_da_idle(
+    client: "WorkbenchClient",
+    scan_code: str,
+    params: argparse.Namespace,
+) -> None:
+    """
+    Wait until KB scan and dependency analysis are idle.
+
+    Shared by read-command pre-flight checks. Timeout, API, and network
+    errors propagate so callers do not continue with unverified results.
+    """
+    print("\nEnsuring Scans are Complete...")
+
+    scan_status = client.status_check.check_scan_status(scan_code)
+    if scan_status.is_active:
+        print("KB Scan is still in progress, waiting for it to complete...")
+        client.status_check.check_scan_status(
+            scan_code,
+            wait=True,
+            wait_retry_count=params.scan_number_of_tries,
+            wait_retry_interval=params.scan_wait_time,
+        )
+    print("KB Scan has completed successfully.")
+
+    da_status = client.status_check.check_dependency_analysis_status(scan_code)
+    if da_status.is_active:
+        print("Dependency Analysis is still in progress, waiting for it to complete...")
+        client.status_check.check_dependency_analysis_status(
+            scan_code,
+            wait=True,
+            wait_retry_count=params.scan_number_of_tries,
+            wait_retry_interval=params.scan_wait_time,
+        )
+    print("Dependency Analysis has completed successfully.")
+
+    logger.info("Verified scan '%s' is idle for read operations.", scan_code)
+
+
 def show_results_pre_flight_check(
     client: "WorkbenchClient",
     scan_code: str,
@@ -303,12 +341,8 @@ def show_results_pre_flight_check(
     """
     Performs pre-flight checks for the show-results handler.
 
-    Ensures that scan processes are complete before displaying results.
-    This is a read-only operation, so it always checks.
-
-    Checks for:
-    - KB scan operations
-    - Dependency analysis operations
+    Waits for KB scan and dependency analysis. Errors propagate so results
+    are not fetched from an unverified scan.
 
     Args:
         client: The Workbench API client instance
@@ -317,50 +351,7 @@ def show_results_pre_flight_check(
             - scan_number_of_tries: Maximum attempts for waiting
             - scan_wait_time: Seconds to wait between attempts
     """
-    print("\nEnsuring Scans are Complete...")
-
-    try:
-        # Check if KB scan is complete
-        logger.debug("Checking KB scan completion status...")
-        try:
-            # Check if scan is active
-            scan_status = client.status_check.check_scan_status(scan_code)
-            if scan_status.is_active:
-                print("\nKB Scan is still in progress, " "waiting for it to complete...")
-                client.status_check.check_scan_status(
-                    scan_code,
-                    wait=True,
-                    wait_retry_count=params.scan_number_of_tries,
-                    wait_retry_interval=params.scan_wait_time,
-                )
-        except Exception as e:
-            # Older Workbench versions might not support status checking
-            logger.debug(f"Scan status check not available: {e}")
-
-        # Check if dependency analysis is complete (if applicable)
-        logger.debug("Checking dependency analysis completion status...")
-        try:
-            # Check if DA is active
-            da_status = client.status_check.check_dependency_analysis_status(scan_code)
-            if da_status.is_active:
-                print(
-                    "\nDependency Analysis is still in progress, " "waiting for it to complete..."
-                )
-                client.status_check.check_dependency_analysis_status(
-                    scan_code,
-                    wait=True,
-                    wait_retry_count=params.scan_number_of_tries,
-                    wait_retry_interval=params.scan_wait_time,
-                )
-        except Exception as e:
-            # Dependency analysis might not exist or be supported
-            logger.debug(f"Dependency analysis check not available: {e}")
-
-    except Exception as e:
-        logger.warning(
-            f"Could not verify scan completion for '{scan_code}': {e}. " f"Proceeding anyway."
-        )
-        print("\nWarning: Could not verify scan completion status. " "Results may be incomplete.")
+    _wait_for_kb_and_da_idle(client, scan_code, params)
 
 
 def evaluate_gates_pre_flight_check(
@@ -371,12 +362,8 @@ def evaluate_gates_pre_flight_check(
     """
     Performs pre-flight checks for the evaluate-gates handler.
 
-    Ensures that scan processes are complete before evaluating gates.
-    This is a read-only operation, so it always checks.
-
-    Checks for:
-    - KB scan operations
-    - Dependency analysis operations
+    Waits for KB scan and dependency analysis. Errors propagate; the gates
+    handler maps them to a failed command result without running gates.
 
     Args:
         client: The Workbench API client instance
@@ -390,31 +377,7 @@ def evaluate_gates_pre_flight_check(
         ApiError: If API operations fail
         NetworkError: If network operations fail
     """
-    print("\nEnsuring Scans are Complete...")
-
-    # Errors propagate to the caller; the gates handler is responsible
-    # for translating them into the right exit status.
-    scan_status = client.status_check.check_scan_status(scan_code)
-    if scan_status.is_active:
-        print("KB Scan is still in progress, " "waiting for it to complete...")
-        client.status_check.check_scan_status(
-            scan_code,
-            wait=True,
-            wait_retry_count=params.scan_number_of_tries,
-            wait_retry_interval=params.scan_wait_time,
-        )
-
-    da_status = client.status_check.check_dependency_analysis_status(scan_code)
-    if da_status.is_active:
-        print("Dependency Analysis is still in progress, " "waiting for it to complete...")
-        client.status_check.check_dependency_analysis_status(
-            scan_code,
-            wait=True,
-            wait_retry_count=params.scan_number_of_tries,
-            wait_retry_interval=params.scan_wait_time,
-        )
-
-    logger.info("Verified all scans are idle. Checking gates...")
+    _wait_for_kb_and_da_idle(client, scan_code, params)
 
 
 def download_reports_pre_flight_check(
@@ -425,12 +388,8 @@ def download_reports_pre_flight_check(
     """
     Performs pre-flight checks for the download-reports handler.
 
-    Ensures that scans are complete before generating reports.
-    Only applies to scan-scope reports.
-
-    Checks for:
-    - KB scan operations
-    - Dependency analysis operations
+    Waits for KB scan and dependency analysis before scan-scope reports.
+    Errors propagate so reports are not generated from an unverified scan.
 
     Args:
         client: The Workbench API client instance
@@ -440,43 +399,7 @@ def download_reports_pre_flight_check(
             - scan_wait_time: Seconds to wait between attempts
 
     Note:
-        This function is designed to be called only for scan-scope reports.
-        Project-scope reports don't require scan completion checks.
+        Call only for scan-scope reports. Project-scope reports do not use
+        this check today.
     """
-    print("\nEnsuring Scans are Complete...")
-
-    # Wait for KB scan
-    try:
-        scan_status = client.status_check.check_scan_status(scan_code)
-        if scan_status.is_active:
-            print("\nKB Scan is still in progress, " "waiting for it to complete...")
-            client.status_check.check_scan_status(
-                scan_code,
-                wait=True,
-                wait_retry_count=params.scan_number_of_tries,
-                wait_retry_interval=params.scan_wait_time,
-            )
-        print("KB Scan has completed successfully.")
-    except Exception as e:
-        print(f"\nWarning: KB Scan did not complete in time: {e}")
-        print("Reports may be incomplete.")
-        logger.warning(
-            f"Generating reports for scan '{scan_code}' with " f"incomplete KB scan: {e}"
-        )
-
-    # Wait for dependency analysis
-    try:
-        da_status = client.status_check.check_dependency_analysis_status(scan_code)
-        if da_status.is_active:
-            print("\nDependency Analysis is still in progress, " "waiting for it to complete...")
-            client.status_check.check_dependency_analysis_status(
-                scan_code,
-                wait=True,
-                wait_retry_count=params.scan_number_of_tries,
-                wait_retry_interval=params.scan_wait_time,
-            )
-        print("Dependency Analysis has completed successfully.")
-    except Exception as e:
-        print(f"\nWarning: Dependency Analysis did not complete in time: {e}")
-        print("Reports may have incomplete dependency information.")
-        logger.warning(f"Generating reports for scan '{scan_code}' with " f"incomplete DA: {e}")
+    _wait_for_kb_and_da_idle(client, scan_code, params)
