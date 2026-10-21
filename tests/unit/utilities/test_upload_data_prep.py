@@ -649,7 +649,7 @@ class TestPreparedScanTarget:
             with prepare_scan_target("/path/to/source") as upload_path:
                 assert upload_path == "/tmp/abc/source.zip"
                 mock_cleanup.assert_not_called()  # not yet
-            mock_create.assert_called_once_with("/path/to/source")
+            mock_create.assert_called_once_with("/path/to/source", exclusions=None)
             mock_cleanup.assert_called_once_with("/tmp/abc")
 
     def test_cleanup_runs_on_exception(self):
