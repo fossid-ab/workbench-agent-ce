@@ -34,28 +34,46 @@ A policy rule that is not blocked SHALL classify its license as allowed. A block
 - **THEN** the license is classified as conditional
 
 ### Requirement: License policy warnings
-When a policy is loaded, the command SHALL evaluate every distinct license id from the component's primary license and its detected licenses. Within the match block it MUST print a warning naming the license, the project, and the rule reason for each prohibited or conditional license, and SHALL print a note for each license the policy does not cover. Allowed licenses MUST NOT produce a warning. Policy findings MUST NOT change the command result.
+When a policy is loaded, the command SHALL check the component's license as reported in the component's primary `license` field and MUST ignore the per-detection license list. The match block MUST print one line each for prohibited and conditionally approved licenses, each with its reason, and SHALL print one line for licenses not in the policy. Matches with only allowed licenses MUST NOT print a policy line. Policy findings MUST NOT change the command result.
 
 #### Scenario: Prohibited license
 - **WHEN** a match's license is classified as prohibited
-- **THEN** the match block contains a policy violation warning with the license id, project, and reason, and the command returns true
+- **THEN** the match block lists it on the prohibited line with its reason, and the command returns true
 
 #### Scenario: Conditionally approved license
 - **WHEN** a match's license is classified as conditional
-- **THEN** the match block contains a conditional-approval warning instead of a violation
+- **THEN** the match block lists it on the conditionally approved line instead of the prohibited line
 
-#### Scenario: Secondary detected license
-- **WHEN** the primary license is allowed but another detected license id is prohibited
-- **THEN** the match block contains a violation warning for the detected license
+#### Scenario: Detected licenses ignored
+- **WHEN** the primary license is allowed but the per-detection list contains a prohibited license id
+- **THEN** no policy line is printed and the license line shows only the primary license
 
 #### Scenario: License not in policy
 - **WHEN** a match's license has no rule in the project policy
-- **THEN** the match block notes that the license is not covered by the project policy
+- **THEN** the match block lists it as not in policy
+
+### Requirement: Concise policy reasons
+A Workbench reason produced by a category rule SHALL be shown as the lowercase category name (for example `strong copyleft`). Any other reason MUST be shown unchanged.
+
+#### Scenario: Category rule reason
+- **WHEN** a rule reason states a Workbench category rule with condition `STRONG_COPYLEFT`
+- **THEN** the license is shown as `<license> (strong copyleft)`
+
+### Requirement: Policy summary
+When a policy is loaded and there is more than one match, the command SHALL print a summary after the match blocks naming the project, stating how many matches have prohibited and how many have conditionally approved licenses, and listing those license ids. When no match has such licenses, the summary SHALL say so.
+
+#### Scenario: Several matches with violations
+- **WHEN** two of two matches have a prohibited license
+- **THEN** the summary names the project and reports two of two matches with prohibited licenses
+
+#### Scenario: Single match
+- **WHEN** there is one match
+- **THEN** no summary is printed
 
 ## MODIFIED Requirements
 
 ### Requirement: Output format
-Without `--raw`, an empty result SHALL print `No matches found.` Otherwise the command SHALL print one block per result, preceded by a `Match N of M` header when there is more than one result. Each block MUST open with a line stating a full match for type `file`, or a partial match with the remote snippet hit count and local coverage percentage for type `partial`; any other type MUST state `Unknown match type.` A result without a component MUST print `No matches found.` for that block. The block SHALL then list, omitting any line whose field is absent: component name and version, supplier, primary license with any other distinct detected license ids, copyright statements, package URL, and matched remote file path. With `--raw`, the command MUST print the JSON result with indentation 2, MUST preserve non-ASCII characters, and MUST NOT use the human-readable formatter or print policy warnings.
+Without `--raw`, an empty result SHALL print `No matches found.` Otherwise the command SHALL print one block per result, preceded by a `Match N of M` header when there is more than one result. Each block MUST open with a line stating a full match for type `file`, or a partial match with the remote snippet hit count and local coverage percentage for type `partial`; any other type MUST state `Unknown match type.` A result without a component MUST print `No matches found.` for that block. The block SHALL then list, omitting any line whose field is absent: component name and version, supplier, license (the primary `license` field only), copyright statements, package URL, and matched remote file path. With `--raw`, the command MUST print the JSON result with indentation 2, MUST preserve non-ASCII characters, and MUST NOT use the human-readable formatter or print policy warnings.
 
 #### Scenario: Raw output
 - **WHEN** `--raw` is set

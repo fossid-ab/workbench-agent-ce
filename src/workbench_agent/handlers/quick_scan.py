@@ -2,6 +2,8 @@ import argparse
 import base64
 import json
 import logging
+import re
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from workbench_agent.services.resolver_service import ResolverService
@@ -43,17 +45,12 @@ def _headline(result: Dict[str, Any]) -> str:
 
 
 def _license_ids(component: Dict[str, Any]) -> List[str]:
-    """Distinct license ids: the primary license first, then detected ones."""
-    ids: List[str] = []
-    candidates: List[Any] = [component.get("license")]
-    licenses = component.get("licenses")
-    if isinstance(licenses, list):
-        candidates.extend(lic.get("id") for lic in licenses if isinstance(lic, dict))
-    for candidate in candidates:
-        license_id = _strip(candidate)
-        if license_id and license_id not in ids:
-            ids.append(license_id)
-    return ids
+    """The component's license as concluded by Workbench (``component.license``).
+
+    The per-detection ``licenses[]`` list is deliberately ignored.
+    """
+    license_id = _strip(component.get("license"))
+    return [license_id] if license_id else []
 
 
 def _copyrights(component: Dict[str, Any]) -> List[str]:
@@ -74,36 +71,100 @@ def _field(label: str, value: str) -> str:
     return f"  {label + ':':<{_LABEL_WIDTH}} {value}"
 
 
-def _policy_lines(license_ids: List[str], policy: LicensePolicy, project_label: str) -> List[str]:
-    if not license_ids:
-        return ["  ℹ No license detected; the project license policy could not be checked."]
-    lines: List[str] = []
+_CATEGORY_REASON = re.compile(r"Rule Type 'Category' and condition: '([A-Za-z_]+)'")
+
+
+def _short_reason(reason: str) -> str:
+    """Condense Workbench's category-rule boilerplate to the category name."""
+    match = _CATEGORY_REASON.search(reason)
+    if match:
+        return match.group(1).replace("_", " ").lower()
+    return reason
+
+
+@dataclass
+class _PolicyFindings:
+    prohibited: List[str] = field(default_factory=list)
+    conditional: List[str] = field(default_factory=list)
+    uncovered: List[str] = field(default_factory=list)
+
+
+def _policy_findings(license_ids: List[str], policy: LicensePolicy) -> _PolicyFindings:
+    findings = _PolicyFindings()
     for license_id in license_ids:
         rule = policy.lookup(license_id)
         if rule is None:
-            lines.append(
-                f"  ℹ {license_id} is not covered by the license policy of project "
-                f"'{project_label}'."
-            )
-            continue
-        reason = f" (reason: {rule.reason})" if rule.reason else ""
-        if rule.status is PolicyStatus.PROHIBITED:
-            lines.append(
-                f"  ⚠ Policy violation: {license_id} is prohibited in project "
-                f"'{project_label}'{reason}"
-            )
+            findings.uncovered.append(license_id)
+        elif rule.status is PolicyStatus.PROHIBITED:
+            findings.prohibited.append(license_id)
         elif rule.status is PolicyStatus.CONDITIONAL:
-            lines.append(
-                f"  ⚠ Policy warning: {license_id} is conditionally approved in project "
-                f"'{project_label}'{reason}"
-            )
+            findings.conditional.append(license_id)
+    return findings
+
+
+def _with_reasons(license_ids: List[str], policy: LicensePolicy) -> str:
+    parts = []
+    for license_id in license_ids:
+        rule = policy.lookup(license_id)
+        reason = _short_reason(rule.reason) if rule and rule.reason else ""
+        parts.append(f"{license_id} ({reason})" if reason else license_id)
+    return ", ".join(parts)
+
+
+def _policy_lines(license_ids: List[str], policy: LicensePolicy) -> List[str]:
+    if not license_ids:
+        return ["  ℹ No license detected; the license policy could not be checked."]
+    findings = _policy_findings(license_ids, policy)
+    lines: List[str] = []
+    if findings.prohibited:
+        lines.append(f"  ⚠ Prohibited by policy: {_with_reasons(findings.prohibited, policy)}")
+    if findings.conditional:
+        lines.append(f"  ⚠ Conditionally approved: {_with_reasons(findings.conditional, policy)}")
+    if findings.uncovered:
+        lines.append(f"  ℹ Not in policy: {', '.join(findings.uncovered)}")
+    return lines
+
+
+def _policy_summary(
+    results: List[Dict[str, Any]], policy: LicensePolicy, project_label: str
+) -> List[str]:
+    """Summarize policy findings across all matches."""
+    prohibited_matches = conditional_matches = 0
+    prohibited_ids: List[str] = []
+    conditional_ids: List[str] = []
+    for result in results:
+        component = result.get("component")
+        if not isinstance(component, dict) or not component:
+            continue
+        findings = _policy_findings(_license_ids(component), policy)
+        if findings.prohibited:
+            prohibited_matches += 1
+            prohibited_ids.extend(i for i in findings.prohibited if i not in prohibited_ids)
+        if findings.conditional:
+            conditional_matches += 1
+            conditional_ids.extend(i for i in findings.conditional if i not in conditional_ids)
+
+    total = len(results)
+    prefix = f"Policy summary for project '{project_label}':"
+    if not prohibited_matches and not conditional_matches:
+        return [f"{prefix} no prohibited or conditionally approved licenses in {total} matches."]
+    lines = [prefix]
+    if prohibited_matches:
+        lines.append(
+            f"  ⚠ {prohibited_matches} of {total} matches have prohibited licenses: "
+            f"{', '.join(sorted(prohibited_ids))}"
+        )
+    if conditional_matches:
+        lines.append(
+            f"  ⚠ {conditional_matches} of {total} matches have conditionally approved licenses: "
+            f"{', '.join(sorted(conditional_ids))}"
+        )
     return lines
 
 
 def _format_scan_result(
     result: Dict[str, Any],
     policy: Optional[LicensePolicy] = None,
-    project_label: Optional[str] = None,
 ) -> List[str]:
     """Format one quick-scan result as a block of lines."""
     component = result.get("component")
@@ -123,10 +184,7 @@ def _format_scan_result(
 
     license_ids = _license_ids(component)
     if license_ids:
-        license_text = license_ids[0]
-        if len(license_ids) > 1:
-            license_text += f" (also detected: {', '.join(license_ids[1:])})"
-        lines.append(_field("License", license_text))
+        lines.append(_field("License", license_ids[0]))
 
     for index, statement in enumerate(_copyrights(component)):
         lines.append(_field("Copyright", statement) if index == 0 else _field("", statement))
@@ -141,8 +199,10 @@ def _format_scan_result(
         lines.append(_field("Matched", remote_path))
 
     if policy is not None:
-        lines.append("")
-        lines.extend(_policy_lines(license_ids, policy, project_label or ""))
+        policy_lines = _policy_lines(license_ids, policy)
+        if policy_lines:
+            lines.append("")
+            lines.extend(policy_lines)
 
     return lines
 
@@ -232,7 +292,11 @@ def handle_quick_scan(
             print()
             if total > 1:
                 print(f"Match {index} of {total}")
-            for line in _format_scan_result(result, policy, project_label):
+            for line in _format_scan_result(result, policy):
+                print(line)
+        if policy is not None and total > 1:
+            print()
+            for line in _policy_summary(results, policy, project_label or ""):
                 print(line)
 
     logger.info("Quick scan completed successfully")

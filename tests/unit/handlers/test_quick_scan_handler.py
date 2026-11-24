@@ -83,7 +83,6 @@ class TestFormatScanResult:
         assert "Component:  nclick 0.0.0" in text
         assert "Supplier:   copypaste" in text
         assert "License:    MIT" in text
-        assert "also detected" not in text  # duplicate MIT ids collapse
         assert "Package:    pkg:pypi/nclick@0.0.0" in text
         assert "Matched:    nclick/model/cv.py" in text
 
@@ -107,7 +106,7 @@ class TestFormatScanResult:
         )
         assert _format_scan_result({"type": "file"}) == ["No matches found."]
 
-    def test_secondary_license_listed_and_checked(self):
+    def test_detected_licenses_are_ignored(self):
         result = copy.deepcopy(NCLICK)
         result["component"]["licenses"].append({"id": "GPL-3.0-only", "type": "LICENSE"})
         policy = LicensePolicy.from_workbench_rules(
@@ -116,29 +115,53 @@ class TestFormatScanResult:
                 {"id": "GPL-3.0-only", "blocked": True, "reason": "Strong copyleft"},
             ]
         )
-        text = "\n".join(_format_scan_result(result, policy, "acme"))
-        assert "License:    MIT (also detected: GPL-3.0-only)" in text
-        assert (
-            "⚠ Policy violation: GPL-3.0-only is prohibited in project 'acme' "
-            "(reason: Strong copyleft)" in text
-        )
-        assert "MIT is" not in text  # allowed licenses produce no line
+        lines = _format_scan_result(result, policy)
+        assert "  License:    MIT" in lines
+        assert not any("GPL-3.0-only" in line for line in lines)
+
+    def test_no_primary_license_ignores_detected(self):
+        result = copy.deepcopy(NCLICK)
+        del result["component"]["license"]
+        text = "\n".join(_format_scan_result(result, LicensePolicy()))
+        assert "License:" not in text
+        assert "No license detected" in text
 
     def test_conditional_warning(self):
         policy = LicensePolicy.from_workbench_rules(
             [{"id": "MIT", "blocked": True, "reason": "Conditionally approved: attribution"}]
         )
-        text = "\n".join(_format_scan_result(NCLICK, policy, "acme"))
-        assert "⚠ Policy warning: MIT is conditionally approved in project 'acme'" in text
-        assert "violation" not in text
+        text = "\n".join(_format_scan_result(NCLICK, policy))
+        assert "  ⚠ Conditionally approved: MIT (Conditionally approved: attribution)" in text
+        assert "Prohibited" not in text
 
     def test_uncovered_license_note(self):
-        text = "\n".join(_format_scan_result(NCLICK, LicensePolicy(), "acme"))
-        assert "MIT is not covered by the license policy of project 'acme'." in text
+        text = "\n".join(_format_scan_result(NCLICK, LicensePolicy()))
+        assert "  ℹ Not in policy: MIT" in text
+
+    def test_category_reason_is_condensed(self):
+        policy = LicensePolicy.from_workbench_rules(
+            [
+                {
+                    "id": "MIT",
+                    "blocked": True,
+                    "reason": "A Workbench policy with Rule Type 'Category' and condition: "
+                    "'STRONG_COPYLEFT' is prohibiting this license",
+                }
+            ]
+        )
+        text = "\n".join(_format_scan_result(NCLICK, policy))
+        assert "  ⚠ Prohibited by policy: MIT (strong copyleft)" in text
+        assert "Rule Type" not in text
+
+    def test_allowed_only_has_no_trailing_blank_line(self):
+        policy = LicensePolicy.from_workbench_rules([{"id": "MIT", "blocked": False}])
+        lines = _format_scan_result(NCLICK, policy)
+        assert lines[-1].strip() != ""
+        assert not any("⚠" in line or "ℹ" in line for line in lines)
 
     def test_no_license_with_policy(self):
         result = {"type": "file", "component": {"artifact": "libfoo"}}
-        text = "\n".join(_format_scan_result(result, LicensePolicy(), "acme"))
+        text = "\n".join(_format_scan_result(result, LicensePolicy()))
         assert "No license detected" in text
 
 
@@ -176,7 +199,32 @@ class TestHandleQuickScan:
         client.policy.download_project_policy_json.assert_called_once_with("PRJ-1")
         client.projects.create.assert_not_called()
         out = capsys.readouterr().out
-        assert out.count("⚠ Policy violation: MIT is prohibited in project 'acme'") == 2
+        assert out.count("⚠ Prohibited by policy: MIT (Not allowed here)") == 2
+        assert "Policy summary for project 'acme':" in out
+        assert "⚠ 2 of 2 matches have prohibited licenses: MIT" in out
+
+    def test_summary_when_no_policy_issues(self, client, params, capsys):
+        params.project_name = "acme"
+        client.policy.download_project_policy_json.return_value = [{"id": "MIT", "blocked": False}]
+        with patch("workbench_agent.handlers.quick_scan.ResolverService") as resolver_cls:
+            resolver_cls.return_value.find_project.return_value = "PRJ-1"
+            assert handle_quick_scan(client, params) is True
+        out = capsys.readouterr().out
+        assert (
+            "Policy summary for project 'acme': no prohibited or conditionally approved "
+            "licenses in 2 matches." in out
+        )
+
+    def test_no_summary_for_single_match(self, client, params, capsys):
+        params.project_name = "acme"
+        client.quick_scan.scan_one_file.return_value = [copy.deepcopy(NCLICK)]
+        client.policy.download_project_policy_json.return_value = [{"id": "MIT", "blocked": True}]
+        with patch("workbench_agent.handlers.quick_scan.ResolverService") as resolver_cls:
+            resolver_cls.return_value.find_project.return_value = "PRJ-1"
+            handle_quick_scan(client, params)
+        out = capsys.readouterr().out
+        assert "⚠ Prohibited by policy: MIT" in out
+        assert "Policy summary" not in out
 
     def test_project_code_used_as_label(self, client, params, capsys):
         params.project_code = "PRJ-9"
@@ -184,7 +232,9 @@ class TestHandleQuickScan:
             resolver_cls.return_value.find_project.return_value = "PRJ-9"
             handle_quick_scan(client, params)
         resolver_cls.return_value.find_project.assert_called_once_with(name=None, code="PRJ-9")
-        assert "project 'PRJ-9'" in capsys.readouterr().out
+        out = capsys.readouterr().out
+        assert "Loading license policy for project 'PRJ-9'" in out
+        assert "Policy summary for project 'PRJ-9'" in out
 
     def test_project_not_found_fails_before_scan(self, client, params):
         params.project_name = "missing"
@@ -207,6 +257,7 @@ class TestHandleQuickScan:
         assert "Salvadé" in out
         assert "\\u00e9" not in out
         assert "Component:" not in out
-        assert "Policy violation" not in out
+        assert "Prohibited by policy" not in out
+        assert "Policy summary" not in out
         payload = out[out.index("[") : out.rindex("]") + 1]
         assert json.loads(payload)[1]["component"]["artifact"] == "rumboost"

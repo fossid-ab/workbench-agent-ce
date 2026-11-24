@@ -6,8 +6,8 @@
 
 ## What Changes
 
-- **BREAKING (output only)**: Replace the one-line match sentence with a structured block per match: match type (with snippet hits and local coverage for partial matches), component name and version, supplier, license (plus other detected license ids), copyright, package URL, and matched remote file. Lines whose fields are absent are omitted.
-- Add optional `--project-name` / `--project` and `--project-code` to `quick-scan`. When given, the command resolves the project lookup-only (never creating it), downloads the project's license policy from Workbench once, and evaluates every distinct license id of each match against it.
+- **BREAKING (output only)**: Replace the one-line match sentence with a structured block per match: match type (with snippet hits and local coverage for partial matches), component name and version, supplier, license, copyright, package URL, and matched remote file. Lines whose fields are absent are omitted.
+- Add optional `--project-name` / `--project` and `--project-code` to `quick-scan`. When given, the command resolves the project lookup-only (never creating it), downloads the project's license policy from Workbench once, and evaluates each match's license against it.
 - Print a policy warning in the match block when a license is prohibited or conditionally approved, and a short note when a license is not covered by the policy. Policy findings are informational: the command still succeeds.
 - `--raw` keeps printing the API result unchanged, but no longer escapes non-ASCII characters.
 
