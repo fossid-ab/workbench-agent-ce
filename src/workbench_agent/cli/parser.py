@@ -25,7 +25,11 @@ def parse_cmdline_args(argv=None):
         supported_ecosystems,
     )
 
-    from .parent_parsers import create_common_parent_parsers, create_projectscan_parser
+    from .parent_parsers import (
+        create_common_parent_parsers,
+        create_projectscan_parser,
+        create_scan_control_parser,
+    )
     from .validators import validate_parsed_args
 
     # Create parent parsers for common argument groups
@@ -658,7 +662,7 @@ Examples:
         parents=[
             parent_parsers["cli_behaviors"],
             parent_parsers["workbench_connection"],
-            parent_parsers["scan_control"],
+            create_scan_control_parser(limit_default=6),
         ],
         epilog="""
 Examples:
@@ -667,6 +671,9 @@ Examples:
 
   # Quick scan a file (using --path)
   workbench-agent quick-scan --path ./src/main.py
+
+  # Quick scan and check matches against a project's license policy
+  workbench-agent quick-scan ./src/main.py --project-name "My Project"
 
   # Quick scan with raw JSON output
   workbench-agent quick-scan --path ./src/main.py --raw
@@ -684,6 +691,22 @@ Examples:
         help="Path to the local file to quick-scan.",
         required=False,
         metavar="PATH",
+    )
+    policy_args = quick_scan_parser.add_argument_group("License Policy")
+    policy_args.add_argument(
+        "--project-name",
+        "--project",
+        dest="project_name",
+        help=(
+            "Check matches against this Workbench project's license policy "
+            "(lookup only; the project is never created)."
+        ),
+        metavar="NAME",
+    )
+    policy_args.add_argument(
+        "--project-code",
+        help="Internal Workbench project code whose license policy to check against.",
+        metavar="CODE",
     )
     quick_scan_parser.add_argument(
         "--raw",

@@ -148,15 +148,15 @@ def create_identification_control_parser():
     return identification_control_parent
 
 
-def create_scan_control_parser():
+def create_scan_control_parser(limit_default: int = 10):
     """Create parent parser for scan control arguments."""
     scan_control_parent = argparse.ArgumentParser(add_help=False)
     scan_control_args = scan_control_parent.add_argument_group("Scan Configuration")
     scan_control_args.add_argument(
         "--limit",
-        help="Limits KB scan results (Default: 10)",
+        help=f"Limits KB scan results (Default: {limit_default})",
         type=int,
-        default=10,
+        default=limit_default,
     )
     scan_control_args.add_argument(
         "--sensitivity",

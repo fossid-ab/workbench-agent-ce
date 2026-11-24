@@ -286,3 +286,6 @@ def _validate_quick_scan_command(args: Namespace) -> None:
         raise ValidationError(f"Path does not exist or is not a file: {path}")
     # Normalize to args.path so downstream code can rely on it
     args.path = path
+    # Optional license policy project (lookup only)
+    if _strip(getattr(args, "project_name", None)) and _strip(getattr(args, "project_code", None)):
+        raise ValidationError("Provide --project-name or --project-code (not both)")
