@@ -6,6 +6,8 @@ import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+from workbench_agent.api.exceptions import ProjectNotFoundError, WorkbenchApiError
+from workbench_agent.exceptions import WorkbenchAgentError
 from workbench_agent.services.resolver_service import ResolverService
 from workbench_agent.utilities.error_handling import handler_error_wrapper
 from workbench_agent.utilities.license_policy import LicensePolicy, PolicyStatus
@@ -125,40 +127,50 @@ def _policy_lines(license_ids: List[str], policy: LicensePolicy) -> List[str]:
     return lines
 
 
+def _plural(count: int, noun: str) -> str:
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}es"
+
+
 def _policy_summary(
     results: List[Dict[str, Any]], policy: LicensePolicy, project_label: str
 ) -> List[str]:
-    """Summarize policy findings across all matches."""
-    prohibited_matches = conditional_matches = 0
+    """Summarize policy findings across all matches, citing match numbers."""
+    prohibited_matches: List[int] = []
+    conditional_matches: List[int] = []
     prohibited_ids: List[str] = []
     conditional_ids: List[str] = []
-    for result in results:
+    for number, result in enumerate(results, start=1):
         component = result.get("component")
         if not isinstance(component, dict) or not component:
             continue
         findings = _policy_findings(_license_ids(component), policy)
         if findings.prohibited:
-            prohibited_matches += 1
+            prohibited_matches.append(number)
             prohibited_ids.extend(i for i in findings.prohibited if i not in prohibited_ids)
         if findings.conditional:
-            conditional_matches += 1
+            conditional_matches.append(number)
             conditional_ids.extend(i for i in findings.conditional if i not in conditional_ids)
 
     total = len(results)
-    prefix = f"Policy summary for project '{project_label}':"
+    prefix = f"Project '{project_label}':"
     if not prohibited_matches and not conditional_matches:
-        return [f"{prefix} no prohibited or conditionally approved licenses in {total} matches."]
-    lines = [prefix]
+        return [
+            f"{prefix} no prohibited or conditionally approved licenses "
+            f"in {_plural(total, 'match')}."
+        ]
+
+    def line(label: str, numbers: List[int], ids: List[str]) -> str:
+        where = ("match " if len(numbers) == 1 else "matches ") + ", ".join(map(str, numbers))
+        return (
+            f"  ⚠ {len(numbers)} of {total} have {label} licenses: "
+            f"{', '.join(sorted(ids))} ({where})"
+        )
+
+    lines = [f"{prefix} {_plural(total, 'match')} checked"]
     if prohibited_matches:
-        lines.append(
-            f"  ⚠ {prohibited_matches} of {total} matches have prohibited licenses: "
-            f"{', '.join(sorted(prohibited_ids))}"
-        )
+        lines.append(line("prohibited", prohibited_matches, prohibited_ids))
     if conditional_matches:
-        lines.append(
-            f"  ⚠ {conditional_matches} of {total} matches have conditionally approved licenses: "
-            f"{', '.join(sorted(conditional_ids))}"
-        )
+        lines.append(line("conditionally approved", conditional_matches, conditional_ids))
     return lines
 
 
@@ -207,24 +219,49 @@ def _format_scan_result(
     return lines
 
 
-def _load_project_policy(
-    client: "WorkbenchClient", params: argparse.Namespace
-) -> Tuple[Optional[LicensePolicy], Optional[str]]:
-    """Resolve the policy project (lookup only) and download its license policy."""
-    project_name = _strip(getattr(params, "project_name", None))
-    project_code = _strip(getattr(params, "project_code", None))
-    if not project_name and not project_code:
-        return None, None
-
-    project_label = project_name or project_code
-    print(f"Loading license policy for project '{project_label}'...")
-    resolver = ResolverService(client.projects, client.scans)
-    resolved_code = resolver.find_project(name=project_name, code=project_code)
-    policy = LicensePolicy.from_workbench_rules(
-        client.policy.download_project_policy_json(resolved_code)
+def _policy_project(params: argparse.Namespace) -> Tuple[Optional[str], Optional[str]]:
+    return (
+        _strip(getattr(params, "project_name", None)),
+        _strip(getattr(params, "project_code", None)),
     )
-    print(f"✓ Loaded {len(policy)} license policy rules")
-    return policy, project_label
+
+
+def _resolve_policy_project(
+    client: "WorkbenchClient", project_name: Optional[str], project_code: Optional[str]
+) -> Tuple[Optional[str], Optional[str]]:
+    """Resolve the policy project (lookup only).
+
+    Never raises: returns ``(project_code, None)`` on success, or
+    ``(None, notice)`` explaining why the policy cannot be checked.
+    """
+    label = project_name or project_code
+    try:
+        resolver = ResolverService(client.projects, client.scans)
+        return resolver.find_project(name=project_name, code=project_code), None
+    except ProjectNotFoundError:
+        return None, f"Project '{label}': not found, so the license policy was not checked."
+    except (WorkbenchApiError, WorkbenchAgentError) as exc:
+        logger.debug("Project lookup failed for '%s'", label, exc_info=True)
+        return None, f"Project '{label}': could not be looked up ({exc})."
+
+
+def _download_policy(
+    client: "WorkbenchClient", resolved_code: str, label: str
+) -> Tuple[Optional[LicensePolicy], Optional[str]]:
+    """Download the project's license policy.
+
+    Never raises: returns ``(policy, None)`` on success, or ``(None, notice)``.
+    """
+    try:
+        policy = LicensePolicy.from_workbench_rules(
+            client.policy.download_project_policy_json(resolved_code)
+        )
+    except (WorkbenchApiError, WorkbenchAgentError) as exc:
+        logger.debug("License policy download failed for '%s'", label, exc_info=True)
+        return None, f"Project '{label}': could not load the license policy ({exc})."
+    if not len(policy):
+        return None, f"Project '{label}': no license policy defined."
+    return policy, None
 
 
 @handler_error_wrapper
@@ -237,15 +274,17 @@ def handle_quick_scan(
 
     Performs a quick scan of a single file using the FossID quick scan API.
     This is useful for rapidly checking individual files without running a
-    full project scan. When a project is given, each match's licenses are
-    checked against that project's license policy (lookup only; the project
-    is never created).
+    full project scan. When a project is given, it is looked up (never
+    created) before the scan, and each match's license is checked against
+    that project's license policy, with a summary after the matches. A
+    missing project, an empty policy, or a policy download error is reported
+    and never fails the command.
 
     Args:
         client: The Workbench API client instance
         params: Command line parameters including:
             - path: Path to the file to scan
-            - limit: Maximum number of results to return (default: 1)
+            - limit: Maximum number of results to return (default: 6)
             - sensitivity: Scan sensitivity level (default: 10)
             - project_name / project_code: Optional policy project
             - raw: If True, output raw JSON response
@@ -261,9 +300,18 @@ def handle_quick_scan(
         The client normalizes this to "noise" for consistency.
     """
     print_section(f"Running {params.command.upper()} Command")
+    raw = getattr(params, "raw", False)
 
-    # Load the policy first so a bad project fails before spending a scan
-    policy, project_label = _load_project_policy(client, params)
+    # Resolve the policy project up front (lookup only, never fatal)
+    project_name, project_code = _policy_project(params)
+    project_label = project_name or project_code or ""
+    wants_policy = bool(project_label) and not raw
+    resolved_code: Optional[str] = None
+    notice: Optional[str] = None
+    if wants_policy:
+        resolved_code, notice = _resolve_policy_project(client, project_name, project_code)
+        if resolved_code is not None:
+            print(f"Matches will be checked against project '{project_label}' license policy.")
 
     # Read and encode file content
     logger.debug(f"Reading file: {params.path}")
@@ -282,22 +330,33 @@ def handle_quick_scan(
     )
 
     # Format and display results
-    if getattr(params, "raw", False):
+    if raw:
         print(json.dumps(results, indent=2, ensure_ascii=False))
     elif not results:
         print("No matches found.")
     else:
+        policy: Optional[LicensePolicy] = None
+        if resolved_code is not None:
+            policy, notice = _download_policy(client, resolved_code, project_label)
+
+        print_section("Matches")
         total = len(results)
         for index, result in enumerate(results, start=1):
-            print()
+            if index > 1:
+                print()
             if total > 1:
                 print(f"Match {index} of {total}")
             for line in _format_scan_result(result, policy):
                 print(line)
-        if policy is not None and total > 1:
-            print()
-            for line in _policy_summary(results, policy, project_label or ""):
-                print(line)
+
+        # Policy problems are reported here and never fail the command
+        if wants_policy:
+            print_section("Policy Evaluation")
+            if policy is None:
+                print(notice)
+            else:
+                for line in _policy_summary(results, policy, project_label):
+                    print(line)
 
     logger.info("Quick scan completed successfully")
     return True

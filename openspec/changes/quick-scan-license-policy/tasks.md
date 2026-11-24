@@ -13,7 +13,7 @@
 ## 3. Handler
 
 - [x] 3.1 Replace the sentence formatter with the structured block formatter (omit absent fields, per-match header when more than one result)
-- [x] 3.2 Resolve the project lookup-only and download its policy once before scanning; add policy warnings and not-covered notes per match
+- [x] 3.2 Resolve the project lookup-only and download its policy once after scanning (policy problems are reported, never fatal); default `--limit` to 6; add policy warnings and not-covered notes per match
 - [x] 3.3 Print `--raw` JSON with non-ASCII characters preserved
 - [x] 3.4 Handler tests in `tests/unit/handlers/test_quick_scan_handler.py` using a captured two-result response: partial and full matches, missing copyright, prohibited and conditional warnings, not-covered note, project not found (no create, no scan), no project (no policy download), raw output
 

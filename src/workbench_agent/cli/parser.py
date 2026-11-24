@@ -25,7 +25,11 @@ def parse_cmdline_args(argv=None):
         supported_ecosystems,
     )
 
-    from .parent_parsers import create_common_parent_parsers, create_projectscan_parser
+    from .parent_parsers import (
+        create_common_parent_parsers,
+        create_projectscan_parser,
+        create_scan_control_parser,
+    )
     from .validators import validate_parsed_args
 
     # Create parent parsers for common argument groups
@@ -658,7 +662,7 @@ Examples:
         parents=[
             parent_parsers["cli_behaviors"],
             parent_parsers["workbench_connection"],
-            parent_parsers["scan_control"],
+            create_scan_control_parser(limit_default=6),
         ],
         epilog="""
 Examples:

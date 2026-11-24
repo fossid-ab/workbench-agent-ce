@@ -23,6 +23,10 @@ class TestQuickScanPolicyFlags:
         assert parsed.project_code is None
         assert parsed.path == scan_file
 
+    def test_default_limit_is_six(self, scan_file):
+        assert parse_cmdline_args(["quick-scan", *GLOBAL, scan_file]).limit == 6
+        assert parse_cmdline_args(["quick-scan", *GLOBAL, scan_file, "--limit", "2"]).limit == 2
+
     @pytest.mark.parametrize("flag", ["--project", "--project-name"])
     def test_project_name_aliases(self, scan_file, flag):
         parsed = parse_cmdline_args(["quick-scan", *GLOBAL, scan_file, flag, "acme"])
