@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "workbench-agent-ce"
-version = "0.12.0"
+version = "0.12.1"
 description = "Workbench Agent CE provides API and CLI interaction with FossID Workbench."
 license = "MIT"
 authors = [
@@ -18,6 +18,9 @@ requires-python = ">=3.10"
 
 dependencies = [
     "requests",
+    # CA bundle floor: 2026.10.23 is the first release that drops the
+    # compromised eMudhra/emSign intermediates (GHSA-6q48-6c7w-9gw2).
+    "certifi>=2026.10.23",
     "spdx-tools>=0.8.5",
     "cyclonedx-python-lib[validation]>=7.0.0",
     "packaging>=21.0",
