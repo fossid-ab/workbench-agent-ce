@@ -6,7 +6,7 @@
 
 ## What Changes
 
-- When the path given to `analyze` is a directory with a `fossid-settings.toml` at its root, the agent passes it to Toolbox with `da -s <path>`, in pipeline and `--buildless` mode alike, and prints the path it applied.
+- When the path given to `analyze` is a directory with a `fossid-settings.toml` at its root, the agent passes it to Toolbox with `da -s <path>`, in pipeline and `--buildless` mode alike. It prints a one-line notice and logs the file path at debug level.
 - A detected file that sets `da_host`, `da_artifactory_*`, `da_nexus_*` or `da_private_repo_*` is not passed, with a warning. FDA refuses those keys from settings found in scanned code; passing the file explicitly would bypass that rule.
 - A file that cannot be read is skipped with a warning; the analysis continues.
 

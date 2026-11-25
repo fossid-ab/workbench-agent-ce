@@ -623,7 +623,7 @@ class ToolboxWrapper:
         settings_path = find_da_settings_file(input_path)
         if settings_path:
             logger.debug("Applying FDA settings from %s", settings_path)
-            print(f"Applying FDA settings from {settings_path}")
+            print("Applied local FDA settings file.")
         cmd = [self.toolbox_path]
         if fossid_conf_path:
             cmd.extend(["-c", fossid_conf_path])
