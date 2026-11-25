@@ -7,6 +7,7 @@ from unittest.mock import patch
 from workbench_agent.utilities.toolbox_wrapper import (
     ToolboxWrapper,
     build_da_pipeline_args,
+    find_da_settings_file,
 )
 
 
@@ -131,7 +132,7 @@ def _run_with_outputs(tmp_path, written_files, **kwargs):
             side_effect=fake_run,
         ),
     ):
-        result = wrapper.run_da_pipeline(input_path="/ws", **kwargs)
+        result = wrapper.run_da_pipeline(**{"input_path": "/ws", **kwargs})
     return result, captured.get("cmd")
 
 
@@ -164,3 +165,98 @@ class TestRunDaPipeline:
         assert "da" in cmd
         assert cmd.index("-c") < cmd.index("da")
         assert cmd[cmd.index("-c") + 1] == "/etc/fossid.conf"
+
+
+class TestFindDaSettingsFile:
+    def test_finds_file_at_input_root(self, tmp_path):
+        settings = tmp_path / "fossid-settings.toml"
+        settings.write_text("[dependency-analysis]\nda_ds_test_dependencies = 1\n")
+        assert find_da_settings_file(str(tmp_path)) == str(settings)
+
+    def test_none_without_file(self, tmp_path):
+        assert find_da_settings_file(str(tmp_path)) is None
+
+    def test_only_root_is_checked(self, tmp_path):
+        (tmp_path / "sub").mkdir()
+        (tmp_path / "sub" / "fossid-settings.toml").write_text("")
+        assert find_da_settings_file(str(tmp_path)) is None
+
+    def test_none_for_file_or_missing_input(self, tmp_path):
+        settings = tmp_path / "fossid-settings.toml"
+        settings.write_text("")
+        assert find_da_settings_file(str(settings)) is None
+        assert find_da_settings_file(str(tmp_path / "missing")) is None
+        assert find_da_settings_file("") is None
+
+    def test_skips_file_setting_untrusted_keys(self, tmp_path, caplog):
+        (tmp_path / "fossid-settings.toml").write_text(
+            "[dependency-analysis.private]\n"
+            "da_ds_test_dependencies = 1\n"
+            '  da_host = "evil.example"\n'
+            '"da_artifactory_token" = "x"\n'
+        )
+        with caplog.at_level("WARNING", logger="workbench-agent"):
+            assert find_da_settings_file(str(tmp_path)) is None
+        assert "da_artifactory_token, da_host" in caplog.text
+
+    def test_similar_key_names_are_not_untrusted(self, tmp_path):
+        settings = tmp_path / "fossid-settings.toml"
+        settings.write_text("da_hostname_note = 1\n# da_host = x\n")
+        assert find_da_settings_file(str(tmp_path)) == str(settings)
+
+
+class TestDaSettingsForwarding:
+    def test_pipeline_passes_detected_settings_after_da(self, tmp_path):
+        project = tmp_path / "project"
+        project.mkdir()
+        settings = project / "fossid-settings.toml"
+        settings.write_text("da_ds_test_dependencies = 1\n")
+        _result, cmd = _run_with_outputs(
+            tmp_path,
+            {"analyzer-result.json": "{}"},
+            input_path=str(project),
+            fossid_conf_path="/etc/fossid.conf",
+        )
+        assert cmd[cmd.index("-s") + 1] == str(settings)
+        assert cmd.index("-c") < cmd.index("da") < cmd.index("-s")
+
+    def test_no_settings_flag_without_file(self, tmp_path):
+        project = tmp_path / "project"
+        project.mkdir()
+        _result, cmd = _run_with_outputs(
+            tmp_path, {"analyzer-result.json": "{}"}, input_path=str(project)
+        )
+        assert "-s" not in cmd
+
+    def test_manifest_scan_passes_detected_settings(self, tmp_path):
+        project = tmp_path / "project"
+        project.mkdir()
+        settings = project / "fossid-settings.toml"
+        settings.write_text("da_ds_test_dependencies = 1\n")
+        fake_toolbox = tmp_path / "fossid-toolbox"
+        fake_toolbox.write_text("#!/bin/sh\nexit 0\n")
+        fake_toolbox.chmod(0o755)
+        wrapper = ToolboxWrapper(toolbox_path=str(fake_toolbox))
+        output_dir = tmp_path / "out"
+        output_dir.mkdir()
+        captured = {}
+
+        def fake_run(cmd, **_):
+            captured["cmd"] = cmd
+            (output_dir / "analyzer-result.json").write_text("{}")
+            return _CompletedProcess()
+
+        with (
+            patch(
+                "workbench_agent.utilities.toolbox_wrapper.tempfile.mkdtemp",
+                return_value=str(output_dir),
+            ),
+            patch(
+                "workbench_agent.utilities.toolbox_wrapper.subprocess.run",
+                side_effect=fake_run,
+            ),
+        ):
+            wrapper.run_da_manifest_scan(input_path=str(project))
+        cmd = captured["cmd"]
+        assert cmd[cmd.index("-s") + 1] == str(settings)
+        assert "--pipeline" not in cmd

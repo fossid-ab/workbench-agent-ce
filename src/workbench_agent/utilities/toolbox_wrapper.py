@@ -32,6 +32,18 @@ MINIMUM_TOOLBOX_VERSION = "1.7.11"
 DA_REPORT_NAME = "analyzer-result.json"
 DA_SOURCES_NAME = "first-party-sources.json"
 
+#: FDA scan-settings overlay looked for at the root of the analyzed path.
+DA_SETTINGS_NAME = "fossid-settings.toml"
+
+# Keys FDA refuses from a settings file found inside the scanned code: they
+# redirect KB traffic or carry private-repository credentials. A detected
+# file that sets one is not forwarded, since passing it with ``-s`` would
+# make Toolbox trust it as if the user had named it.
+_UNTRUSTED_SETTINGS_KEY = re.compile(
+    r"""^\s*["']?(da_host|da_artifactory_\w*|da_nexus_\w*|da_private_repo_\w*)["']?\s*=""",
+    re.MULTILINE,
+)
+
 
 @dataclass
 class DaPipelineResult:
@@ -125,6 +137,40 @@ def build_da_pipeline_args(
     if emit_source_files:
         args.append("--emit-source-files")
     return args
+
+
+def find_da_settings_file(input_path: str) -> Optional[str]:
+    """
+    Return the ``fossid-settings.toml`` at the root of ``input_path``.
+
+    Only the root of a directory input is checked. Returns ``None`` when
+    there is no such file, when it cannot be read, or when it sets a key
+    that FDA does not accept from settings found in the scanned code
+    (``da_host``, ``da_artifactory_*``, ``da_nexus_*``,
+    ``da_private_repo_*``); those cases log a warning.
+    """
+    if not input_path or not os.path.isdir(input_path):
+        return None
+    candidate = os.path.join(input_path, DA_SETTINGS_NAME)
+    if not os.path.isfile(candidate):
+        return None
+    try:
+        with open(candidate, "r", encoding="utf-8") as f:
+            contents = f.read()
+    except (OSError, UnicodeDecodeError) as e:
+        logger.warning("Ignoring %s: could not read it (%s)", candidate, e)
+        return None
+    restricted = sorted(set(_UNTRUSTED_SETTINGS_KEY.findall(contents)))
+    if restricted:
+        logger.warning(
+            "Ignoring %s: it sets %s, which FDA does not accept from settings "
+            "found in the scanned code. Put these in fossid.conf "
+            "(--fossid-conf-path) instead.",
+            candidate,
+            ", ".join(restricted),
+        )
+        return None
+    return os.path.abspath(candidate)
 
 
 def resolve_fossid_toolbox_path(configured: Optional[str]) -> str:
@@ -522,6 +568,7 @@ class ToolboxWrapper:
             timeout=timeout,
             emit_source_files=emit_source_files,
             mode_label="pipeline",
+            input_path=input_path,
         )
 
     def run_da_manifest_scan(
@@ -552,6 +599,7 @@ class ToolboxWrapper:
             timeout=timeout,
             emit_source_files=False,
             mode_label="manifest",
+            input_path=input_path,
         )
 
     def _execute_da(
@@ -563,12 +611,25 @@ class ToolboxWrapper:
         timeout: Optional[int],
         emit_source_files: bool,
         mode_label: str,
+        input_path: str,
     ) -> DaPipelineResult:
-        """Run ``fossid-toolbox da`` and return the written report."""
+        """
+        Run ``fossid-toolbox da`` and return the written report.
+
+        A ``fossid-settings.toml`` at the root of ``input_path`` is passed
+        with ``-s`` so its settings (dependency scopes and other ``da_*``
+        keys) apply to the run.
+        """
+        settings_path = find_da_settings_file(input_path)
+        if settings_path:
+            logger.debug("Applying FDA settings from %s", settings_path)
+            print("Applied local FDA settings file.")
         cmd = [self.toolbox_path]
         if fossid_conf_path:
             cmd.extend(["-c", fossid_conf_path])
         cmd.append("da")
+        if settings_path:
+            cmd.extend(["-s", settings_path])
         cmd.extend(args)
 
         run_timeout = timeout if timeout is not None else int(self.timeout)
